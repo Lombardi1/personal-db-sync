@@ -1,5 +1,6 @@
 import { Cartone } from '@/types';
 import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface TabellaEsauritiProps {
   cartoni: Cartone[];
@@ -9,8 +10,9 @@ interface TabellaEsauritiProps {
 
 export function TabellaEsauriti({ cartoni, onStorico, onRiportaGiacenza }: TabellaEsauritiProps) {
   return (
-    <div className="w-full">
-      <table id="tab-esauriti" className="w-full border-collapse">
+    <ScrollArea className="w-full rounded-md">
+      <div className="w-full min-w-max">
+        <table id="tab-esauriti" className="w-full border-collapse">
         <thead>
           <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
             <th className="px-3 py-3 text-left text-sm font-semibold">Codice</th>
@@ -66,6 +68,8 @@ export function TabellaEsauriti({ cartoni, onStorico, onRiportaGiacenza }: Tabel
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }
