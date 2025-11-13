@@ -86,12 +86,6 @@ export default function Login() {
             {loading ? 'Accesso in corso...' : 'Accedi'}
           </Button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
-          <p>Utenti di test:</p>
-          <p>admin / password123 (Amministratore)</p>
-          <p>operaio1 / password123 (Produzione)</p>
-        </div>
       </div>
     </div>
   );
