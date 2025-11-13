@@ -44,7 +44,7 @@ export function Header({ activeTab = 'dashboard' }: HeaderProps) {
           {user && (
             <div className="flex items-center gap-4">
               <span className="text-sm text-white/90">
-                {isAmministratore ? 'Admin' : 'Operaio'}: {user.username}
+                {isAmministratore ? 'Admin' : 'Produzione'}: {user.username}
               </span>
               {isAmministratore && (
                 <Button

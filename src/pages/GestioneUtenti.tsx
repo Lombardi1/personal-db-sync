@@ -35,13 +35,13 @@ interface AppUser {
   id: string;
   username: string;
   created_at: string;
-  role?: 'operaio' | 'amministratore';
+  role?: 'produzione' | 'amministratore';
 }
 
 const userSchema = z.object({
   username: z.string().trim().min(3, 'Username deve essere almeno 3 caratteri').max(50, 'Username troppo lungo'),
   password: z.string().min(6, 'Password deve essere almeno 6 caratteri').max(100, 'Password troppo lunga'),
-  role: z.enum(['operaio', 'amministratore'], { required_error: 'Seleziona un ruolo' }),
+  role: z.enum(['produzione', 'amministratore'], { required_error: 'Seleziona un ruolo' }),
 });
 
 export default function GestioneUtenti() {
@@ -56,7 +56,7 @@ export default function GestioneUtenti() {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    role: '' as 'operaio' | 'amministratore' | '',
+    role: '' as 'produzione' | 'amministratore' | '',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -86,7 +86,7 @@ export default function GestioneUtenti() {
 
           return {
             ...u,
-            role: roleData?.role as 'operaio' | 'amministratore' | undefined,
+            role: roleData?.role as 'produzione' | 'amministratore' | undefined,
           };
         })
       );
@@ -340,7 +340,7 @@ export default function GestioneUtenti() {
                             : 'bg-secondary text-secondary-foreground'
                         }`}
                       >
-                        {utente.role === 'amministratore' ? 'Amministratore' : 'Operaio'}
+                        {utente.role === 'amministratore' ? 'Amministratore' : 'Produzione'}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -423,7 +423,7 @@ export default function GestioneUtenti() {
               <Label htmlFor="role">Ruolo</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value: 'operaio' | 'amministratore') =>
+                onValueChange={(value: 'produzione' | 'amministratore') =>
                   setFormData({ ...formData, role: value })
                 }
                 disabled={submitting}
@@ -432,7 +432,7 @@ export default function GestioneUtenti() {
                   <SelectValue placeholder="Seleziona ruolo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="operaio">Operaio</SelectItem>
+                  <SelectItem value="produzione">Produzione</SelectItem>
                   <SelectItem value="amministratore">Amministratore</SelectItem>
                 </SelectContent>
               </Select>

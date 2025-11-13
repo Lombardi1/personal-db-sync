@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ('operaio' | 'amministratore')[];
+  allowedRoles?: ('produzione' | 'amministratore')[];
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -23,8 +23,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Redirect in base al ruolo
-    if (user.role === 'operaio') {
-      return <Navigate to="/operaio" replace />;
+    if (user.role === 'produzione') {
+      return <Navigate to="/produzione" replace />;
     }
     return <Navigate to="/" replace />;
   }
