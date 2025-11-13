@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,15 +10,18 @@ import { toast } from 'sonner';
 import { Cartone } from '@/types';
 import { formatFormato, formatFogli } from '@/utils/formatters';
 import { LogOut, Search } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Produzione() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [codice, setCodice] = useState('');
   const [cartone, setCartone] = useState<Cartone | null>(null);
   const [quantita, setQuantita] = useState('');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [scaricando, setScaricando] = useState(false);
+  const [codiciDisponibili, setCodiciDisponibili] = useState<string[]>([]);
 
   const cercaCartone = async () => {
     if (!codice.trim()) {
@@ -110,6 +114,16 @@ export default function Produzione() {
       setCodice('');
       setQuantita('');
       setNote('');
+      
+      // Ricarica la lista dei codici disponibili
+      const { data } = await supabase
+        .from('giacenza')
+        .select('codice')
+        .order('codice');
+      
+      if (data) {
+        setCodiciDisponibili(data.map(c => c.codice));
+      }
     } catch (error) {
       console.error('Errore scarico:', error);
       toast.error('Errore durante lo scarico');
@@ -118,9 +132,23 @@ export default function Produzione() {
     setScaricando(false);
   };
 
+  useEffect(() => {
+    const caricaCodici = async () => {
+      const { data, error } = await supabase
+        .from('giacenza')
+        .select('codice, fornitore, tipologia')
+        .order('codice');
+      
+      if (!error && data) {
+        setCodiciDisponibili(data.map(c => c.codice));
+      }
+    };
+    caricaCodici();
+  }, []);
+
   const handleLogout = () => {
     logout();
-    window.location.href = '/login';
+    navigate('/login');
   };
 
   return (
@@ -145,40 +173,73 @@ export default function Produzione() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-md p-8 space-y-8">
-          {/* Ricerca Cartone */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-              Cerca Cartone
-            </h2>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Label htmlFor="codice" className="text-lg">Codice CTN</Label>
-                <Input
-                  id="codice"
-                  type="text"
-                  value={codice}
-                  onChange={(e) => setCodice(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && cercaCartone()}
-                  placeholder="Inserisci codice..."
-                  className="text-2xl h-16 mt-2"
-                  disabled={loading || scaricando}
-                />
-              </div>
-              <div className="flex items-end">
-                <Button
-                  onClick={cercaCartone}
-                  disabled={loading || scaricando}
-                  size="lg"
-                  className="h-16 px-8 text-lg"
-                >
-                  <Search className="mr-2 h-6 w-6" />
-                  {loading ? 'Ricerca...' : 'Cerca'}
-                </Button>
-              </div>
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Colonna sinistra: Lista codici disponibili */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-md p-4 sticky top-6">
+              <h3 className="text-lg font-bold mb-3 text-[hsl(var(--foreground))]">
+                Codici Disponibili ({codiciDisponibili.length})
+              </h3>
+              <ScrollArea className="h-[calc(100vh-250px)]">
+                <div className="space-y-1">
+                  {codiciDisponibili.map((cod) => (
+                    <button
+                      key={cod}
+                      onClick={() => {
+                        setCodice(cod);
+                        setTimeout(() => {
+                          const input = document.getElementById('codice') as HTMLInputElement;
+                          if (input) {
+                            input.focus();
+                          }
+                        }, 0);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded hover:bg-[hsl(var(--accent))] transition-colors text-sm font-mono"
+                    >
+                      {cod}
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
             </div>
           </div>
+
+          {/* Colonna destra: Ricerca e dettagli */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-8 space-y-8">
+              {/* Ricerca Cartone */}
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
+                  Cerca Cartone
+                </h2>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="codice" className="text-lg">Codice CTN</Label>
+                    <Input
+                      id="codice"
+                      type="text"
+                      value={codice}
+                      onChange={(e) => setCodice(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && cercaCartone()}
+                      placeholder="Inserisci codice..."
+                      className="text-2xl h-16 mt-2"
+                      disabled={loading || scaricando}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      onClick={cercaCartone}
+                      disabled={loading || scaricando}
+                      size="lg"
+                      className="h-16 px-8 text-lg"
+                    >
+                      <Search className="mr-2 h-6 w-6" />
+                      {loading ? 'Ricerca...' : 'Cerca'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
 
           {/* Dettagli Cartone */}
           {cartone && (
@@ -278,6 +339,8 @@ export default function Produzione() {
               </div>
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
