@@ -26,7 +26,7 @@ export function formatFogli(val: number): string {
 }
 
 export function formatPrezzo(val: number): string {
-  return val.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' €/kg';
+  return val.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €/kg';
 }
 
 export function formatData(dataISO: string): string {
