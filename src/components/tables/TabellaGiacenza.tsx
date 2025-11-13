@@ -10,7 +10,7 @@ interface TabellaGiacenzaProps {
 
 export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini }: TabellaGiacenzaProps) {
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-auto">
       <table id="tab-dashboard" className="w-full border-collapse">
         <thead>
           <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
