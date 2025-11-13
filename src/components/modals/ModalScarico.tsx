@@ -27,10 +27,11 @@ export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScari
       return;
     }
 
+    onClose();
+    
     const { error } = await onScarico(codice, qta, note || '-');
     if (!error) {
       toast.success(`✅ Scaricati ${qta} fogli dal cartone ${codice}`);
-      onClose();
     } else {
       toast.error('Errore durante lo scarico');
     }

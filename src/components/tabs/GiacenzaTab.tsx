@@ -48,6 +48,13 @@ export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }
       }
     });
 
+    // Ordina per grammatura in modo crescente
+    filtered.sort((a, b) => {
+      const grammA = parseInt(String(a.grammatura)) || 0;
+      const grammB = parseInt(String(b.grammatura)) || 0;
+      return grammA - grammB;
+    });
+
     setCartoniFiltered(filtered);
   };
 
