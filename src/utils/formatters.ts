@@ -22,11 +22,11 @@ export function formatGrammatura(val: string | number): string {
 }
 
 export function formatFogli(val: number): string {
-  return val.toFixed(3);
+  return val.toLocaleString('it-IT', { maximumFractionDigits: 0 });
 }
 
 export function formatPrezzo(val: number): string {
-  return val.toFixed(3) + ' €/kg';
+  return val.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' €/kg';
 }
 
 export function formatData(dataISO: string): string {
