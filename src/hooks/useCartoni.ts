@@ -158,8 +158,11 @@ export function useCartoni() {
   };
 
   const confermaOrdine = async (codice: string, confermato: boolean) => {
-    await supabase.from('ordini').update({ confermato }).eq('codice', codice);
-    await loadData();
+    const { error } = await supabase.from('ordini').update({ confermato }).eq('codice', codice);
+    if (!error) {
+      await loadData();
+    }
+    return { error };
   };
 
   const eliminaOrdine = async (codice: string) => {

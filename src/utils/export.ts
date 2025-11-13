@@ -31,10 +31,24 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
 
     let titolo = 'Esportazione Tabella';
-    if (tabellaId === 'tab-dashboard') titolo = 'Giacenza';
-    if (tabellaId === 'tab-ordini') titolo = 'Ordini in arrivo';
-    if (tabellaId === 'tab-esauriti') titolo = 'Cartoni Esauriti';
-    if (tabellaId === 'tab-storico') titolo = 'Storico Globale';
+    let headerColor: [number, number, number] = [30, 64, 175]; // Default blue
+    
+    if (tabellaId === 'tab-dashboard') {
+      titolo = 'Giacenza';
+      headerColor = [34, 139, 34]; // Green
+    }
+    if (tabellaId === 'tab-ordini') {
+      titolo = 'Ordini in arrivo';
+      headerColor = [220, 38, 38]; // Red
+    }
+    if (tabellaId === 'tab-esauriti') {
+      titolo = 'Cartoni Esauriti';
+      headerColor = [251, 146, 60]; // Orange
+    }
+    if (tabellaId === 'tab-storico') {
+      titolo = 'Storico Globale';
+      headerColor = [59, 130, 246]; // Blue
+    }
 
     const oggi = new Date();
     const dataStr = oggi.toLocaleDateString('it-IT') + ' ' + oggi.toLocaleTimeString('it-IT').slice(0, 5);
@@ -89,7 +103,7 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string) {
       startY: 20,
       theme: 'striped',
       styles: { fontSize: 6, cellPadding: 0.3, overflow: 'hidden', halign: 'center', valign: 'middle', cellWidth: 'wrap' },
-      headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold', fontSize: 6, cellPadding: 0.3 },
+      headStyles: { fillColor: headerColor, textColor: 255, fontStyle: 'bold', fontSize: 6, cellPadding: 0.3 },
       alternateRowStyles: { fillColor: [250, 250, 251] },
       margin: { left: 8, right: 8, top: 20 }
     });

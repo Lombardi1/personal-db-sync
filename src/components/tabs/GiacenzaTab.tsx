@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Cartone } from '@/types';
 import { Filters } from '@/components/Filters';
 import { TabellaGiacenza } from '@/components/tables/TabellaGiacenza';
@@ -25,10 +25,15 @@ export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }
     lavoro: '',
     magazzino: ''
   });
-  const [cartoniFiltered, setCartoniFiltered] = useState(giacenza);
+  const [cartoniFiltered, setCartoniFiltered] = useState<Cartone[]>([]);
   const [selectedCodice, setSelectedCodice] = useState<string | null>(null);
   const [showModalScarico, setShowModalScarico] = useState(false);
   const [showModalStorico, setShowModalStorico] = useState(false);
+
+  // Update filtered giacenza whenever giacenza changes
+  useEffect(() => {
+    handleFilter(filtri);
+  }, [giacenza]);
 
   const handleFilter = (newFiltri: typeof filtri) => {
     setFiltri(newFiltri);

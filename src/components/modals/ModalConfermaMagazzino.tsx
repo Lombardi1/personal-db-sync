@@ -28,6 +28,8 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
       return;
     }
 
+    onClose();
+    
     const { error } = await onConferma(codice, ddt, dataArrivo, fogliNum);
     if (!error) {
       const diff = fogliNum - ordine.fogli;
@@ -35,7 +37,6 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
         ? `✅ Ordine ${codice} spostato in magazzino`
         : `✅ Ordine ${codice} spostato in magazzino (${diff > 0 ? '+' : ''}${diff} fogli rispetto all'ordine)`;
       toast.success(message);
-      onClose();
     } else {
       toast.error('Errore durante lo spostamento in magazzino');
     }
