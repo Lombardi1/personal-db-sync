@@ -1,5 +1,5 @@
 import { Cartone } from '@/types';
-import { formatFormato, formatPrezzo } from '@/utils/formatters';
+import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
 
 interface TabellaOrdiniProps {
   ordini: Cartone[];
@@ -44,7 +44,7 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
               <td className="px-3 py-2 text-sm">{ordine.tipologia}</td>
               <td className="px-3 py-2 text-sm">{formatFormato(ordine.formato)}</td>
               <td className="px-3 py-2 text-sm">{ordine.grammatura}</td>
-              <td className="px-3 py-2 text-sm font-semibold">{ordine.fogli}</td>
+              <td className="px-3 py-2 text-sm font-semibold">{formatFogli(ordine.fogli)}</td>
               <td className="px-3 py-2 text-sm">{ordine.cliente}</td>
               <td className="px-3 py-2 text-sm">{ordine.lavoro}</td>
               <td className="px-3 py-2 text-sm">{ordine.magazzino}</td>

@@ -1,5 +1,5 @@
 import { Cartone } from '@/types';
-import { formatFormato, formatPrezzo } from '@/utils/formatters';
+import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
 
 interface TabellaGiacenzaProps {
   cartoni: Cartone[];
@@ -42,7 +42,7 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{cartone.tipologia}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{formatFormato(cartone.formato)}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{cartone.grammatura}</td>
-              <td className="px-2 py-1.5 text-xs font-semibold whitespace-nowrap">{cartone.fogli}</td>
+              <td className="px-2 py-1.5 text-xs font-semibold whitespace-nowrap">{formatFogli(cartone.fogli)}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{cartone.cliente}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{cartone.lavoro}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{cartone.magazzino}</td>
