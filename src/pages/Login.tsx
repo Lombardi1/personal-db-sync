@@ -29,8 +29,8 @@ export default function Login() {
       toast.success('Login effettuato con successo');
       
       // Redirect in base al ruolo
-      if (result.user?.role === 'operaio') {
-        navigate('/operaio');
+      if (result.user?.role === 'produzione') {
+        navigate('/produzione');
       } else {
         navigate('/');
       }
@@ -90,7 +90,7 @@ export default function Login() {
         <div className="mt-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
           <p>Utenti di test:</p>
           <p>admin / password123 (Amministratore)</p>
-          <p>operaio1 / password123 (Operaio)</p>
+          <p>operaio1 / password123 (Produzione)</p>
         </div>
       </div>
     </div>

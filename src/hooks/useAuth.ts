@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 interface User {
   id: string;
   username: string;
-  role: 'operaio' | 'amministratore';
+  role: 'produzione' | 'amministratore';
 }
 
 export function useAuth() {
@@ -99,7 +99,7 @@ export function useAuth() {
     login,
     logout,
     isAuthenticated: !!user,
-    isOperaio: user?.role === 'operaio',
+    isOperaio: user?.role === 'produzione',
     isAmministratore: user?.role === 'amministratore'
   };
 }

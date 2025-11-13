@@ -6,11 +6,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import Operaio from "./pages/Operaio";
+import Produzione from "./pages/Produzione";
 import GestioneUtenti from "./pages/GestioneUtenti";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
-import { GenerateHash } from "@/utils/generateHash";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +21,6 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/generate-hash" element={<GenerateHash />} />
             <Route path="/login" element={<Login />} />
             
             <Route 
@@ -35,12 +33,12 @@ const App = () => {
             />
             
             <Route 
-              path="/operaio" 
+              path="/produzione" 
               element={
-                <ProtectedRoute allowedRoles={['operaio']}>
-                  <Operaio />
+                <ProtectedRoute allowedRoles={['produzione']}>
+                  <Produzione />
                 </ProtectedRoute>
-              } 
+              }
             />
             
             <Route 
