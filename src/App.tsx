@@ -7,6 +7,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Operaio from "./pages/Operaio";
+import GestioneUtenti from "./pages/GestioneUtenti";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -36,6 +37,15 @@ const App = () => {
               element={
                 <ProtectedRoute allowedRoles={['operaio']}>
                   <Operaio />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/gestione-utenti" 
+              element={
+                <ProtectedRoute allowedRoles={['amministratore']}>
+                  <GestioneUtenti />
                 </ProtectedRoute>
               } 
             />

@@ -1,13 +1,15 @@
-import { LogOut } from 'lucide-react';
+import { LogOut, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   activeTab?: string;
 }
 
 export function Header({ activeTab = 'dashboard' }: HeaderProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAmministratore } = useAuth();
+  const navigate = useNavigate();
   
   const handleLogout = () => {
     logout();
@@ -42,8 +44,19 @@ export function Header({ activeTab = 'dashboard' }: HeaderProps) {
           {user && (
             <div className="flex items-center gap-4">
               <span className="text-sm text-white/90">
-                Admin: {user.username}
+                {isAmministratore ? 'Admin' : 'Operaio'}: {user.username}
               </span>
+              {isAmministratore && (
+                <Button
+                  onClick={() => navigate('/gestione-utenti')}
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Gestione Utenti
+                </Button>
+              )}
               <Button
                 onClick={handleLogout}
                 variant="outline"
