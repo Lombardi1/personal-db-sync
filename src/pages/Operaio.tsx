@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Cartone } from '@/types';
@@ -14,6 +15,7 @@ export default function Operaio() {
   const [codice, setCodice] = useState('');
   const [cartone, setCartone] = useState<Cartone | null>(null);
   const [quantita, setQuantita] = useState('');
+  const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [scaricando, setScaricando] = useState(false);
 
@@ -26,6 +28,7 @@ export default function Operaio() {
     setLoading(true);
     setCartone(null);
     setQuantita('');
+    setNote('');
 
     try {
       const { data, error } = await supabase
@@ -73,12 +76,16 @@ export default function Operaio() {
       const nuovaQuantita = cartone.fogli - qty;
 
       // Registra nel storico
+      const notaCompleta = note.trim() 
+        ? `${note} (Operaio: ${user.username})`
+        : `Scarico da operaio: ${user.username}`;
+      
       await supabase.from('storico').insert({
         codice: cartone.codice,
         tipo: 'scarico',
         quantita: qty,
         data: new Date().toISOString(),
-        note: `Scarico da operaio: ${user.username}`
+        note: notaCompleta
       });
 
       if (nuovaQuantita === 0) {
@@ -102,6 +109,7 @@ export default function Operaio() {
       setCartone(null);
       setCodice('');
       setQuantita('');
+      setNote('');
     } catch (error) {
       console.error('Errore scarico:', error);
       toast.error('Errore durante lo scarico');
@@ -207,31 +215,46 @@ export default function Operaio() {
             </div>
 
             {/* Scarico */}
-            <div className="border-t pt-8">
-              <Label htmlFor="quantita" className="text-xl font-bold mb-4 block">
-                Quantità da Scaricare
-              </Label>
-              <div className="flex gap-4">
+            <div className="border-t pt-8 space-y-6">
+              <div>
+                <Label htmlFor="quantita" className="text-xl font-bold mb-4 block">
+                  Quantità da Scaricare
+                </Label>
                 <Input
                   id="quantita"
                   type="number"
                   value={quantita}
                   onChange={(e) => setQuantita(e.target.value)}
                   placeholder="Inserisci quantità"
-                  className="text-3xl h-20 flex-1"
+                  className="text-3xl h-20"
                   min="1"
                   max={cartone.fogli}
                   disabled={scaricando}
                 />
-                <Button
-                  onClick={eseguiScarico}
-                  disabled={scaricando || !quantita}
-                  size="lg"
-                  className="h-20 px-12 text-2xl bg-red-600 hover:bg-red-700"
-                >
-                  {scaricando ? 'Scarico...' : 'SCARICA'}
-                </Button>
               </div>
+
+              <div>
+                <Label htmlFor="note" className="text-xl font-bold mb-4 block">
+                  Note (opzionale)
+                </Label>
+                <Textarea
+                  id="note"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Inserisci eventuali note..."
+                  className="text-lg min-h-[100px] resize-none"
+                  disabled={scaricando}
+                />
+              </div>
+
+              <Button
+                onClick={eseguiScarico}
+                disabled={scaricando || !quantita}
+                size="lg"
+                className="w-full h-20 text-2xl bg-red-600 hover:bg-red-700"
+              >
+                {scaricando ? 'Scarico...' : 'SCARICA'}
+              </Button>
             </div>
           </div>
         )}
