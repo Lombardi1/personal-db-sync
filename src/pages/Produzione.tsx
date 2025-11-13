@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Cartone } from '@/types';
@@ -248,93 +247,82 @@ export default function Produzione() {
                 Dettagli Cartone
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[hsl(var(--muted))] p-6 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-[hsl(var(--muted))] p-4 rounded-lg">
                 <div>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Codice</p>
-                  <p className="text-2xl font-bold">{cartone.codice}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Codice</p>
+                  <p className="text-lg font-bold">{cartone.codice}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Fornitore</p>
-                  <p className="text-2xl font-bold">{cartone.fornitore}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Fornitore</p>
+                  <p className="text-lg font-bold">{cartone.fornitore}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Tipo</p>
-                  <p className="text-xl">{cartone.tipologia}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Formato</p>
-                  <p className="text-xl">{formatFormato(cartone.formato)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Grammatura</p>
-                  <p className="text-xl">{cartone.grammatura}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Fogli Disponibili</p>
-                  <p className="text-3xl font-bold text-[hsl(var(--primary))]">
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Fogli Disponibili</p>
+                  <p className="text-2xl font-bold text-[hsl(var(--primary))]">
                     {formatFogli(cartone.fogli)}
                   </p>
                 </div>
-                {cartone.cliente && (
-                  <div>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Cliente</p>
-                    <p className="text-xl">{cartone.cliente}</p>
-                  </div>
-                )}
-                {cartone.lavoro && (
-                  <div>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Lavoro</p>
-                    <p className="text-xl">{cartone.lavoro}</p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Tipo</p>
+                  <p className="text-sm">{cartone.tipologia}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Formato</p>
+                  <p className="text-sm">{formatFormato(cartone.formato)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Grammatura</p>
+                  <p className="text-sm">{cartone.grammatura}</p>
+                </div>
               </div>
 
               {/* Form Scarico */}
-              <div className="space-y-4 border-t pt-6">
-                <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
+              <div className="space-y-3 border-t pt-4">
+                <h3 className="text-lg font-bold text-[hsl(var(--foreground))]">
                   Effettua Scarico
                 </h3>
                 
-                <div>
-                  <Label htmlFor="quantita" className="text-lg">
-                    Quantità Fogli da Scaricare
-                  </Label>
-                  <Input
-                    id="quantita"
-                    type="number"
-                    value={quantita}
-                    onChange={(e) => setQuantita(e.target.value)}
-                    placeholder="0"
-                    className="text-2xl h-16 mt-2"
-                    disabled={scaricando}
-                    min="1"
-                    max={cartone.fogli}
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="quantita" className="text-sm">
+                      Quantità Fogli da Scaricare
+                    </Label>
+                    <Input
+                      id="quantita"
+                      type="number"
+                      value={quantita}
+                      onChange={(e) => setQuantita(e.target.value)}
+                      placeholder="0"
+                      className="text-xl h-12 mt-1"
+                      disabled={scaricando}
+                      min="1"
+                      max={cartone.fogli}
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="note" className="text-lg">
-                    Note (opzionale)
-                  </Label>
-                  <Textarea
-                    id="note"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Inserisci eventuali note..."
-                    className="mt-2 text-lg"
-                    disabled={scaricando}
-                    rows={3}
-                  />
+                  <div>
+                    <Label htmlFor="note" className="text-sm">
+                      Note (opzionale)
+                    </Label>
+                    <Input
+                      id="note"
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Inserisci eventuali note..."
+                      className="mt-1 h-12"
+                      disabled={scaricando}
+                    />
+                  </div>
                 </div>
 
                 <Button
                   onClick={eseguiScarico}
                   disabled={!quantita || scaricando}
                   size="lg"
-                  className="w-full h-16 text-xl"
-                  variant="default"
+                  className="w-full h-14 text-xl bg-red-600 hover:bg-red-700 text-white"
+                  variant="destructive"
                 >
-                  {scaricando ? 'Scarico in corso...' : 'Conferma Scarico'}
+                  {scaricando ? 'Scarico in corso...' : '🗑️ Conferma Scarico'}
                 </Button>
               </div>
             </div>
