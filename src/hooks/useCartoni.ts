@@ -76,11 +76,12 @@ export function useCartoni() {
     return { error };
   };
 
-  const spostaInGiacenza = async (codice: string, ddt: string, dataArrivo: string) => {
+  const spostaInGiacenza = async (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number) => {
     const ordine = ordini.find(o => o.codice === codice);
     if (!ordine) return { error: new Error('Ordine non trovato') };
 
-    const cartoneGiacenza = { ...ordine, ddt, data_arrivo: dataArrivo };
+    const fogliFinali = fogliEffettivi !== undefined ? fogliEffettivi : ordine.fogli;
+    const cartoneGiacenza = { ...ordine, ddt, data_arrivo: dataArrivo, fogli: fogliFinali };
     delete cartoneGiacenza.data_consegna;
     delete cartoneGiacenza.confermato;
 
@@ -93,9 +94,11 @@ export function useCartoni() {
     const movimento: StoricoMovimento = {
       codice,
       tipo: 'carico',
-      quantita: ordine.fogli,
+      quantita: fogliFinali,
       data: new Date().toISOString(),
-      note: `Caricato da ordine ${ordine.ordine}`
+      note: fogliEffettivi !== undefined && fogliEffettivi !== ordine.fogli 
+        ? `Caricato da ordine ${ordine.ordine} - Ordinati: ${ordine.fogli}, Arrivati: ${fogliEffettivi}`
+        : `Caricato da ordine ${ordine.ordine}`
     };
     await supabase.from('storico').insert([movimento]);
 

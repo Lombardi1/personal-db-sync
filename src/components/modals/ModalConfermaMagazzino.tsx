@@ -6,24 +6,35 @@ interface ModalConfermaMagazzinoProps {
   codice: string;
   ordine: Cartone;
   onClose: () => void;
-  onConferma: (codice: string, ddt: string, dataArrivo: string) => Promise<{ error: any }>;
+  onConferma: (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number) => Promise<{ error: any }>;
 }
 
 export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: ModalConfermaMagazzinoProps) {
   const [ddt, setDdt] = useState('');
   const [dataArrivo, setDataArrivo] = useState('');
+  const [fogliEffettivi, setFogliEffettivi] = useState<string>(String(ordine.fogli));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!ddt || !dataArrivo) {
+    if (!ddt || !dataArrivo || !fogliEffettivi) {
       toast.error('⚠️ Compila tutti i campi obbligatori.');
       return;
     }
 
-    const { error } = await onConferma(codice, ddt, dataArrivo);
+    const fogliNum = parseInt(fogliEffettivi);
+    if (isNaN(fogliNum) || fogliNum <= 0) {
+      toast.error('⚠️ Inserisci un numero di fogli valido.');
+      return;
+    }
+
+    const { error } = await onConferma(codice, ddt, dataArrivo, fogliNum);
     if (!error) {
-      toast.success(`✅ Ordine ${codice} spostato in magazzino`);
+      const diff = fogliNum - ordine.fogli;
+      const message = diff === 0 
+        ? `✅ Ordine ${codice} spostato in magazzino`
+        : `✅ Ordine ${codice} spostato in magazzino (${diff > 0 ? '+' : ''}${diff} fogli rispetto all'ordine)`;
+      toast.success(message);
       onClose();
     } else {
       toast.error('Errore durante lo spostamento in magazzino');
@@ -51,7 +62,7 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
             <div className="text-sm text-[hsl(var(--muted-foreground))]">
               <div><strong>Fornitore:</strong> {ordine.fornitore}</div>
               <div><strong>Tipologia:</strong> {ordine.tipologia}</div>
-              <div><strong>Fogli:</strong> {ordine.fogli}</div>
+              <div><strong>Fogli Ordinati:</strong> {ordine.fogli}</div>
             </div>
           </div>
 
@@ -81,6 +92,31 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
                 className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-2">
+                <i className="fas fa-layer-group mr-1"></i> Fogli Effettivi Arrivati *
+              </label>
+              <input
+                type="number"
+                value={fogliEffettivi}
+                onChange={(e) => setFogliEffettivi(e.target.value)}
+                className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                placeholder={`es. ${ordine.fogli}`}
+                min="1"
+                required
+              />
+              {parseInt(fogliEffettivi) !== ordine.fogli && fogliEffettivi && (
+                <div className={`text-sm mt-2 font-medium ${
+                  parseInt(fogliEffettivi) > ordine.fogli 
+                    ? 'text-[hsl(var(--success))]' 
+                    : 'text-[hsl(var(--warning))]'
+                }`}>
+                  <i className={`fas fa-${parseInt(fogliEffettivi) > ordine.fogli ? 'arrow-up' : 'arrow-down'} mr-1`}></i>
+                  Differenza: {parseInt(fogliEffettivi) - ordine.fogli > 0 ? '+' : ''}{parseInt(fogliEffettivi) - ordine.fogli} fogli
+                </div>
+              )}
             </div>
           </div>
 
