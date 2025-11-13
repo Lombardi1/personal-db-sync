@@ -50,6 +50,13 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
       }
     });
 
+    // Ordina per data di consegna (data più vicina sopra = crescente)
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.data_consegna || '9999-12-31').getTime();
+      const dateB = new Date(b.data_consegna || '9999-12-31').getTime();
+      return dateA - dateB;
+    });
+
     setOrdiniFiltered(filtered);
   };
 
