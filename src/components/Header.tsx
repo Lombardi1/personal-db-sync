@@ -13,7 +13,7 @@ export function Header({ activeTab = 'dashboard' }: HeaderProps) {
   
   const handleLogout = () => {
     logout();
-    window.location.href = '/login';
+    navigate('/login');
   };
   const getHeaderColor = () => {
     switch (activeTab) {
