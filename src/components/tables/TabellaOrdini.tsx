@@ -11,7 +11,7 @@ interface TabellaOrdiniProps {
 
 export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModifica, onElimina }: TabellaOrdiniProps) {
   return (
-    <div className="overflow-x-auto">
+    <div className="w-full">
       <table id="tab-ordini" className="w-full border-collapse">
         <thead>
           <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">

@@ -15,9 +15,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
-      <Header />
+      <Header activeTab={activeTab} />
       
-      <div className="max-w-[1200px] mx-auto p-5">
+      <div className="max-w-[1400px] mx-auto p-5">
         <Tabs 
           activeTab={activeTab} 
           setActiveTab={setActiveTab}

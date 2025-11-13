@@ -32,6 +32,42 @@ export function useCartoni() {
 
   useEffect(() => {
     loadData();
+
+    // Real-time subscriptions
+    const giacenzaChannel = supabase
+      .channel('giacenza-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'giacenza' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const ordiniChannel = supabase
+      .channel('ordini-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const esauritiChannel = supabase
+      .channel('esauriti-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'esauriti' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const storicoChannel = supabase
+      .channel('storico-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'storico' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(giacenzaChannel);
+      supabase.removeChannel(ordiniChannel);
+      supabase.removeChannel(esauritiChannel);
+      supabase.removeChannel(storicoChannel);
+    };
   }, []);
 
   const aggiungiOrdine = async (cartone: Cartone) => {
