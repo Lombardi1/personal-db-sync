@@ -150,6 +150,12 @@ export function useCartoni() {
     const ordine = { ...cartone };
     delete ordine.ddt;
     delete ordine.data_arrivo;
+    
+    // Aggiungi campi necessari per la tabella ordini
+    ordine.confermato = false;
+    if (!ordine.data_consegna) {
+      ordine.data_consegna = new Date().toISOString().split('T')[0];
+    }
 
     await supabase.from('giacenza').delete().eq('codice', codice);
     await supabase.from('ordini').insert([ordine]);
