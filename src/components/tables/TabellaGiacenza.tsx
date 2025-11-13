@@ -1,5 +1,6 @@
 import { Cartone } from '@/types';
 import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface TabellaGiacenzaProps {
   cartoni: Cartone[];
@@ -10,8 +11,9 @@ interface TabellaGiacenzaProps {
 
 export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini }: TabellaGiacenzaProps) {
   return (
-    <div className="w-full">
-      <table id="tab-dashboard" className="w-full border-collapse text-xs">
+    <ScrollArea className="w-full rounded-md">
+      <div className="w-full min-w-max">
+        <table id="tab-dashboard" className="w-full border-collapse text-xs">
         <thead>
           <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
             <th className="px-2 py-2 text-left text-xs font-semibold">Codice</th>
@@ -77,6 +79,8 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }

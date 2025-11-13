@@ -17,7 +17,7 @@ const Index = () => {
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
       <Header activeTab={activeTab} />
       
-      <div className="mx-auto p-5 px-8">
+      <div className="mx-auto p-3 sm:p-5 md:px-8">
         <Tabs 
           activeTab={activeTab} 
           setActiveTab={setActiveTab}

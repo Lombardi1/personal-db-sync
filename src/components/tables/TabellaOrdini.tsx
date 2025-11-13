@@ -1,5 +1,6 @@
 import { Cartone } from '@/types';
 import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface TabellaOrdiniProps {
   ordini: Cartone[];
@@ -11,8 +12,9 @@ interface TabellaOrdiniProps {
 
 export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModifica, onElimina }: TabellaOrdiniProps) {
   return (
-    <div className="w-full">
-      <table id="tab-ordini" className="w-full border-collapse">
+    <ScrollArea className="w-full rounded-md">
+      <div className="w-full min-w-max">
+        <table id="tab-ordini" className="w-full border-collapse">
         <thead>
           <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
             <th className="px-3 py-3 text-left text-sm font-semibold">Codice</th>
@@ -94,6 +96,8 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }

@@ -1,4 +1,5 @@
 import { StoricoMovimento } from '@/types';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface StoricoTabProps {
   storico: StoricoMovimento[];
@@ -11,8 +12,9 @@ export function StoricoTab({ storico }: StoricoTabProps) {
       {storico.length === 0 ? (
         <p className="text-[hsl(var(--muted-foreground))]">Nessun movimento registrato.</p>
       ) : (
-        <div className="w-full">
-          <table className="w-full border-collapse">
+        <ScrollArea className="w-full rounded-md">
+          <div className="w-full min-w-max">
+            <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
                 <th className="px-3 py-3 text-left text-sm font-semibold">Codice</th>
@@ -46,7 +48,9 @@ export function StoricoTab({ storico }: StoricoTabProps) {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       )}
     </div>
   );
