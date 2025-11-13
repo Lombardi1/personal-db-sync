@@ -22,6 +22,8 @@ export function useAuth() {
 
   const login = async (username: string, password: string) => {
     try {
+      console.log('🔍 Tentativo login per username:', username);
+      
       // Recupera l'utente dal database
       const { data: users, error: userError } = await supabase
         .from('app_users')
@@ -29,18 +31,29 @@ export function useAuth() {
         .eq('username', username)
         .single();
 
+      console.log('📊 Risultato query utente:', { users, userError });
+
       if (userError || !users) {
+        console.log('❌ Utente non trovato');
         throw new Error('Username o password non corretti');
       }
 
-      // Verifica la password (in produzione usare bcrypt.compare)
-      // Per ora semplificata, in produzione fare hash comparison
+      console.log('✅ Utente trovato:', users.username);
+      console.log('🔑 Hash password dal DB:', users.password_hash);
+      console.log('🔑 Password inserita:', password);
+
+      // Verifica la password
       const bcrypt = await import('bcryptjs');
       const isValid = await bcrypt.compare(password, users.password_hash);
       
+      console.log('🔐 Risultato confronto password:', isValid);
+      
       if (!isValid) {
+        console.log('❌ Password non corretta');
         throw new Error('Username o password non corretti');
       }
+
+      console.log('✅ Password corretta, recupero ruolo...');
 
       // Recupera il ruolo dell'utente
       const { data: roleData, error: roleError } = await supabase
@@ -49,9 +62,14 @@ export function useAuth() {
         .eq('user_id', users.id)
         .single();
 
+      console.log('📊 Risultato query ruolo:', { roleData, roleError });
+
       if (roleError || !roleData) {
+        console.log('❌ Ruolo non trovato');
         throw new Error('Ruolo utente non trovato');
       }
+
+      console.log('✅ Ruolo trovato:', roleData.role);
 
       const loggedUser: User = {
         id: users.id,
@@ -62,9 +80,10 @@ export function useAuth() {
       setUser(loggedUser);
       localStorage.setItem('app_user', JSON.stringify(loggedUser));
 
+      console.log('✅ Login completato con successo');
       return { success: true, user: loggedUser };
     } catch (error: any) {
-      console.error('Errore login:', error);
+      console.error('❌ Errore login:', error);
       return { success: false, error: error.message };
     }
   };
