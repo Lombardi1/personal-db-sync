@@ -21,6 +21,10 @@ export function formatGrammatura(val: string | number): string {
   return s + ' g/m²';
 }
 
+export function formatFogli(val: number): string {
+  return val.toFixed(3);
+}
+
 export function formatPrezzo(val: number): string {
   return val.toFixed(3) + ' €/kg';
 }

@@ -1,5 +1,5 @@
 import { Cartone } from '@/types';
-import { formatFormato, formatPrezzo } from '@/utils/formatters';
+import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
 
 interface TabellaEsauritiProps {
   cartoni: Cartone[];
@@ -40,7 +40,7 @@ export function TabellaEsauriti({ cartoni, onStorico, onRiportaGiacenza }: Tabel
               <td className="px-3 py-2 text-sm">{cartone.tipologia}</td>
               <td className="px-3 py-2 text-sm">{formatFormato(cartone.formato)}</td>
               <td className="px-3 py-2 text-sm">{cartone.grammatura}</td>
-              <td className="px-3 py-2 text-sm font-semibold">{cartone.fogli}</td>
+              <td className="px-3 py-2 text-sm font-semibold">{formatFogli(cartone.fogli)}</td>
               <td className="px-3 py-2 text-sm">{cartone.cliente}</td>
               <td className="px-3 py-2 text-sm">{cartone.lavoro}</td>
               <td className="px-3 py-2 text-sm">{cartone.magazzino}</td>
