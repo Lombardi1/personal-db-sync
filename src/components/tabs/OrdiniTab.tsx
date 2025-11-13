@@ -10,7 +10,7 @@ import { esportaTabellaXLS, esportaTabellaPDF } from '@/utils/export';
 interface OrdiniTabProps {
   ordini: Cartone[];
   spostaInGiacenza: (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number) => Promise<{ error: any }>;
-  confermaOrdine: (codice: string, confermato: boolean) => Promise<void>;
+  confermaOrdine: (codice: string, confermato: boolean) => Promise<{ error: any }>;
   eliminaOrdine: (codice: string) => Promise<void>;
   modificaOrdine: (codice: string, dati: Partial<Cartone>) => Promise<void>;
   storico: any[];
