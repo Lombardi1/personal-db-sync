@@ -10,6 +10,7 @@ import Operaio from "./pages/Operaio";
 import GestioneUtenti from "./pages/GestioneUtenti";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/hooks/useAuth";
+import { GenerateHash } from "@/utils/generateHash";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/generate-hash" element={<GenerateHash />} />
             <Route path="/login" element={<Login />} />
             
             <Route 
