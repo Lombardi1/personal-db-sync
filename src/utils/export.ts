@@ -35,7 +35,7 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string) {
     
     if (tabellaId === 'tab-dashboard') {
       titolo = 'Giacenza';
-      headerColor = [34, 139, 34]; // Green
+      headerColor = [59, 130, 246]; // Blue
     }
     if (tabellaId === 'tab-ordini') {
       titolo = 'Ordini in arrivo';
@@ -43,7 +43,7 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string) {
     }
     if (tabellaId === 'tab-esauriti') {
       titolo = 'Cartoni Esauriti';
-      headerColor = [251, 146, 60]; // Orange
+      headerColor = [34, 139, 34]; // Green
     }
     if (tabellaId === 'tab-storico') {
       titolo = 'Storico Globale';

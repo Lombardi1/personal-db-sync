@@ -33,22 +33,22 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
         <tbody id="dashboard-body">
           {cartoni.map((cartone) => (
             <tr key={cartone.codice} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)] transition-colors">
-              <td className="px-3 py-2 text-sm">
+              <td className="px-3 py-2 text-sm whitespace-nowrap">
                 <span className="codice">{cartone.codice}</span>
               </td>
-              <td className="px-3 py-2 text-sm">{cartone.fornitore}</td>
-              <td className="px-3 py-2 text-sm">{cartone.ordine}</td>
-              <td className="px-3 py-2 text-sm">{cartone.ddt || '-'}</td>
-              <td className="px-3 py-2 text-sm">{cartone.tipologia}</td>
-              <td className="px-3 py-2 text-sm">{formatFormato(cartone.formato)}</td>
-              <td className="px-3 py-2 text-sm">{cartone.grammatura}</td>
-              <td className="px-3 py-2 text-sm font-semibold">{cartone.fogli}</td>
-              <td className="px-3 py-2 text-sm">{cartone.cliente}</td>
-              <td className="px-3 py-2 text-sm">{cartone.lavoro}</td>
-              <td className="px-3 py-2 text-sm">{cartone.magazzino}</td>
-              <td className="px-3 py-2 text-sm">{formatPrezzo(cartone.prezzo)}</td>
-              <td className="px-3 py-2 text-sm">{cartone.data_arrivo || '-'}</td>
-              <td className="px-3 py-2 text-sm">
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.fornitore}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.ordine}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.ddt || '-'}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.tipologia}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{formatFormato(cartone.formato)}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.grammatura}</td>
+              <td className="px-3 py-2 text-sm font-semibold whitespace-nowrap">{cartone.fogli}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.cliente}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.lavoro}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.magazzino}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{formatPrezzo(cartone.prezzo)}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">{cartone.data_arrivo || '-'}</td>
+              <td className="px-3 py-2 text-sm whitespace-nowrap">
                 <div className="flex gap-1">
                   <button
                     onClick={() => onScarico(cartone.codice)}

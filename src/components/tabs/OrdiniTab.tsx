@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Cartone } from '@/types';
 import { Filters } from '@/components/Filters';
 import { TabellaOrdini } from '@/components/tables/TabellaOrdini';
@@ -31,6 +31,11 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
   const [selectedCodice, setSelectedCodice] = useState<string | null>(null);
   const [showModalMagazzino, setShowModalMagazzino] = useState(false);
   const [showModalModifica, setShowModalModifica] = useState(false);
+
+  // Update filtered ordini whenever ordini changes
+  useEffect(() => {
+    handleFilter(filtri);
+  }, [ordini]);
 
   const handleFilter = (newFiltri: typeof filtri) => {
     setFiltri(newFiltri);
