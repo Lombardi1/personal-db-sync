@@ -9,7 +9,7 @@ interface TabellaEsauritiProps {
 
 export function TabellaEsauriti({ cartoni, onStorico, onRiportaGiacenza }: TabellaEsauritiProps) {
   return (
-    <div className="overflow-x-auto">
+    <div className="w-full">
       <table id="tab-esauriti" className="w-full border-collapse">
         <thead>
           <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">

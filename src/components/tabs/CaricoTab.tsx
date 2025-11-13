@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Cartone } from '@/types';
 import { formatFormato, formatGrammatura } from '@/utils/formatters';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 interface CaricoTabProps {
   aggiungiOrdine: (cartone: Cartone) => Promise<{ error: any }>;
 }
 
 export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
-  const [prossimoCodice, setProssimoCodice] = useState(4);
+  const [prossimoCodice, setProssimoCodice] = useState(1);
   const [formData, setFormData] = useState({
-    codice: `CTN-${String(4).padStart(3, '0')}`,
+    codice: 'CTN-001',
     fornitore: '',
     ordine: '',
     tipologia: '',
@@ -26,6 +27,27 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
     note: '',
     confermato: false
   });
+
+  useEffect(() => {
+    const fetchLastCode = async () => {
+      const [giacenzaRes, ordiniRes] = await Promise.all([
+        supabase.from('giacenza').select('codice').order('codice', { ascending: false }).limit(1),
+        supabase.from('ordini').select('codice').order('codice', { ascending: false }).limit(1)
+      ]);
+      
+      const allCodes = [...(giacenzaRes.data || []), ...(ordiniRes.data || [])];
+      if (allCodes.length > 0) {
+        const maxCode = allCodes.reduce((max, item) => {
+          const num = parseInt(item.codice.replace('CTN-', ''));
+          return num > max ? num : max;
+        }, 0);
+        const nextCode = maxCode + 1;
+        setProssimoCodice(nextCode);
+        setFormData(prev => ({ ...prev, codice: `CTN-${String(nextCode).padStart(3, '0')}` }));
+      }
+    };
+    fetchLastCode();
+  }, []);
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));

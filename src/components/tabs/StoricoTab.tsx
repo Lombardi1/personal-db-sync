@@ -11,7 +11,7 @@ export function StoricoTab({ storico }: StoricoTabProps) {
       {storico.length === 0 ? (
         <p className="text-[hsl(var(--muted-foreground))]">Nessun movimento registrato.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="w-full">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
