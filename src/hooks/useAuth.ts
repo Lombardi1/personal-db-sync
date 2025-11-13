@@ -24,11 +24,11 @@ export function useAuth() {
     try {
       console.log('🔍 Tentativo login per username:', username);
       
-      // Recupera l'utente dal database
+      // Recupera l'utente dal database (case-insensitive)
       const { data: users, error: userError } = await supabase
         .from('app_users')
         .select('id, username, password_hash')
-        .eq('username', username)
+        .ilike('username', username)
         .single();
 
       console.log('📊 Risultato query utente:', { users, userError });
