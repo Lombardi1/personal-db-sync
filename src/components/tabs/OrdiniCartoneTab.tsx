@@ -15,13 +15,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export function OrdiniCartoneTab() {
   const [prossimoCodice, setProssimoCodice] = useState(1);
+  const [prossimoNumeroOrdine, setProssimoNumeroOrdine] = useState('1');
+  const [annoCorrente, setAnnoCorrente] = useState(new Date().getFullYear());
   const [mostraFormNuovo, setMostraFormNuovo] = useState(true);
   const [mostraModalFornitore, setMostraModalFornitore] = useState(false);
   
   const [formData, setFormData] = useState({
     codice: 'CTN-001',
     fornitore: '',
-    ordine: '',
+    ordine: `1/${new Date().getFullYear()}`,
     tipologia: '',
     formato: '',
     grammatura: '',
@@ -38,6 +40,10 @@ export function OrdiniCartoneTab() {
 
   useEffect(() => {
     const fetchLastCode = async () => {
+      const anno = new Date().getFullYear();
+      setAnnoCorrente(anno);
+
+      // Fetch ultimo codice cartone
       const [giacenzaRes, ordiniRes, attesaRes] = await Promise.all([
         supabase.from('giacenza').select('codice').order('codice', { ascending: false }).limit(1),
         supabase.from('ordini').select('codice').order('codice', { ascending: false }).limit(1),
@@ -53,6 +59,36 @@ export function OrdiniCartoneTab() {
         const nextCode = maxCode + 1;
         setProssimoCodice(nextCode);
         setFormData(prev => ({ ...prev, codice: `CTN-${String(nextCode).padStart(3, '0')}` }));
+      }
+
+      // Fetch ultimo numero ordine per l'anno corrente
+      const { data: ordiniAnno } = await supabase
+        .from('ordini_attesa')
+        .select('ordine')
+        .like('ordine', `%/${anno}`);
+
+      const { data: ordiniArrivoAnno } = await supabase
+        .from('ordini')
+        .select('ordine')
+        .like('ordine', `%/${anno}`);
+
+      const tuttiOrdiniAnno = [...(ordiniAnno || []), ...(ordiniArrivoAnno || [])];
+
+      if (tuttiOrdiniAnno.length > 0) {
+        const maxNumero = tuttiOrdiniAnno.reduce((max, item) => {
+          const parts = item.ordine.split('/');
+          if (parts.length === 2 && parts[1] === String(anno)) {
+            const num = parseInt(parts[0]);
+            return num > max ? num : max;
+          }
+          return max;
+        }, 0);
+        const nextNumero = maxNumero + 1;
+        setProssimoNumeroOrdine(String(nextNumero));
+        setFormData(prev => ({ ...prev, ordine: `${nextNumero}/${anno}` }));
+      } else {
+        setProssimoNumeroOrdine('1');
+        setFormData(prev => ({ ...prev, ordine: `1/${anno}` }));
       }
     };
     fetchLastCode();
@@ -93,11 +129,14 @@ export function OrdiniCartoneTab() {
       toast.success(`✅ Ordine in attesa registrato: ${formData.codice}`);
       
       const newCodice = prossimoCodice + 1;
+      const newNumeroOrdine = parseInt(prossimoNumeroOrdine) + 1;
       setProssimoCodice(newCodice);
+      setProssimoNumeroOrdine(String(newNumeroOrdine));
+      
       setFormData({
         codice: `CTN-${String(newCodice).padStart(3, '0')}`,
         fornitore: '',
-        ordine: '',
+        ordine: `${newNumeroOrdine}/${annoCorrente}`,
         tipologia: '',
         formato: '',
         grammatura: '',
@@ -115,7 +154,7 @@ export function OrdiniCartoneTab() {
     setFormData(prev => ({
       ...prev,
       fornitore: '',
-      ordine: '',
+      ordine: `${prossimoNumeroOrdine}/${annoCorrente}`,
       tipologia: '',
       formato: '',
       grammatura: '',
@@ -188,8 +227,8 @@ export function OrdiniCartoneTab() {
               <Input
                 id="ordine"
                 value={formData.ordine}
-                onChange={(e) => handleChange('ordine', e.target.value)}
-                placeholder="es. ORD-2025-001"
+                readOnly
+                className="bg-[hsl(var(--muted))] font-bold"
               />
             </div>
 
