@@ -1,6 +1,19 @@
+import { useState } from 'react';
 import { Cartone } from '@/types';
 import { formatFormato, formatPrezzo, formatFogli, formatData } from '@/utils/formatters';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Copy } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface TabellaOrdiniProps {
   ordini: Cartone[];
@@ -11,6 +24,17 @@ interface TabellaOrdiniProps {
 }
 
 export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModifica, onElimina }: TabellaOrdiniProps) {
+  const [codiceEliminazione, setCodiceEliminazione] = useState<string | null>(null);
+
+  const copiaRiga = (ordine: Cartone) => {
+    const testo = `${ordine.codice}\t${ordine.fornitore}\t${ordine.ordine}\t${ordine.tipologia}\t${formatFormato(ordine.formato)}\t${ordine.grammatura}\t${formatFogli(ordine.fogli)}\t${ordine.cliente}\t${ordine.lavoro}\t${ordine.magazzino}\t${formatPrezzo(ordine.prezzo)}\t${formatData(ordine.data_consegna || '')}`;
+    navigator.clipboard.writeText(testo).then(() => {
+      toast.success('✅ Riga copiata negli appunti');
+    }).catch(() => {
+      toast.error('❌ Errore durante la copia');
+    });
+  };
+
   return (
     <ScrollArea className="w-full rounded-md">
       <div className="w-full min-w-max">
@@ -80,15 +104,18 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
                     <i className="fas fa-edit text-sm"></i>
                   </button>
                   <button
-                    onClick={() => {
-                      if (confirm(`Eliminare l'ordine ${ordine.codice}?`)) {
-                        onElimina(ordine.codice);
-                      }
-                    }}
+                    onClick={() => setCodiceEliminazione(ordine.codice)}
                     className="w-8 h-8 flex items-center justify-center rounded-md bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] hover:bg-[hsl(0,100%,90%)] transition-colors"
                     title="Elimina"
                   >
                     <i className="fas fa-trash text-sm"></i>
+                  </button>
+                  <button
+                    onClick={() => copiaRiga(ordine)}
+                    className="w-8 h-8 flex items-center justify-center rounded-md bg-[hsl(142,76%,94%)] text-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,88%)] transition-colors"
+                    title="Copia riga"
+                  >
+                    <Copy size={16} />
                   </button>
                 </div>
               </td>
@@ -98,6 +125,32 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
       </table>
       </div>
       <ScrollBar orientation="horizontal" />
+
+      <AlertDialog open={!!codiceEliminazione} onOpenChange={() => setCodiceEliminazione(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare l'ordine <strong>{codiceEliminazione}</strong>?
+              Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (codiceEliminazione) {
+                  onElimina(codiceEliminazione);
+                  setCodiceEliminazione(null);
+                }
+              }}
+              className="bg-[hsl(var(--danger))] hover:bg-[hsl(0,84%,50%)]"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ScrollArea>
   );
 }
