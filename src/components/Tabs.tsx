@@ -14,7 +14,7 @@ export function Tabs({ activeTab, setActiveTab, counts }: TabsProps) {
     { id: 'dashboard', icon: 'fa-th-large', label: 'Giacenza', count: counts.dashboard },
     { id: 'ordini', icon: 'fa-truck', label: 'Ordini in arrivo', count: counts.ordini },
     { id: 'esauriti', icon: 'fa-archive', label: 'Esauriti', count: counts.esauriti },
-    { id: 'carico', icon: 'fa-clipboard-list', label: 'Ordini Cartone' },
+    { id: 'carico', icon: 'fa-truck-loading', label: 'Carico Ordini' },
     { id: 'storico', icon: 'fa-history', label: 'Storico Globale' }
   ];
 
