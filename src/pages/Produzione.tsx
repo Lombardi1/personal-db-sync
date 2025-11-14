@@ -17,6 +17,7 @@ export default function Produzione() {
   const [codice, setCodice] = useState('');
   const [cartone, setCartone] = useState<Cartone | null>(null);
   const [quantita, setQuantita] = useState('');
+  const [ricavoFoglio, setRicavoFoglio] = useState('1');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [scaricando, setScaricando] = useState(false);
@@ -63,12 +64,21 @@ export default function Produzione() {
     }
 
     const qty = parseInt(quantita);
+    const ricavo = parseInt(ricavoFoglio);
+    
     if (isNaN(qty) || qty <= 0) {
       toast.error('Quantità non valida');
       return;
     }
 
-    if (qty > cartone.fogli) {
+    const fogliEffettivi = Math.floor(qty / ricavo);
+    
+    if (fogliEffettivi < 1) {
+      toast.error('⚠️ I fogli effettivi devono essere almeno 1.');
+      return;
+    }
+
+    if (fogliEffettivi > cartone.fogli) {
       toast.error(`Quantità disponibile: ${formatFogli(cartone.fogli)} fogli`);
       return;
     }
@@ -76,7 +86,7 @@ export default function Produzione() {
     setScaricando(true);
 
     try {
-      const nuovaQuantita = cartone.fogli - qty;
+      const nuovaQuantita = cartone.fogli - fogliEffettivi;
 
       // Registra nel storico
       const notaCompleta = note.trim() 
@@ -86,7 +96,7 @@ export default function Produzione() {
       await supabase.from('storico').insert({
         codice: cartone.codice,
         tipo: 'scarico',
-        quantita: qty,
+        quantita: fogliEffettivi,
         data: new Date().toISOString(),
         note: notaCompleta
       });
@@ -112,6 +122,7 @@ export default function Produzione() {
       setCartone(null);
       setCodice('');
       setQuantita('');
+      setRicavoFoglio('1');
       setNote('');
       
       // Ricarica la lista dei codici disponibili
@@ -282,7 +293,7 @@ export default function Produzione() {
                   Effettua Scarico
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label htmlFor="quantita" className="text-sm">
                       Quantità Fogli da Scaricare
@@ -296,8 +307,26 @@ export default function Produzione() {
                       className="text-xl h-12 mt-1"
                       disabled={scaricando}
                       min="1"
-                      max={cartone.fogli}
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="ricavo" className="text-sm">
+                      Ricavo Foglio
+                    </Label>
+                    <select
+                      id="ricavo"
+                      value={ricavoFoglio}
+                      onChange={(e) => setRicavoFoglio(e.target.value)}
+                      className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10 text-xl h-12 mt-1"
+                      disabled={scaricando}
+                    >
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                    </select>
                   </div>
 
                   <div>
@@ -314,6 +343,45 @@ export default function Produzione() {
                     />
                   </div>
                 </div>
+
+                {quantita && parseInt(quantita) > 0 && (() => {
+                  const fogliEffettivi = Math.floor(parseInt(quantita) / parseInt(ricavoFoglio));
+                  return (
+                    <div className="space-y-2">
+                      <div className="p-3 bg-[hsl(199,100%,97%)] rounded-lg border-l-4 border-[hsl(var(--primary))]">
+                        <div className="flex items-center gap-2">
+                          <i className="fas fa-calculator text-[hsl(var(--primary))]"></i>
+                          <span className="font-semibold text-[hsl(var(--primary))]">
+                            Fogli effettivi da scaricare: {fogliEffettivi}
+                          </span>
+                        </div>
+                        <div className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                          ({quantita} ÷ {ricavoFoglio} = {fogliEffettivi})
+                        </div>
+                      </div>
+                      {fogliEffettivi > 0 && fogliEffettivi <= cartone.fogli && (
+                        <div className="p-3 bg-[hsl(142,76%,94%)] rounded-lg border-l-4 border-[hsl(142,76%,36%)]">
+                          <div className="flex items-center gap-2">
+                            <i className="fas fa-box text-[hsl(142,76%,36%)]"></i>
+                            <span className="font-semibold text-[hsl(142,76%,36%)]">
+                              Rimanenza: {cartone.fogli - fogliEffettivi} fogli
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {fogliEffettivi > cartone.fogli && (
+                        <div className="p-3 bg-[hsl(0,84%,94%)] rounded-lg border-l-4 border-[hsl(0,84%,60%)]">
+                          <div className="flex items-center gap-2">
+                            <i className="fas fa-exclamation-triangle text-[hsl(0,84%,60%)]"></i>
+                            <span className="font-semibold text-[hsl(0,84%,60%)]">
+                              Fogli effettivi superiori alla disponibilità!
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <Button
                   onClick={eseguiScarico}
