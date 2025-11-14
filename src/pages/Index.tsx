@@ -5,7 +5,7 @@ import { Tabs } from '@/components/Tabs';
 import { GiacenzaTab } from '@/components/tabs/GiacenzaTab';
 import { OrdiniTab } from '@/components/tabs/OrdiniTab';
 import { EsauritiTab } from '@/components/tabs/EsauritiTab';
-import { CaricoTab } from '@/components/tabs/CaricoTab';
+import { OrdiniCartoneTab } from '@/components/tabs/OrdiniCartoneTab';
 import { StoricoTab } from '@/components/tabs/StoricoTab';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -33,7 +33,7 @@ const Index = () => {
           {activeTab === 'dashboard' && <GiacenzaTab {...cartoniData} />}
           {activeTab === 'ordini' && <OrdiniTab {...cartoniData} />}
           {activeTab === 'esauriti' && <EsauritiTab {...cartoniData} />}
-          {activeTab === 'carico' && <CaricoTab {...cartoniData} />}
+          {activeTab === 'carico' && <OrdiniCartoneTab />}
           {activeTab === 'storico' && <StoricoTab storico={cartoniData.storico} />}
         </div>
       </div>
