@@ -12,6 +12,7 @@ interface FiltersProps {
     cliente: string;
     lavoro: string;
     magazzino: string;
+    confermato?: string;
   };
   onFilter: (filtri: any) => void;
   onReset: () => void;
@@ -171,6 +172,23 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                 className="px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
               />
             </div>
+
+            {sezione === 'ordini' && (
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium flex items-center gap-1">
+                  <i className="fas fa-check-circle"></i> Conferma Ordine
+                </label>
+                <select
+                  value={filtri.confermato || ''}
+                  onChange={(e) => handleChange('confermato', e.target.value)}
+                  className="px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                >
+                  <option value="">Tutti</option>
+                  <option value="true">Confermati</option>
+                  <option value="false">Non confermati</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
       </CollapsibleContent>

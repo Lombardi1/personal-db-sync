@@ -25,7 +25,8 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
     grammatura: '',
     cliente: '',
     lavoro: '',
-    magazzino: ''
+    magazzino: '',
+    confermato: ''
   });
   const [ordiniFiltered, setOrdiniFiltered] = useState(ordini);
   const [selectedCodice, setSelectedCodice] = useState<string | null>(null);
@@ -43,10 +44,29 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
 
     Object.entries(newFiltri).forEach(([key, value]) => {
       if (value) {
-        filtered = filtered.filter(c => {
-          const field = c[key as keyof Cartone];
-          return String(field).toLowerCase().includes(value.toLowerCase());
-        });
+        // Gestione speciale per il campo formato: normalizza gli spazi
+        if (key === 'formato') {
+          filtered = filtered.filter(c => {
+            const field = c[key as keyof Cartone];
+            const normalizedField = String(field).replace(/\s+/g, '').toLowerCase();
+            const normalizedValue = value.replace(/\s+/g, '').toLowerCase();
+            return normalizedField.includes(normalizedValue);
+          });
+        }
+        // Gestione speciale per il campo confermato
+        else if (key === 'confermato') {
+          filtered = filtered.filter(c => {
+            const isConfermato = c.confermato === true;
+            return value === 'true' ? isConfermato : !isConfermato;
+          });
+        }
+        // Gestione normale per gli altri campi
+        else {
+          filtered = filtered.filter(c => {
+            const field = c[key as keyof Cartone];
+            return String(field).toLowerCase().includes(value.toLowerCase());
+          });
+        }
       }
     });
 
@@ -69,10 +89,11 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
       grammatura: '',
       cliente: '',
       lavoro: '',
-      magazzino: ''
+      magazzino: '',
+      confermato: ''
     };
     setFiltri(emptyFiltri);
-    setOrdiniFiltered(ordini);
+    handleFilter(emptyFiltri);
   };
 
   return (
