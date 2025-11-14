@@ -12,27 +12,37 @@ interface ModalScaricoProps {
 
 export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScaricoProps) {
   const [quantita, setQuantita] = useState('');
+  const [ricavoFoglio, setRicavoFoglio] = useState('1');
   const [note, setNote] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const qta = parseInt(quantita);
+    const ricavo = parseInt(ricavoFoglio);
+    
     if (!qta || qta < 1) {
       toast.error('⚠️ Inserisci una quantità valida.');
       return;
     }
     
-    if (qta > cartone.fogli) {
+    const fogliEffettivi = Math.floor(qta / ricavo);
+    
+    if (fogliEffettivi < 1) {
+      toast.error('⚠️ I fogli effettivi devono essere almeno 1.');
+      return;
+    }
+    
+    if (fogliEffettivi > cartone.fogli) {
       toast.error(`⚠️ Solo ${cartone.fogli} fogli disponibili.`);
       return;
     }
 
     onClose();
     
-    const { error } = await onScarico(codice, qta, note || '-');
+    const { error } = await onScarico(codice, fogliEffettivi, note || '-');
     if (!error) {
-      toast.success(`✅ Scaricati ${qta} fogli dal cartone ${codice}`);
+      toast.success(`✅ Scaricati ${fogliEffettivi} fogli dal cartone ${codice}`);
     } else {
       toast.error('Errore durante lo scarico');
     }
@@ -82,22 +92,68 @@ export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScari
                 value={quantita}
                 onChange={(e) => setQuantita(e.target.value)}
                 className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-                placeholder="es. 100"
+                placeholder="es. 1000"
                 min="1"
-                max={cartone.fogli}
                 required
               />
-              {quantita && parseInt(quantita) > 0 && parseInt(quantita) <= cartone.fogli && (
-                <div className="mt-2 p-3 bg-[hsl(142,76%,94%)] rounded-lg border-l-4 border-[hsl(142,76%,36%)]">
-                  <div className="flex items-center gap-2">
-                    <i className="fas fa-calculator text-[hsl(142,76%,36%)]"></i>
-                    <span className="font-semibold text-[hsl(142,76%,36%)]">
-                      Rimanenza: {cartone.fogli - parseInt(quantita)} fogli
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
+
+            <div>
+              <label className="block font-medium mb-2">
+                <i className="fas fa-layer-group mr-1"></i> Ricavo Foglio *
+              </label>
+              <select
+                value={ricavoFoglio}
+                onChange={(e) => setRicavoFoglio(e.target.value)}
+                className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                required
+              >
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+
+            {quantita && parseInt(quantita) > 0 && (() => {
+              const fogliEffettivi = Math.floor(parseInt(quantita) / parseInt(ricavoFoglio));
+              return (
+                <div className="space-y-2">
+                  <div className="p-3 bg-[hsl(199,100%,97%)] rounded-lg border-l-4 border-[hsl(var(--primary))]">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-calculator text-[hsl(var(--primary))]"></i>
+                      <span className="font-semibold text-[hsl(var(--primary))]">
+                        Fogli effettivi da scaricare: {fogliEffettivi}
+                      </span>
+                    </div>
+                    <div className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                      ({quantita} ÷ {ricavoFoglio} = {fogliEffettivi})
+                    </div>
+                  </div>
+                  {fogliEffettivi > 0 && fogliEffettivi <= cartone.fogli && (
+                    <div className="p-3 bg-[hsl(142,76%,94%)] rounded-lg border-l-4 border-[hsl(142,76%,36%)]">
+                      <div className="flex items-center gap-2">
+                        <i className="fas fa-box text-[hsl(142,76%,36%)]"></i>
+                        <span className="font-semibold text-[hsl(142,76%,36%)]">
+                          Rimanenza: {cartone.fogli - fogliEffettivi} fogli
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {fogliEffettivi > cartone.fogli && (
+                    <div className="p-3 bg-[hsl(0,84%,94%)] rounded-lg border-l-4 border-[hsl(0,84%,60%)]">
+                      <div className="flex items-center gap-2">
+                        <i className="fas fa-exclamation-triangle text-[hsl(0,84%,60%)]"></i>
+                        <span className="font-semibold text-[hsl(0,84%,60%)]">
+                          Fogli effettivi superiori alla disponibilità!
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div>
               <label className="block font-medium mb-2">
