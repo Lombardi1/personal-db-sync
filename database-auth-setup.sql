@@ -1,5 +1,5 @@
 -- Creazione enum per i ruoli
-create type public.app_role as enum ('operaio', 'amministratore');
+create type public.app_role as enum ('produzione', 'amministratore');
 
 -- Tabella users per autenticazione
 create table public.app_users (
@@ -44,12 +44,77 @@ for select
 to anon, authenticated
 using (true);
 
--- Policy: solo gli utenti stessi possono leggere i propri ruoli
+-- Policy: solo amministratori possono inserire nuovi utenti
+create policy "Admins can insert users"
+on public.app_users
+for insert
+to authenticated
+with check (
+  exists (
+    select 1 from public.user_roles
+    where user_id = auth.uid()
+    and role = 'amministratore'::app_role
+  )
+);
+
+-- Policy: solo amministratori possono aggiornare utenti
+create policy "Admins can update users"
+on public.app_users
+for update
+to authenticated
+using (
+  exists (
+    select 1 from public.user_roles
+    where user_id = auth.uid()
+    and role = 'amministratore'::app_role
+  )
+);
+
+-- Policy: solo amministratori possono eliminare utenti
+create policy "Admins can delete users"
+on public.app_users
+for delete
+to authenticated
+using (
+  exists (
+    select 1 from public.user_roles
+    where user_id = auth.uid()
+    and role = 'amministratore'::app_role
+  )
+);
+
+-- Policy: tutti possono leggere i ruoli (necessario per controllo permessi)
 create policy "Users can read their own roles"
 on public.user_roles
 for select
 to authenticated
 using (true);
+
+-- Policy: solo amministratori possono inserire ruoli
+create policy "Admins can insert roles"
+on public.user_roles
+for insert
+to authenticated
+with check (
+  exists (
+    select 1 from public.user_roles
+    where user_id = auth.uid()
+    and role = 'amministratore'::app_role
+  )
+);
+
+-- Policy: solo amministratori possono eliminare ruoli
+create policy "Admins can delete roles"
+on public.user_roles
+for delete
+to authenticated
+using (
+  exists (
+    select 1 from public.user_roles
+    where user_id = auth.uid()
+    and role = 'amministratore'::app_role
+  )
+);
 
 -- Inserimento utenti di esempio (password: "password123")
 -- Hash generato con bcrypt per "password123"
@@ -62,4 +127,4 @@ insert into public.user_roles (user_id, role)
 select id, 'amministratore'::app_role from public.app_users where username = 'admin';
 
 insert into public.user_roles (user_id, role)
-select id, 'operaio'::app_role from public.app_users where username = 'operaio1';
+select id, 'produzione'::app_role from public.app_users where username = 'operaio1';
