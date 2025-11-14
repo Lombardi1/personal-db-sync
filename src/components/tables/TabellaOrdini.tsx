@@ -1,5 +1,5 @@
 import { Cartone } from '@/types';
-import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
+import { formatFormato, formatPrezzo, formatFogli, formatData } from '@/utils/formatters';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface TabellaOrdiniProps {
@@ -51,7 +51,7 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
               <td className="px-3 py-2 text-sm">{ordine.lavoro}</td>
               <td className="px-3 py-2 text-sm">{ordine.magazzino}</td>
               <td className="px-3 py-2 text-sm">{formatPrezzo(ordine.prezzo)}</td>
-              <td className="px-3 py-2 text-sm">{ordine.data_consegna}</td>
+              <td className="px-3 py-2 text-sm">{formatData(ordine.data_consegna || '')}</td>
               <td className="px-3 py-2 text-sm">
                 <div className="flex gap-1">
                   <button

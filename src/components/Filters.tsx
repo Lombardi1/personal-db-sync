@@ -178,15 +178,13 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                 <label className="text-sm font-medium flex items-center gap-1">
                   <i className="fas fa-check-circle"></i> Conferma Ordine
                 </label>
-                <select
+                <input
+                  type="text"
                   value={filtri.confermato || ''}
                   onChange={(e) => handleChange('confermato', e.target.value)}
+                  placeholder="Cerca per conferma"
                   className="px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-                >
-                  <option value="">Tutti</option>
-                  <option value="true">Confermati</option>
-                  <option value="false">Non confermati</option>
-                </select>
+                />
               </div>
             )}
           </div>
