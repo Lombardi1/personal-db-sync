@@ -1,6 +1,8 @@
 import { Cartone } from '@/types';
 import { formatFormato, formatPrezzo, formatFogli, formatData } from '@/utils/formatters';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TabellaGiacenzaProps {
   cartoni: Cartone[];
@@ -10,6 +12,15 @@ interface TabellaGiacenzaProps {
 }
 
 export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini }: TabellaGiacenzaProps) {
+  const copiaRiga = (cartone: Cartone) => {
+    const testo = `${cartone.codice}\t${cartone.fornitore}\t${cartone.ordine}\t${cartone.ddt || '-'}\t${cartone.tipologia}\t${formatFormato(cartone.formato)}\t${cartone.grammatura}\t${formatFogli(cartone.fogli)}\t${cartone.cliente}\t${cartone.lavoro}\t${cartone.magazzino}\t${formatPrezzo(cartone.prezzo)}\t${formatData(cartone.data_arrivo || '')}`;
+    navigator.clipboard.writeText(testo).then(() => {
+      toast.success('✅ Riga copiata negli appunti');
+    }).catch(() => {
+      toast.error('❌ Errore durante la copia');
+    });
+  };
+
   return (
     <ScrollArea className="w-full rounded-md">
       <div className="w-full min-w-max">
@@ -52,6 +63,13 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{formatData(cartone.data_arrivo || '')}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">
                 <div className="flex gap-0.5">
+                  <button
+                    onClick={() => copiaRiga(cartone)}
+                    className="w-7 h-7 flex items-center justify-center rounded bg-[hsl(142,76%,94%)] text-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,88%)] transition-colors"
+                    title="Copia riga"
+                  >
+                    <Copy size={14} />
+                  </button>
                   <button
                     onClick={() => onScarico(cartone.codice)}
                     className="w-7 h-7 flex items-center justify-center rounded bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] hover:bg-[hsl(0,100%,90%)] transition-colors"
