@@ -44,16 +44,17 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
 
     Object.entries(newFiltri).forEach(([key, value]) => {
       if (value) {
-        // Gestione speciale per il campo formato: normalizza gli spazi
+        // Gestione speciale per il campo formato: rimuove tutti i caratteri non numerici
         if (key === 'formato') {
           filtered = filtered.filter(c => {
             const field = c[key as keyof Cartone];
-            const normalizedField = String(field).replace(/\s+/g, '').toLowerCase();
-            const normalizedValue = value.replace(/\s+/g, '').toLowerCase();
+            // Rimuovi tutti i caratteri non numerici (spazi, x, cm, etc.)
+            const normalizedField = String(field).replace(/[^\d]/g, '');
+            const normalizedValue = value.replace(/[^\d]/g, '');
             return normalizedField.includes(normalizedValue);
           });
         }
-        // Gestione normale per gli altri campi (rimosso filtro confermato come select)
+        // Gestione normale per gli altri campi
         else {
           filtered = filtered.filter(c => {
             const field = c[key as keyof Cartone];
