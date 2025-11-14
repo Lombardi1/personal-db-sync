@@ -64,13 +64,6 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">
                 <div className="flex gap-0.5">
                   <button
-                    onClick={() => copiaRiga(cartone)}
-                    className="w-7 h-7 flex items-center justify-center rounded bg-[hsl(142,76%,94%)] text-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,88%)] transition-colors"
-                    title="Copia riga"
-                  >
-                    <Copy size={14} />
-                  </button>
-                  <button
                     onClick={() => onScarico(cartone.codice)}
                     className="w-7 h-7 flex items-center justify-center rounded bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] hover:bg-[hsl(0,100%,90%)] transition-colors"
                     title="Scarica fogli"
@@ -90,6 +83,13 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
                     title="Riporta in ordini"
                   >
                     <i className="fas fa-undo text-xs"></i>
+                  </button>
+                  <button
+                    onClick={() => copiaRiga(cartone)}
+                    className="w-7 h-7 flex items-center justify-center rounded bg-[hsl(142,76%,94%)] text-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,88%)] transition-colors"
+                    title="Copia riga"
+                  >
+                    <Copy size={14} />
                   </button>
                 </div>
               </td>
