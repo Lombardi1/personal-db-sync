@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Fornitore } from '@/types/fornitore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,8 +17,9 @@ interface ModalFornitoreProps {
 
 export function ModalFornitore({ isOpen, onClose, fornitori, onAggiungi }: ModalFornitoreProps) {
   const [mostraForm, setMostraForm] = useState(false);
+  const [prossimoCodice, setProssimoCodice] = useState(1);
   const [formData, setFormData] = useState<Partial<Fornitore>>({
-    codice: '',
+    codice: 'FOR-001',
     ragione_sociale: '',
     indirizzo: '',
     cap: '',
@@ -33,6 +35,30 @@ export function ModalFornitore({ isOpen, onClose, fornitori, onAggiungi }: Modal
     banca_2: '',
     condizioni_pagamento: ''
   });
+
+  useEffect(() => {
+    const fetchLastCode = async () => {
+      const { data, error } = await supabase
+        .from('fornitori')
+        .select('codice')
+        .order('codice', { ascending: false })
+        .limit(1);
+      
+      if (data && data.length > 0) {
+        const maxCode = data.reduce((max, item) => {
+          const num = parseInt(item.codice.replace('FOR-', ''));
+          return num > max ? num : max;
+        }, 0);
+        const nextCode = maxCode + 1;
+        setProssimoCodice(nextCode);
+        setFormData(prev => ({ ...prev, codice: `FOR-${String(nextCode).padStart(3, '0')}` }));
+      }
+    };
+    
+    if (isOpen && mostraForm) {
+      fetchLastCode();
+    }
+  }, [isOpen, mostraForm, fornitori]);
 
   const handleChange = (field: keyof Fornitore, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -51,8 +77,11 @@ export function ModalFornitore({ isOpen, onClose, fornitori, onAggiungi }: Modal
     
     if (!error) {
       toast.success(`✅ Fornitore ${formData.ragione_sociale} aggiunto con successo`);
+      
+      const newCodice = prossimoCodice + 1;
+      setProssimoCodice(newCodice);
       setFormData({
-        codice: '',
+        codice: `FOR-${String(newCodice).padStart(3, '0')}`,
         ragione_sociale: '',
         indirizzo: '',
         cap: '',
@@ -100,8 +129,8 @@ export function ModalFornitore({ isOpen, onClose, fornitori, onAggiungi }: Modal
                   <Input
                     id="codice"
                     value={formData.codice}
-                    onChange={(e) => handleChange('codice', e.target.value)}
-                    placeholder="es. FOR-001"
+                    readOnly
+                    className="bg-[hsl(var(--muted))] font-bold"
                   />
                 </div>
                 <div>
