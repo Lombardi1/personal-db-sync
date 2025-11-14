@@ -1,5 +1,5 @@
 import { Cartone } from '@/types';
-import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
+import { formatFormato, formatPrezzo, formatFogli, formatData } from '@/utils/formatters';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface TabellaGiacenzaProps {
@@ -49,7 +49,7 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{cartone.lavoro}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{cartone.magazzino}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">{formatPrezzo(cartone.prezzo)}</td>
-              <td className="px-2 py-1.5 text-xs whitespace-nowrap">{cartone.data_arrivo || '-'}</td>
+              <td className="px-2 py-1.5 text-xs whitespace-nowrap">{formatData(cartone.data_arrivo || '')}</td>
               <td className="px-2 py-1.5 text-xs whitespace-nowrap">
                 <div className="flex gap-0.5">
                   <button

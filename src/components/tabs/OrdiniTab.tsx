@@ -53,14 +53,7 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
             return normalizedField.includes(normalizedValue);
           });
         }
-        // Gestione speciale per il campo confermato
-        else if (key === 'confermato') {
-          filtered = filtered.filter(c => {
-            const isConfermato = c.confermato === true;
-            return value === 'true' ? isConfermato : !isConfermato;
-          });
-        }
-        // Gestione normale per gli altri campi
+        // Gestione normale per gli altri campi (rimosso filtro confermato come select)
         else {
           filtered = filtered.filter(c => {
             const field = c[key as keyof Cartone];
