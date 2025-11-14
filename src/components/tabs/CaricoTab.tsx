@@ -21,7 +21,6 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
     fogli: '',
     cliente: '',
     lavoro: '',
-    magazzino: '',
     prezzo: '',
     data_consegna: '',
     note: '',
@@ -58,7 +57,7 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
 
     if (!formData.fornitore || !formData.ordine || !formData.tipologia || 
         !formData.formato || !formData.grammatura || !formData.fogli || 
-        !formData.cliente || !formData.lavoro || !formData.magazzino || 
+        !formData.cliente || !formData.lavoro || 
         !formData.prezzo || !formData.data_consegna) {
       toast.error('⚠️ Compila tutti i campi obbligatori (*)');
       return;
@@ -74,7 +73,7 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
       fogli: parseInt(formData.fogli),
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
-      magazzino: formData.magazzino.trim(),
+      magazzino: '-',
       prezzo: parseFloat(formData.prezzo),
       data_consegna: formData.data_consegna,
       confermato: formData.confermato,
@@ -98,7 +97,6 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
         fogli: '',
         cliente: '',
         lavoro: '',
-        magazzino: '',
         prezzo: '',
         data_consegna: '',
         note: '',
@@ -244,20 +242,6 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
 
           <div>
             <label className="block font-medium mb-2 text-sm">
-              <i className="fas fa-map-marker-alt mr-1"></i> Magazzino *
-            </label>
-            <input
-              type="text"
-              value={formData.magazzino}
-              onChange={(e) => handleChange('magazzino', e.target.value)}
-              className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-              placeholder="es. Mag. B - S5"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-2 text-sm">
               <i className="fas fa-euro-sign mr-1"></i> Prezzo €/kg *
             </label>
             <input
@@ -336,7 +320,6 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
                 fogli: '',
                 cliente: '',
                 lavoro: '',
-                magazzino: '',
                 prezzo: '',
                 data_consegna: '',
                 note: '',
