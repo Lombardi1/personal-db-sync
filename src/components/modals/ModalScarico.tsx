@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Cartone } from '@/types';
 import { toast } from 'sonner';
+import { formatFormato } from '@/utils/formatters';
 
 interface ModalScaricoProps {
   codice: string;
@@ -52,8 +53,18 @@ export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScari
 
         <form onSubmit={handleSubmit} className="p-6">
           <div className="bg-[hsl(199,100%,97%)] rounded-lg p-4 mb-6 border-l-4 border-[hsl(var(--primary))]">
-            <div className="text-lg font-bold text-[hsl(var(--primary))] mb-2">
+            <div className="text-lg font-bold text-[hsl(var(--primary))] mb-3">
               Cartone: <span className="codice ml-2">{codice}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="bg-white px-3 py-2 rounded-lg shadow-sm">
+                <div className="text-xs text-[hsl(var(--muted-foreground))] mb-1">Fornitore</div>
+                <div className="font-semibold">{cartone.fornitore}</div>
+              </div>
+              <div className="bg-white px-3 py-2 rounded-lg shadow-sm">
+                <div className="text-xs text-[hsl(var(--muted-foreground))] mb-1">Formato</div>
+                <div className="font-semibold">{formatFormato(cartone.formato)}</div>
+              </div>
             </div>
             <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg font-bold text-lg shadow-sm">
               <i className="fas fa-layer-group text-[hsl(var(--success))]"></i>
@@ -76,6 +87,16 @@ export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScari
                 max={cartone.fogli}
                 required
               />
+              {quantita && parseInt(quantita) > 0 && parseInt(quantita) <= cartone.fogli && (
+                <div className="mt-2 p-3 bg-[hsl(142,76%,94%)] rounded-lg border-l-4 border-[hsl(142,76%,36%)]">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-calculator text-[hsl(142,76%,36%)]"></i>
+                    <span className="font-semibold text-[hsl(142,76%,36%)]">
+                      Rimanenza: {cartone.fogli - parseInt(quantita)} fogli
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
