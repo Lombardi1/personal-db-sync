@@ -1,8 +1,19 @@
+import { useState } from 'react';
 import { Cartone } from '@/types';
 import { formatFormato, formatPrezzo, formatFogli, formatData } from '@/utils/formatters';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface TabellaGiacenzaProps {
   cartoni: Cartone[];
@@ -12,6 +23,8 @@ interface TabellaGiacenzaProps {
 }
 
 export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini }: TabellaGiacenzaProps) {
+  const [codiceRiporto, setCodiceRiporto] = useState<string | null>(null);
+
   const copiaRiga = (cartone: Cartone) => {
     const testo = `${cartone.codice}\t${cartone.fornitore}\t${cartone.ordine}\t${cartone.ddt || '-'}\t${cartone.tipologia}\t${formatFormato(cartone.formato)}\t${cartone.grammatura}\t${formatFogli(cartone.fogli)}\t${cartone.cliente}\t${cartone.lavoro}\t${cartone.magazzino}\t${formatPrezzo(cartone.prezzo)}\t${formatData(cartone.data_arrivo || '')}`;
     navigator.clipboard.writeText(testo).then(() => {
@@ -78,7 +91,7 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
                     <i className="fas fa-chart-line text-xs"></i>
                   </button>
                   <button
-                    onClick={() => onRiportaOrdini(cartone.codice)}
+                    onClick={() => setCodiceRiporto(cartone.codice)}
                     className="w-7 h-7 flex items-center justify-center rounded bg-[hsl(217,91%,88%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(217,91%,78%)] transition-colors"
                     title="Riporta in ordini"
                   >
@@ -99,6 +112,30 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
       </table>
       </div>
       <ScrollBar orientation="horizontal" />
+
+      <AlertDialog open={!!codiceRiporto} onOpenChange={() => setCodiceRiporto(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma riporto in ordini</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler riportare il cartone <strong>{codiceRiporto}</strong> in ordini in arrivo?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (codiceRiporto) {
+                  onRiportaOrdini(codiceRiporto);
+                  setCodiceRiporto(null);
+                }
+              }}
+            >
+              Conferma
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ScrollArea>
   );
 }
