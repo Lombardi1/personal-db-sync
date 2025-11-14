@@ -76,12 +76,13 @@ export function useCartoni() {
     return { error };
   };
 
-  const spostaInGiacenza = async (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number) => {
+  const spostaInGiacenza = async (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number, magazzino?: string) => {
     const ordine = ordini.find(o => o.codice === codice);
     if (!ordine) return { error: new Error('Ordine non trovato') };
 
     const fogliFinali = fogliEffettivi !== undefined ? fogliEffettivi : ordine.fogli;
-    const cartoneGiacenza = { ...ordine, ddt, data_arrivo: dataArrivo, fogli: fogliFinali };
+    const magazzinoFinale = magazzino || ordine.magazzino || '-';
+    const cartoneGiacenza = { ...ordine, ddt, data_arrivo: dataArrivo, fogli: fogliFinali, magazzino: magazzinoFinale };
     delete cartoneGiacenza.data_consegna;
     delete cartoneGiacenza.confermato;
 

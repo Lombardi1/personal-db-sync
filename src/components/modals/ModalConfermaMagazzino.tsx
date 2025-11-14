@@ -6,18 +6,19 @@ interface ModalConfermaMagazzinoProps {
   codice: string;
   ordine: Cartone;
   onClose: () => void;
-  onConferma: (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number) => Promise<{ error: any }>;
+  onConferma: (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number, magazzino?: string) => Promise<{ error: any }>;
 }
 
 export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: ModalConfermaMagazzinoProps) {
   const [ddt, setDdt] = useState('');
   const [dataArrivo, setDataArrivo] = useState('');
   const [fogliEffettivi, setFogliEffettivi] = useState<string>(String(ordine.fogli));
+  const [magazzino, setMagazzino] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!ddt || !dataArrivo || !fogliEffettivi) {
+    if (!ddt || !dataArrivo || !fogliEffettivi || !magazzino) {
       toast.error('⚠️ Compila tutti i campi obbligatori.');
       return;
     }
@@ -30,7 +31,7 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
 
     onClose();
     
-    const { error } = await onConferma(codice, ddt, dataArrivo, fogliNum);
+    const { error } = await onConferma(codice, ddt, dataArrivo, fogliNum, magazzino.trim());
     if (!error) {
       const diff = fogliNum - ordine.fogli;
       const message = diff === 0 
@@ -91,6 +92,20 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
                 value={dataArrivo}
                 onChange={(e) => setDataArrivo(e.target.value)}
                 className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-2">
+                <i className="fas fa-map-marker-alt mr-1"></i> Magazzino *
+              </label>
+              <input
+                type="text"
+                value={magazzino}
+                onChange={(e) => setMagazzino(e.target.value)}
+                className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                placeholder="es. Mag. B - S5"
                 required
               />
             </div>
