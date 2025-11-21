@@ -441,7 +441,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     autoTable(doc, {
       startY: y,
       head: [['Resa', 'Mezzo', 'Banca']],
-      body: [['', '', '']],
+      body: [['', '', fornitore?.banca || '']], // Popola il campo Banca qui
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
