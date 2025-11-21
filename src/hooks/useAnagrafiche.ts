@@ -297,9 +297,11 @@ export function useAnagrafiche() {
     console.log(`[useAnagrafiche] Valore di 'considera_iva' inviato a Supabase:`, updateData.considera_iva); // LOG DI DEBUG
     const { data, error } = await supabase.from('fornitori').update(updateData).eq('id', id).select().single();
     if (error) {
+      console.error(`[useAnagrafiche] Errore Supabase durante l'aggiornamento fornitore ${id}:`, error); // LOG ERRORE
       toast.error(`Errore modifica fornitore: ${error.message}`);
       return { success: false, error };
     }
+    console.log(`[useAnagrafiche] Aggiornamento fornitore ${id} riuscito. Dati ricevuti da Supabase:`, data); // LOG SUCCESSO
     toast.success(`✅ Fornitore '${fornitore.nome || id}' modificato con successo!`);
     await loadAnagrafiche(); // Ricarica i dati dopo la modifica
     return { success: true, data };
@@ -317,7 +319,7 @@ export function useAnagrafiche() {
       toast.error(`Errore eliminazione fornitore: ${error.message}`);
       return { success: false, error };
     }
-    toast.success('✅ Cliente eliminato con successo!');
+    toast.success('✅ Fornitore eliminato con successo!');
     await loadAnagrafiche(); // Ricarica i dati dopo l'eliminazione
     return { success: true };
   };
