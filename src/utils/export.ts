@@ -321,6 +321,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     const fornitore = fornitori.find(f => f.id === ordine.fornitore_id);
     console.log(`[exportOrdineAcquistoPDF] Fornitore trovato:`, JSON.stringify(fornitore, null, 2));
 
+    // Imposta il font predefinito su grassetto all'inizio
+    doc.setFont(undefined, 'bold');
 
     // ========== HEADER SECTION ==========
     // Logo AG Lombardi (sinistra)
@@ -328,12 +330,10 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     
     // Info azienda (sinistra, sotto logo)
     doc.setFontSize(12); // Rimpicciolito da 14 a 12
-    doc.setFont(undefined, 'bold');
     doc.text('ARTI GRAFICHE', 40, y + 5); // Spostato a sinistra
     doc.setFontSize(9); // Rimpicciolito da 10 a 9
     doc.text('Lombardi SRL', 40, y + 9); // Spostato a sinistra e riposizionato
     
-    doc.setFont(undefined, 'normal');
     doc.setFontSize(7); // Rimpicciolito da 8 a 7
     doc.text('C.P. 25050 PASSIRANO (BRESCIA)', 40, y + 14); // Spostato a sinistra e riposizionato
     doc.text('VIA S.ANTONIO, 51', 40, y + 17); // Spostato a sinistra e riposizionato
@@ -341,13 +341,11 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.text('TELEFAX 0306577262', 40, y + 23); // Spostato a sinistra e riposizionato
     doc.text('E-Mail: info@aglombardi.it', 40, y + 26); // Spostato a sinistra e riposizionato
     
-    doc.setFont(undefined, 'bold');
     doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 30); // Spostato a sinistra e riposizionato
-    doc.setFont(undefined, 'normal');
+    doc.setFontSize(6); // Rimpicciolito da 7 a 6
     doc.text('R.E.A. di BS N. 169198 M. BS 012689', 40, y + 33); // Spostato a sinistra e riposizionato
     doc.text('C.F. / P.IVA IT 00320390172', 40, y + 36); // Spostato a sinistra e riposizionato
     doc.text('Banche: agenzie di Ospitaletto BS', 40, y + 39); // Spostato a sinistra e riposizionato
-    doc.setFontSize(6); // Rimpicciolito da 7 a 6
     doc.text('Banca Popolare di Sondrio', 50, y + 42); // Spostato a sinistra e riposizionato
     doc.text('Banca Popolare di Bergamo', 50, y + 45); // Spostato a sinistra e riposizionato
 
@@ -355,13 +353,11 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // Box "Spett." (destra, in alto)
     doc.setFontSize(9);
-    doc.setFont(undefined, 'bold');
     doc.rect(130, 10, 70, 30); // Altezza aumentata a 30mm, posizione Y fissa a 10
     doc.text('Spett.', 132, 15);
     doc.setFontSize(8);
     doc.text(fornitore?.nome || 'N/A', 132, 20);
     
-    doc.setFont(undefined, 'normal');
     doc.setFontSize(7);
     if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, 25);
     if (fornitore?.citta) {
@@ -372,11 +368,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     
     // Box "Destinazione merce" (destra, sotto Spett.)
     doc.rect(130, 41, 70, 25); // Altezza aumentata a 25mm, posizione Y fissa a 41
-    doc.setFont(undefined, 'bold');
     doc.setFontSize(8);
     doc.text('Destinazione merce', 132, 45);
     doc.text('Arti Grafiche Snc', 132, 50);
-    doc.setFont(undefined, 'normal');
     doc.setFontSize(7);
     doc.text('Via S.Antonio, 51', 132, 54);
     doc.text('25050 - Passirano (BS)', 132, 58);
@@ -386,7 +380,6 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // ========== TIPO DOCUMENTO ==========
     doc.setFillColor(220, 220, 220);
     doc.rect(10, y, 50, 8, 'F');
-    doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
     doc.text('Tipo Documento', 12, y + 5);
     
@@ -410,7 +403,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [infoHeaders],
       body: [infoData],
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2 },
+      styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold' }, // Aggiunto fontStyle: 'bold'
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.5, lineColor: [0, 0, 0] },
       bodyStyles: { lineWidth: 0.5, lineColor: [0, 0, 0] },
       margin: { left: 10, right: 10 },
@@ -424,7 +417,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [['Resa', 'Mezzo', 'Banca']],
       body: [['', '', '']],
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8 },
+      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold' }, // Aggiunto fontStyle: 'bold'
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.5, lineColor: [0, 0, 0] },
       bodyStyles: { lineWidth: 0.5, lineColor: [0, 0, 0] },
       margin: { left: 10, right: 10 },
@@ -476,7 +469,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: articlesHead,
       body: articlesBody,
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle' }, // Increased font size and padding
+      styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle', fontStyle: 'bold' }, // Aggiunto fontStyle: 'bold'
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 9 }, // Increased font size
       bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 },
       columnStyles: {
@@ -500,7 +493,6 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Box "Condizioni di vendita"
     doc.rect(10, footerY, 120, 20);
     doc.setFontSize(8);
-    doc.setFont(undefined, 'bold');
     doc.text('Condizioni di vendita', 12, footerY + 5);
 
     // Calcola IVA e Totale con IVA in base a considera_iva del fornitore
@@ -523,7 +515,6 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // Totale ordine
     doc.rect(10, footerY + 21, 120, 10);
-    doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
     doc.text(`Totale ordine EUR ${ivaTextDisplay}`, 12, footerY + 27); // Aggiornato testo
     doc.text(totalFinal.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
@@ -537,7 +528,6 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
       doc.addImage(logoFSC, 'JPEG', fscLogoX, fscLogoY, fscLogoWidth, fscLogoHeight);
       doc.setFontSize(7); // Rimpicciolito il font a 7
-      doc.setFont(undefined, 'normal');
       doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', pageWidth - 10, footerY + 42, { maxWidth: 190, align: 'right' }); // Abbassato a footerY + 42
     } catch (error) {
       console.warn('Logo FSC non disponibile:', error);
@@ -563,5 +553,5 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     if (targetWindow) {
       targetWindow.close();
     }
-    }
+  }
 }
