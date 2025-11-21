@@ -53,6 +53,7 @@ export interface Cliente extends AnagraficaBase {
 }
 export interface Fornitore extends AnagraficaBase {
   tipo_fornitore?: string; // Nuovo campo per il tipo di fornitore
+  considera_iva?: boolean; // NUOVO CAMPO ANCHE PER FORNITORE
 }
 
 // Nuova interfaccia per gli articoli, ora nidificata nell'OrdineAcquisto

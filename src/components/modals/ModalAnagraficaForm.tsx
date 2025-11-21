@@ -57,9 +57,9 @@ const anagraficaSchema = z.object({
   pec: z.string().email('PEC non valida').max(255, 'PEC troppo lunga').optional().or(z.literal('')),
   sdi: z.string().max(20, 'Codice SDI troppo lungo').optional().or(z.literal('')),
   note: z.string().max(1000, 'Note troppo lunghe').optional().or(z.literal('')),
-  condizione_pagamento: z.string().max(255, 'Condizione di pagamento troppo lunga').optional().or(z.literal('')), // NUOVO
+  condizione_pagamento: z.string().max(255, 'Condizione di pagamento troppo lunga').optional().or(z.literal('')),
   tipo_fornitore: z.string().optional().or(z.literal('')),
-  considera_iva: z.boolean().optional(), // NUOVO
+  considera_iva: z.boolean().optional(), // Ora è opzionale per entrambi
 });
 
 export function ModalAnagraficaForm({
@@ -84,7 +84,7 @@ export function ModalAnagraficaForm({
   });
 
   const watchedTipoFornitore = watch('tipo_fornitore' as any);
-  const watchedConsideraIva = watch('considera_iva' as any); // NUOVO
+  const watchedConsideraIva = watch('considera_iva' as any);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -94,11 +94,11 @@ export function ModalAnagraficaForm({
           if (type === 'cliente') {
             const maxCode = await fetchMaxClientCodeFromDB();
             resetClientCodeGenerator(maxCode);
-            defaultValues = { ...defaultValues, codice_anagrafica: generateNextClientCode(), considera_iva: false }; // Default considera_iva
+            defaultValues = { ...defaultValues, codice_anagrafica: generateNextClientCode(), considera_iva: false };
           } else if (type === 'fornitore') {
             const maxCode = await fetchMaxFornitoreCodeFromDB();
             resetFornitoreCodeGenerator(maxCode);
-            defaultValues = { ...defaultValues, codice_anagrafica: generateNextFornitoreCode() };
+            defaultValues = { ...defaultValues, codice_anagrafica: generateNextFornitoreCode(), considera_iva: false }; // Default considera_iva anche per fornitore
           }
         }
         reset(defaultValues);
@@ -107,9 +107,10 @@ export function ModalAnagraficaForm({
         } else if (type === 'fornitore') {
           setValue('tipo_fornitore' as any, '');
         }
-        if (type === 'cliente' && 'considera_iva' in defaultValues) { // NUOVO
+        // Imposta il valore di considera_iva per entrambi i tipi
+        if ('considera_iva' in defaultValues) {
           setValue('considera_iva' as any, defaultValues.considera_iva);
-        } else if (type === 'cliente') { // NUOVO
+        } else {
           setValue('considera_iva' as any, false);
         }
       };
@@ -121,13 +122,16 @@ export function ModalAnagraficaForm({
     try {
       let dataToSubmit: any = { ...data };
 
+      // Rimuovi tipo_fornitore se è un cliente
       if (type === 'cliente') {
         const { tipo_fornitore, ...rest } = dataToSubmit as any;
         dataToSubmit = rest;
-      } else if (type === 'fornitore') { // NUOVO: Rimuovi considera_iva per i fornitori
-        const { considera_iva, ...rest } = dataToSubmit as any;
-        dataToSubmit = rest;
       }
+      // Rimuovi considera_iva se è un fornitore (NON PIÙ NECESSARIO, ORA È COMUNE)
+      // else if (type === 'fornitore') {
+      //   const { considera_iva, ...rest } = dataToSubmit as any;
+      //   dataToSubmit = rest;
+      // }
 
       if (!initialData) {
         const { id, created_at, ...dataWithoutIdAndCreatedAt } = dataToSubmit;
@@ -307,27 +311,26 @@ export function ModalAnagraficaForm({
               {errors.note && <p className="text-destructive text-xs mt-1">{errors.note.message}</p>}
             </div>
           </div>
-          {type === 'cliente' && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="considera_iva" className="text-right col-span-1">
-                Considera IVA
-              </Label>
-              <div className="col-span-3 flex items-center">
-                <input
-                  type="checkbox"
-                  id="considera_iva"
-                  {...register('considera_iva')}
-                  checked={watchedConsideraIva}
-                  onChange={(e) => setValue('considera_iva', e.target.checked, { shouldValidate: true })}
-                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                />
-                <label htmlFor="considera_iva" className="ml-2 text-sm text-gray-700">
-                  Applica IVA al totale
-                </label>
-                {errors.considera_iva && <p className="text-destructive text-xs mt-1">{errors.considera_iva.message}</p>}
-              </div>
+          {/* Checkbox Considera IVA, ora visibile per entrambi i tipi */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="considera_iva" className="text-right col-span-1">
+              Considera IVA
+            </Label>
+            <div className="col-span-3 flex items-center">
+              <input
+                type="checkbox"
+                id="considera_iva"
+                {...register('considera_iva')}
+                checked={watchedConsideraIva}
+                onChange={(e) => setValue('considera_iva', e.target.checked, { shouldValidate: true })}
+                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+              />
+              <label htmlFor="considera_iva" className="ml-2 text-sm text-gray-700">
+                Applica IVA al totale
+              </label>
+              {errors.considera_iva && <p className="text-destructive text-xs mt-1">{errors.considera_iva.message}</p>}
             </div>
-          )}
+          </div>
           <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto text-sm">
               Annulla

@@ -28,8 +28,8 @@ const MOCK_CLIENTI: Cliente[] = [
     pec: 'pec@clientealpha.it',
     sdi: 'XXXXXXX',
     note: 'Cliente storico per cartoni personalizzati.',
-    condizione_pagamento: 'Bonifico 30gg', // NUOVO
-    considera_iva: true, // NUOVO
+    condizione_pagamento: 'Bonifico 30gg',
+    considera_iva: true,
     created_at: new Date().toISOString(),
   },
   {
@@ -46,8 +46,8 @@ const MOCK_CLIENTI: Cliente[] = [
     pec: '',
     sdi: '1234567',
     note: 'Nuovo cliente, potenziale grande volume.',
-    condizione_pagamento: 'Bonifico 60gg', // NUOVO
-    considera_iva: false, // NUOVO
+    condizione_pagamento: 'Bonifico 60gg',
+    considera_iva: false,
     created_at: new Date().toISOString(),
   },
 ];
@@ -70,7 +70,8 @@ const MOCK_FORNITORI: Fornitore[] = [
     pec: 'pec@imballex.it',
     sdi: 'ABCDEFG',
     note: 'Fornitore principale di cartoni ondulati.',
-    condizione_pagamento: 'Bonifico 90gg', // NUOVO
+    condizione_pagamento: 'Bonifico 90gg',
+    considera_iva: true, // NUOVO: Aggiunto considera_iva anche per i fornitori mock
     created_at: new Date().toISOString(),
   },
   {
@@ -89,7 +90,8 @@ const MOCK_FORNITORI: Fornitore[] = [
     pec: '',
     sdi: '',
     note: 'Specializzati in inchiostri ecologici.',
-    condizione_pagamento: 'Bonifico 60gg', // NUOVO
+    condizione_pagamento: 'Bonifico 60gg',
+    considera_iva: false, // NUOVO
     created_at: new Date().toISOString(),
   },
   {
@@ -108,7 +110,8 @@ const MOCK_FORNITORI: Fornitore[] = [
     pec: 'ordini@pec.collaforte.it',
     sdi: '7654321',
     note: 'Fornitore di colle industriali.',
-    condizione_pagamento: 'Bonifico 30gg', // NUOVO
+    condizione_pagamento: 'Bonifico 30gg',
+    considera_iva: true, // NUOVO
     created_at: new Date().toISOString(),
   },
 ];
@@ -137,8 +140,8 @@ export function useAnagrafiche() {
 
     try {
       const [clientiRes, fornitoriRes] = await Promise.all([
-        supabase.from('clienti').select('*, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true }), // NUOVI CAMPI
-        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento').order('nome', { ascending: true }) // NUOVO CAMPO
+        supabase.from('clienti').select('*, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true }),
+        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true }) // NUOVO CAMPO considera_iva
       ]);
 
       console.log('useAnagrafiche: Risposta Supabase per clienti:', clientiRes);
@@ -184,7 +187,7 @@ export function useAnagrafiche() {
   const addCliente = async (cliente: Omit<Cliente, 'id' | 'created_at'>) => {
     if (useMockData) {
       console.log('Mock: Aggiungi cliente', cliente);
-      const newMockCliente = { ...cliente, id: `mock-c-${Date.now()}`, codice_anagrafica: generateNextClientCode(), created_at: new Date().toISOString(), considera_iva: cliente.considera_iva || false }; // NUOVO
+      const newMockCliente = { ...cliente, id: `mock-c-${Date.now()}`, codice_anagrafica: generateNextClientCode(), created_at: new Date().toISOString(), considera_iva: cliente.considera_iva || false };
       setClienti(prev => [...prev, newMockCliente]); // Aggiorna lo stato mock
       toast.success(`✅ Mock: Cliente '${cliente.nome}' aggiunto con successo!`);
       return { success: true, data: newMockCliente };
@@ -243,7 +246,7 @@ export function useAnagrafiche() {
   const addFornitore = async (fornitore: Omit<Fornitore, 'id' | 'created_at'>) => {
     if (useMockData) {
       console.log('Mock: Aggiungi fornitore', fornitore);
-      const newMockFornitore = { ...fornitore, id: `mock-f-${Date.now()}`, codice_anagrafica: generateNextFornitoreCode(), created_at: new Date().toISOString() };
+      const newMockFornitore = { ...fornitore, id: `mock-f-${Date.now()}`, codice_anagrafica: generateNextFornitoreCode(), created_at: new Date().toISOString(), considera_iva: fornitore.considera_iva || false }; // NUOVO
       setFornitori(prev => [...prev, newMockFornitore]); // Aggiorna lo stato mock
       toast.success(`✅ Mock: Fornitore '${fornitore.nome}' aggiunto con successo!`);
       return { success: true, data: newMockFornitore };

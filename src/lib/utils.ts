@@ -1,5 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { twMerge }m "tailwind-merge";
 import { AnagraficaBase, Fornitore, Cliente } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
@@ -15,8 +15,8 @@ export function normalizeAnagraficaData(data: AnagraficaBase | Fornitore | Clien
     return {
       nome: '', indirizzo: '', citta: '', cap: '', provincia: '',
       partita_iva: '', codice_fiscale: '', telefono: '', email: '',
-      pec: '', sdi: '', note: '', condizione_pagamento: '', // NUOVO
-      considera_iva: false // NUOVO (default per cliente)
+      pec: '', sdi: '', note: '', condizione_pagamento: '',
+      considera_iva: false // Default considera_iva per entrambi
     };
   }
   
@@ -33,16 +33,17 @@ export function normalizeAnagraficaData(data: AnagraficaBase | Fornitore | Clien
     pec: data.pec || '',
     sdi: data.sdi || '',
     note: data.note || '',
-    condizione_pagamento: data.condizione_pagamento || '', // NUOVO
+    condizione_pagamento: data.condizione_pagamento || '',
     ...(data.id && { id: data.id }),
     ...(data.created_at && { created_at: data.created_at }),
   };
   
-  // Se è un fornitore, aggiunge tipo_fornitore
+  // Se è un fornitore, aggiunge tipo_fornitore e considera_iva
   if ('tipo_fornitore' in data) {
     return {
       ...baseData,
-      tipo_fornitore: (data as Fornitore).tipo_fornitore || ''
+      tipo_fornitore: (data as Fornitore).tipo_fornitore || '',
+      considera_iva: (data as Fornitore).considera_iva || false // NUOVO
     } as Fornitore;
   }
   
@@ -50,7 +51,7 @@ export function normalizeAnagraficaData(data: AnagraficaBase | Fornitore | Clien
   if ('considera_iva' in data) {
     return {
       ...baseData,
-      considera_iva: (data as Cliente).considera_iva || false // NUOVO
+      considera_iva: (data as Cliente).considera_iva || false
     } as Cliente;
   }
   
