@@ -161,6 +161,10 @@ export function useAnagrafiche() {
         setFornitori([]); // Assicurati che lo stato sia vuoto in caso di errore
       } else if (fornitoriRes.data) {
         setFornitori(fornitoriRes.data);
+        // NEW DEBUG LOG: Log considera_iva for each supplier
+        fornitoriRes.data.forEach(f => {
+          console.log(`[DEBUG-ANAGRAFICHE] Fornitore: ${f.nome}, considera_iva: ${f.considera_iva}`);
+        });
       }
 
     } catch (error) {
