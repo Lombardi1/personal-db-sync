@@ -52,9 +52,12 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
   };
 
   const handleFormSubmit = async (data: AnagraficaBase) => {
+    console.log('[FornitoriTab] handleFormSubmit received data:', data); // NEW LOG
     if (editingFornitore) {
+      console.log('[FornitoriTab] Calling updateFornitore with ID:', editingFornitore.id, 'and data:', data); // NEW LOG
       await updateFornitore(editingFornitore.id!, data as Partial<Omit<Fornitore, 'id' | 'created_at'>>);
     } else {
+      console.log('[FornitoriTab] Calling addFornitore with data:', data); // NEW LOG
       await addFornitore(data as Omit<Fornitore, 'id' | 'created_at'>);
     }
   };
