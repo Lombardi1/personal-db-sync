@@ -209,18 +209,10 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           };
       }
 
-      // 5. Final check: Ensure all articles are in a "sent" state ('inviato', 'confermato', 'ricevuto')
-      const allArticlesSent = orderToProcess.articoli.every(art => 
-          art.stato === 'inviato' || art.stato === 'confermato' || art.stato === 'ricevuto'
-      );
-
-      if (allArticlesSent) {
-          console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
-          exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
-      } else {
-          notifications.showError("Non tutti gli articoli sono stati inviati. Impossibile generare il PDF.");
-          newWindow.close();
-      }
+      // 5. Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
+      console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+      
 
     } catch (error: any) {
       console.error('Errore durante l\'aggiornamento dello stato o la generazione del PDF:', error);
@@ -303,16 +295,10 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
         };
       }
 
-      const allArticlesSent = orderToProcess.articoli.every(art => 
-        art.stato === 'inviato' || art.stato === 'confermato' || art.stato === 'ricevuto'
-      );
-
-      if (allArticlesSent) {
-        console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
-      } else {
-        notifications.showError("Non tutti gli articoli sono stati inviati. Impossibile generare il PDF.");
-      }
+      // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
+      console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      
 
     } catch (error: any) {
       console.error('Errore durante l\'aggiornamento dello stato o il download del PDF:', error);
