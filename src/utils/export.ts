@@ -474,8 +474,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 7 },
       bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 },
       columnStyles: {
-        0: { cellWidth: 20 }, // Articolo (aumentato per CTN o descrizione breve)
-        1: { cellWidth: 75 }, // Descrizione (leggermente ridotto, ma con linebreak)
+        0: { cellWidth: 15 }, // Articolo (ridotto per CTN)
+        1: { cellWidth: 80 }, // Descrizione (aumentato per più spazio)
         2: { cellWidth: 10 }, // UM
         3: { cellWidth: 22, halign: 'right' }, // Quantità
         4: { cellWidth: 15, halign: 'right' }, // Prezzo
