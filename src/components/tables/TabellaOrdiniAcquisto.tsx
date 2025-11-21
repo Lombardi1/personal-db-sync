@@ -89,14 +89,14 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
   };
 
   const handleActionClick = (ordine: OrdineAcquisto, type: 'cancel' | 'delete') => {
-    console.log(`[TabellaOrdiniAcquisto] handleActionClick chiamato per ordine: ${ordine.numero_ordine}, tipo: ${type}`);
+    console.log(`[TabellaOrdiniAcquisto] handleActionClick chiamato per ordine: ${ordine.numero_ordine}, tipo: ${type}, ID: ${ordine.id}`); // Added ID
     setOrdineToActOn(ordine);
     setActionType(type);
     setIsActionAlertOpen(true);
   };
 
   const handleConfirmAction = () => {
-    console.log(`[TabellaOrdiniAcquisto] handleConfirmAction chiamato. Ordine: ${ordineToActOn?.numero_ordine}, Tipo azione: ${actionType}`);
+    console.log(`[TabellaOrdiniAcquisto] handleConfirmAction chiamato. Ordine: ${ordineToActOn?.numero_ordine}, Tipo azione: ${actionType}, ID: ${ordineToActOn?.id}`); // Added ID
     if (ordineToActOn?.id && ordineToActOn?.numero_ordine && actionType) {
       if (actionType === 'cancel') {
         console.log(`[TabellaOrdiniAcquisto] Chiamando onCancel per ID: ${ordineToActOn.id}`);
