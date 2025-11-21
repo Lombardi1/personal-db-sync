@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { OrdineAcquisto, Fornitore, Cliente, ArticoloOrdineAcquisto, AziendaInfo } from '@/types'; // Importa AziendaInfo
 import { formatData, formatFormato, formatGrammatura, getStatoText, getStatoBadgeClass } from '@/utils/formatters';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Edit, Trash2, FileText, ChevronDown, ChevronUp, CopyPlus, XCircle, Printer } from 'lucide-react';
 import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
 import {
@@ -144,7 +143,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       let orderToProcess: OrdineAcquisto = {
           ...latestOrder,
           fornitore_nome: latestOrder.fornitori?.nome || 'N/A',
-          fornitore_tipo: latestOrder.fornitore_tipo || 'N/A', // Usa fornitore_tipo direttamente
+          fornitore_tipo: latestOrder.fornitori?.tipo_fornitore || 'N/A', // Usa fornitore_tipo direttamente
           articoli: (latestOrder.articoli || []) as ArticoloOrdineAcquisto[],
       };
 
@@ -376,7 +375,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
   });
 
   return (
-    <ScrollArea className="w-full rounded-md border">
+    <div className="w-full rounded-md border overflow-x-auto"> {/* Rimosso ScrollArea e ScrollBar */}
       <div className="w-full min-w-max">
         <table id="tab-ordini-acquisto" className="w-full border-collapse text-xs table-auto">
           <thead>
@@ -539,7 +538,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           </tbody>
         </table>
       </div>
-      <ScrollBar orientation="horizontal" />
+      {/* <ScrollBar orientation="horizontal" /> */} {/* Rimosso ScrollBar */}
 
       <AlertDialog open={isActionAlertOpen} onOpenChange={setIsActionAlertOpen}>
         <AlertDialogContent className="sm:max-w-[425px]">
@@ -568,6 +567,6 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </ScrollArea>
+    </div>
   );
 }
