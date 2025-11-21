@@ -38,10 +38,11 @@ export default function Anagrafica() {
     }
   }, [location.search]);
 
-  const handleAssignMissingCodes = async () => {
-    await assignMissingAnagraficaCodes();
-    await loadAnagrafiche(); // Ricarica i dati per mostrare i nuovi codici
-  };
+  // La funzione handleAssignMissingCodes e il suo import non sono più necessari se il pulsante viene rimosso
+  // const handleAssignMissingCodes = async () => {
+  //   await assignMissingAnagraficaCodes();
+  //   await loadAnagrafiche(); // Ricarica i dati per mostrare i nuovi codici
+  // };
 
   if (authLoading || anagraficheLoading) {
     return (
@@ -68,8 +69,8 @@ export default function Anagrafica() {
             <i className="fas fa-address-book"></i> Gestione Anagrafiche
           </h2>
           <div className="flex gap-2">
-            {/* Pulsante temporaneo per assegnare i codici mancanti */}
-            <Button 
+            {/* Pulsante temporaneo per assegnare i codici mancanti - RIMOSSO */}
+            {/* <Button 
               onClick={handleAssignMissingCodes} 
               variant="secondary" 
               size="sm" 
@@ -78,7 +79,7 @@ export default function Anagrafica() {
             >
               <i className="fas fa-magic mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4"></i>
               Assegna Codici Mancanti
-            </Button>
+            </Button> */}
             <Button onClick={() => navigate('/summary')} variant="outline" size="sm" className="text-sm">
               <Home className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
               Torna alla Dashboard
