@@ -238,7 +238,7 @@ export function ModalAnagraficaForm({
                       <SelectValue placeholder="Seleziona banca" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nessuna</SelectItem> {/* Opzione per deselezionare */}
+                      <SelectItem value={null}>Nessuna</SelectItem> {/* Modificato: value={null} */}
                       {bancheDisponibili.map((bancaOption, index) => (
                         <SelectItem key={index} value={bancaOption}>
                           {bancaOption}
