@@ -414,7 +414,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       margin: { left: 10, right: 10 },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 2;
+    y = (doc as any).lastAutoTable.finalY + 5; // Increased space after info table
 
     // Seconda riga: Resa, Mezzo, Banca
     autoTable(doc, {
@@ -428,7 +428,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       margin: { left: 10, right: 10 },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 5;
+    y = (doc as any).lastAutoTable.finalY + 8; // Increased space after second info table
 
     // ========== TABELLA ARTICOLI ==========
     const isCartone = fornitore?.tipo_fornitore === 'Cartone';
@@ -474,8 +474,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: articlesHead,
       body: articlesBody,
       theme: 'grid',
-      styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle' },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 7 },
+      styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle' }, // Increased font size and padding
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 9 }, // Increased font size
       bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 },
       columnStyles: {
         0: { cellWidth: 15 }, // Articolo (ridotto per CTN)
