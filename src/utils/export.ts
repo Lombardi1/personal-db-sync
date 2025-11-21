@@ -323,42 +323,43 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // Imposta il font predefinito su grassetto all'inizio
     doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0); // Imposta il colore del testo a nero per tutto il documento
 
     // ========== HEADER SECTION ==========
     // Logo AG Lombardi (sinistra)
     doc.addImage(logoAG, 'JPEG', 10, y, 25, 25); // Rimpicciolito a 25x25mm
     
     // Info azienda (sinistra, sotto logo)
-    doc.setFontSize(12); // Rimpicciolito da 14 a 12
-    doc.text('ARTI GRAFICHE', 40, y + 5); // Spostato a sinistra
-    doc.setFontSize(9); // Rimpicciolito da 10 a 9
-    doc.text('Lombardi SRL', 40, y + 9); // Spostato a sinistra e riposizionato
+    doc.setFontSize(12); 
+    doc.text('ARTI GRAFICHE', 40, y + 5); 
+    doc.setFontSize(9); 
+    doc.text('Lombardi SRL', 40, y + 9); 
     
-    doc.setFontSize(7); // Rimpicciolito da 8 a 7
-    doc.text('C.P. 25050 PASSIRANO (BRESCIA)', 40, y + 14); // Spostato a sinistra e riposizionato
-    doc.text('VIA S.ANTONIO, 51', 40, y + 17); // Spostato a sinistra e riposizionato
-    doc.text('TEL. 030657152 - 0306577500', 40, y + 20); // Spostato a sinistra e riposizionato
-    doc.text('TELEFAX 0306577262', 40, y + 23); // Spostato a sinistra e riposizionato
-    doc.text('E-Mail: info@aglombardi.it', 40, y + 26); // Spostato a sinistra e riposizionato
+    doc.setFontSize(8); // Uniformato a 8
+    doc.text('C.P. 25050 PASSIRANO (BRESCIA)', 40, y + 14); 
+    doc.text('VIA S.ANTONIO, 51', 40, y + 17); 
+    doc.text('TEL. 030657152 - 0306577500', 40, y + 20); 
+    doc.text('TELEFAX 0306577262', 40, y + 23); 
+    doc.text('E-Mail: info@aglombardi.it', 40, y + 26); 
     
-    doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 30); // Spostato a sinistra e riposizionato
-    doc.setFontSize(6); // Rimpicciolito da 7 a 6
-    doc.text('R.E.A. di BS N. 169198 M. BS 012689', 40, y + 33); // Spostato a sinistra e riposizionato
-    doc.text('C.F. / P.IVA IT 00320390172', 40, y + 36); // Spostato a sinistra e riposizionato
-    doc.text('Banche: agenzie di Ospitaletto BS', 40, y + 39); // Spostato a sinistra e riposizionato
-    doc.text('Banca Popolare di Sondrio', 50, y + 42); // Spostato a sinistra e riposizionato
-    doc.text('Banca Popolare di Bergamo', 50, y + 45); // Spostato a sinistra e riposizionato
+    doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 30); 
+    doc.setFontSize(7); // Uniformato a 7
+    doc.text('R.E.A. di BS N. 169198 M. BS 012689', 40, y + 33); 
+    doc.text('C.F. / P.IVA IT 00320390172', 40, y + 36); 
+    doc.text('Banche: agenzie di Ospitaletto BS', 40, y + 39); 
+    doc.text('Banca Popolare di Sondrio', 50, y + 42); 
+    doc.text('Banca Popolare di Bergamo', 50, y + 45); 
 
-    y += 55; // Ridotto l'incremento di y per compensare le dimensioni ridotte
+    y += 55; 
 
     // Box "Spett." (destra, in alto)
-    doc.setFontSize(9);
-    doc.rect(130, 10, 70, 30); // Altezza aumentata a 30mm, posizione Y fissa a 10
+    doc.setFontSize(9); // Titolo del box
+    doc.rect(130, 10, 70, 30); 
     doc.text('Spett.', 132, 15);
-    doc.setFontSize(8);
+    doc.setFontSize(8); // Contenuto del box
     doc.text(fornitore?.nome || 'N/A', 132, 20);
     
-    doc.setFontSize(7);
+    doc.setFontSize(8); // Contenuto del box
     if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, 25);
     if (fornitore?.citta) {
       const cittaText = `${fornitore.cap || ''} ${fornitore.citta} ${fornitore.provincia || ''}`.trim();
@@ -367,15 +368,14 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     if (fornitore?.telefono) doc.text(`FAX : ${fornitore.telefono}`, 132, 33);
     
     // Box "Destinazione merce" (destra, sotto Spett.)
-    doc.rect(130, 41, 70, 25); // Altezza aumentata a 25mm, posizione Y fissa a 41
-    doc.setFontSize(8);
+    doc.rect(130, 41, 70, 25); 
+    doc.setFontSize(9); // Titolo del box
     doc.text('Destinazione merce', 132, 45);
+    doc.setFontSize(8); // Contenuto del box
     doc.text('Arti Grafiche Snc', 132, 50);
-    doc.setFontSize(7);
+    doc.setFontSize(8); // Contenuto del box
     doc.text('Via S.Antonio, 51', 132, 54);
     doc.text('25050 - Passirano (BS)', 132, 58);
-
-    // y è già stato aggiornato a 55, quindi non serve un altro y += 62;
 
     // ========== TIPO DOCUMENTO ==========
     doc.setFillColor(220, 220, 220);
@@ -392,9 +392,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     const infoData = [
       ordine.numero_ordine,
       formatData(ordine.data_ordine),
-      fornitore?.codice_anagrafica || 'N/A', // Modificato per usare codice_anagrafica
+      fornitore?.codice_anagrafica || 'N/A', 
       fornitore?.partita_iva || 'N/A',
-      fornitore?.condizione_pagamento || 'BONIFICO BANCARIO 90 G.G. F.M.', // Usa il nuovo campo
+      fornitore?.condizione_pagamento || 'BONIFICO BANCARIO 90 G.G. F.M.', 
       '1'
     ];
 
@@ -403,13 +403,12 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [infoHeaders],
       body: [infoData],
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold' },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
-      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
+      styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, 
       margin: { left: 10, right: 10 },
     });
 
-    // Modificato: Ridotto lo spazio tra la prima e la seconda tabella informativa
     y = (doc as any).lastAutoTable.finalY + 2; 
 
     // Seconda riga: Resa, Mezzo, Banca
@@ -418,13 +417,12 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [['Resa', 'Mezzo', 'Banca']],
       body: [['', '', '']],
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold' },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
-      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
+      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, 
       margin: { left: 10, right: 10 },
     });
 
-    // Modificato: Ridotto lo spazio dopo la seconda tabella informativa
     y = (doc as any).lastAutoTable.finalY + 5; 
 
     // ========== TABELLA ARTICOLI ==========
@@ -442,7 +440,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
       } else {
         articoloColumnText = article.descrizione || '';
-        descrizioneColumnText = ''; // Lascia vuoto per non-cartone se la descrizione principale è già in 'Articolo'
+        descrizioneColumnText = ''; 
       }
       
       const quantitaFormatted = article.quantita.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -450,18 +448,17 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       const prezzoTotaleRiga = (article.quantita * article.prezzo_unitario).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       return [
-        articoloColumnText, // Articolo
-        descrizioneColumnText, // Descrizione
+        articoloColumnText, 
+        descrizioneColumnText, 
         isCartone ? 'KG' : 'PZ',
         quantitaFormatted,
         prezzoUnitarioFormatted,
         prezzoTotaleRiga,
-        fornitore?.considera_iva ? '22%' : '-', // IVA condizionale con %
+        fornitore?.considera_iva ? '22%' : '-', 
         formatData(article.data_consegna_prevista || '')
       ];
     });
 
-    // Aggiungi nota se presente
     if (ordine.note) {
       articlesBody.push(['', ordine.note, '', '', '', '', '', '']);
     }
@@ -471,18 +468,18 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: articlesHead,
       body: articlesBody,
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle', fontStyle: 'bold' }, // Già 0.3
+      styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle', fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 9 },
-      bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 }, // Già 0.3
+      bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 }, 
       columnStyles: {
-        0: { cellWidth: 15 }, // Articolo (ridotto per CTN)
-        1: { cellWidth: 80 }, // Descrizione (aumentato per più spazio)
-        2: { cellWidth: 10 }, // UM
-        3: { cellWidth: 22, halign: 'right' }, // Quantità
-        4: { cellWidth: 15, halign: 'right' }, // Prezzo
-        5: { cellWidth: 18, halign: 'right' }, // Prezzo totale
-        6: { cellWidth: 10, halign: 'center' }, // Iva
-        7: { cellWidth: 20, halign: 'center' }, // Data cons.
+        0: { cellWidth: 15 }, 
+        1: { cellWidth: 80 }, 
+        2: { cellWidth: 10 }, 
+        3: { cellWidth: 22, halign: 'right' }, 
+        4: { cellWidth: 15, halign: 'right' }, 
+        5: { cellWidth: 18, halign: 'right' }, 
+        6: { cellWidth: 10, halign: 'center' }, 
+        7: { cellWidth: 20, halign: 'center' }, 
       },
       margin: { left: 10, right: 10 },
     });
@@ -501,7 +498,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     const subtotal = ordine.importo_totale || 0;
     let ivaAmount = 0;
     let totalFinal = subtotal;
-    let ivaTextDisplay = '(IVA non inclusa)'; // Default a non inclusa
+    let ivaTextDisplay = '(IVA non inclusa)'; 
 
     console.log(`[DEBUG-IVA] Subtotal (ordine.importo_totale): ${subtotal}`);
     console.log(`[DEBUG-IVA] Fornitore: ${fornitore?.nome}, Considera IVA: ${fornitore?.considera_iva}`);
@@ -518,19 +515,19 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Totale ordine
     doc.rect(10, footerY + 21, 120, 10);
     doc.setFontSize(9);
-    doc.text(`Totale ordine EUR ${ivaTextDisplay}`, 12, footerY + 27); // Aggiornato testo
+    doc.text(`Totale ordine EUR ${ivaTextDisplay}`, 12, footerY + 27); 
     doc.text(totalFinal.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
 
     // Logo FSC e testo
     try {
       const fscLogoWidth = 50; 
       const fscLogoHeight = 27; 
-      const fscLogoX = pageWidth - 10 - fscLogoWidth; // Allineato a destra
+      const fscLogoX = pageWidth - 10 - fscLogoWidth; 
       const fscLogoY = footerY + 5; 
 
       doc.addImage(logoFSC, 'JPEG', fscLogoX, fscLogoY, fscLogoWidth, fscLogoHeight);
-      doc.setFontSize(7); // Rimpicciolito il font a 7
-      doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', pageWidth - 10, footerY + 42, { maxWidth: 190, align: 'right' }); // Abbassato a footerY + 42
+      doc.setFontSize(7); 
+      doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', pageWidth - 10, footerY + 42, { maxWidth: 190, align: 'right' }); 
     } catch (error) {
       console.warn('Logo FSC non disponibile:', error);
     }
