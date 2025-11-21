@@ -376,14 +376,14 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Aggiunto spazio dopo il nome del fornitore
     let currentYForFornitore = 20 + 8; // Inizia 8mm sotto il nome del fornitore per un doppio invio
     doc.setFontSize(8); // Contenuto del box
+    if (fornitore?.telefono) doc.text(`TEL. : ${fornitore.telefono}`, 132, currentYForFornitore); // Modificato da FAX a TEL
+    currentYForFornitore += 4;
     if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, currentYForFornitore);
     currentYForFornitore += 4;
     if (fornitore?.citta) {
       const cittaText = `${fornitore.cap || ''} ${fornitore.citta} ${fornitore.provincia || ''}`.trim();
       doc.text(cittaText, 132, currentYForFornitore);
     }
-    currentYForFornitore += 4;
-    if (fornitore?.telefono) doc.text(`FAX : ${fornitore.telefono}`, 132, currentYForFornitore);
     
     // Box "Destinazione merce" (destra, sotto Spett.)
     doc.rect(130, 41, 70, 25); 
