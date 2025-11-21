@@ -2,11 +2,20 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Cliente, Fornitore } from '@/types';
 import { toast } from 'sonner';
+import {
+  fetchMaxClientCodeFromDB,
+  generateNextClientCode,
+  resetClientCodeGenerator,
+  fetchMaxFornitoreCodeFromDB,
+  generateNextFornitoreCode,
+  resetFornitoreCodeGenerator,
+} from '@/utils/anagraficaUtils'; // Importa le nuove utilità
 
 // Dati mock per i clienti
 const MOCK_CLIENTI: Cliente[] = [
   {
     id: 'mock-c1',
+    codice_anagrafica: 'CLI-001', // Aggiunto codice anagrafica
     nome: 'Cliente Alpha Srl',
     indirizzo: 'Via Garibaldi 1',
     citta: 'Roma',
@@ -23,6 +32,7 @@ const MOCK_CLIENTI: Cliente[] = [
   },
   {
     id: 'mock-c2',
+    codice_anagrafica: 'CLI-002', // Aggiunto codice anagrafica
     nome: 'Beta Industries Spa',
     indirizzo: 'Corso Italia 20',
     citta: 'Firenze',
@@ -42,6 +52,7 @@ const MOCK_CLIENTI: Cliente[] = [
 const MOCK_FORNITORI: Fornitore[] = [
   {
     id: 'mock-f1',
+    codice_anagrafica: 'FOR-001', // Aggiunto codice anagrafica
     nome: 'Imballex Srl',
     tipo_fornitore: 'Cartone',
     indirizzo: 'Via Roma 10',
@@ -59,6 +70,7 @@ const MOCK_FORNITORI: Fornitore[] = [
   },
   {
     id: 'mock-f2',
+    codice_anagrafica: 'FOR-002', // Aggiunto codice anagrafica
     nome: 'Inchiostri Brillanti Spa',
     tipo_fornitore: 'Inchiostro',
     indirizzo: 'Piazza Garibaldi 5',
@@ -76,6 +88,7 @@ const MOCK_FORNITORI: Fornitore[] = [
   },
   {
     id: 'mock-f3',
+    codice_anagrafica: 'FOR-003', // Aggiunto codice anagrafica
     nome: 'Colla Forte Snc',
     tipo_fornitore: 'Colla',
     indirizzo: 'Viale Europa 22',
@@ -117,8 +130,8 @@ export function useAnagrafiche() {
 
     try {
       const [clientiRes, fornitoriRes] = await Promise.all([
-        supabase.from('clienti').select('*').order('nome', { ascending: true }),
-        supabase.from('fornitori').select('*, tipo_fornitore').order('nome', { ascending: true })
+        supabase.from('clienti').select('*, codice_anagrafica').order('nome', { ascending: true }),
+        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica').order('nome', { ascending: true })
       ]);
 
       console.log('useAnagrafiche: Risposta Supabase per clienti:', clientiRes);
@@ -164,12 +177,17 @@ export function useAnagrafiche() {
   const addCliente = async (cliente: Omit<Cliente, 'id' | 'created_at'>) => {
     if (useMockData) {
       console.log('Mock: Aggiungi cliente', cliente);
-      const newMockCliente = { ...cliente, id: `mock-c-${Date.now()}`, created_at: new Date().toISOString() };
+      const newMockCliente = { ...cliente, id: `mock-c-${Date.now()}`, codice_anagrafica: generateNextClientCode(), created_at: new Date().toISOString() };
       setClienti(prev => [...prev, newMockCliente]); // Aggiorna lo stato mock
       toast.success(`✅ Mock: Cliente '${cliente.nome}' aggiunto con successo!`);
       return { success: true, data: newMockCliente };
     }
-    const { data, error } = await supabase.from('clienti').insert([cliente]).select().single();
+
+    const maxCode = await fetchMaxClientCodeFromDB();
+    resetClientCodeGenerator(maxCode);
+    const newCodiceAnagrafica = generateNextClientCode();
+
+    const { data, error } = await supabase.from('clienti').insert([{ ...cliente, codice_anagrafica: newCodiceAnagrafica }]).select().single();
     if (error) {
       toast.error(`Errore aggiunta cliente: ${error.message}`);
       return { success: false, error };
@@ -186,7 +204,9 @@ export function useAnagrafiche() {
       toast.success(`✅ Mock: Cliente '${cliente.nome || id}' modificato con successo!`);
       return { success: true, data: { ...cliente, id } as Cliente };
     }
-    const { data, error } = await supabase.from('clienti').update(cliente).eq('id', id).select().single();
+    // Non permettiamo la modifica del codice anagrafica tramite update
+    const { codice_anagrafica, ...updateData } = cliente;
+    const { data, error } = await supabase.from('clienti').update(updateData).eq('id', id).select().single();
     if (error) {
       toast.error(`Errore modifica cliente: ${error.message}`);
       return { success: false, error };
@@ -216,12 +236,17 @@ export function useAnagrafiche() {
   const addFornitore = async (fornitore: Omit<Fornitore, 'id' | 'created_at'>) => {
     if (useMockData) {
       console.log('Mock: Aggiungi fornitore', fornitore);
-      const newMockFornitore = { ...fornitore, id: `mock-f-${Date.now()}`, created_at: new Date().toISOString() };
+      const newMockFornitore = { ...fornitore, id: `mock-f-${Date.now()}`, codice_anagrafica: generateNextFornitoreCode(), created_at: new Date().toISOString() };
       setFornitori(prev => [...prev, newMockFornitore]); // Aggiorna lo stato mock
       toast.success(`✅ Mock: Fornitore '${fornitore.nome}' aggiunto con successo!`);
       return { success: true, data: newMockFornitore };
     }
-    const { data, error } = await supabase.from('fornitori').insert([fornitore]).select().single();
+
+    const maxCode = await fetchMaxFornitoreCodeFromDB();
+    resetFornitoreCodeGenerator(maxCode);
+    const newCodiceAnagrafica = generateNextFornitoreCode();
+
+    const { data, error } = await supabase.from('fornitori').insert([{ ...fornitore, codice_anagrafica: newCodiceAnagrafica }]).select().single();
     if (error) {
       toast.error(`Errore aggiunta fornitore: ${error.message}`);
       return { success: false, error };
@@ -238,7 +263,9 @@ export function useAnagrafiche() {
       toast.success(`✅ Mock: Fornitore '${fornitore.nome || id}' modificato con successo!`);
       return { success: true, data: { ...fornitore, id } as Fornitore };
     }
-    const { data, error } = await supabase.from('fornitori').update(fornitore).eq('id', id).select().single();
+    // Non permettiamo la modifica del codice anagrafica tramite update
+    const { codice_anagrafica, ...updateData } = fornitore;
+    const { data, error } = await supabase.from('fornitori').update(updateData).eq('id', id).select().single();
     if (error) {
       toast.error(`Errore modifica fornitore: ${error.message}`);
       return { success: false, error };

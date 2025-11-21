@@ -31,6 +31,7 @@ export interface StoricoMovimento {
 
 export interface AnagraficaBase {
   id?: string;
+  codice_anagrafica?: string; // Nuovo campo per il codice anagrafico
   nome: string;
   indirizzo?: string;
   citta?: string;

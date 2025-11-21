@@ -91,6 +91,7 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
           <Table className="min-w-full">
             <TableHeader>
               <TableRow>
+                <TableHead className="text-xs sm:text-sm">Codice</TableHead> {/* Nuovo header */}
                 <TableHead className="text-xs sm:text-sm">Nome</TableHead>
                 <TableHead className="text-xs sm:text-sm">P.IVA / Cod. Fiscale</TableHead>
                 <TableHead className="text-xs sm:text-sm">Città</TableHead>
@@ -102,6 +103,7 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
             <TableBody>
               {clienti.map((cliente) => (
                 <TableRow key={cliente.id}>
+                  <TableCell className="font-medium text-xs sm:text-sm">{cliente.codice_anagrafica || '-'}</TableCell> {/* Nuovo campo */}
                   <TableCell className="font-medium text-xs sm:text-sm">{cliente.nome}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{cliente.partita_iva || cliente.codice_fiscale || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{cliente.citta || '-'}</TableCell>
