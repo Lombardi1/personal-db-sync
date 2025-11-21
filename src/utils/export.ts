@@ -438,6 +438,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     y = (doc as any).lastAutoTable.finalY + 2; 
 
     // Seconda riga: Resa, Mezzo, Banca
+    console.log(`[exportOrdineAcquistoPDF] Valore di fornitore?.banca prima di popolare la tabella: '${fornitore?.banca}'`); // LOG DI DEBUG
     autoTable(doc, {
       startY: y,
       head: [['Resa', 'Mezzo', 'Banca']],
