@@ -42,7 +42,7 @@ function getSectionColorRgb(section: string): [number, number, number] {
     case 'giacenza': // --dashboard-color: 217 91% 60%;
       return hslToRgb(217, 91, 60);
     case 'ordini': // --ordini-color: 0 72% 51%;
-      return hslToRgb(0, 72, 51);
+      return hslToRmb(0, 72, 51);
     case 'esauriti':
       return hslToRgb(142, 71, 39);
     case 'carico':
@@ -534,9 +534,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       const fscLogoY = footerY + 5; 
 
       doc.addImage(logoFSC, 'JPEG', fscLogoX, fscLogoY, fscLogoWidth, fscLogoHeight);
-      doc.setFontSize(8); 
+      doc.setFontSize(7); // Rimpicciolito il font a 7
       doc.setFont(undefined, 'normal');
-      doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', pageWidth - 10, footerY + 35, { maxWidth: 190, align: 'right' }); // Spostato sotto il logo e allineato a destra
+      doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', pageWidth - 10, footerY + 42, { maxWidth: 190, align: 'right' }); // Abbassato a footerY + 42
     } catch (error) {
       console.warn('Logo FSC non disponibile:', error);
     }
