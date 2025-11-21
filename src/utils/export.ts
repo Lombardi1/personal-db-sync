@@ -361,13 +361,17 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.setFontSize(10); // Increased font size for fornitore name
     doc.text(fornitore?.nome || 'N/A', 132, 20);
     
+    // Aggiunto spazio dopo il nome del fornitore
+    let currentYForFornitore = 20 + 4; // Inizia 4mm sotto il nome del fornitore
     doc.setFontSize(8); // Contenuto del box
-    if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, 25);
+    if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, currentYForFornitore);
+    currentYForFornitore += 4;
     if (fornitore?.citta) {
       const cittaText = `${fornitore.cap || ''} ${fornitore.citta} ${fornitore.provincia || ''}`.trim();
-      doc.text(cittaText, 132, 29);
+      doc.text(cittaText, 132, currentYForFornitore);
     }
-    if (fornitore?.telefono) doc.text(`FAX : ${fornitore.telefono}`, 132, 33);
+    currentYForFornitore += 4;
+    if (fornitore?.telefono) doc.text(`FAX : ${fornitore.telefono}`, 132, currentYForFornitore);
     
     // Box "Destinazione merce" (destra, sotto Spett.)
     doc.rect(130, 41, 70, 25); 
@@ -375,9 +379,13 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.text('Destinazione merce', 132, 45);
     doc.setFontSize(10); // Increased font size for azienda name
     doc.text(aziendaInfo?.nome_azienda || 'Arti Grafiche Snc', 132, 50); // Dinamico
+    
+    // Aggiunto spazio dopo il nome dell'azienda
+    let currentYForAzienda = 50 + 4; // Inizia 4mm sotto il nome dell'azienda
     doc.setFontSize(8); // Contenuto del box
-    doc.text(aziendaInfo?.indirizzo || 'Via S.Antonio, 51', 132, 54); // Dinamico
-    doc.text(`${aziendaInfo?.cap || ''} - ${aziendaInfo?.citta || ''} (${aziendaInfo?.provincia || ''})`.trim() || '25050 - Passirano (BS)', 132, 58); // Dinamico
+    doc.text(aziendaInfo?.indirizzo || 'Via S.Antonio, 51', 132, currentYForAzienda); // Dinamico
+    currentYForAzienda += 4;
+    doc.text(`${aziendaInfo?.cap || ''} - ${aziendaInfo?.citta || ''} (${aziendaInfo?.provincia || ''})`.trim() || '25050 - Passirano (BS)', 132, currentYForAzienda); // Dinamico
 
     // ========== TIPO DOCUMENTO ==========
     doc.setFillColor(220, 220, 220);
