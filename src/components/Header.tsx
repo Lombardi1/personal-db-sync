@@ -115,7 +115,8 @@ export function Header({
                       <Contact className="mr-2 h-4 w-4" />
                       Gestione Anagrafiche
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/azienda-info')}> {/* Voce di menu diretta */}
+                    <DropdownMenuSeparator /> {/* Separatore aggiunto qui */}
+                    <DropdownMenuItem onClick={() => navigate('/azienda-info')}>
                       <Building2 className="mr-2 h-4 w-4" />
                       Gestione Azienda
                     </DropdownMenuItem>
