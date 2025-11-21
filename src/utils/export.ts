@@ -436,13 +436,17 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         ? `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`
         : article.descrizione || '';
       
+      const quantitaFormatted = article.quantita.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const prezzoUnitarioFormatted = article.prezzo_unitario.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+      const prezzoTotaleRiga = (article.quantita * article.prezzo_unitario).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
       return [
         '', // Articolo (vuoto)
         descrizione,
         isCartone ? 'KG' : 'PZ',
-        article.quantita.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        '', // Prezzo (vuoto)
-        '', // Prezzo totale (vuoto)
+        quantitaFormatted,
+        prezzoUnitarioFormatted,
+        prezzoTotaleRiga,
         '22', // IVA fissa
         formatData(article.data_consegna_prevista || '')
       ];
@@ -465,11 +469,11 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         0: { cellWidth: 10 }, // Articolo
         1: { cellWidth: 85 }, // Descrizione
         2: { cellWidth: 10 }, // UM
-        3: { cellWidth: 22 }, // Quantità
-        4: { cellWidth: 15 }, // Prezzo
-        5: { cellWidth: 18 }, // Prezzo totale
-        6: { cellWidth: 10 }, // Iva
-        7: { cellWidth: 20 }, // Data cons.
+        3: { cellWidth: 22, halign: 'right' }, // Quantità
+        4: { cellWidth: 15, halign: 'right' }, // Prezzo
+        5: { cellWidth: 18, halign: 'right' }, // Prezzo totale
+        6: { cellWidth: 10, halign: 'center' }, // Iva
+        7: { cellWidth: 20, halign: 'center' }, // Data cons.
       },
       margin: { left: 10, right: 10 },
     });
@@ -490,7 +494,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
     doc.text('Totale ordine EUR', 12, footerY + 27);
-    doc.text('0,00', 120, footerY + 27, { align: 'right' });
+    doc.text((ordine.importo_totale || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
 
     // Logo FSC
     try {
