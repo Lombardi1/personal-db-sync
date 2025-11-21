@@ -358,7 +358,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.setFontSize(9); // Titolo del box
     doc.rect(130, 10, 70, 30); 
     doc.text('Spett.', 132, 15);
-    doc.setFontSize(8); // Contenuto del box
+    doc.setFontSize(10); // Increased font size for fornitore name
     doc.text(fornitore?.nome || 'N/A', 132, 20);
     
     doc.setFontSize(8); // Contenuto del box
@@ -373,7 +373,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.rect(130, 41, 70, 25); 
     doc.setFontSize(9); // Titolo del box
     doc.text('Destinazione merce', 132, 45);
-    doc.setFontSize(8); // Contenuto del box
+    doc.setFontSize(10); // Increased font size for azienda name
     doc.text(aziendaInfo?.nome_azienda || 'Arti Grafiche Snc', 132, 50); // Dinamico
     doc.setFontSize(8); // Contenuto del box
     doc.text(aziendaInfo?.indirizzo || 'Via S.Antonio, 51', 132, 54); // Dinamico
