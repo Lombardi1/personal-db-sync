@@ -455,7 +455,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         quantitaFormatted,
         prezzoUnitarioFormatted,
         prezzoTotaleRiga,
-        '22', // IVA fissa
+        fornitore?.considera_iva ? '22' : '-', // IVA condizionale
         formatData(article.data_consegna_prevista || '')
       ];
     });
