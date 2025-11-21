@@ -230,15 +230,15 @@ export function ModalAnagraficaForm({
                 </Label>
                 <div className="col-span-3">
                   <Select
-                    onValueChange={(value) => setValue('banca', value, { shouldValidate: true })}
-                    value={watchedBanca || ''}
+                    onValueChange={(value) => setValue('banca', value === '__NONE__' ? '' : value, { shouldValidate: true })}
+                    value={watchedBanca || '__NONE__'}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Seleziona banca" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nessuna</SelectItem> {/* Modificato: value="" */}
+                      <SelectItem value="__NONE__">Nessuna</SelectItem> {/* Modificato: value="__NONE__" */}
                       {bancheDisponibili.map((bancaOption, index) => (
                         <SelectItem key={index} value={bancaOption}>
                           {bancaOption}
