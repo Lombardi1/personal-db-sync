@@ -10,6 +10,126 @@ export function useOrdiniAcquisto() {
   const [ordiniAcquisto, setOrdiniAcquisto] = useState<OrdineAcquisto[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Funzione per sincronizzare lo stato degli articoli tra ordini_acquisto e le tabelle di magazzino
+  const syncArticleInventoryStatus = useCallback(async (ordine: OrdineAcquisto) => {
+    console.log(`[syncArticleInventoryStatus] Syncing inventory for order: ${ordine.numero_ordine}`);
+    
+    // Recupera il tipo di fornitore per determinare se è un fornitore di cartone
+    const { data: fornitoreData, error: fornitoreError } = await supabase
+      .from('fornitori')
+      .select('tipo_fornitore')
+      .eq('id', ordine.fornitore_id)
+      .single();
+
+    if (fornitoreError) {
+      console.error(`[syncArticleInventoryStatus] Errore recupero tipo fornitore per ordine ${ordine.numero_ordine}:`, fornitoreError);
+      return;
+    }
+    const isCartoneFornitore = fornitoreData?.tipo_fornitore === 'Cartone';
+
+    if (!isCartoneFornitore) {
+      console.log(`[syncArticleInventoryStatus] Not a cartone supplier, skipping inventory sync for order ${ordine.numero_ordine}.`);
+      return; // Only sync cartone articles
+    }
+
+    for (const article of ordine.articoli) {
+      if (!article.codice_ctn) {
+        console.warn(`[syncArticleInventoryStatus] Article in order ${ordine.numero_ordine} has no codice_ctn, skipping:`, article);
+        continue;
+      }
+
+      const commonCartoneData: Omit<Cartone, 'id' | 'created_at' | 'ddt' | 'data_arrivo' | 'magazzino' | 'confermato'> = {
+        codice: article.codice_ctn,
+        fornitore: ordine.fornitore_nome || 'N/A',
+        ordine: ordine.numero_ordine,
+        tipologia: article.tipologia_cartone || article.descrizione || 'N/A',
+        formato: article.formato || 'N/A',
+        grammatura: article.grammatura || 'N/A',
+        fogli: article.numero_fogli || 0,
+        cliente: article.cliente || 'N/A',
+        lavoro: article.lavoro || 'N/A',
+        prezzo: article.prezzo_unitario || 0,
+        data_consegna: article.data_consegna_prevista,
+        note: ordine.note || '-',
+      };
+
+      // Check current state in inventory tables
+      const { data: existingInOrdini } = await supabase.from('ordini').select('codice').eq('codice', article.codice_ctn).maybeSingle();
+      const { data: existingInGiacenza } = await supabase.from('giacenza').select('codice, ddt, data_arrivo, magazzino').eq('codice', article.codice_ctn).maybeSingle();
+      const { data: existingInEsauriti } = await supabase.from('esauriti').select('codice').eq('codice', article.codice_ctn).maybeSingle();
+
+
+      if (article.stato === 'annullato') {
+        // If article is cancelled, ensure it's removed from ordini, giacenza, and esauriti
+        if (existingInOrdini) {
+          await supabase.from('ordini').delete().eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Removed cancelled article ${article.codice_ctn} from 'ordini'.`);
+        }
+        if (existingInGiacenza) {
+          await supabase.from('giacenza').delete().eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Removed cancelled article ${article.codice_ctn} from 'giacenza'.`);
+        }
+        if (existingInEsauriti) {
+          await supabase.from('esauriti').delete().eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Removed cancelled article ${article.codice_ctn} from 'esauriti'.`);
+        }
+      } else if (article.stato === 'ricevuto') {
+        // If article is received, ensure it's in giacenza and not in ordini or esauriti
+        if (existingInOrdini) {
+          await supabase.from('ordini').delete().eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Removed received article ${article.codice_ctn} from 'ordini'.`);
+        }
+        if (existingInEsauriti) {
+          await supabase.from('esauriti').delete().eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Removed received article ${article.codice_ctn} from 'esauriti'.`);
+        }
+        if (!existingInGiacenza) {
+          // Insert into giacenza with default ddt, data_arrivo, magazzino if not present
+          await supabase.from('giacenza').insert([{
+            ...commonCartoneData,
+            ddt: 'AUTO-SYNC', // Placeholder
+            data_arrivo: new Date().toISOString().split('T')[0], // Current date
+            magazzino: 'AUTO-SYNC', // Placeholder
+          }]);
+          console.log(`[syncArticleInventoryStatus] Inserted received article ${article.codice_ctn} into 'giacenza'.`);
+        } else {
+          // Update existing in giacenza to ensure data consistency
+          await supabase.from('giacenza').update({
+            ...commonCartoneData,
+            ddt: existingInGiacenza.ddt || 'AUTO-SYNC', // Keep existing DDT if any
+            data_arrivo: existingInGiacenza.data_arrivo || new Date().toISOString().split('T')[0], // Keep existing date if any
+            magazzino: existingInGiacenza.magazzino || 'AUTO-SYNC', // Keep existing magazzino if any
+          }).eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Updated received article ${article.codice_ctn} in 'giacenza'.`);
+        }
+      } else { // 'in_attesa', 'inviato', 'confermato'
+        // If article is pending/confirmed/sent, ensure it's in ordini and not in giacenza or esauriti
+        if (existingInGiacenza) {
+          await supabase.from('giacenza').delete().eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Removed pending article ${article.codice_ctn} from 'giacenza'.`);
+        }
+        if (existingInEsauriti) {
+          await supabase.from('esauriti').delete().eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Removed pending article ${article.codice_ctn} from 'esauriti'.`);
+        }
+        if (!existingInOrdini) {
+          await supabase.from('ordini').insert([{
+            ...commonCartoneData,
+            confermato: article.stato === 'confermato', // Set 'confermato' based on article status
+          }]);
+          console.log(`[syncArticleInventoryStatus] Inserted pending article ${article.codice_ctn} into 'ordini'.`);
+        } else {
+          // Update existing in ordini to ensure data consistency
+          await supabase.from('ordini').update({
+            ...commonCartoneData,
+            confermato: article.stato === 'confermato',
+          }).eq('codice', article.codice_ctn);
+          console.log(`[syncArticleInventoryStatus] Updated pending article ${article.codice_ctn} in 'ordini'.`);
+        }
+      }
+    }
+  }, []);
+
   const loadOrdiniAcquisto = useCallback(async () => {
     console.log('[useOrdiniAcquisto] loadOrdiniAcquisto chiamato.');
     setLoading(true);
@@ -124,7 +244,7 @@ export function useOrdiniAcquisto() {
     } finally {
       setLoading(false);
     }
-  }, []); // No dependencies needed for useCallback if it's self-contained
+  }, [syncArticleInventoryStatus]); // Aggiunto syncArticleInventoryStatus come dipendenza
 
   useEffect(() => {
     loadOrdiniAcquisto();
