@@ -1,5 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge }m "tailwind-merge";
+import { twMerge } from "tailwind-merge";
 import { AnagraficaBase, Fornitore, Cliente } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
