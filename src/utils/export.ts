@@ -433,17 +433,24 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     const articlesHead = [['Articolo', 'Descrizione', 'UM', 'Quantità', 'Prezzo', 'Prezzo\ntotale', 'Iva', 'Data\ncons.']];
     
     const articlesBody = ordine.articoli.map(article => {
-      const descrizione = isCartone 
-        ? `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`
-        : article.descrizione || '';
+      let articoloColumnText = '';
+      let descrizioneColumnText = '';
+
+      if (isCartone) {
+        articoloColumnText = article.codice_ctn || '';
+        descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
+      } else {
+        articoloColumnText = article.descrizione || '';
+        descrizioneColumnText = ''; // Lascia vuoto per non-cartone se la descrizione principale è già in 'Articolo'
+      }
       
       const quantitaFormatted = article.quantita.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const prezzoUnitarioFormatted = article.prezzo_unitario.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
       const prezzoTotaleRiga = (article.quantita * article.prezzo_unitario).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       return [
-        '', // Articolo (vuoto)
-        descrizione,
+        articoloColumnText, // Articolo
+        descrizioneColumnText, // Descrizione
         isCartone ? 'KG' : 'PZ',
         quantitaFormatted,
         prezzoUnitarioFormatted,
@@ -467,8 +474,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 7 },
       bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 },
       columnStyles: {
-        0: { cellWidth: 10 }, // Articolo
-        1: { cellWidth: 85 }, // Descrizione
+        0: { cellWidth: 20 }, // Articolo (aumentato per CTN o descrizione breve)
+        1: { cellWidth: 75 }, // Descrizione (leggermente ridotto, ma con linebreak)
         2: { cellWidth: 10 }, // UM
         3: { cellWidth: 22, halign: 'right' }, // Quantità
         4: { cellWidth: 15, halign: 'right' }, // Prezzo
