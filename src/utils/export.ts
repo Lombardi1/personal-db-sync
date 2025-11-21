@@ -310,6 +310,8 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
 export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Fornitore[], clienti: Cliente[], section: string, preview: boolean = false, targetWindow: Window | null = null) {
   try {
     console.log(`[exportOrdineAcquistoPDF] Inizio esportazione PDF per ordine: ${ordine.numero_ordine}, preview: ${preview}`);
+    console.log(`[exportOrdineAcquistoPDF] Ordine ricevuto:`, JSON.stringify(ordine, null, 2));
+
     const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     let y = 10;
     const pageWidth = doc.internal.pageSize.width;
@@ -317,6 +319,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     
     const finalFileName = `Ordine_${ordine.numero_ordine}.pdf`;
     const fornitore = fornitori.find(f => f.id === ordine.fornitore_id);
+    console.log(`[exportOrdineAcquistoPDF] Fornitore trovato:`, JSON.stringify(fornitore, null, 2));
+
 
     // ========== HEADER SECTION ==========
     // Logo AG Lombardi (sinistra)
@@ -455,7 +459,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         quantitaFormatted,
         prezzoUnitarioFormatted,
         prezzoTotaleRiga,
-        fornitore?.considera_iva ? '22' : '-', // IVA condizionale
+        fornitore?.considera_iva ? '22%' : '-', // IVA condizionale con %
         formatData(article.data_consegna_prevista || '')
       ];
     });
@@ -503,17 +507,16 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     let totalFinal = subtotal;
     let ivaTextDisplay = '(IVA non inclusa)'; // Default a non inclusa
 
-    console.log(`[DEBUG] Ordine: ${ordine.numero_ordine}`);
-    console.log(`[DEBUG] Subtotal (ordine.importo_totale): ${subtotal}`);
-    console.log(`[DEBUG] Fornitore: ${fornitore?.nome}, Considera IVA: ${fornitore?.considera_iva}`);
+    console.log(`[DEBUG-IVA] Subtotal (ordine.importo_totale): ${subtotal}`);
+    console.log(`[DEBUG-IVA] Fornitore: ${fornitore?.nome}, Considera IVA: ${fornitore?.considera_iva}`);
 
     if (fornitore?.considera_iva) {
       ivaAmount = subtotal * IVA_RATE;
       totalFinal = subtotal + ivaAmount;
       ivaTextDisplay = '(IVA inclusa)';
-      console.log(`[DEBUG] IVA applicata. IVA Amount: ${ivaAmount}, Total Final: ${totalFinal}`);
+      console.log(`[DEBUG-IVA] IVA applicata. IVA Amount: ${ivaAmount}, Total Final: ${totalFinal}`);
     } else {
-      console.log(`[DEBUG] IVA NON applicata. Total Final: ${totalFinal}`);
+      console.log(`[DEBUG-IVA] IVA NON applicata. Total Final: ${totalFinal}`);
     }
 
     // Totale ordine

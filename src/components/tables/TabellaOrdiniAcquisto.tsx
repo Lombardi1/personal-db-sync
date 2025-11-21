@@ -147,10 +147,14 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           articoli: (latestOrder.articoli || []) as ArticoloOrdineAcquisto[],
       };
 
+      // DEBUG LOG: Log the order data before passing to PDF export
+      console.log("[TabellaOrdiniAcquisto] Dati ordine (orderToProcess) prima dell'esportazione PDF (Preview):", JSON.stringify(orderToProcess, null, 2));
+
+
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
         notifications.showInfo(`L'ordine '${orderToProcess.numero_ordine}' è annullato. Non è possibile modificare lo stato degli articoli.`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', true, newWindow);
+        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', true, newWindow);
         return;
       }
 
@@ -248,6 +252,10 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
         fornitore_tipo: fetchedOrderData.fornitori?.tipo_fornitore || 'N/A',
         articoli: (fetchedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
       };
+
+      // DEBUG LOG: Log the order data before passing to PDF export
+      console.log("[TabellaOrdiniAcquisto] Dati ordine (orderToProcess) prima dell'esportazione PDF (Download):", JSON.stringify(orderToProcess, null, 2));
+
 
       let updatedArticles = [...orderToProcess.articoli];
       let newMainOrderStatus = orderToProcess.stato;
