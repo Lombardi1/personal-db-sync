@@ -403,9 +403,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [infoHeaders],
       body: [infoData],
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold' }, // Aggiunto fontStyle: 'bold'
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.5, lineColor: [0, 0, 0] },
-      bodyStyles: { lineWidth: 0.5, lineColor: [0, 0, 0] },
+      styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold' },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
       margin: { left: 10, right: 10 },
     });
 
@@ -417,9 +417,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [['Resa', 'Mezzo', 'Banca']],
       body: [['', '', '']],
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold' }, // Aggiunto fontStyle: 'bold'
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.5, lineColor: [0, 0, 0] },
-      bodyStyles: { lineWidth: 0.5, lineColor: [0, 0, 0] },
+      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold' },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
       margin: { left: 10, right: 10 },
     });
 
@@ -469,9 +469,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: articlesHead,
       body: articlesBody,
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle', fontStyle: 'bold' }, // Aggiunto fontStyle: 'bold'
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 9 }, // Increased font size
-      bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 },
+      styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle', fontStyle: 'bold' }, // Già 0.3
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 9 },
+      bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 }, // Già 0.3
       columnStyles: {
         0: { cellWidth: 15 }, // Articolo (ridotto per CTN)
         1: { cellWidth: 80 }, // Descrizione (aumentato per più spazio)
