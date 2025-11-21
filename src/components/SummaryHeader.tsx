@@ -1,8 +1,8 @@
-import { LogOut, Users, Settings, Contact } from 'lucide-react';
+import { LogOut, Users, Settings, Contact, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import logoAG from '@/assets/logo-ag.jpg'; // Import the logo
+import logoAG from '@/assets/logo-ag.jpg';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +33,7 @@ export function SummaryHeader() {
           {user && (
             <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
               <span className="text-xs sm:text-sm text-white/90">
-                {isAmministratore ? 'Admin' : 'Stampa'}: <strong className="text-white">{user.username}</strong> {/* Testo aggiornato */}
+                {isAmministratore ? 'Admin' : 'Stampa'}: <strong className="text-white">{user.username}</strong>
               </span>
               {isAmministratore && (
                 <DropdownMenu>
@@ -55,6 +55,10 @@ export function SummaryHeader() {
                     <DropdownMenuItem onClick={() => navigate('/anagrafica')}>
                       <Contact className="mr-2 h-4 w-4" />
                       Gestione Anagrafiche
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/azienda-info')}> {/* Voce di menu diretta */}
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Gestione Azienda
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

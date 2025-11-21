@@ -1,8 +1,8 @@
-import { LogOut, Users, Settings, Contact, Building2 } from 'lucide-react'; // Importa Building2
+import { LogOut, Users, Settings, Contact, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logoAG from '@/assets/logo-ag.jpg'; // Import the logo
+import logoAG from '@/assets/logo-ag.jpg';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,14 +13,14 @@ import {
 
 interface HeaderProps {
   activeTab?: string;
-  title?: string; // New prop for custom title
-  showUsersButton?: boolean; // New prop to control users button visibility
+  title?: string;
+  showUsersButton?: boolean;
 }
 
 export function Header({ 
   activeTab = 'giacenza', 
-  title = 'Gestione Magazzino Cartoni', // Default title
-  showUsersButton // Default to true for admin
+  title = 'Gestione Magazzino Cartoni',
+  showUsersButton
 }: HeaderProps) {
   const { user, logout, isAmministratore } = useAuth();
   const navigate = useNavigate();
@@ -34,16 +34,18 @@ export function Header({
   const getHeaderColor = () => {
     let currentSection = activeTab;
     if (location.pathname === '/scarico-magazzino-stampa') {
-      currentSection = 'scarico-magazzino'; // Nuovo nome per la sezione
+      currentSection = 'scarico-magazzino';
     } else if (location.pathname === '/gestione-utenti') {
       currentSection = 'gestione-utenti';
     } else if (location.pathname === '/anagrafica') {
       const queryParams = new URLSearchParams(location.search);
-      currentSection = queryParams.get('tab') || 'anagrafica'; // Usa il tab attivo per il colore
-    } else if (location.pathname === '/ordini-acquisto') { // Nuova condizione per OrdiniAcquisto
+      currentSection = queryParams.get('tab') || 'anagrafica';
+    } else if (location.pathname === '/ordini-acquisto') {
       currentSection = 'ordini-acquisto';
-    } else if (location.pathname === '/storico-stampa') { // NUOVO: Condizione per StoricoStampa
+    } else if (location.pathname === '/storico-stampa') {
       currentSection = 'storico-stampa';
+    } else if (location.pathname === '/azienda-info') { // NUOVO: Colore per la pagina AziendaInfo
+      currentSection = 'azienda-info';
     } else if (location.pathname === '/gestione-magazzino') {
       const queryParams = new URLSearchParams(location.search);
       currentSection = queryParams.get('tab') || 'giacenza';
@@ -59,23 +61,22 @@ export function Header({
       case 'carico':
         return 'linear-gradient(135deg, hsl(var(--carico-color)), hsl(262, 66%, 42%))';
       case 'storico':
-      case 'storico-stampa': // Applica il colore dello storico alla nuova rotta
+      case 'storico-stampa':
         return 'linear-gradient(135deg, hsl(var(--storico-color)), hsl(37, 93%, 35%))';
-      case 'scarico-magazzino': // Modificato per usare il rosso
+      case 'scarico-magazzino':
         return 'linear-gradient(135deg, hsl(var(--danger)), hsl(0, 72%, 40%))';
       case 'gestione-utenti':
-      case 'anagrafica': // Colore per la pagina Anagrafica
-      case 'clienti': // Colore per la tab Clienti
-      case 'fornitori': // Colore per la tab Fornitori
-      case 'azienda': // Colore per la tab Azienda
-      case 'ordini-acquisto': // Colore per OrdiniAcquisto
-        return 'hsl(var(--summary-header-color))'; // Colore solido come la dashboard
+      case 'anagrafica':
+      case 'clienti':
+      case 'fornitori':
+      case 'ordini-acquisto':
+      case 'azienda-info': // NUOVO: Colore per la pagina AziendaInfo
+        return 'hsl(var(--summary-header-color))';
       default:
         return 'linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%))';
     }
   };
 
-  // Determine default button visibility and target based on user role and current path
   const defaultShowUsersButton = isAmministratore;
 
   return (
@@ -114,7 +115,7 @@ export function Header({
                       <Contact className="mr-2 h-4 w-4" />
                       Gestione Anagrafiche
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/anagrafica?tab=azienda')}> {/* Nuova voce */}
+                    <DropdownMenuItem onClick={() => navigate('/azienda-info')}> {/* Voce di menu diretta */}
                       <Building2 className="mr-2 h-4 w-4" />
                       Gestione Azienda
                     </DropdownMenuItem>

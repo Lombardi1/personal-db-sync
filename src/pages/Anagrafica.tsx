@@ -3,13 +3,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { Header } from '@/components/Header';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, Building2 } from 'lucide-react'; // Importa Building2
+import { Home, Building2 } from 'lucide-react';
 import { AnagraficaTabs } from '@/components/AnagraficaTabs';
 import { ClientiTab } from '@/components/tabs/ClientiTab';
 import { FornitoriTab } from '@/components/tabs/FornitoriTab';
-import { AziendaTab } from '@/components/tabs/AziendaTab'; // Importa la nuova tab
 import { useAnagrafiche } from '@/hooks/useAnagrafiche';
-import { useAziendaInfo } from '@/hooks/useAziendaInfo'; // Importa il nuovo hook
+import { useAziendaInfo } from '@/hooks/useAziendaInfo';
 
 export default function Anagrafica() {
   const { user, loading: authLoading } = useAuth();
@@ -24,7 +23,7 @@ export default function Anagrafica() {
     addCliente, updateCliente, deleteCliente,
     addFornitore, updateFornitore, deleteFornitore,
   } = useAnagrafiche();
-  const { aziendaInfo, loading: aziendaInfoLoading, updateAziendaInfo } = useAziendaInfo(); // Usa il nuovo hook
+  const { loading: aziendaInfoLoading } = useAziendaInfo(); // Non serve aziendaInfo o updateAziendaInfo qui
 
   useEffect(() => {
     if (activeTab !== queryParams.get('tab')) {
@@ -39,7 +38,7 @@ export default function Anagrafica() {
     }
   }, [location.search]);
 
-  if (authLoading || anagraficheLoading || aziendaInfoLoading) { // Aggiungi aziendaInfoLoading
+  if (authLoading || anagraficheLoading || aziendaInfoLoading) {
     return (
       <div className="min-h-screen bg-[hsl(210,40%,96%)] flex items-center justify-center">
         <div className="text-lg text-[hsl(var(--muted-foreground))]">Caricamento...</div>
@@ -88,12 +87,6 @@ export default function Anagrafica() {
               addFornitore={addFornitore} 
               updateFornitore={updateFornitore} 
               deleteFornitore={deleteFornitore} 
-            />
-          )}
-          {activeTab === 'azienda' && ( // Renderizza la nuova tab
-            <AziendaTab 
-              aziendaInfo={aziendaInfo} 
-              updateAziendaInfo={updateAziendaInfo} 
             />
           )}
         </div>

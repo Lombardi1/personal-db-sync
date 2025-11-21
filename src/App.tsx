@@ -12,7 +12,8 @@ import Summary from "./pages/Summary";
 import StampaDashboard from "./pages/StampaDashboard";
 import Anagrafica from "./pages/Anagrafica";
 import OrdiniAcquisto from "./pages/OrdiniAcquisto";
-import StoricoStampa from "./pages/StoricoStampa"; // NUOVO: Importa StoricoStampa
+import StoricoStampa from "./pages/StoricoStampa";
+import AziendaInfoPage from "./pages/AziendaInfo"; // Importa la nuova pagina
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -85,9 +86,14 @@ const App = () => {
               element={renderProtectedRoute(<OrdiniAcquisto />, ['amministratore', 'stampa'])}
             />
 
-            <Route // NUOVA ROTTA
+            <Route 
               path="/storico-stampa"
               element={renderProtectedRoute(<StoricoStampa />, ['stampa'])}
+            />
+
+            <Route // NUOVA ROTTA PER AZIENDA INFO
+              path="/azienda-info"
+              element={renderProtectedRoute(<AziendaInfoPage />, ['amministratore'])}
             />
             
             <Route path="*" element={<NotFound />} />

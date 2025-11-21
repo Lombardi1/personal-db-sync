@@ -10,7 +10,6 @@ export function AnagraficaTabs({ activeTab, setActiveTab }: AnagraficaTabsProps)
   const tabs = [
     { id: 'clienti', icon: 'fa-users', label: 'Clienti' },
     { id: 'fornitori', icon: 'fa-truck-moving', label: 'Fornitori' },
-    { id: 'azienda', icon: 'fa-building', label: 'Azienda', lucideIcon: <Building2 className="h-4 w-4" /> }, // Nuova tab Azienda
   ];
 
   return (
