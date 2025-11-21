@@ -530,8 +530,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     try {
       const fscLogoX = 135; // Spostato leggermente a sinistra per centrare meglio
       const fscLogoY = footerY + 5; 
-      const fscLogoWidth = 50; // Aumentata la dimensione
-      const fscLogoHeight = 35; // Aumentata la dimensione
+      const fscLogoWidth = 50; 
+      const fscLogoHeight = 30; // Modificato a 30mm
 
       doc.addImage(logoFSC, 'JPEG', fscLogoX, fscLogoY, fscLogoWidth, fscLogoHeight);
       doc.setFontSize(8); // Aumentata la dimensione del font
