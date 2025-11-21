@@ -1,0 +1,312 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 210 40% 96%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 47% 39%;
+    --primary-foreground: 210 40% 98%;
+    --primary-dark: 223 56% 48%;
+
+    --secondary: 199 89% 48%;
+    --secondary-foreground: 210 40% 98%;
+
+    --success: 142 71% 39%;
+    --success-foreground: 210 40% 98%;
+
+    --danger: 0 72% 51%;
+    --danger-foreground: 210 40% 98%;
+
+    --warning: 42 93% 41%;
+    --warning-foreground: 210 40% 98%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 215 20% 65%;
+
+    --radius: 0.5rem;
+
+    /* Section colors */
+    --dashboard-color: 217 91% 60%;
+    --ordini-color: 0 72% 51%;
+    --esauriti-color: 142 71% 39%;
+    --carico-color: 262 66% 52%;
+    --storico-color: 37 93% 44%;
+    --anagrafica-color: 25 95% 55%; /* Nuovo colore per Anagrafica */
+    --summary-header-color: 30 100% 50%; /* Colore arancione per l'header della dashboard */
+    --ordini-acquisto-color: 25 95% 55%; /* Nuovo colore per Ordini d'Acquisto (arancione scuro) */
+    --ordini-acquisto-color-dark: 25 95% 45%;
+
+    /* Nuovi colori per gli stati degli ordini d'acquisto */
+    --stato-in-attesa: 39 100% 50%; /* Arancione */
+    --stato-inviato-bg: 210 80% 90%; /* Blu chiaro per sfondo */
+    --stato-inviato-fg: 210 80% 30%; /* Blu scuro per testo */
+    --stato-confermato: 142 71% 39%; /* Verde (come success) */
+    --stato-ricevuto: 142 76% 36%; /* Verde più scuro e visibile */
+    --stato-annullato: 0 72% 51%; /* Rosso (come danger) */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.5;
+  }
+}
+
+@layer components {
+  /* Header */
+  .app-header {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%));
+    color: white;
+    padding: 16px 0; /* Adjusted padding for smaller screens */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  @screen sm {
+    .app-header {
+      padding: 24px 0; /* Original padding for larger screens */
+    }
+  }
+
+  /* Tabs */
+  .tabs-container {
+    display: flex;
+    background: white;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: -1px;
+    overflow: hidden;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    flex: 1;
+    min-width: 120px; /* Adjusted min-width for smaller screens */
+    padding: 10px 15px; /* Adjusted padding for smaller screens */
+    background: hsl(210 40% 98%);
+    border: none;
+    font-weight: 600;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px; /* Adjusted gap for smaller screens */
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+    font-size: 0.875rem; /* Default font size for smaller screens */
+  }
+  @screen sm {
+    .tab-btn {
+      min-width: 150px; /* Original min-width for larger screens */
+      padding: 14px 20px; /* Original padding for larger screens */
+      gap: 8px; /* Original gap for larger screens */
+      font-size: 1rem; /* Original font size for larger screens */
+    }
+  }
+
+  .tab-btn:hover {
+    background: hsl(var(--muted));
+  }
+
+  .tab-btn.active {
+    background: white;
+    color: hsl(var(--primary-dark));
+    border-bottom: 2px solid hsl(var(--primary-dark));
+  }
+
+  .tab-btn.active[data-tab="riepilogo"] { /* New style for riepilogo tab */
+    background: hsla(var(--primary), 0.08);
+    color: hsl(var(--primary));
+    border-bottom-color: hsl(var(--primary));
+  }
+
+  .tab-btn.active[data-tab="giacenza"] { /* New style for giacenza tab */
+    background: hsla(var(--dashboard-color), 0.08);
+    color: hsl(var(--dashboard-color));
+    border-bottom-color: hsl(var(--dashboard-color));
+  }
+
+  .tab-btn.active[data-tab="ordini"] {
+    background: hsla(var(--ordini-color), 0.08);
+    color: hsl(var(--ordini-color));
+    border-bottom-color: hsl(var(--ordini-color));
+  }
+
+  .tab-btn.active[data-tab="esauriti"] {
+    background: hsla(var(--esauriti-color), 0.08);
+    color: hsl(var(--esauriti-color));
+    border-bottom-color: hsl(var(--esauriti-color));
+  }
+
+  .tab-btn.active[data-tab="carico"] {
+    background: hsla(var(--carico-color), 0.08);
+    color: hsl(var(--carico-color));
+    border-bottom-color: hsl(var(--carico-color));
+  }
+
+  .tab-btn.active[data-tab="storico"] {
+    background: hsla(var(--storico-color), 0.08);
+    color: hsl(var(--storico-color));
+    border-bottom-color: hsl(var(--storico-color));
+  }
+
+  /* New styles for Anagrafica tabs */
+  .tab-btn.active[data-tab="clienti"] {
+    background: hsla(var(--primary), 0.08);
+    color: hsl(var(--primary));
+    border-bottom-color: hsl(var(--primary));
+  }
+
+  .tab-btn.active[data-tab="fornitori"] {
+    background: hsla(var(--secondary), 0.08);
+    color: hsl(var(--secondary));
+    border-bottom-color: hsl(var(--secondary));
+  }
+
+  .tab-count {
+    background: currentColor;
+    color: white;
+    padding: 1px 6px; /* Adjusted padding for smaller screens */
+    border-radius: 10px; /* Adjusted border-radius */
+    font-size: 0.65rem; /* Adjusted font size for smaller screens */
+    min-width: 18px; /* Adjusted min-width */
+    text-align: center;
+    opacity: 0.9;
+  }
+  @screen sm {
+    .tab-count {
+      padding: 2px 8px; /* Original padding for larger screens */
+      border-radius: 12px; /* Original border-radius */
+      font-size: 0.75rem; /* Original font size for larger screens */
+      min-width: 20px; /* Original min-width */
+    }
+  }
+
+  /* Code badge */
+  .codice {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    background: rgba(0, 0, 0, 0.02);
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    color: hsl(var(--primary-dark));
+  }
+
+  /* Confirmed row */
+  .confirmed-row td {
+    background-color: hsl(142 76% 89%) !important;
+  }
+
+  /* Filters */
+  .filters {
+    background: hsl(210 40% 98%);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid hsl(var(--border));
+  }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  /* Highlight per sezione */
+  #dashboard-body mark {
+    color: hsl(var(--dashboard-color));
+    background: transparent;
+    font-weight: 700;
+  }
+
+  #ordini-body mark {
+    color: hsl(var(--ordini-color));
+    background: transparent;
+    font-weight: 700;
+  }
+
+  #esauriti-body mark {
+    color: hsl(var(--esauriti-color));
+    background: transparent;
+    font-weight: 700;
+  }
+
+  #storico-body mark {
+    color: hsl(var(--storico-color));
+    background: transparent;
+    font-weight: 700;
+  }
+
+  /* Toggle switch */
+  .toggle-checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-label {
+    display: inline-block;
+    width: 52px;
+    height: 30px;
+    background: hsl(211 31% 93%);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.18s ease;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  .toggle-ball {
+    display: block;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    transition: transform 0.18s ease;
+    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.08);
+  }
+
+  .toggle-checkbox:checked + .toggle-label {
+    background: linear-gradient(90deg, hsl(var(--success)), hsl(160 84% 39%));
+  }
+
+  .toggle-checkbox:checked + .toggle-label .toggle-ball {
+    transform: translateX(22px);
+  }
+}

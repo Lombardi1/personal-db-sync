@@ -1,0 +1,7 @@
+-- Step 1: Ensure 'ddt' column is TEXT.
+ALTER TABLE giacenza
+ALTER COLUMN ddt TYPE TEXT USING ddt::TEXT;
+
+-- Step 2: Ensure 'magazzino' column is TEXT.
+ALTER TABLE giacenza
+ALTER COLUMN magazzino TYPE TEXT USING magazzino::TEXT;
