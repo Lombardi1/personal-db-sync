@@ -354,7 +354,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Box "Spett." (destra, in alto)
     doc.setFontSize(9);
     doc.setFont(undefined, 'bold');
-    doc.rect(130, y, 70, 25);
+    doc.rect(130, y, 70, 30); // Altezza aumentata a 30mm
     doc.text('Spett.', 132, y + 5);
     doc.setFontSize(8);
     doc.text(fornitore?.nome || 'N/A', 132, y + 10);
@@ -364,20 +364,20 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, y + 15);
     if (fornitore?.citta) {
       const cittaText = `${fornitore.cap || ''} ${fornitore.citta} ${fornitore.provincia || ''}`.trim();
-      doc.text(cittaText, 132, y + 19);
+      doc.text(cittaText, 132, y + 20); // Spostato in basso
     }
-    if (fornitore?.telefono) doc.text(`FAX : ${fornitore.telefono}`, 132, y + 23);
+    if (fornitore?.telefono) doc.text(`FAX : ${fornitore.telefono}`, 132, y + 25); // Spostato in basso
     
     // Box "Destinazione merce" (destra, sotto Spett.)
-    doc.rect(130, y + 26, 70, 20);
+    doc.rect(130, y + 31, 70, 25); // Altezza aumentata a 25mm, posizione Y adeguata
     doc.setFont(undefined, 'bold');
     doc.setFontSize(8);
-    doc.text('Destinazione merce', 132, y + 30);
-    doc.text('Arti Grafiche Snc', 132, y + 35);
+    doc.text('Destinazione merce', 132, y + 35); // Spostato in basso
+    doc.text('Arti Grafiche Snc', 132, y + 40); // Spostato in basso
     doc.setFont(undefined, 'normal');
     doc.setFontSize(7);
-    doc.text('Via S.Antonio, 51', 132, y + 39);
-    doc.text('25050 - Passirano (BS)', 132, y + 43);
+    doc.text('Via S.Antonio, 51', 132, y + 45); // Spostato in basso
+    doc.text('25050 - Passirano (BS)', 132, y + 50); // Spostato in basso
 
     y += 62;
 
@@ -529,7 +529,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Logo FSC e testo
     try {
       const fscLogoWidth = 50; 
-      const fscLogoHeight = 27; // Modificato a 27mm
+      const fscLogoHeight = 27; 
       const fscLogoX = pageWidth - 10 - fscLogoWidth; // Allineato a destra
       const fscLogoY = footerY + 5; 
 
