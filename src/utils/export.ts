@@ -458,7 +458,15 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     const articlesHead = [['Articolo', 'Descrizione', 'UM', 'Quantità', 'Prezzo', 'Prezzo\ntotale', 'Iva', 'Data\ncons.']];
     
-    const articlesBody = ordine.articoli.map(article => {
+    // Filtra gli articoli annullati e ricalcola il subtotale
+    const nonCancelledArticles = ordine.articoli.filter(article => article.stato !== 'annullato');
+    const subtotalNonCancelled = nonCancelledArticles.reduce((sum, item) => {
+      const qty = item.quantita || 0;
+      const price = item.prezzo_unitario || 0;
+      return sum + (qty * price);
+    }, 0);
+
+    const articlesBody = nonCancelledArticles.map(article => {
       let articoloColumnText = '';
       let descrizioneColumnText = '';
 
@@ -485,6 +493,12 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         formatData(article.data_consegna_prevista || '')
       ];
     });
+
+    // Aggiungi una nota se ci sono articoli annullati
+    const cancelledArticlesCount = ordine.articoli.filter(article => article.stato === 'annullato').length;
+    if (cancelledArticlesCount > 0) {
+      articlesBody.push(['', `(${cancelledArticlesCount} articolo/i annullato/i non incluso/i nel PDF)`, '', '', '', '', '', '']);
+    }
 
     if (ordine.note) {
       articlesBody.push(['', ordine.note, '', '', '', '', '', '']);
@@ -522,17 +536,16 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.text('Condizioni di vendita', 12, footerY + 5);
 
     // Calcola IVA e Totale con IVA in base a considera_iva del fornitore
-    const subtotal = ordine.importo_totale || 0;
     let ivaAmount = 0;
-    let totalFinal = subtotal;
+    let totalFinal = subtotalNonCancelled; // Usa il subtotale degli articoli non annullati
     let ivaTextDisplay = '(IVA non inclusa)'; 
 
-    console.log(`[DEBUG-IVA] Subtotal (ordine.importo_totale): ${subtotal}`);
+    console.log(`[DEBUG-IVA] Subtotal (articoli non annullati): ${subtotalNonCancelled}`);
     console.log(`[DEBUG-IVA] Fornitore: ${fornitore?.nome}, Considera IVA: ${fornitore?.considera_iva}`);
 
     if (fornitore?.considera_iva) {
-      ivaAmount = subtotal * IVA_RATE;
-      totalFinal = subtotal + ivaAmount;
+      ivaAmount = subtotalNonCancelled * IVA_RATE;
+      totalFinal = subtotalNonCancelled + ivaAmount;
       ivaTextDisplay = '(IVA inclusa)';
       console.log(`[DEBUG-IVA] IVA applicata. IVA Amount: ${ivaAmount}, Total Final: ${totalFinal}`);
     } else {
