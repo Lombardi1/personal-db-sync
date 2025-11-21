@@ -42,7 +42,7 @@ function getSectionColorRgb(section: string): [number, number, number] {
     case 'giacenza': // --dashboard-color: 217 91% 60%;
       return hslToRgb(217, 91, 60);
     case 'ordini': // --ordini-color: 0 72% 51%;
-      return hslToRmb(0, 72, 51);
+      return hslToRgb(0, 72, 51);
     case 'esauriti':
       return hslToRgb(142, 71, 39);
     case 'carico':
@@ -529,7 +529,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Logo FSC e testo
     try {
       const fscLogoWidth = 50; 
-      const fscLogoHeight = 30; 
+      const fscLogoHeight = 27; // Modificato a 27mm
       const fscLogoX = pageWidth - 10 - fscLogoWidth; // Allineato a destra
       const fscLogoY = footerY + 5; 
 
