@@ -428,7 +428,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // ========== TABELLA ARTICOLI ==========
     const isCartone = fornitore?.tipo_fornitore === 'Cartone';
-    
+    const IVA_RATE = 0.22; // 22% IVA
+
     const articlesHead = [['Articolo', 'Descrizione', 'UM', 'Quantità', 'Prezzo', 'Prezzo\ntotale', 'Iva', 'Data\ncons.']];
     
     const articlesBody = ordine.articoli.map(article => {
@@ -489,12 +490,17 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.setFont(undefined, 'bold');
     doc.text('Condizioni di vendita', 12, footerY + 5);
 
+    // Calcola IVA e Totale con IVA
+    const subtotal = ordine.importo_totale || 0;
+    const ivaAmount = subtotal * IVA_RATE;
+    const totalWithIva = subtotal + ivaAmount;
+
     // Totale ordine
     doc.rect(10, footerY + 21, 120, 10);
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
-    doc.text('Totale ordine EUR', 12, footerY + 27);
-    doc.text((ordine.importo_totale || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
+    doc.text('Totale ordine EUR (IVA inclusa)', 12, footerY + 27); // Aggiornato testo
+    doc.text(totalWithIva.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
 
     // Logo FSC
     try {
