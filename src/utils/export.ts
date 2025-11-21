@@ -493,13 +493,14 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     y = (doc as any).lastAutoTable.finalY;
 
     // ========== FOOTER ==========
-    const footerY = pageHeight - 50;
-    
+    // Ho spostato il footer più in alto per evitare che vada fuori pagina
+    const footerStart = pageHeight - 40; // Nuova posizione di partenza per il footer
+
     // Box "Condizioni di vendita"
-    doc.rect(10, footerY, 120, 20);
+    doc.rect(10, footerStart, 120, 20);
     doc.setFontSize(8);
     doc.setFont(undefined, 'bold');
-    doc.text('Condizioni di vendita', 12, footerY + 5);
+    doc.text('Condizioni di vendita', 12, footerStart + 5);
 
     // Calcola IVA e Totale con IVA in base a considera_iva del fornitore
     const subtotal = ordine.importo_totale || 0;
@@ -520,18 +521,23 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     }
 
     // Totale ordine
-    doc.rect(10, footerY + 21, 120, 10);
+    doc.rect(10, footerStart + 21, 120, 10);
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
-    doc.text(`Totale ordine EUR ${ivaTextDisplay}`, 12, footerY + 27); // Aggiornato testo
-    doc.text(totalFinal.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
+    doc.text(`Totale ordine EUR ${ivaTextDisplay}`, 12, footerStart + 27); // Aggiornato testo
+    doc.text(totalFinal.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerStart + 27, { align: 'right' });
 
-    // Logo FSC
+    // Logo FSC e testo
     try {
-      doc.addImage(logoFSC, 'JPEG', 140, footerY, 25, 25);
-      doc.setFontSize(7);
+      const fscLogoX = 140;
+      const fscLogoY = footerStart + 5; // Posizionato più in alto
+      const fscLogoWidth = 30; // Aumentata la dimensione
+      const fscLogoHeight = 30; // Aumentata la dimensione
+
+      doc.addImage(logoFSC, 'JPEG', fscLogoX, fscLogoY, fscLogoWidth, fscLogoHeight);
+      doc.setFontSize(8); // Aumentata la dimensione del font
       doc.setFont(undefined, 'normal');
-      doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', 10, footerY + 35, { maxWidth: 190, align: 'center' });
+      doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', 10, footerStart + 35, { maxWidth: 190, align: 'center' });
     } catch (error) {
       console.warn('Logo FSC non disponibile:', error);
     }
