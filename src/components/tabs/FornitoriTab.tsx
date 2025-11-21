@@ -108,7 +108,7 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
                 <TableHead className="text-xs sm:text-sm">Email</TableHead>
                 <TableHead className="text-xs sm:text-sm">Cond. Pagamento</TableHead>
                 <TableHead className="text-xs sm:text-sm">IVA</TableHead>
-                <TableHead className="text-xs sm:text-sm">Banca</TableHead> {/* NUOVO */}
+                <TableHead className="text-xs sm:text-sm w-[150px]">Banca</TableHead> {/* Modificato: Aggiunto w-[150px] */}
                 <TableHead className="text-right text-xs sm:text-sm">Azioni</TableHead>
               </TableRow>
             </TableHeader>
@@ -124,7 +124,7 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
                   <TableCell className="text-xs sm:text-sm">{fornitore.email || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.condizione_pagamento || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.considera_iva ? 'Sì' : 'No'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm">{fornitore.banca || '-'}</TableCell> {/* NUOVO */}
+                  <TableCell className="text-xs sm:text-sm w-[150px]">{fornitore.banca || '-'}</TableCell> {/* Modificato: Aggiunto w-[150px] */}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1 sm:gap-2">
                       <Button
