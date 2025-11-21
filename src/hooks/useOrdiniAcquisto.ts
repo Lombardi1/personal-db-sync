@@ -42,20 +42,55 @@ export function useOrdiniAcquisto() {
         articoli: (ordine.articoli || []) as ArticoloOrdineAcquisto[], // Cast the JSONB array
       }));
       
-      console.log('useOrdiniAcquisto: Fornitore type for each order:', ordiniWithFornitoreInfo.map(o => ({ numero_ordine: o.numero_ordine, fornitore_tipo: o.fornitore_tipo }))); // NEW LOG
-      console.log('useOrdiniAcquisto: Ordini con info fornitore (prima dell\'ordinamento):', ordiniWithFornitoreInfo.map(o => ({ numero_ordine: o.numero_ordine, stato: o.stato, data_ordine: o.data_ordine, updated_at: o.updated_at })));
+      let ordersToUpdateInDb: OrdineAcquisto[] = [];
+      const processedOrders = ordiniWithFornitoreInfo.map(order => {
+        const recalculatedTotal = order.articoli.reduce((sum, item) => {
+          if (item.stato !== 'annullato') {
+            const qty = item.quantita || 0;
+            const price = item.prezzo_unitario || 0;
+            return sum + (qty * price);
+          }
+          return sum;
+        }, 0);
 
-      // Applica l'ordinamento desiderato:
-      // 1. Per data di ultima modifica (updated_at) decrescente
-      // 2. Se updated_at è uguale, per stato ('in_attesa' prima)
-      // 3. Se anche lo stato è uguale, per data ordine (data_ordine) decrescente
-      const sortedOrdini = [...ordiniWithFornitoreInfo].sort((a, b) => {
+        // Check if the recalculated total differs from the stored one
+        if (Math.abs((order.importo_totale || 0) - recalculatedTotal) > 0.001) { // Use a small epsilon for float comparison
+          console.log(`[loadOrdiniAcquisto] Rilevato importo_totale non corrispondente per ordine ${order.numero_ordine}. Stored: ${order.importo_totale}, Recalculated: ${recalculatedTotal}`);
+          const updatedOrder = { ...order, importo_totale: recalculatedTotal };
+          ordersToUpdateInDb.push(updatedOrder); // Mark for DB update
+          return updatedOrder; // Use the corrected order for state
+        }
+        return order; // No change needed
+      });
+
+      // Perform batch update if there are any discrepancies
+      if (ordersToUpdateInDb.length > 0) {
+        console.log(`[loadOrdiniAcquisto] Trovati ${ordersToUpdateInDb.length} ordini con importo_totale da correggere. Eseguo aggiornamento batch.`);
+        const updates = ordersToUpdateInDb.map(order => ({
+          id: order.id,
+          importo_totale: order.importo_totale,
+          updated_at: new Date().toISOString() // Also update updated_at
+        }));
+        const { error: updateError } = await supabase
+          .from('ordini_acquisto')
+          .upsert(updates, { onConflict: 'id' }); // Use upsert for batch update
+
+        if (updateError) {
+          console.error('[loadOrdiniAcquisto] Errore durante l\'aggiornamento batch degli importi totali:', updateError);
+          toast.error('Errore durante la correzione degli importi totali degli ordini.');
+        } else {
+          console.log('[loadOrdiniAcquisto] Aggiornamento batch degli importi totali completato con successo.');
+        }
+      }
+
+      // Apply sorting to the processed orders
+      const sortedOrdini = [...processedOrders].sort((a, b) => {
         // Primary sort: by updated_at (most recent first)
-        const dateAUpdated = new Date(a.updated_at || a.created_at || 0).getTime(); // Fallback to created_at if updated_at is null
-        const dateBUpdated = new Date(b.updated_at || b.created_at || 0).getTime(); // Fallback to created_at if updated_at is null
+        const dateAUpdated = new Date(a.updated_at || a.created_at || 0).getTime();
+        const dateBUpdated = new Date(b.updated_at || b.created_at || 0).getTime();
 
         if (dateAUpdated !== dateBUpdated) {
-          return dateBUpdated - dateAUpdated; // Descending order for updated_at
+          return dateBUpdated - dateAUpdated;
         }
 
         // Secondary sort: Prioritize 'in_attesa' status
@@ -89,127 +124,7 @@ export function useOrdiniAcquisto() {
     } finally {
       setLoading(false);
     }
-  }, []); // Dipendenze vuote per useCallback
-
-  // Helper per sincronizzare lo stato degli articoli con le tabelle di magazzino (ordini e giacenza)
-  const syncArticleInventoryStatus = useCallback(async (ordineAcquisto: OrdineAcquisto) => {
-    console.log(`[syncArticleInventoryStatus] Sincronizzazione articoli per OA: ${ordineAcquisto.numero_ordine}`);
-    console.log(`[syncArticleInventoryStatus] Fornitore Tipo per OA ${ordineAcquisto.numero_ordine}: ${ordineAcquisto.fornitore_tipo}`); // NEW LOG
-    const fornitoreNome = ordineAcquisto.fornitore_nome || 'N/A';
-    const isCartoneFornitore = ordineAcquisto.fornitore_tipo === 'Cartone';
-    console.log(`[syncArticleInventoryStatus] isCartoneFornitore: ${isCartoneFornitore}`); // NEW LOG
-
-    // NEW: Initial cleanup - remove all articles associated with this purchase order from 'ordini'
-    // We no longer delete from 'giacenza' here, as 'spostaInGiacenza' handles that.
-    await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
-    console.log(`[syncArticleInventoryStatus] Eseguita pulizia iniziale per OA: ${ordineAcquisto.numero_ordine} da 'ordini'.`);
-
-    if (!isCartoneFornitore) {
-      console.log(`[syncArticleInventoryStatus] Non è un fornitore di cartone, nessuna azione aggiuntiva richiesta dopo la pulizia.`);
-      return;
-    }
-
-    // Defensive check for articles array
-    if (!Array.isArray(ordineAcquisto.articoli)) {
-      console.error(`[syncArticleInventoryStatus] Errore: ordineAcquisto.articoli non è un array per OA: ${ordineAcquisto.numero_ordine}`, ordineAcquisto.articoli);
-      toast.error(`Errore interno: Articoli dell'ordine non validi per ${ordineAcquisto.numero_ordine}.`);
-      return;
-    }
-
-    console.log(`[syncArticleInventoryStatus] Preparing to process ${ordineAcquisto.articoli.length} articles.`);
-    console.log(`[syncArticleInventoryStatus] Articles array content:`, JSON.stringify(ordineAcquisto.articoli, null, 2));
-
-    for (const articolo of ordineAcquisto.articoli) { // Changed from Promise.all(map) to for...of loop
-      try {
-        console.log(`[syncArticleInventoryStatus] Processing article:`, articolo);
-        const codiceCtn = articolo.codice_ctn;
-        if (!codiceCtn) {
-          console.warn(`[syncArticleInventoryStatus] Articolo senza codice CTN. Saltato:`, articolo);
-          continue; // Use continue for for...of loop
-        }
-
-        const numFogli = articolo.numero_fogli;
-        if (numFogli === undefined || numFogli <= 0) {
-          console.warn(`[syncArticleInventoryStatus] Articolo cartone ${codiceCtn} con numero_fogli non valido (${numFogli}). Saltato.`);
-          continue; // Use continue for for...of loop
-        }
-
-        const cartoneBase: Cartone = {
-          codice: codiceCtn,
-          fornitore: fornitoreNome,
-          ordine: ordineAcquisto.numero_ordine,
-          tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
-          formato: articolo.formato || 'N/A',
-          grammatura: articolo.grammatura || 'N/A',
-          fogli: numFogli,
-          cliente: articolo.cliente || 'N/A',
-          lavoro: articolo.lavoro || 'N/A',
-          magazzino: '-', // Default, will be updated by spostaInGiacenza
-          prezzo: articolo.prezzo_unitario,
-          data_consegna: articolo.data_consegna_prevista,
-          note: ordineAcquisto.note || '-'
-        };
-
-        console.log(`[syncArticleInventoryStatus] Articolo ${codiceCtn} stato: ${articolo.stato}`);
-        if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
-          const isConfirmedForOrdiniTable = articolo.stato === 'confermato';
-          console.log(`[syncArticleInventoryStatus] Preparando inserimento in 'ordini' per ${codiceCtn}. Dati:`, { ...cartoneBase, confermato: isConfirmedForOrdiniTable });
-          const { error: insertError } = await supabase.from('ordini').insert([{ ...cartoneBase, confermato: isConfirmedForOrdiniTable }]);
-          if (insertError) {
-            console.error(`[syncArticleInventoryStatus] Errore inserimento ${codiceCtn} in 'ordini':`, insertError);
-            toast.error(`Errore inserimento in ordini: ${insertError.message}`);
-          } else {
-            console.log(`[syncArticleInventoryStatus] Inserito/Aggiornato ${codiceCtn} in 'ordini' con stato '${articolo.stato}'. Campo 'confermato' impostato a: ${isConfirmedForOrdiniTable}.`);
-          }
-        } else if (articolo.stato === 'ricevuto') {
-          // NEW LOGIC: If article is 'ricevuto', check if it already exists in 'giacenza'
-          // If it exists, update its fields (ddt, data_arrivo, magazzino)
-          // If it doesn't exist, insert it with default values (which will be updated by spostaInGiacenza)
-          const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
-            .from('giacenza')
-            .select('ddt, data_arrivo, magazzino')
-            .eq('codice', codiceCtn)
-            .single();
-
-          if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') { // PGRST116 means "no rows found"
-            console.error(`[syncArticleInventoryStatus] Errore recupero giacenza per ${codiceCtn}:`, fetchGiacenzaError);
-            toast.error(`Errore recupero giacenza: ${fetchGiacenzaError.message}`);
-            continue;
-          }
-
-          const giacenzaDataToUpdate = {
-            ddt: existingGiacenza?.ddt || null,
-            data_arrivo: existingGiacenza?.data_arrivo || new Date().toISOString().split('T')[0],
-            magazzino: existingGiacenza?.magazzino || '-',
-          };
-
-          if (existingGiacenza) {
-            console.log(`[syncArticleInventoryStatus] Aggiornando 'giacenza' per ${codiceCtn} (stato 'ricevuto'). Dati:`, { ...cartoneBase, ...giacenzaDataToUpdate });
-            const { error: updateError } = await supabase.from('giacenza').update({ ...cartoneBase, ...giacenzaDataToUpdate }).eq('codice', codiceCtn);
-            if (updateError) {
-              console.error(`[syncArticleInventoryStatus] Errore aggiornamento ${codiceCtn} in 'giacenza':`, updateError);
-              toast.error(`Errore aggiornamento in giacenza: ${updateError.message}`);
-            } else {
-              console.log(`[syncArticleInventoryStatus] Aggiornato ${codiceCtn} in 'giacenza' con stato 'ricevuto'.`);
-            }
-          } else {
-            console.log(`[syncArticleInventoryStatus] Inserendo in 'giacenza' per ${codiceCtn} (stato 'ricevuto'). Dati:`, { ...cartoneBase, ...giacenzaDataToUpdate });
-            const { error: insertError } = await supabase.from('giacenza').insert([{ ...cartoneBase, ...giacenzaDataToUpdate }]);
-            if (insertError) {
-              console.error(`[syncArticleInventoryStatus] Errore inserimento ${codiceCtn} in 'giacenza':`, insertError);
-              toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
-            } else {
-              console.log(`[syncArticleInventoryStatus] Inserito ${codiceCtn} in 'giacenza' con stato 'ricevuto'.`);
-            }
-          }
-        }
-      } catch (e: any) {
-        console.error(`[syncArticleInventoryStatus] Errore interno durante l'elaborazione dell'articolo ${articolo?.codice_ctn || 'sconosciuto'}:`, e);
-        toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
-      }
-    } // End for...of loop
-    console.log(`[syncArticleInventoryStatus] Sincronizzazione completata per OA: ${ordineAcquisto.numero_ordine}`);
-  }, []); // Dipendenze vuote per useCallback
+  }, []); // No dependencies needed for useCallback if it's self-contained
 
   useEffect(() => {
     loadOrdiniAcquisto();
