@@ -362,7 +362,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.text(fornitore?.nome || 'N/A', 132, 20);
     
     // Aggiunto spazio dopo il nome del fornitore
-    let currentYForFornitore = 20 + 4; // Inizia 4mm sotto il nome del fornitore
+    let currentYForFornitore = 20 + 8; // Inizia 8mm sotto il nome del fornitore per un doppio invio
     doc.setFontSize(8); // Contenuto del box
     if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, currentYForFornitore);
     currentYForFornitore += 4;
@@ -381,7 +381,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.text(aziendaInfo?.nome_azienda || 'Arti Grafiche Snc', 132, 50); // Dinamico
     
     // Aggiunto spazio dopo il nome dell'azienda
-    let currentYForAzienda = 50 + 4; // Inizia 4mm sotto il nome dell'azienda
+    let currentYForAzienda = 50 + 8; // Inizia 8mm sotto il nome dell'azienda per un doppio invio
     doc.setFontSize(8); // Contenuto del box
     doc.text(aziendaInfo?.indirizzo || 'Via S.Antonio, 51', 132, currentYForAzienda); // Dinamico
     currentYForAzienda += 4;
