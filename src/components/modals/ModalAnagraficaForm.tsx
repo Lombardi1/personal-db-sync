@@ -145,9 +145,9 @@ export function ModalAnagraficaForm({
         const { tipo_fornitore, banca, ...rest } = dataToSubmit as any;
         dataToSubmit = rest;
       }
-      // Rimuovi banca se è un fornitore e non è stato selezionato nulla (per evitare stringhe vuote se non necessario)
-      else if (type === 'fornitore' && !dataToSubmit.banca) {
-        dataToSubmit.banca = null; // Imposta a null se vuoto per il DB
+      // Imposta a null se la banca è una stringa vuota per i fornitori
+      else if (type === 'fornitore' && dataToSubmit.banca === '') {
+        dataToSubmit.banca = null; 
       }
 
       console.log(`[ModalAnagraficaForm] Dati inviati a onSubmit per ${type}:`, dataToSubmit); // LOG DI DEBUG
@@ -238,7 +238,7 @@ export function ModalAnagraficaForm({
                       <SelectValue placeholder="Seleziona banca" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={null}>Nessuna</SelectItem> {/* Modificato: value={null} */}
+                      <SelectItem value="">Nessuna</SelectItem> {/* Modificato: value="" */}
                       {bancheDisponibili.map((bancaOption, index) => (
                         <SelectItem key={index} value={bancaOption}>
                           {bancaOption}

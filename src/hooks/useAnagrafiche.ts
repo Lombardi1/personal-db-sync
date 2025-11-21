@@ -265,6 +265,7 @@ export function useAnagrafiche() {
   };
 
   const addFornitore = async (fornitore: Omit<Fornitore, 'id' | 'created_at'>) => {
+    console.log('[useAnagrafiche] addFornitore: Dati inviati a Supabase:', fornitore); // LOG DI DEBUG
     if (useMockData) {
       console.log('Mock: Aggiungi fornitore', fornitore);
       const newMockFornitore = { ...fornitore, id: `mock-f-${Date.now()}`, codice_anagrafica: generateNextFornitoreCode(), created_at: new Date().toISOString(), considera_iva: fornitore.considera_iva || false, banca: fornitore.banca || '' }; // NUOVO: Aggiunto banca
@@ -288,17 +289,19 @@ export function useAnagrafiche() {
   };
 
   const updateFornitore = async (id: string, fornitore: Partial<Omit<Fornitore, 'id' | 'created_at'>>) => {
+    // Non permettiamo la modifica del codice anagrafica tramite update
+    const { codice_anagrafica, ...updateData } = fornitore;
+    console.log(`[useAnagrafiche] updateFornitore: Aggiornamento fornitore ${id}. Dati inviati a Supabase:`, updateData); // LOG DI DEBUG
+    console.log(`[useAnagrafiche] updateFornitore: Valore di 'considera_iva' inviato a Supabase:`, updateData.considera_iva); // LOG DI DEBUG
+    console.log(`[useAnagrafiche] updateFornitore: Valore di 'banca' inviato a Supabase:`, updateData.banca); // NUOVO LOG
+    
     if (useMockData) {
       console.log('Mock: Modifica fornitore', id, fornitore);
       setFornitori(prev => prev.map(f => f.id === id ? { ...f, ...fornitore } : f)); // Aggiorna lo stato mock
       toast.success(`✅ Mock: Fornitore '${fornitore.nome || id}' modificato con successo!`);
       return { success: true, data: { ...fornitore, id } as Fornitore };
     }
-    // Non permettiamo la modifica del codice anagrafica tramite update
-    const { codice_anagrafica, ...updateData } = fornitore;
-    console.log(`[useAnagrafiche] Aggiornamento fornitore ${id}. Dati inviati a Supabase:`, updateData); // LOG DI DEBUG
-    console.log(`[useAnagrafiche] Valore di 'considera_iva' inviato a Supabase:`, updateData.considera_iva); // LOG DI DEBUG
-    console.log(`[useAnagrafiche] Valore di 'banca' inviato a Supabase:`, updateData.banca); // NUOVO LOG
+    
     const { data, error } = await supabase.from('fornitori').update(updateData).eq('id', id).select().single();
     if (error) {
       console.error(`[useAnagrafiche] Errore Supabase durante l'aggiornamento fornitore ${id}:`, error); // LOG ERRORE
