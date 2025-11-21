@@ -393,7 +393,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     const infoData = [
       ordine.numero_ordine,
       formatData(ordine.data_ordine),
-      fornitore?.codice_fiscale || 'N/A',
+      fornitore?.codice_anagrafica || 'N/A', // Modificato per usare codice_anagrafica
       fornitore?.partita_iva || 'N/A',
       fornitore?.condizione_pagamento || 'BONIFICO BANCARIO 90 G.G. F.M.', // Usa il nuovo campo
       '1'
@@ -497,16 +497,25 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.setFont(undefined, 'bold');
     doc.text('Condizioni di vendita', 12, footerY + 5);
 
-    // Calcola IVA e Totale con IVA
+    // Calcola IVA e Totale con IVA in base a considera_iva del fornitore
     const subtotal = ordine.importo_totale || 0;
-    const ivaAmount = subtotal * IVA_RATE;
-    const totalWithIva = subtotal + ivaAmount;
+    let ivaAmount = 0;
+    let totalWithIva = subtotal;
+    let ivaText = '(IVA inclusa)';
+
+    if (fornitore?.considera_iva) {
+      ivaAmount = subtotal * IVA_RATE;
+      totalWithIva = subtotal + ivaAmount;
+      ivaText = '(IVA inclusa)';
+    } else {
+      ivaText = '(IVA non inclusa)';
+    }
 
     // Totale ordine
     doc.rect(10, footerY + 21, 120, 10);
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
-    doc.text('Totale ordine EUR (IVA inclusa)', 12, footerY + 27); // Aggiornato testo
+    doc.text(`Totale ordine EUR ${ivaText}`, 12, footerY + 27); // Aggiornato testo
     doc.text(totalWithIva.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
 
     // Logo FSC
