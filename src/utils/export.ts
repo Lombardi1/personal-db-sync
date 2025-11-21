@@ -409,7 +409,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       margin: { left: 10, right: 10 },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 5; // Increased space after info table
+    // Modificato: Ridotto lo spazio tra la prima e la seconda tabella informativa
+    y = (doc as any).lastAutoTable.finalY + 2; 
 
     // Seconda riga: Resa, Mezzo, Banca
     autoTable(doc, {
@@ -423,7 +424,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       margin: { left: 10, right: 10 },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 8; // Increased space after second info table
+    // Modificato: Ridotto lo spazio dopo la seconda tabella informativa
+    y = (doc as any).lastAutoTable.finalY + 5; 
 
     // ========== TABELLA ARTICOLI ==========
     const isCartone = fornitore?.tipo_fornitore === 'Cartone';
