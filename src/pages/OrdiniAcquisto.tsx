@@ -165,9 +165,19 @@ export default function OrdiniAcquisto() {
       if (isCartoneFornitore) {
         newArticle.codice_ctn = generateNextCartoneCode();
       }
-      newArticle.stato = 'in_attesa';
+      newArticle.stato = 'in_attesa'; // All duplicated articles start as 'in_attesa'
       return newArticle;
     });
+
+    // Ricalcola l'importo_totale per l'ordine duplicato, escludendo gli articoli annullati
+    duplicatedOrder.importo_totale = duplicatedOrder.articoli.reduce((sum, item) => {
+        if (item.stato !== 'annullato') { // Tutti gli articoli duplicati sono 'in_attesa', quindi non annullati
+            const qty = item.quantita || 0;
+            const price = item.prezzo_unitario || 0;
+            return sum + (qty * price);
+        }
+        return sum;
+    }, 0);
 
     console.log('OrdiniAcquisto: Duplicated order prepared:', duplicatedOrder);
     setEditingOrdine(duplicatedOrder);

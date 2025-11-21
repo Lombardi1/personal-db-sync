@@ -55,7 +55,7 @@ const articoloSchema = z.object({
   descrizione: z.string().max(255, 'Descrizione troppo lunga').optional().or(z.literal('')),
   tipologia_cartone: z.string().max(255, 'Tipologia troppo lunga').optional().or(z.literal('')),
   formato: z.string().max(50, 'Formato troppo lungo').optional().or(z.literal('')),
-  grammatura: z.string().max(50, 'Grammatura troppo lunga').optional().or(z.literal('')),
+  grammatura: z.string().max(50, 'Grammatura troppo lungo').optional().or(z.literal('')),
   numero_fogli: z.preprocess(
     (val) => (val === '' ? null : Number(val)),
     z.number().min(1, 'Il numero di fogli deve essere almeno 1').optional().nullable()
@@ -230,9 +230,13 @@ export function ModalOrdineAcquistoForm({
 
   const watchedArticles = watch('articoli');
   const totalAmount = watchedArticles.reduce((sum, item) => {
-    const qty = item.quantita || 0;
-    const price = item.prezzo_unitario || 0;
-    return sum + (qty * price);
+    // Escludi gli articoli annullati dal calcolo del totale
+    if (item.stato !== 'annullato') {
+      const qty = item.quantita || 0;
+      const price = item.prezzo_unitario || 0;
+      return sum + (qty * price);
+    }
+    return sum;
   }, 0);
 
   const [openCombobox, setOpenCombobox] = React.useState(false);
