@@ -293,6 +293,8 @@ export function useAnagrafiche() {
     }
     // Non permettiamo la modifica del codice anagrafica tramite update
     const { codice_anagrafica, ...updateData } = fornitore;
+    console.log(`[useAnagrafiche] Aggiornamento fornitore ${id}. Dati inviati a Supabase:`, updateData); // LOG DI DEBUG
+    console.log(`[useAnagrafiche] Valore di 'considera_iva' inviato a Supabase:`, updateData.considera_iva); // LOG DI DEBUG
     const { data, error } = await supabase.from('fornitori').update(updateData).eq('id', id).select().single();
     if (error) {
       toast.error(`Errore modifica fornitore: ${error.message}`);
@@ -315,7 +317,7 @@ export function useAnagrafiche() {
       toast.error(`Errore eliminazione fornitore: ${error.message}`);
       return { success: false, error };
     }
-    toast.success('✅ Fornitore eliminato con successo!');
+    toast.success('✅ Cliente eliminato con successo!');
     await loadAnagrafiche(); // Ricarica i dati dopo l'eliminazione
     return { success: true };
   };

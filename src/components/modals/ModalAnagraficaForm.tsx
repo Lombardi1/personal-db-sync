@@ -133,6 +133,9 @@ export function ModalAnagraficaForm({
       //   dataToSubmit = rest;
       // }
 
+      console.log(`[ModalAnagraficaForm] Dati inviati a onSubmit per ${type}:`, dataToSubmit); // LOG DI DEBUG
+      console.log(`[ModalAnagraficaForm] Valore di 'considera_iva' prima di onSubmit:`, dataToSubmit.considera_iva); // LOG DI DEBUG
+
       if (!initialData) {
         const { id, created_at, ...dataWithoutIdAndCreatedAt } = dataToSubmit;
         await onSubmit(dataWithoutIdAndCreatedAt);
