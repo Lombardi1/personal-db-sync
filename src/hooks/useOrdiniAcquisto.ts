@@ -293,7 +293,7 @@ export function useOrdiniAcquisto() {
 
   // Nuova funzione per aggiornare solo lo stato di un ordine d'acquisto
   const updateOrdineAcquistoStatus = useCallback(async (id: string, newStatus: OrdineAcquisto['stato']) => {
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Inizio aggiornamento stato per ID: ${id} a ${newStatus}`);
+    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] INIZIO. ID: ${id}, Nuovo Stato: ${newStatus}`); // Log all'inizio
     
     // Recupera l'ordine completo per poter sincronizzare gli articoli
     const { data: currentOrdine, error: fetchError } = await supabase
@@ -497,7 +497,7 @@ export function useOrdiniAcquisto() {
 
   // Funzione per annullare un ordine (imposta lo stato a 'annullato')
   const cancelOrdineAcquisto = useCallback(async (id: string) => {
-    console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] Inizio annullamento per ID: ${id}`);
+    console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] INIZIO. ID: ${id}`); // Log all'inizio
     // Prima, recupera l'ordine per ottenere il suo numero_ordine e lo stato attuale
     const { data: ordineToUpdate, error: fetchError } = await supabase
       .from('ordini_acquisto')
