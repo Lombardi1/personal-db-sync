@@ -444,7 +444,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [['Resa', 'Mezzo', 'Banca']],
       body: [['', '', fornitore?.banca || '']], // Popola il campo Banca qui
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
+      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'normal', textColor: [0, 0, 0], overflow: 'ellipsize' }, // Modificato fontStyle e overflow
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
       bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, 
       columnStyles: { // Aggiunto per distribuire equamente la larghezza
