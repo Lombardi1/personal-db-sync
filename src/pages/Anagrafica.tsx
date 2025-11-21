@@ -8,6 +8,7 @@ import { AnagraficaTabs } from '@/components/AnagraficaTabs';
 import { ClientiTab } from '@/components/tabs/ClientiTab';
 import { FornitoriTab } from '@/components/tabs/FornitoriTab';
 import { useAnagrafiche } from '@/hooks/useAnagrafiche'; // Importa il nuovo hook
+import { assignMissingAnagraficaCodes } from '@/utils/anagraficaUtils'; // Importa la nuova funzione
 
 export default function Anagrafica() {
   const { user, loading: authLoading } = useAuth();
@@ -20,7 +21,8 @@ export default function Anagrafica() {
   const { 
     clienti, fornitori, loading: anagraficheLoading,
     addCliente, updateCliente, deleteCliente,
-    addFornitore, updateFornitore, deleteFornitore
+    addFornitore, updateFornitore, deleteFornitore,
+    loadAnagrafiche // Importa loadAnagrafiche per ricaricare i dati dopo l'assegnazione
   } = useAnagrafiche();
 
   useEffect(() => {
@@ -35,6 +37,11 @@ export default function Anagrafica() {
       setActiveTab(tabFromUrl);
     }
   }, [location.search]);
+
+  const handleAssignMissingCodes = async () => {
+    await assignMissingAnagraficaCodes();
+    await loadAnagrafiche(); // Ricarica i dati per mostrare i nuovi codici
+  };
 
   if (authLoading || anagraficheLoading) {
     return (
@@ -53,8 +60,6 @@ export default function Anagrafica() {
       <Header 
         title="Gestione Anagrafiche" 
         activeTab="anagrafica" 
-        // showDashboardButton={true} // Removed
-        // dashboardButtonTarget="/summary" // Removed
         showUsersButton={true}
       />
       <div className="max-w-[1400px] mx-auto p-3 sm:p-5 md:px-8">
@@ -62,10 +67,23 @@ export default function Anagrafica() {
           <h2 className="text-2xl sm:text-3xl font-bold text-[hsl(var(--anagrafica-color))] flex items-center gap-2 sm:gap-3 text-center sm:text-left">
             <i className="fas fa-address-book"></i> Gestione Anagrafiche
           </h2>
-          <Button onClick={() => navigate('/summary')} variant="outline" size="sm" className="text-sm">
-            <Home className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-            Torna alla Dashboard
-          </Button>
+          <div className="flex gap-2">
+            {/* Pulsante temporaneo per assegnare i codici mancanti */}
+            <Button 
+              onClick={handleAssignMissingCodes} 
+              variant="secondary" 
+              size="sm" 
+              className="text-sm bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+              title="Assegna codici a clienti/fornitori esistenti senza codice"
+            >
+              <i className="fas fa-magic mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4"></i>
+              Assegna Codici Mancanti
+            </Button>
+            <Button onClick={() => navigate('/summary')} variant="outline" size="sm" className="text-sm">
+              <Home className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+              Torna alla Dashboard
+            </Button>
+          </div>
         </div>
         
         <AnagraficaTabs activeTab={activeTab} setActiveTab={setActiveTab} />
