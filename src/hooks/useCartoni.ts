@@ -172,7 +172,10 @@ export function useCartoni() {
       console.log(`[spostaInGiacenza] Registrazione storico riuscita per codice: ${codice}`);
     }
 
-    // Rimosso: if (ordine.ordine && codice) { await updateArticleStatusInOrder(ordine.ordine, codice, 'ricevuto'); }
+    // Riattivato: Aggiorna lo stato dell'articolo nell'ordine d'acquisto a 'ricevuto'
+    if (ordine.ordine && codice) { 
+      await updateArticleStatusInOrder(ordine.ordine, codice, 'ricevuto'); 
+    }
 
     console.log(`[spostaInGiacenza] Ricarico tutti i dati.`);
     await loadData();
