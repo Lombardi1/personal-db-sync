@@ -387,46 +387,43 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.text('ORDINE', 12, y + 13);
     y += 18;
 
-    // ========== TABELLA INFO ORDINE UNIFICATA ==========
-    const combinedHeaders = [
-      'Numero', 'Data', 'Cod. fornitore', 'P.IVA', 'Condizione di pagamento', 'Pag.',
-      'Resa', 'Mezzo', 'Banca'
-    ];
-    const combinedData = [
+    // ========== TABELLA INFO ORDINE ==========
+    const infoHeaders = ['Numero', 'Data', 'Cod. fornitore', 'P.IVA', 'Condizione di pagamento', 'Pag.'];
+    const infoData = [
       ordine.numero_ordine,
       formatData(ordine.data_ordine),
-      fornitore?.codice_anagrafica || 'N/A',
+      fornitore?.codice_anagrafica || 'N/A', // Modificato per usare codice_anagrafica
       fornitore?.partita_iva || 'N/A',
-      fornitore?.condizione_pagamento || 'BONIFICO BANCARIO 90 G.G. F.M.',
-      '1',
-      '', // Resa (lasciato vuoto per ora)
-      '', // Mezzo (lasciato vuoto per ora)
-      ''  // Banca (lasciato vuoto per ora)
+      fornitore?.condizione_pagamento || 'BONIFICO BANCARIO 90 G.G. F.M.', // Usa il nuovo campo
+      '1'
     ];
 
     autoTable(doc, {
       startY: y,
-      head: [combinedHeaders],
-      body: [combinedData],
+      head: [infoHeaders],
+      body: [infoData],
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold' },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] },
-      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] },
-      columnStyles: {
-        0: { cellWidth: 20 }, // Numero
-        1: { cellWidth: 20 }, // Data
-        2: { cellWidth: 25 }, // Cod. fornitore
-        3: { cellWidth: 25 }, // P.IVA
-        4: { cellWidth: 35 }, // Condizione di pagamento
-        5: { cellWidth: 10 }, // Pag.
-        6: { cellWidth: 20 }, // Resa
-        7: { cellWidth: 20 }, // Mezzo
-        8: { cellWidth: 20 }, // Banca
-      },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
       margin: { left: 10, right: 10 },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 8; // Increased space after combined info table
+    y = (doc as any).lastAutoTable.finalY + 5; // Increased space after info table
+
+    // Seconda riga: Resa, Mezzo, Banca
+    autoTable(doc, {
+      startY: y,
+      head: [['Resa', 'Mezzo', 'Banca']],
+      body: [['', '', '']],
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold' },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, // Modificato lineWidth
+      margin: { left: 10, right: 10 },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 8; // Increased space after second info table
 
     // ========== TABELLA ARTICOLI ==========
     const isCartone = fornitore?.tipo_fornitore === 'Cartone';
