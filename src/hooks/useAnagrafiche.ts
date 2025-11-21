@@ -302,5 +302,6 @@ export function useAnagrafiche() {
     addFornitore,
     updateFornitore,
     deleteFornitore,
+    loadAnagrafiche, // Ora la funzione è esposta
   };
 }
