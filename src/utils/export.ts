@@ -528,15 +528,15 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // Logo FSC e testo
     try {
-      const fscLogoX = 10; // Allineato a sinistra
-      const fscLogoY = footerY + 5; 
       const fscLogoWidth = 50; 
       const fscLogoHeight = 30; 
+      const fscLogoX = pageWidth - 10 - fscLogoWidth; // Allineato a destra
+      const fscLogoY = footerY + 5; 
 
       doc.addImage(logoFSC, 'JPEG', fscLogoX, fscLogoY, fscLogoWidth, fscLogoHeight);
       doc.setFontSize(8); 
       doc.setFont(undefined, 'normal');
-      doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', 10, footerY + 35, { maxWidth: 190, align: 'left' }); // Spostato sotto il logo e allineato a sinistra
+      doc.text('Solo i prodotti identificati come tali in questo documento sono certificati FSC®', pageWidth - 10, footerY + 35, { maxWidth: 190, align: 'right' }); // Spostato sotto il logo e allineato a destra
     } catch (error) {
       console.warn('Logo FSC non disponibile:', error);
     }
