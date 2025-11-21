@@ -43,13 +43,13 @@ function getSectionColorRgb(section: string): [number, number, number] {
       return hslToRgb(217, 91, 60);
     case 'ordini': // --ordini-color: 0 72% 51%;
       return hslToRgb(0, 72, 51);
-    case 'esauriti': // --esauriti-color: 142 71% 39%;
+    case 'esauriti':
       return hslToRgb(142, 71, 39);
-    case 'carico': // --carico-color: 262 66% 52%;
+    case 'carico':
       return hslToRgb(262, 66, 52);
-    case 'storico': // --storico-color: 37 93% 44%;
+    case 'storico':
       return hslToRgb(37, 93, 44);
-    case 'ordini-acquisto': // --ordini-acquisto-color: 25 95% 55%;
+    case 'ordini-acquisto':
       return hslToRgb(25, 95, 55);
     default: // Fallback to primary color or a default blue
       return hslToRgb(222, 47, 39); // --primary: 222 47% 39%;
@@ -395,7 +395,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       formatData(ordine.data_ordine),
       fornitore?.codice_fiscale || 'N/A',
       fornitore?.partita_iva || 'N/A',
-      'BONIFICO BANCARIO 90 G.G. F.M.',
+      fornitore?.condizione_pagamento || 'BONIFICO BANCARIO 90 G.G. F.M.', // Usa il nuovo campo
       '1'
     ];
 

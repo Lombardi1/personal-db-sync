@@ -44,10 +44,13 @@ export interface AnagraficaBase {
   pec?: string;
   sdi?: string;
   note?: string;
+  condizione_pagamento?: string; // NUOVO CAMPO
   created_at?: string;
 }
 
-export interface Cliente extends AnagraficaBase {}
+export interface Cliente extends AnagraficaBase {
+  considera_iva?: boolean; // NUOVO CAMPO
+}
 export interface Fornitore extends AnagraficaBase {
   tipo_fornitore?: string; // Nuovo campo per il tipo di fornitore
 }

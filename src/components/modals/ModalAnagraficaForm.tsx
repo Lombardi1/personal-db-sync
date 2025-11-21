@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AnagraficaBase, Fornitore } from '@/types';
+import { AnagraficaBase, Fornitore, Cliente } from '@/types'; // Importa Cliente
 import * as notifications from '@/utils/notifications';
 import { normalizeAnagraficaData } from '@/lib/utils';
 import {
@@ -37,14 +37,14 @@ interface ModalAnagraficaFormProps {
   type: 'cliente' | 'fornitore';
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: AnagraficaBase | Fornitore) => Promise<void>;
-  initialData?: AnagraficaBase | Fornitore | null;
+  onSubmit: (data: AnagraficaBase | Fornitore | Cliente) => Promise<void>; // Aggiornato tipo
+  initialData?: AnagraficaBase | Fornitore | Cliente | null; // Aggiornato tipo
 }
 
-type FormData = AnagraficaBase & { tipo_fornitore?: string };
+type FormData = AnagraficaBase & { tipo_fornitore?: string; considera_iva?: boolean }; // Aggiornato FormData type
 
 const anagraficaSchema = z.object({
-  codice_anagrafica: z.string().max(20, 'Codice troppo lungo').optional().or(z.literal('')), // Nuovo campo
+  codice_anagrafica: z.string().max(20, 'Codice troppo lungo').optional().or(z.literal('')),
   nome: z.string().min(1, 'Il nome è obbligatorio').max(255, 'Nome troppo lungo'),
   indirizzo: z.string().max(255, 'Indirizzo troppo lungo').optional().or(z.literal('')),
   citta: z.string().max(100, 'Città troppo lunga').optional().or(z.literal('')),
@@ -57,7 +57,9 @@ const anagraficaSchema = z.object({
   pec: z.string().email('PEC non valida').max(255, 'PEC troppo lunga').optional().or(z.literal('')),
   sdi: z.string().max(20, 'Codice SDI troppo lungo').optional().or(z.literal('')),
   note: z.string().max(1000, 'Note troppo lunghe').optional().or(z.literal('')),
+  condizione_pagamento: z.string().max(255, 'Condizione di pagamento troppo lunga').optional().or(z.literal('')), // NUOVO
   tipo_fornitore: z.string().optional().or(z.literal('')),
+  considera_iva: z.boolean().optional(), // NUOVO
 });
 
 export function ModalAnagraficaForm({
@@ -82,6 +84,7 @@ export function ModalAnagraficaForm({
   });
 
   const watchedTipoFornitore = watch('tipo_fornitore' as any);
+  const watchedConsideraIva = watch('considera_iva' as any); // NUOVO
 
   React.useEffect(() => {
     if (isOpen) {
@@ -91,7 +94,7 @@ export function ModalAnagraficaForm({
           if (type === 'cliente') {
             const maxCode = await fetchMaxClientCodeFromDB();
             resetClientCodeGenerator(maxCode);
-            defaultValues = { ...defaultValues, codice_anagrafica: generateNextClientCode() };
+            defaultValues = { ...defaultValues, codice_anagrafica: generateNextClientCode(), considera_iva: false }; // Default considera_iva
           } else if (type === 'fornitore') {
             const maxCode = await fetchMaxFornitoreCodeFromDB();
             resetFornitoreCodeGenerator(maxCode);
@@ -103,6 +106,11 @@ export function ModalAnagraficaForm({
           setValue('tipo_fornitore' as any, defaultValues.tipo_fornitore);
         } else if (type === 'fornitore') {
           setValue('tipo_fornitore' as any, '');
+        }
+        if (type === 'cliente' && 'considera_iva' in defaultValues) { // NUOVO
+          setValue('considera_iva' as any, defaultValues.considera_iva);
+        } else if (type === 'cliente') { // NUOVO
+          setValue('considera_iva' as any, false);
         }
       };
       initializeForm();
@@ -116,14 +124,15 @@ export function ModalAnagraficaForm({
       if (type === 'cliente') {
         const { tipo_fornitore, ...rest } = dataToSubmit as any;
         dataToSubmit = rest;
+      } else if (type === 'fornitore') { // NUOVO: Rimuovi considera_iva per i fornitori
+        const { considera_iva, ...rest } = dataToSubmit as any;
+        dataToSubmit = rest;
       }
 
       if (!initialData) {
-        // Per i nuovi inserimenti, rimuovi id e created_at se presenti nel form data
         const { id, created_at, ...dataWithoutIdAndCreatedAt } = dataToSubmit;
         await onSubmit(dataWithoutIdAndCreatedAt);
       } else {
-        // Per le modifiche, il codice_anagrafica non deve essere modificabile
         const { codice_anagrafica, ...updateData } = dataToSubmit;
         await onSubmit(updateData);
       }
@@ -281,6 +290,15 @@ export function ModalAnagraficaForm({
             </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="condizione_pagamento" className="text-right col-span-1">
+              Cond. Pagamento
+            </Label>
+            <div className="col-span-3">
+              <Input id="condizione_pagamento" {...register('condizione_pagamento')} className="col-span-3" />
+              {errors.condizione_pagamento && <p className="text-destructive text-xs mt-1">{errors.condizione_pagamento.message}</p>}
+            </div>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="note" className="text-right col-span-1">
               Note
             </Label>
@@ -289,6 +307,27 @@ export function ModalAnagraficaForm({
               {errors.note && <p className="text-destructive text-xs mt-1">{errors.note.message}</p>}
             </div>
           </div>
+          {type === 'cliente' && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="considera_iva" className="text-right col-span-1">
+                Considera IVA
+              </Label>
+              <div className="col-span-3 flex items-center">
+                <input
+                  type="checkbox"
+                  id="considera_iva"
+                  {...register('considera_iva')}
+                  checked={watchedConsideraIva}
+                  onChange={(e) => setValue('considera_iva', e.target.checked, { shouldValidate: true })}
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <label htmlFor="considera_iva" className="ml-2 text-sm text-gray-700">
+                  Applica IVA al totale
+                </label>
+                {errors.considera_iva && <p className="text-destructive text-xs mt-1">{errors.considera_iva.message}</p>}
+              </div>
+            </div>
+          )}
           <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto text-sm">
               Annulla

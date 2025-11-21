@@ -15,7 +15,7 @@ import {
 const MOCK_CLIENTI: Cliente[] = [
   {
     id: 'mock-c1',
-    codice_anagrafica: 'CLI-001', // Aggiunto codice anagrafica
+    codice_anagrafica: 'CLI-001',
     nome: 'Cliente Alpha Srl',
     indirizzo: 'Via Garibaldi 1',
     citta: 'Roma',
@@ -28,11 +28,13 @@ const MOCK_CLIENTI: Cliente[] = [
     pec: 'pec@clientealpha.it',
     sdi: 'XXXXXXX',
     note: 'Cliente storico per cartoni personalizzati.',
+    condizione_pagamento: 'Bonifico 30gg', // NUOVO
+    considera_iva: true, // NUOVO
     created_at: new Date().toISOString(),
   },
   {
     id: 'mock-c2',
-    codice_anagrafica: 'CLI-002', // Aggiunto codice anagrafica
+    codice_anagrafica: 'CLI-002',
     nome: 'Beta Industries Spa',
     indirizzo: 'Corso Italia 20',
     citta: 'Firenze',
@@ -44,6 +46,8 @@ const MOCK_CLIENTI: Cliente[] = [
     pec: '',
     sdi: '1234567',
     note: 'Nuovo cliente, potenziale grande volume.',
+    condizione_pagamento: 'Bonifico 60gg', // NUOVO
+    considera_iva: false, // NUOVO
     created_at: new Date().toISOString(),
   },
 ];
@@ -52,7 +56,7 @@ const MOCK_CLIENTI: Cliente[] = [
 const MOCK_FORNITORI: Fornitore[] = [
   {
     id: 'mock-f1',
-    codice_anagrafica: 'FOR-001', // Aggiunto codice anagrafica
+    codice_anagrafica: 'FOR-001',
     nome: 'Imballex Srl',
     tipo_fornitore: 'Cartone',
     indirizzo: 'Via Roma 10',
@@ -66,11 +70,12 @@ const MOCK_FORNITORI: Fornitore[] = [
     pec: 'pec@imballex.it',
     sdi: 'ABCDEFG',
     note: 'Fornitore principale di cartoni ondulati.',
+    condizione_pagamento: 'Bonifico 90gg', // NUOVO
     created_at: new Date().toISOString(),
   },
   {
     id: 'mock-f2',
-    codice_anagrafica: 'FOR-002', // Aggiunto codice anagrafica
+    codice_anagrafica: 'FOR-002',
     nome: 'Inchiostri Brillanti Spa',
     tipo_fornitore: 'Inchiostro',
     indirizzo: 'Piazza Garibaldi 5',
@@ -84,11 +89,12 @@ const MOCK_FORNITORI: Fornitore[] = [
     pec: '',
     sdi: '',
     note: 'Specializzati in inchiostri ecologici.',
+    condizione_pagamento: 'Bonifico 60gg', // NUOVO
     created_at: new Date().toISOString(),
   },
   {
     id: 'mock-f3',
-    codice_anagrafica: 'FOR-003', // Aggiunto codice anagrafica
+    codice_anagrafica: 'FOR-003',
     nome: 'Colla Forte Snc',
     tipo_fornitore: 'Colla',
     indirizzo: 'Viale Europa 22',
@@ -102,6 +108,7 @@ const MOCK_FORNITORI: Fornitore[] = [
     pec: 'ordini@pec.collaforte.it',
     sdi: '7654321',
     note: 'Fornitore di colle industriali.',
+    condizione_pagamento: 'Bonifico 30gg', // NUOVO
     created_at: new Date().toISOString(),
   },
 ];
@@ -130,8 +137,8 @@ export function useAnagrafiche() {
 
     try {
       const [clientiRes, fornitoriRes] = await Promise.all([
-        supabase.from('clienti').select('*, codice_anagrafica').order('nome', { ascending: true }),
-        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica').order('nome', { ascending: true })
+        supabase.from('clienti').select('*, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true }), // NUOVI CAMPI
+        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento').order('nome', { ascending: true }) // NUOVO CAMPO
       ]);
 
       console.log('useAnagrafiche: Risposta Supabase per clienti:', clientiRes);
@@ -177,7 +184,7 @@ export function useAnagrafiche() {
   const addCliente = async (cliente: Omit<Cliente, 'id' | 'created_at'>) => {
     if (useMockData) {
       console.log('Mock: Aggiungi cliente', cliente);
-      const newMockCliente = { ...cliente, id: `mock-c-${Date.now()}`, codice_anagrafica: generateNextClientCode(), created_at: new Date().toISOString() };
+      const newMockCliente = { ...cliente, id: `mock-c-${Date.now()}`, codice_anagrafica: generateNextClientCode(), created_at: new Date().toISOString(), considera_iva: cliente.considera_iva || false }; // NUOVO
       setClienti(prev => [...prev, newMockCliente]); // Aggiorna lo stato mock
       toast.success(`✅ Mock: Cliente '${cliente.nome}' aggiunto con successo!`);
       return { success: true, data: newMockCliente };
@@ -302,6 +309,6 @@ export function useAnagrafiche() {
     addFornitore,
     updateFornitore,
     deleteFornitore,
-    loadAnagrafiche, // Ora la funzione è esposta
+    loadAnagrafiche,
   };
 }

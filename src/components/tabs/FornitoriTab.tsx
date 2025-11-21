@@ -95,26 +95,28 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
           <Table className="min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs sm:text-sm">Codice</TableHead> {/* Nuovo header */}
+                <TableHead className="text-xs sm:text-sm">Codice</TableHead>
                 <TableHead className="text-xs sm:text-sm">Nome</TableHead>
                 <TableHead className="text-xs sm:text-sm">Tipo Fornitore</TableHead>
                 <TableHead className="text-xs sm:text-sm">P.IVA / Cod. Fiscale</TableHead>
                 <TableHead className="text-xs sm:text-sm">Città</TableHead>
                 <TableHead className="text-xs sm:text-sm">Telefono</TableHead>
                 <TableHead className="text-xs sm:text-sm">Email</TableHead>
+                <TableHead className="text-xs sm:text-sm">Cond. Pagamento</TableHead> {/* NUOVO */}
                 <TableHead className="text-right text-xs sm:text-sm">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {fornitori.map((fornitore) => (
                 <TableRow key={fornitore.id}>
-                  <TableCell className="font-medium text-xs sm:text-sm">{fornitore.codice_anagrafica || '-'}</TableCell> {/* Nuovo campo */}
+                  <TableCell className="font-medium text-xs sm:text-sm">{fornitore.codice_anagrafica || '-'}</TableCell>
                   <TableCell className="font-medium text-xs sm:text-sm">{fornitore.nome}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.tipo_fornitore || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.partita_iva || fornitore.codice_fiscale || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.citta || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.telefono || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.email || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm">{fornitore.condizione_pagamento || '-'}</TableCell> {/* NUOVO */}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1 sm:gap-2">
                       <Button
