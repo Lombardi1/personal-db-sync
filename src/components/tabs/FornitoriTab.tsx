@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Fornitore, AnagraficaBase } from '@/types';
+import { Fornitore, AnagraficaBase, AziendaInfo } from '@/types'; // Importa AziendaInfo
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { ModalAnagraficaForm } from '@/components/modals/ModalAnagraficaForm';
@@ -28,9 +28,10 @@ interface FornitoriTabProps {
   addFornitore: (fornitore: Omit<Fornitore, 'id' | 'created_at'>) => Promise<{ success: boolean; error?: any }>;
   updateFornitore: (id: string, fornitore: Partial<Omit<Fornitore, 'id' | 'created_at'>>) => Promise<{ success: boolean; error?: any }>;
   deleteFornitore: (id: string) => Promise<{ success: boolean; error?: any }>;
+  aziendaInfo: AziendaInfo | null; // Nuova prop
 }
 
-export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteFornitore }: FornitoriTabProps) {
+export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteFornitore, aziendaInfo }: FornitoriTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFornitore, setEditingFornitore] = useState<Fornitore | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -106,7 +107,8 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
                 <TableHead className="text-xs sm:text-sm">Telefono</TableHead>
                 <TableHead className="text-xs sm:text-sm">Email</TableHead>
                 <TableHead className="text-xs sm:text-sm">Cond. Pagamento</TableHead>
-                <TableHead className="text-xs sm:text-sm">IVA</TableHead> {/* NUOVO */}
+                <TableHead className="text-xs sm:text-sm">IVA</TableHead>
+                <TableHead className="text-xs sm:text-sm">Banca</TableHead> {/* NUOVO */}
                 <TableHead className="text-right text-xs sm:text-sm">Azioni</TableHead>
               </TableRow>
             </TableHeader>
@@ -121,7 +123,8 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
                   <TableCell className="text-xs sm:text-sm">{fornitore.telefono || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.email || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm">{fornitore.condizione_pagamento || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm">{fornitore.considera_iva ? 'Sì' : 'No'}</TableCell> {/* NUOVO */}
+                  <TableCell className="text-xs sm:text-sm">{fornitore.considera_iva ? 'Sì' : 'No'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm">{fornitore.banca || '-'}</TableCell> {/* NUOVO */}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1 sm:gap-2">
                       <Button
@@ -156,6 +159,7 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleFormSubmit}
         initialData={editingFornitore}
+        // aziendaInfo={aziendaInfo} // Non più necessario passarlo qui, ModalAnagraficaForm usa il hook
       />
 
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>

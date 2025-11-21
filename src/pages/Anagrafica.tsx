@@ -23,7 +23,7 @@ export default function Anagrafica() {
     addCliente, updateCliente, deleteCliente,
     addFornitore, updateFornitore, deleteFornitore,
   } = useAnagrafiche();
-  const { loading: aziendaInfoLoading } = useAziendaInfo(); // Non serve aziendaInfo o updateAziendaInfo qui
+  const { aziendaInfo, loading: aziendaInfoLoading } = useAziendaInfo(); // Recupera aziendaInfo
 
   useEffect(() => {
     if (activeTab !== queryParams.get('tab')) {
@@ -87,6 +87,7 @@ export default function Anagrafica() {
               addFornitore={addFornitore} 
               updateFornitore={updateFornitore} 
               deleteFornitore={deleteFornitore} 
+              aziendaInfo={aziendaInfo} // Passo aziendaInfo al FornitoriTab
             />
           )}
         </div>

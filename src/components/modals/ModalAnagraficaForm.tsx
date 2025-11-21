@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AnagraficaBase, Fornitore, Cliente } from '@/types'; // Importa Cliente
+import { AnagraficaBase, Fornitore, Cliente, AziendaInfo } from '@/types'; // Importa Cliente e AziendaInfo
 import * as notifications from '@/utils/notifications';
 import { normalizeAnagraficaData } from '@/lib/utils';
 import {
@@ -32,6 +32,7 @@ import {
   generateNextFornitoreCode,
   resetFornitoreCodeGenerator,
 } from '@/utils/anagraficaUtils'; // Importa le nuove utilità
+import { useAziendaInfo } from '@/hooks/useAziendaInfo'; // Importa il hook per le info azienda
 
 interface ModalAnagraficaFormProps {
   type: 'cliente' | 'fornitore';
@@ -41,7 +42,7 @@ interface ModalAnagraficaFormProps {
   initialData?: AnagraficaBase | Fornitore | Cliente | null; // Aggiornato tipo
 }
 
-type FormData = AnagraficaBase & { tipo_fornitore?: string; considera_iva?: boolean }; // Aggiornato FormData type
+type FormData = AnagraficaBase & { tipo_fornitore?: string; considera_iva?: boolean; banca?: string }; // Aggiornato FormData type
 
 const anagraficaSchema = z.object({
   codice_anagrafica: z.string().max(20, 'Codice troppo lungo').optional().or(z.literal('')),
@@ -59,7 +60,8 @@ const anagraficaSchema = z.object({
   note: z.string().max(1000, 'Note troppo lunghe').optional().or(z.literal('')),
   condizione_pagamento: z.string().max(255, 'Condizione di pagamento troppo lunga').optional().or(z.literal('')),
   tipo_fornitore: z.string().optional().or(z.literal('')),
-  considera_iva: z.boolean().optional(), // Ora è opzionale per entrambi
+  considera_iva: z.boolean().optional(),
+  banca: z.string().max(255, 'Banca troppo lunga').optional().or(z.literal('')), // Nuovo campo banca
 });
 
 export function ModalAnagraficaForm({
@@ -69,6 +71,15 @@ export function ModalAnagraficaForm({
   onSubmit,
   initialData,
 }: ModalAnagraficaFormProps) {
+  const { aziendaInfo } = useAziendaInfo(); // Recupera le info azienda
+  const bancheDisponibili = React.useMemo(() => {
+    if (aziendaInfo?.banche) {
+      // Assumiamo che le banche siano una stringa separata da virgole o a capo
+      return aziendaInfo.banche.split(/[\n,;]+/).map(b => b.trim()).filter(b => b.length > 0);
+    }
+    return [];
+  }, [aziendaInfo?.banche]);
+
   const normalizedInitialData = React.useMemo(() => normalizeAnagraficaData(initialData), [initialData]);
 
   const {
@@ -85,6 +96,7 @@ export function ModalAnagraficaForm({
 
   const watchedTipoFornitore = watch('tipo_fornitore' as any);
   const watchedConsideraIva = watch('considera_iva' as any);
+  const watchedBanca = watch('banca' as any); // Watch per il campo banca
 
   React.useEffect(() => {
     if (isOpen) {
@@ -98,7 +110,7 @@ export function ModalAnagraficaForm({
           } else if (type === 'fornitore') {
             const maxCode = await fetchMaxFornitoreCodeFromDB();
             resetFornitoreCodeGenerator(maxCode);
-            defaultValues = { ...defaultValues, codice_anagrafica: generateNextFornitoreCode(), considera_iva: false }; // Default considera_iva anche per fornitore
+            defaultValues = { ...defaultValues, codice_anagrafica: generateNextFornitoreCode(), considera_iva: false, banca: '' }; // Default banca vuota
           }
         }
         reset(defaultValues);
@@ -113,6 +125,12 @@ export function ModalAnagraficaForm({
         } else {
           setValue('considera_iva' as any, false);
         }
+        // Imposta il valore di banca per i fornitori
+        if (type === 'fornitore' && 'banca' in defaultValues) {
+          setValue('banca' as any, defaultValues.banca || '');
+        } else if (type === 'fornitore') {
+          setValue('banca' as any, '');
+        }
       };
       initializeForm();
     }
@@ -122,19 +140,19 @@ export function ModalAnagraficaForm({
     try {
       let dataToSubmit: any = { ...data };
 
-      // Rimuovi tipo_fornitore se è un cliente
+      // Rimuovi tipo_fornitore e banca se è un cliente
       if (type === 'cliente') {
-        const { tipo_fornitore, ...rest } = dataToSubmit as any;
+        const { tipo_fornitore, banca, ...rest } = dataToSubmit as any;
         dataToSubmit = rest;
       }
-      // Rimuovi considera_iva se è un fornitore (NON PIÙ NECESSARIO, ORA È COMUNE)
-      // else if (type === 'fornitore') {
-      //   const { considera_iva, ...rest } = dataToSubmit as any;
-      //   dataToSubmit = rest;
-      // }
+      // Rimuovi banca se è un fornitore e non è stato selezionato nulla (per evitare stringhe vuote se non necessario)
+      else if (type === 'fornitore' && !dataToSubmit.banca) {
+        dataToSubmit.banca = null; // Imposta a null se vuoto per il DB
+      }
 
       console.log(`[ModalAnagraficaForm] Dati inviati a onSubmit per ${type}:`, dataToSubmit); // LOG DI DEBUG
       console.log(`[ModalAnagraficaForm] Valore di 'considera_iva' prima di onSubmit:`, dataToSubmit.considera_iva); // LOG DI DEBUG
+      console.log(`[ModalAnagraficaForm] Valore di 'banca' prima di onSubmit:`, dataToSubmit.banca); // LOG DI DEBUG
 
       if (!initialData) {
         const { id, created_at, ...dataWithoutIdAndCreatedAt } = dataToSubmit;
@@ -182,29 +200,56 @@ export function ModalAnagraficaForm({
             </div>
           </div>
           {type === 'fornitore' && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tipo_fornitore" className="text-right col-span-1">
-                Tipo Fornitore
-              </Label>
-              <div className="col-span-3">
-                <Select
-                  onValueChange={(value) => setValue('tipo_fornitore', value, { shouldValidate: true })}
-                  value={watchedTipoFornitore || ''}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona tipo fornitore" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Cartone">Cartone</SelectItem>
-                    <SelectItem value="Inchiostro">Inchiostro</SelectItem>
-                    <SelectItem value="Colla">Colla</SelectItem>
-                    <SelectItem value="Altro">Altro</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.tipo_fornitore && <p className="text-destructive text-xs mt-1">{errors.tipo_fornitore.message}</p>}
+            <>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="tipo_fornitore" className="text-right col-span-1">
+                  Tipo Fornitore
+                </Label>
+                <div className="col-span-3">
+                  <Select
+                    onValueChange={(value) => setValue('tipo_fornitore', value, { shouldValidate: true })}
+                    value={watchedTipoFornitore || ''}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleziona tipo fornitore" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cartone">Cartone</SelectItem>
+                      <SelectItem value="Inchiostro">Inchiostro</SelectItem>
+                      <SelectItem value="Colla">Colla</SelectItem>
+                      <SelectItem value="Altro">Altro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.tipo_fornitore && <p className="text-destructive text-xs mt-1">{errors.tipo_fornitore.message}</p>}
+                </div>
               </div>
-            </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="banca" className="text-right col-span-1">
+                  Banca
+                </Label>
+                <div className="col-span-3">
+                  <Select
+                    onValueChange={(value) => setValue('banca', value, { shouldValidate: true })}
+                    value={watchedBanca || ''}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleziona banca" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nessuna</SelectItem> {/* Opzione per deselezionare */}
+                      {bancheDisponibili.map((bancaOption, index) => (
+                        <SelectItem key={index} value={bancaOption}>
+                          {bancaOption}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.banca && <p className="text-destructive text-xs mt-1">{errors.banca.message}</p>}
+                </div>
+              </div>
+            </>
           )}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="indirizzo" className="text-right col-span-1">

@@ -54,6 +54,7 @@ export interface Cliente extends AnagraficaBase {
 export interface Fornitore extends AnagraficaBase {
   tipo_fornitore?: string; // Nuovo campo per il tipo di fornitore
   considera_iva?: boolean; // NUOVO CAMPO ANCHE PER FORNITORE
+  banca?: string; // NUOVO CAMPO: Banca associata al fornitore
 }
 
 // Nuova interfaccia per gli articoli, ora nidificata nell'OrdineAcquisto
@@ -105,7 +106,7 @@ export interface AziendaInfo {
   codice_fiscale?: string;
   rea?: string;
   m_bs?: string;
-  banche?: string;
+  banche?: string; // Campo per le banche, come stringa JSON o testo
   created_at?: string;
   updated_at?: string;
 }
