@@ -154,11 +154,55 @@ export async function seedPurchaseOrders() {
       });
     }
 
+    // Aggiungi un ordine con un articolo annullato per test
+    if (fornitoreCartone && randomCliente) {
+      ordersToInsert.push({
+        fornitore_id: fornitoreCartone.id!,
+        data_ordine: '2024-07-12',
+        numero_ordine: `PO-2024-005`,
+        stato: 'inviato',
+        importo_totale: 0, // Verrà ricalcolato
+        note: 'Ordine con articolo annullato',
+        articoli: [
+          {
+            codice_ctn: generateNextCartoneCode(),
+            tipologia_cartone: 'Ondulato Doppio',
+            formato: '100 x 140 cm',
+            grammatura: '400 g/m²',
+            quantita: 800,
+            prezzo_unitario: 2.10,
+            cliente: randomCliente.nome,
+            lavoro: 'LAV-2024-005-A',
+            data_consegna_prevista: '2024-07-28',
+            stato: 'inviato',
+            numero_fogli: 800,
+          },
+          {
+            codice_ctn: generateNextCartoneCode(),
+            tipologia_cartone: 'Ondulato Singolo',
+            formato: '50 x 70 cm',
+            grammatura: '150 g/m²',
+            quantita: 300,
+            prezzo_unitario: 0.75,
+            cliente: randomCliente.nome,
+            lavoro: 'LAV-2024-005-B',
+            data_consegna_prevista: '2024-07-28',
+            stato: 'annullato', // Questo articolo è annullato
+            numero_fogli: 300,
+          },
+        ],
+      });
+    }
+
     for (const order of ordersToInsert) {
+      // Ricalcola l'importo totale escludendo gli articoli annullati
       const totalAmount = order.articoli.reduce((sum, item) => {
-        const qty = item.quantita || 0;
-        const price = item.prezzo_unitario || 0;
-        return sum + (qty * price);
+        if (item.stato !== 'annullato') {
+          const qty = item.quantita || 0;
+          const price = item.prezzo_unitario || 0;
+          return sum + (qty * price);
+        }
+        return sum;
       }, 0);
       order.importo_totale = totalAmount;
 
@@ -185,6 +229,12 @@ export async function seedPurchaseOrders() {
           if (!codiceCtn) {
             console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice CTN. Saltato.`);
             continue; 
+          }
+
+          // Non inserire articoli annullati nelle tabelle di magazzino
+          if (articolo.stato === 'annullato') {
+            console.log(`Articolo ${codiceCtn} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
+            continue;
           }
 
           const cartone: Cartone = {
