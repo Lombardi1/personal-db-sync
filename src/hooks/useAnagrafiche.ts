@@ -9,7 +9,7 @@ import {
   fetchMaxFornitoreCodeFromDB,
   generateNextFornitoreCode,
   resetFornitoreCodeGenerator,
-} from '@/utils/anagraficaUtils'; // Importa le nuove utilità
+} from '@/utils/anagraficaUtils';
 
 // Dati mock per i clienti
 const MOCK_CLIENTI: Cliente[] = [
@@ -141,17 +141,31 @@ export function useAnagrafiche() {
     try {
       const [clientiRes, fornitoriRes] = await Promise.all([
         supabase.from('clienti').select('*, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true }),
-        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true }) // NUOVO CAMPO considera_iva
+        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true })
       ]);
 
       console.log('useAnagrafiche: Risposta Supabase per clienti:', clientiRes);
       console.log('useAnagrafiche: Risposta Supabase per fornitori:', fornitoriRes);
 
-      if (clientiRes.data) setClienti(clientiRes.data);
-      if (fornitoriRes.data) setFornitori(fornitoriRes.data);
+      if (clientiRes.error) {
+        console.error('useAnagrafiche: Errore nel recupero dei clienti:', clientiRes.error);
+        toast.error(`Errore nel recupero dei clienti: ${clientiRes.error.message}`);
+        setClienti([]); // Assicurati che lo stato sia vuoto in caso di errore
+      } else if (clientiRes.data) {
+        setClienti(clientiRes.data);
+      }
+
+      if (fornitoriRes.error) {
+        console.error('useAnagrafiche: Errore nel recupero dei fornitori:', fornitoriRes.error);
+        toast.error(`Errore nel recupero dei fornitori: ${fornitoriRes.error.message}. Assicurati di aver eseguito lo script SQL per aggiungere la colonna 'considera_iva' alla tabella 'fornitori'.`);
+        setFornitori([]); // Assicurati che lo stato sia vuoto in caso di errore
+      } else if (fornitoriRes.data) {
+        setFornitori(fornitoriRes.data);
+      }
+
     } catch (error) {
-      console.error('Errore caricamento anagrafiche:', error);
-      toast.error('Errore nel caricamento delle anagrafiche.');
+      console.error('Errore generico caricamento anagrafiche:', error);
+      toast.error('Errore generico nel caricamento delle anagrafiche.');
     } finally {
       setLoading(false);
     }
