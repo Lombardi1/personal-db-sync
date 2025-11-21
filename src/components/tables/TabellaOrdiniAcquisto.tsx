@@ -154,7 +154,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
         notifications.showInfo(`L'ordine '${orderToProcess.numero_ordine}' è annullato. Non è possibile modificare lo stato degli articoli.`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+        exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
         return;
       }
 
@@ -210,7 +210,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // 5. Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -296,7 +296,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -375,24 +375,24 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
   });
 
   return (
-    <div className="w-full rounded-md border overflow-x-auto"> {/* Rimosso ScrollArea e ScrollBar */}
-      <div className="w-full min-w-max">
+    <div className="w-full rounded-md border overflow-x-auto">
+      <div className="w-full"> {/* Rimosso min-w-max */}
         <table id="tab-ordini-acquisto" className="w-full border-collapse text-xs table-auto">
           <thead>
             <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[30px]"></th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Numero Ordine</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Data Ordine</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Fornitore</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Stato Articolo</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[200px]">Articolo Dettagli</th>
-              <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold w-[60px]">Quantità</th> {/* Changed to Quantità */}
-              <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold w-[80px]">P. Unit.</th>
-              <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold w-[80px]">Tot. Riga</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Consegna Prevista</th>
-              <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold w-[100px]">Importo Totale</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[150px]">Note Ordine</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[150px]">Azioni</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[30px]"></th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Numero Ordine</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Data Ordine</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Fornitore</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[60px]">Stato Articolo</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[150px]">Articolo Dettagli</th>
+              <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[40px]">Quantità</th>
+              <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[60px]">P. Unit.</th>
+              <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[60px]">Tot. Riga</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Consegna Prevista</th>
+              <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[70px]">Importo Totale</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px]">Note Ordine</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px]">Azioni</th>
             </tr>
           </thead>
           <tbody>
@@ -406,7 +406,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                     <tr key={`${row.orderId}-${row.id || idx}`} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)] transition-colors">
                       {idx === 0 && (
                         <>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[30px] text-center">
+                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap text-center min-w-[30px]">
                             {articles.length > 1 && (
                               <Button
                                 variant="ghost"
@@ -419,19 +419,19 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                               </Button>
                             )}
                           </td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">
+                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">
                             <span className="codice">{row.orderNumeroOrdine}</span>
                           </td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{formatData(row.orderDataOrdine)}</td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px] font-bold">{row.orderFornitoreNome}</td>
+                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">{formatData(row.orderDataOrdine)}</td>
+                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[80px]">{row.orderFornitoreNome}</td>
                         </>
                       )}
-                      <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">
+                      <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
                         <span className={`inline-block px-2 py-1 rounded-full text-[10px] font-semibold ${getStatoBadgeClass(row.stato)}`}>
                           {getStatoText(row.stato)}
                         </span>
                       </td>
-                      <td className="px-2 py-1.5 text-[10px] sm:text-xs w-[200px] max-w-[200px] break-words">
+                      <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
                         {row.isCartoneFornitore ? (
                           <>
                             {row.codice_ctn && <div className="font-bold mb-1"><span className="codice">{row.codice_ctn}</span></div>}
@@ -448,31 +448,31 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                           </>
                         )}
                       </td>
-                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap w-[60px] font-bold">
+                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[40px]">
                         {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ''} {/* Show Kg for cartone */}
                       </td>
-                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap w-[80px]">
+                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
                         {row.prezzo_unitario.toFixed(3)} {row.isCartoneFornitore ? '€/kg' : '€'}
                       </td>
-                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap w-[80px] font-bold">
+                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[60px]">
                         {(row.quantita * row.prezzo_unitario).toFixed(2)} €
                       </td>
-                      <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">
+                      <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">
                         {row.data_consegna_prevista ? <span className="font-bold">{formatData(row.data_consegna_prevista)}</span> : '-'}
                       </td>
                       {idx === 0 && (
                         <>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap w-[100px] font-bold">
+                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[70px]">
                             {row.orderImportoTotale.toFixed(2)} €
                           </td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap w-[150px]">{row.orderNote || '-'}</td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[150px]">
-                            <div className="flex gap-1.5">
+                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[100px] max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap">{row.orderNote || '-'}</td>
+                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[100px]">
+                            <div className="flex flex-wrap gap-1"> {/* Aggiunto flex-wrap e ridotto gap */}
                               <Button
                                 variant="default"
                                 size="icon"
                                 onClick={() => { onEdit(row.parentOrder); }}
-                                className="h-7 w-7 sm:h-8 sm:w-8 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-dark))]"
+                                className="h-6 w-6 sm:h-7 sm:w-7 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-dark))]" {/* Ridotto h e w */}
                                 title="Modifica Ordine"
                                 disabled={row.orderStato === 'annullato'}
                               >
@@ -482,7 +482,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                 variant="default"
                                 size="icon"
                                 onClick={() => onDuplicateAndEdit(row.parentOrder)}
-                                className="h-7 w-7 sm:h-8 sm:w-8 bg-blue-500 hover:bg-blue-600 text-white"
+                                className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-500 hover:bg-blue-600 text-white" {/* Ridotto h e w */}
                                 title="Duplica e Modifica Ordine"
                               >
                                 <CopyPlus className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -491,7 +491,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                 variant="outline"
                                 size="icon"
                                 onClick={() => handlePreviewPdfAndUpdateStatus(row.parentOrder)} 
-                                className="h-7 w-7 sm:h-8 sm:w-8 bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-100 text-blue-700 hover:bg-blue-200" {/* Ridotto h e w */}
                                 title="Visualizza Anteprima PDF" 
                               >
                                 <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -500,7 +500,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                 variant="outline"
                                 size="icon"
                                 onClick={() => handleDirectPrint(row.parentOrder)} 
-                                className="h-7 w-7 sm:h-8 sm:w-8 bg-green-100 text-green-700 hover:bg-green-200"
+                                className="h-6 w-6 sm:h-7 sm:w-7 bg-green-100 text-green-700 hover:bg-green-200" {/* Ridotto h e w */}
                                 title="Scarica PDF Direttamente" 
                               >
                                 <Printer className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -510,7 +510,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                   variant="destructive"
                                   size="icon"
                                   onClick={() => handleActionClick(row.parentOrder, 'delete')}
-                                  className="h-7 w-7 sm:h-8 sm:w-8"
+                                  className="h-6 w-6 sm:h-7 sm:w-7" {/* Ridotto h e w */}
                                   title="Elimina Definitivamente Ordine"
                                 >
                                   <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -520,7 +520,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                   variant="destructive"
                                   size="icon"
                                   onClick={() => handleActionClick(row.parentOrder, 'cancel')}
-                                  className="h-7 w-7 sm:h-8 sm:w-8 bg-red-100 text-red-700 hover:bg-red-200"
+                                  className="h-6 w-6 sm:h-7 sm:w-7 bg-red-100 text-red-700 hover:bg-red-200" {/* Ridotto h e w */}
                                   title="Annulla Ordine"
                                 >
                                   <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -538,35 +538,6 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           </tbody>
         </table>
       </div>
-      {/* <ScrollBar orientation="horizontal" /> */} {/* Rimosso ScrollBar */}
-
-      <AlertDialog open={isActionAlertOpen} onOpenChange={setIsActionAlertOpen}>
-        <AlertDialogContent className="sm:max-w-[425px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {actionType === 'cancel' ? 'Conferma Annullamento Ordine' : 'Conferma Eliminazione Definitiva'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {actionType === 'cancel' ? (
-                <>Sei sicuro di voler annullare l'ordine d'acquisto <strong>{ordineToActOn?.numero_ordine}</strong>?
-                Questa azione imposterà lo stato dell'ordine su "Annullato" e rimuoverà gli articoli correlati dagli ordini in arrivo.</>
-              ) : (
-                <>Sei sicuro di voler eliminare definitivamente l'ordine d'acquisto <strong>{ordineToActOn?.numero_ordine}</strong>?
-                Questa azione non può essere annullata e rimuoverà l'ordine e tutti i suoi articoli dal database.</>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmAction} 
-              className={actionType === 'cancel' ? 'bg-destructive hover:bg-destructive/90' : 'bg-destructive hover:bg-destructive/90'}
-            >
-              {actionType === 'cancel' ? 'Annulla Ordine' : 'Elimina Definitivamente'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
