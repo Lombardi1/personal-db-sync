@@ -154,7 +154,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
         notifications.showInfo(`L'ordine '${orderToProcess.numero_ordine}' è annullato. Non è possibile modificare lo stato degli articoli.`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
         return;
       }
 
@@ -210,7 +210,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // 5. Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -296,7 +296,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -385,13 +385,13 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Data Ordine</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Fornitore</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[60px]">Stato Articolo</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[150px]">Articolo Dettagli</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[150px] max-w-[150px]">Articolo Dettagli</th>
               <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[40px]">Quantità</th>
               <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[60px]">P. Unit.</th>
               <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[60px]">Tot. Riga</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Consegna Prevista</th>
               <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[70px]">Importo Totale</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px]">Note Ordine</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px] max-w-[100px]">Note Ordine</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px]">Azioni</th>
             </tr>
           </thead>
@@ -467,12 +467,12 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                           </td>
                           <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[100px] max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap">{row.orderNote || '-'}</td>
                           <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[100px]">
-                            <div className="flex flex-wrap gap-1"> {/* Aggiunto flex-wrap e ridotto gap */}
+                            <div className="flex flex-wrap gap-1">
                               <Button
                                 variant="default"
                                 size="icon"
                                 onClick={() => { onEdit(row.parentOrder); }}
-                                className="h-6 w-6 sm:h-7 sm:w-7 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-dark))]" {/* Ridotto h e w */}
+                                className="h-6 w-6 sm:h-7 sm:w-7 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-dark))]"
                                 title="Modifica Ordine"
                                 disabled={row.orderStato === 'annullato'}
                               >
@@ -482,7 +482,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                 variant="default"
                                 size="icon"
                                 onClick={() => onDuplicateAndEdit(row.parentOrder)}
-                                className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-500 hover:bg-blue-600 text-white" {/* Ridotto h e w */}
+                                className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-500 hover:bg-blue-600 text-white"
                                 title="Duplica e Modifica Ordine"
                               >
                                 <CopyPlus className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -491,7 +491,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                 variant="outline"
                                 size="icon"
                                 onClick={() => handlePreviewPdfAndUpdateStatus(row.parentOrder)} 
-                                className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-100 text-blue-700 hover:bg-blue-200" {/* Ridotto h e w */}
+                                className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-100 text-blue-700 hover:bg-blue-200"
                                 title="Visualizza Anteprima PDF" 
                               >
                                 <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -500,7 +500,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                 variant="outline"
                                 size="icon"
                                 onClick={() => handleDirectPrint(row.parentOrder)} 
-                                className="h-6 w-6 sm:h-7 sm:w-7 bg-green-100 text-green-700 hover:bg-green-200" {/* Ridotto h e w */}
+                                className="h-6 w-6 sm:h-7 sm:w-7 bg-green-100 text-green-700 hover:bg-green-200"
                                 title="Scarica PDF Direttamente" 
                               >
                                 <Printer className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -510,7 +510,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                   variant="destructive"
                                   size="icon"
                                   onClick={() => handleActionClick(row.parentOrder, 'delete')}
-                                  className="h-6 w-6 sm:h-7 sm:w-7" {/* Ridotto h e w */}
+                                  className="h-6 w-6 sm:h-7 sm:w-7"
                                   title="Elimina Definitivamente Ordine"
                                 >
                                   <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -520,7 +520,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                   variant="destructive"
                                   size="icon"
                                   onClick={() => handleActionClick(row.parentOrder, 'cancel')}
-                                  className="h-6 w-6 sm:h-7 sm:w-7 bg-red-100 text-red-700 hover:bg-red-200" {/* Ridotto h e w */}
+                                  className="h-6 w-6 sm:h-7 sm:w-7 bg-red-100 text-red-700 hover:bg-red-200"
                                   title="Annulla Ordine"
                                 >
                                   <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />
