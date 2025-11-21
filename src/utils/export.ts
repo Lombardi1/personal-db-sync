@@ -447,6 +447,11 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
       bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, 
+      columnStyles: { // Aggiunto per distribuire equamente la larghezza
+        0: { cellWidth: (pageWidth - 20) / 3 },
+        1: { cellWidth: (pageWidth - 20) / 3 },
+        2: { cellWidth: (pageWidth - 20) / 3 },
+      },
       margin: { left: 10, right: 10 },
     });
 
