@@ -500,23 +500,28 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Calcola IVA e Totale con IVA in base a considera_iva del fornitore
     const subtotal = ordine.importo_totale || 0;
     let ivaAmount = 0;
-    let totalWithIva = subtotal;
-    let ivaText = '(IVA inclusa)';
+    let totalFinal = subtotal;
+    let ivaTextDisplay = '(IVA non inclusa)'; // Default a non inclusa
+
+    console.log(`[DEBUG] Ordine: ${ordine.numero_ordine}`);
+    console.log(`[DEBUG] Subtotal (ordine.importo_totale): ${subtotal}`);
+    console.log(`[DEBUG] Fornitore: ${fornitore?.nome}, Considera IVA: ${fornitore?.considera_iva}`);
 
     if (fornitore?.considera_iva) {
       ivaAmount = subtotal * IVA_RATE;
-      totalWithIva = subtotal + ivaAmount;
-      ivaText = '(IVA inclusa)';
+      totalFinal = subtotal + ivaAmount;
+      ivaTextDisplay = '(IVA inclusa)';
+      console.log(`[DEBUG] IVA applicata. IVA Amount: ${ivaAmount}, Total Final: ${totalFinal}`);
     } else {
-      ivaText = '(IVA non inclusa)';
+      console.log(`[DEBUG] IVA NON applicata. Total Final: ${totalFinal}`);
     }
 
     // Totale ordine
     doc.rect(10, footerY + 21, 120, 10);
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
-    doc.text(`Totale ordine EUR ${ivaText}`, 12, footerY + 27); // Aggiornato testo
-    doc.text(totalWithIva.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
+    doc.text(`Totale ordine EUR ${ivaTextDisplay}`, 12, footerY + 27); // Aggiornato testo
+    doc.text(totalFinal.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 120, footerY + 27, { align: 'right' });
 
     // Logo FSC
     try {

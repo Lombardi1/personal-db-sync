@@ -131,7 +131,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       // 1. Fetch the latest version of the order from Supabase immediately
       const { data: latestOrder, error: fetchLatestError } = await supabase
           .from('ordini_acquisto')
-          .select(`*, fornitori ( nome, tipo_fornitore )`)
+          .select(`*, fornitori ( nome, tipo_fornitore, considera_iva )`) // AGGIUNTO: considera_iva
           .eq('id', ordine.id)
           .single();
 
@@ -150,7 +150,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
         notifications.showInfo(`L'ordine '${orderToProcess.numero_ordine}' è annullato. Non è possibile modificare lo stato degli articoli.`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', true, newWindow);
+        exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', true, newWindow);
         return;
       }
 
@@ -188,7 +188,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               .from('ordini_acquisto')
               .update({ stato: newMainOrderStatus, articoli: updatedArticles as any, updated_at: new Date().toISOString() })
               .eq('id', ordine.id)
-              .select(`*, fornitori ( nome, tipo_fornitore )`)
+              .select(`*, fornitori ( nome, tipo_fornitore, considera_iva )`) // AGGIUNTO: considera_iva
               .single();
 
           if (updateError || !updatedOrderData) {
@@ -232,7 +232,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
     try {
       const { data: fetchedOrderData, error: fetchError } = await supabase
         .from('ordini_acquisto')
-        .select('*, fornitori(nome, tipo_fornitore)')
+        .select('*, fornitori(nome, tipo_fornitore, considera_iva)') // AGGIUNTO: considera_iva
         .eq('id', ordine.id)
         .single();
 
@@ -278,7 +278,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           .from('ordini_acquisto')
           .update({ stato: newMainOrderStatus, articoli: updatedArticles as any, updated_at: new Date().toISOString() })
           .eq('id', ordine.id)
-          .select('*, fornitori(nome, tipo_fornitore)')
+          .select('*, fornitori(nome, tipo_fornitore, considera_iva)') // AGGIUNTO: considera_iva
           .single();
 
         if (updateError || !updatedOrderData) {
