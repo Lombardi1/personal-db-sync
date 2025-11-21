@@ -340,14 +340,26 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.text(aziendaInfo?.indirizzo || 'VIA S.ANTONIO, 51', 40, y + 14); 
     doc.text(`${aziendaInfo?.cap || ''} ${aziendaInfo?.citta || ''} ${aziendaInfo?.provincia || ''}`.trim() || '25050 PASSIRANO (BRESCIA)', 40, y + 17); 
     doc.text(`TEL. ${aziendaInfo?.telefono || '030657152 - 0306577500'}`, 40, y + 20); 
-    doc.text(`TELEFAX ${aziendaInfo?.fax || '0306577262'}`, 40, y + 23); 
-    doc.text(`E-Mail: ${aziendaInfo?.email || 'info@aglombardi.it'}`, 40, y + 26); 
     
-    doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 30); // Questo sembra fisso
-    doc.setFontSize(7); // Uniformato a 7
-    doc.text(`R.E.A. di BS N. ${aziendaInfo?.rea || '169198'} M. BS ${aziendaInfo?.m_bs || '012689'}`, 40, y + 33); 
-    doc.text(`C.F. / P.IVA IT ${aziendaInfo?.p_iva || '00320390172'}`, 40, y + 36); 
-    doc.text(`Banche: ${aziendaInfo?.banche || 'agenzie di Ospitaletto BS'}`, 40, y + 39); 
+    // Condizione per il TELEFAX
+    if (aziendaInfo?.fax) {
+      doc.text(`TELEFAX ${aziendaInfo.fax}`, 40, y + 23); 
+      doc.text(`E-Mail: ${aziendaInfo?.email || 'info@aglombardi.it'}`, 40, y + 26); 
+      doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 30); // Questo sembra fisso
+      doc.setFontSize(7); // Uniformato a 7
+      doc.text(`R.E.A. di BS N. ${aziendaInfo?.rea || '169198'} M. BS ${aziendaInfo?.m_bs || '012689'}`, 40, y + 33); 
+      doc.text(`C.F. / P.IVA IT ${aziendaInfo?.p_iva || '00320390172'}`, 40, y + 36); 
+      doc.text(`Banche: ${aziendaInfo?.banche || 'agenzie di Ospitaletto BS'}`, 40, y + 39); 
+    } else {
+      // Se il fax non c'è, sposta le righe successive più in alto
+      doc.text(`E-Mail: ${aziendaInfo?.email || 'info@aglombardi.it'}`, 40, y + 23); // Spostato da y+26 a y+23
+      doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 27); // Spostato da y+30 a y+27
+      doc.setFontSize(7); // Uniformato a 7
+      doc.text(`R.E.A. di BS N. ${aziendaInfo?.rea || '169198'} M. BS ${aziendaInfo?.m_bs || '012689'}`, 40, y + 30); // Spostato da y+33 a y+30
+      doc.text(`C.F. / P.IVA IT ${aziendaInfo?.p_iva || '00320390172'}`, 40, y + 33); // Spostato da y+36 a y+33
+      doc.text(`Banche: ${aziendaInfo?.banche || 'agenzie di Ospitaletto BS'}`, 40, y + 36); // Spostato da y+39 a y+36
+    }
+    
     // Le banche specifiche potrebbero essere parte del campo 'banche' o rimosse se non necessarie
     // doc.text('Banca Popolare di Sondrio', 50, y + 42); 
     // doc.text('Banca Popolare di Bergamo', 50, y + 45); 
