@@ -324,62 +324,64 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // ========== HEADER SECTION ==========
     // Logo AG Lombardi (sinistra)
-    doc.addImage(logoAG, 'JPEG', 10, y, 30, 30);
+    doc.addImage(logoAG, 'JPEG', 10, y, 25, 25); // Rimpicciolito a 25x25mm
     
     // Info azienda (sinistra, sotto logo)
-    doc.setFontSize(14);
+    doc.setFontSize(12); // Rimpicciolito da 14 a 12
     doc.setFont(undefined, 'bold');
-    doc.text('ARTI GRAFICHE', 45, y + 5);
-    doc.setFontSize(10);
-    doc.text('Lombardi SRL', 45, y + 10);
+    doc.text('ARTI GRAFICHE', 40, y + 5); // Spostato a sinistra
+    doc.setFontSize(9); // Rimpicciolito da 10 a 9
+    doc.text('Lombardi SRL', 40, y + 9); // Spostato a sinistra e riposizionato
     
     doc.setFont(undefined, 'normal');
-    doc.setFontSize(8);
-    doc.text('C.P. 25050 PASSIRANO (BRESCIA)', 45, y + 15);
-    doc.text('VIA S.ANTONIO, 51', 45, y + 19);
-    doc.text('TEL. 030657152 - 0306577500', 45, y + 23);
-    doc.text('TELEFAX 0306577262', 45, y + 27);
-    doc.text('E-Mail: info@aglombardi.it', 45, y + 31);
+    doc.setFontSize(7); // Rimpicciolito da 8 a 7
+    doc.text('C.P. 25050 PASSIRANO (BRESCIA)', 40, y + 14); // Spostato a sinistra e riposizionato
+    doc.text('VIA S.ANTONIO, 51', 40, y + 17); // Spostato a sinistra e riposizionato
+    doc.text('TEL. 030657152 - 0306577500', 40, y + 20); // Spostato a sinistra e riposizionato
+    doc.text('TELEFAX 0306577262', 40, y + 23); // Spostato a sinistra e riposizionato
+    doc.text('E-Mail: info@aglombardi.it', 40, y + 26); // Spostato a sinistra e riposizionato
     
     doc.setFont(undefined, 'bold');
-    doc.text('LITOGRAFIA - CARTOTECNICA', 45, y + 37);
+    doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 30); // Spostato a sinistra e riposizionato
     doc.setFont(undefined, 'normal');
-    doc.text('R.E.A. di BS N. 169198 M. BS 012689', 45, y + 41);
-    doc.text('C.F. / P.IVA IT 00320390172', 45, y + 45);
-    doc.text('Banche: agenzie di Ospitaletto BS', 45, y + 49);
-    doc.setFontSize(7);
-    doc.text('Banca Popolare di Sondrio', 55, y + 53);
-    doc.text('Banca Popolare di Bergamo', 55, y + 56);
+    doc.text('R.E.A. di BS N. 169198 M. BS 012689', 40, y + 33); // Spostato a sinistra e riposizionato
+    doc.text('C.F. / P.IVA IT 00320390172', 40, y + 36); // Spostato a sinistra e riposizionato
+    doc.text('Banche: agenzie di Ospitaletto BS', 40, y + 39); // Spostato a sinistra e riposizionato
+    doc.setFontSize(6); // Rimpicciolito da 7 a 6
+    doc.text('Banca Popolare di Sondrio', 50, y + 42); // Spostato a sinistra e riposizionato
+    doc.text('Banca Popolare di Bergamo', 50, y + 45); // Spostato a sinistra e riposizionato
+
+    y += 55; // Ridotto l'incremento di y per compensare le dimensioni ridotte
 
     // Box "Spett." (destra, in alto)
     doc.setFontSize(9);
     doc.setFont(undefined, 'bold');
-    doc.rect(130, y, 70, 30); // Altezza aumentata a 30mm
-    doc.text('Spett.', 132, y + 5);
+    doc.rect(130, 10, 70, 30); // Altezza aumentata a 30mm, posizione Y fissa a 10
+    doc.text('Spett.', 132, 15);
     doc.setFontSize(8);
-    doc.text(fornitore?.nome || 'N/A', 132, y + 10);
+    doc.text(fornitore?.nome || 'N/A', 132, 20);
     
     doc.setFont(undefined, 'normal');
     doc.setFontSize(7);
-    if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, y + 15);
+    if (fornitore?.indirizzo) doc.text(fornitore.indirizzo, 132, 25);
     if (fornitore?.citta) {
       const cittaText = `${fornitore.cap || ''} ${fornitore.citta} ${fornitore.provincia || ''}`.trim();
-      doc.text(cittaText, 132, y + 20); // Spostato in basso
+      doc.text(cittaText, 132, 29);
     }
-    if (fornitore?.telefono) doc.text(`FAX : ${fornitore.telefono}`, 132, y + 25); // Spostato in basso
+    if (fornitore?.telefono) doc.text(`FAX : ${fornitore.telefono}`, 132, 33);
     
     // Box "Destinazione merce" (destra, sotto Spett.)
-    doc.rect(130, y + 31, 70, 25); // Altezza aumentata a 25mm, posizione Y adeguata
+    doc.rect(130, 41, 70, 25); // Altezza aumentata a 25mm, posizione Y fissa a 41
     doc.setFont(undefined, 'bold');
     doc.setFontSize(8);
-    doc.text('Destinazione merce', 132, y + 35); // Spostato in basso
-    doc.text('Arti Grafiche Snc', 132, y + 40); // Spostato in basso
+    doc.text('Destinazione merce', 132, 45);
+    doc.text('Arti Grafiche Snc', 132, 50);
     doc.setFont(undefined, 'normal');
     doc.setFontSize(7);
-    doc.text('Via S.Antonio, 51', 132, y + 45); // Spostato in basso
-    doc.text('25050 - Passirano (BS)', 132, y + 50); // Spostato in basso
+    doc.text('Via S.Antonio, 51', 132, 54);
+    doc.text('25050 - Passirano (BS)', 132, 58);
 
-    y += 62;
+    // y è già stato aggiornato a 55, quindi non serve un altro y += 62;
 
     // ========== TIPO DOCUMENTO ==========
     doc.setFillColor(220, 220, 220);
@@ -561,5 +563,5 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     if (targetWindow) {
       targetWindow.close();
     }
-  }
+    }
 }
