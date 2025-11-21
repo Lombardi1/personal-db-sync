@@ -89,14 +89,14 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
   };
 
   const handleActionClick = (ordine: OrdineAcquisto, type: 'cancel' | 'delete') => {
-    console.log(`[TabellaOrdiniAcquisto] handleActionClick chiamato per ordine: ${ordine.numero_ordine}, tipo: ${type}, ID: ${ordine.id}`); // Added ID
+    console.log(`[TabellaOrdiniAcquisto] handleActionClick chiamato per ordine: ${ordine.numero_ordine}, tipo: ${type}, ID: ${ordine.id}`);
     setOrdineToActOn(ordine);
     setActionType(type);
     setIsActionAlertOpen(true);
   };
 
   const handleConfirmAction = () => {
-    console.log(`[TabellaOrdiniAcquisto] handleConfirmAction chiamato. Ordine: ${ordineToActOn?.numero_ordine}, Tipo azione: ${actionType}, ID: ${ordineToActOn?.id}`); // Added ID
+    console.log(`[TabellaOrdiniAcquisto] handleConfirmAction chiamato. Ordine: ${ordineToActOn?.numero_ordine}, Tipo azione: ${actionType}, ID: ${ordineToActOn?.id}`);
     if (ordineToActOn?.id && ordineToActOn?.numero_ordine && actionType) {
       if (actionType === 'cancel') {
         console.log(`[TabellaOrdiniAcquisto] Chiamando onCancel per ID: ${ordineToActOn.id}`);
@@ -289,7 +289,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
         orderToProcess = {
           ...updatedOrderData,
           fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
-          fornitore_tipo: updatedOrderData.fornitori?.tipo_fornitore || 'N/A',
+          fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
           articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
         };
       }
@@ -538,6 +538,38 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           </tbody>
         </table>
       </div>
+
+      <AlertDialog open={isActionAlertOpen} onOpenChange={setIsActionAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === 'cancel' ? 'Conferma Annullamento Ordine' : 'Conferma Eliminazione Definitiva'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === 'cancel'
+                ? `Sei sicuro di voler annullare l'ordine ${ordineToActOn?.numero_ordine}? Tutti gli articoli verranno impostati come annullati.`
+                : `Sei sicuro di voler eliminare definitivamente l'ordine ${ordineToActOn?.numero_ordine}? Questa azione non può essere annullata e rimuoverà anche gli articoli correlati dal magazzino.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              console.log('[TabellaOrdiniAcquisto] AlertDialogCancel cliccato.');
+              setIsActionAlertOpen(false);
+              setOrdineToActOn(null);
+              setActionType(null);
+            }}>Annulla</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                console.log('[TabellaOrdiniAcquisto] AlertDialogAction cliccato. Chiamando handleConfirmAction.');
+                handleConfirmAction();
+              }}
+              className={actionType === 'cancel' ? 'bg-red-500 hover:bg-red-600' : 'bg-destructive hover:bg-destructive/90'}
+            >
+              {actionType === 'cancel' ? 'Annulla Ordine' : 'Elimina Definitivamente'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
