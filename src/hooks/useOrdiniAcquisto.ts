@@ -322,6 +322,16 @@ export function useOrdiniAcquisto() {
     // If the main order status is 'confermato' or 'ricevuto', we don't automatically change article statuses here.
     // Individual article status changes will be handled by updateArticleStatusInOrder.
 
+    // Ricalcola l'importo totale basandosi solo sugli articoli NON annullati
+    const newImportoTotale = articlesForDbUpdate.reduce((sum, item) => {
+      if (item.stato !== 'annullato') {
+        const qty = item.quantita || 0;
+        const price = item.prezzo_unitario || 0;
+        return sum + (qty * price);
+      }
+      return sum;
+    }, 0);
+
     // OPTIMISTIC UPDATE START
     const previousOrdiniAcquisto = ordiniAcquisto; // Store current state for potential rollback
     setOrdiniAcquisto(prev => prev.map(order => 
@@ -329,7 +339,8 @@ export function useOrdiniAcquisto() {
         ? { 
             ...order, 
             stato: newStatus,
-            articoli: articlesForDbUpdate // Use the prepared articles for optimistic update
+            articoli: articlesForDbUpdate, // Use the prepared articles for optimistic update
+            importo_totale: newImportoTotale, // Aggiorna l'importo totale
           } 
         : order
     ));
@@ -339,7 +350,7 @@ export function useOrdiniAcquisto() {
 
     const { data: updatedOrdine, error } = await supabase
       .from('ordini_acquisto')
-      .update({ stato: newStatus, articoli: articlesForDbUpdate as any, updated_at: new Date().toISOString() }) // Cast per JSONB
+      .update({ stato: newStatus, articoli: articlesForDbUpdate as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() }) // Cast per JSONB
       .eq('id', id)
       .select(`
         *,
@@ -354,7 +365,7 @@ export function useOrdiniAcquisto() {
       return { success: false, error };
     }
 
-    console.log(`[updateOrdineAcquistoStatus] Stato ordine ${id} aggiornato a ${newStatus}. Dati aggiornati dal DB:`, { stato: updatedOrdine.stato, updated_at: updatedOrdine.updated_at });
+    console.log(`[updateOrdineAcquistoStatus] Stato ordine ${id} aggiornato a ${newStatus}. Dati aggiornati dal DB:`, { stato: updatedOrdine.stato, updated_at: updatedOrdine.updated_at, importo_totale: updatedOrdine.importo_totale });
     
     const orderWithFornitoreInfo: OrdineAcquisto = {
       ...updatedOrdine,
@@ -406,20 +417,30 @@ export function useOrdiniAcquisto() {
       return { success: false, error: new Error('Article not found') };
     }
 
+    // Ricalcola l'importo totale basandosi solo sugli articoli NON annullati
+    const newImportoTotale = updatedArticles.reduce((sum, item) => {
+      if (item.stato !== 'annullato') {
+        const qty = item.quantita || 0;
+        const price = item.prezzo_unitario || 0;
+        return sum + (qty * price);
+      }
+      return sum;
+    }, 0);
+
     // OPTIMISTIC UPDATE START
     const previousOrdiniAcquisto = ordiniAcquisto;
     setOrdiniAcquisto(prev => prev.map(order => {
       if (order.numero_ordine === orderNumeroOrdine) {
-        return { ...order, articoli: updatedArticles };
+        return { ...order, articoli: updatedArticles, importo_totale: newImportoTotale };
       }
       return order;
     }));
     // OPTIMISTIC UPDATE END
 
-    // 3. Update the order with the modified articles array
+    // 3. Update the order with the modified articles array and new total amount
     const { data: updatedOrdine, error: updateError } = await supabase
       .from('ordini_acquisto')
-      .update({ articoli: updatedArticles as any, updated_at: new Date().toISOString() }) // Also update updated_at
+      .update({ articoli: updatedArticles as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() }) // Also update updated_at
       .eq('numero_ordine', orderNumeroOrdine)
       .select(`*, fornitori ( nome, tipo_fornitore )`)
       .single();
@@ -431,7 +452,7 @@ export function useOrdiniAcquisto() {
       return { success: false, error: updateError };
     }
 
-    console.log(`[updateArticleStatusInOrder] Stato articolo '${articleIdentifier}' aggiornato a ${newArticleStatus} per ordine ${orderNumeroOrdine}.`);
+    console.log(`[updateArticleStatusInOrder] Stato articolo '${articleIdentifier}' aggiornato a ${newArticleStatus} per ordine ${orderNumeroOrdine}. Nuovo importo totale: ${newImportoTotale}.`);
 
     // NEW LOGIC: Check if all articles are now 'annullato' and update main order status
     const allArticlesCancelled = updatedArticles.every(art => art.stato === 'annullato');
