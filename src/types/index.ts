@@ -89,3 +89,23 @@ export interface OrdineAcquisto {
   created_at?: string;
   updated_at?: string; // Aggiunto per l'ordinamento per ultima modifica
 }
+
+// Nuova interfaccia per le informazioni dell'azienda
+export interface AziendaInfo {
+  id?: string;
+  nome_azienda: string;
+  indirizzo?: string;
+  citta?: string;
+  cap?: string;
+  provincia?: string;
+  telefono?: string;
+  fax?: string;
+  email?: string;
+  p_iva?: string;
+  codice_fiscale?: string;
+  rea?: string;
+  m_bs?: string;
+  banche?: string;
+  created_at?: string;
+  updated_at?: string;
+}

@@ -1,4 +1,4 @@
-import { LogOut, Users, Settings, Contact } from 'lucide-react';
+import { LogOut, Users, Settings, Contact, Building2 } from 'lucide-react'; // Importa Building2
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -38,7 +38,8 @@ export function Header({
     } else if (location.pathname === '/gestione-utenti') {
       currentSection = 'gestione-utenti';
     } else if (location.pathname === '/anagrafica') {
-      currentSection = 'anagrafica';
+      const queryParams = new URLSearchParams(location.search);
+      currentSection = queryParams.get('tab') || 'anagrafica'; // Usa il tab attivo per il colore
     } else if (location.pathname === '/ordini-acquisto') { // Nuova condizione per OrdiniAcquisto
       currentSection = 'ordini-acquisto';
     } else if (location.pathname === '/storico-stampa') { // NUOVO: Condizione per StoricoStampa
@@ -63,9 +64,10 @@ export function Header({
       case 'scarico-magazzino': // Modificato per usare il rosso
         return 'linear-gradient(135deg, hsl(var(--danger)), hsl(0, 72%, 40%))';
       case 'gestione-utenti':
-        return 'hsl(var(--summary-header-color))'; // Colore solido come la dashboard
-      case 'anagrafica':
-        return 'hsl(var(--summary-header-color))'; // Colore solido come la dashboard
+      case 'anagrafica': // Colore per la pagina Anagrafica
+      case 'clienti': // Colore per la tab Clienti
+      case 'fornitori': // Colore per la tab Fornitori
+      case 'azienda': // Colore per la tab Azienda
       case 'ordini-acquisto': // Colore per OrdiniAcquisto
         return 'hsl(var(--summary-header-color))'; // Colore solido come la dashboard
       default:
@@ -111,6 +113,10 @@ export function Header({
                     <DropdownMenuItem onClick={() => navigate('/anagrafica')}>
                       <Contact className="mr-2 h-4 w-4" />
                       Gestione Anagrafiche
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/anagrafica?tab=azienda')}> {/* Nuova voce */}
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Gestione Azienda
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

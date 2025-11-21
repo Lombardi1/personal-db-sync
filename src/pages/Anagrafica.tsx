@@ -3,12 +3,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Header } from '@/components/Header';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home } from 'lucide-react';
+import { Home, Building2 } from 'lucide-react'; // Importa Building2
 import { AnagraficaTabs } from '@/components/AnagraficaTabs';
 import { ClientiTab } from '@/components/tabs/ClientiTab';
 import { FornitoriTab } from '@/components/tabs/FornitoriTab';
-import { useAnagrafiche } from '@/hooks/useAnagrafiche'; // Importa il nuovo hook
-import { assignMissingAnagraficaCodes } from '@/utils/anagraficaUtils'; // Importa la nuova funzione
+import { AziendaTab } from '@/components/tabs/AziendaTab'; // Importa la nuova tab
+import { useAnagrafiche } from '@/hooks/useAnagrafiche';
+import { useAziendaInfo } from '@/hooks/useAziendaInfo'; // Importa il nuovo hook
 
 export default function Anagrafica() {
   const { user, loading: authLoading } = useAuth();
@@ -22,8 +23,8 @@ export default function Anagrafica() {
     clienti, fornitori, loading: anagraficheLoading,
     addCliente, updateCliente, deleteCliente,
     addFornitore, updateFornitore, deleteFornitore,
-    loadAnagrafiche // Importa loadAnagrafiche per ricaricare i dati dopo l'assegnazione
   } = useAnagrafiche();
+  const { aziendaInfo, loading: aziendaInfoLoading, updateAziendaInfo } = useAziendaInfo(); // Usa il nuovo hook
 
   useEffect(() => {
     if (activeTab !== queryParams.get('tab')) {
@@ -38,13 +39,7 @@ export default function Anagrafica() {
     }
   }, [location.search]);
 
-  // La funzione handleAssignMissingCodes e il suo import non sono più necessari se il pulsante viene rimosso
-  // const handleAssignMissingCodes = async () => {
-  //   await assignMissingAnagraficaCodes();
-  //   await loadAnagrafiche(); // Ricarica i dati per mostrare i nuovi codici
-  // };
-
-  if (authLoading || anagraficheLoading) {
+  if (authLoading || anagraficheLoading || aziendaInfoLoading) { // Aggiungi aziendaInfoLoading
     return (
       <div className="min-h-screen bg-[hsl(210,40%,96%)] flex items-center justify-center">
         <div className="text-lg text-[hsl(var(--muted-foreground))]">Caricamento...</div>
@@ -69,17 +64,6 @@ export default function Anagrafica() {
             <i className="fas fa-address-book"></i> Gestione Anagrafiche
           </h2>
           <div className="flex gap-2">
-            {/* Pulsante temporaneo per assegnare i codici mancanti - RIMOSSO */}
-            {/* <Button 
-              onClick={handleAssignMissingCodes} 
-              variant="secondary" 
-              size="sm" 
-              className="text-sm bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-              title="Assegna codici a clienti/fornitori esistenti senza codice"
-            >
-              <i className="fas fa-magic mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4"></i>
-              Assegna Codici Mancanti
-            </Button> */}
             <Button onClick={() => navigate('/summary')} variant="outline" size="sm" className="text-sm">
               <Home className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
               Torna alla Dashboard
@@ -104,6 +88,12 @@ export default function Anagrafica() {
               addFornitore={addFornitore} 
               updateFornitore={updateFornitore} 
               deleteFornitore={deleteFornitore} 
+            />
+          )}
+          {activeTab === 'azienda' && ( // Renderizza la nuova tab
+            <AziendaTab 
+              aziendaInfo={aziendaInfo} 
+              updateAziendaInfo={updateAziendaInfo} 
             />
           )}
         </div>

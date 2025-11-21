@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Home, PlusCircle } from 'lucide-react';
 import { useOrdiniAcquisto } from '@/hooks/useOrdiniAcquisto';
 import { useAnagrafiche } from '@/hooks/useAnagrafiche';
+import { useAziendaInfo } from '@/hooks/useAziendaInfo'; // Importa il nuovo hook
 import { OrdineAcquisto, ArticoloOrdineAcquisto } from '@/types';
 import { ModalOrdineAcquistoForm } from '@/components/modals/ModalOrdineAcquistoForm';
 import { TabellaOrdiniAcquisto } from '@/components/tables/TabellaOrdiniAcquisto';
@@ -37,6 +38,7 @@ export default function OrdiniAcquisto() {
     updateArticleStatusInOrder
   } = useOrdiniAcquisto();
   const { fornitori, clienti, loading: anagraficheLoading } = useAnagrafiche();
+  const { aziendaInfo, loading: aziendaInfoLoading } = useAziendaInfo(); // Usa il nuovo hook
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOrdine, setEditingOrdine] = useState<OrdineAcquisto | null>(null);
@@ -194,7 +196,7 @@ export default function OrdiniAcquisto() {
     handleCloseModal();
   };
 
-  if (loading || anagraficheLoading) {
+  if (loading || anagraficheLoading || aziendaInfoLoading) { // Aggiungi aziendaInfoLoading
     return (
       <div className="min-h-screen bg-[hsl(210,40%,96%)] flex items-center justify-center">
         <div className="text-lg text-[hsl(var(--muted-foreground))]">Caricamento...</div>
@@ -255,6 +257,7 @@ export default function OrdiniAcquisto() {
             onDuplicateAndEdit={handleDuplicateClick}
             fornitori={fornitori}
             clienti={clienti}
+            aziendaInfo={aziendaInfo} // Passa aziendaInfo
             updateOrdineAcquistoStatus={updateOrdineAcquistoStatus}
             updateArticleStatusInOrder={updateArticleStatusInOrder}
           />

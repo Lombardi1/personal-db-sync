@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { OrdineAcquisto, Fornitore, Cliente, ArticoloOrdineAcquisto } from '@/types';
+import { OrdineAcquisto, Fornitore, Cliente, ArticoloOrdineAcquisto, AziendaInfo } from '@/types'; // Importa AziendaInfo
 import { formatData, formatFormato, formatGrammatura, getStatoText, getStatoBadgeClass } from '@/utils/formatters';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Edit, Trash2, FileText, ChevronDown, ChevronUp, CopyPlus, XCircle, Printer } from 'lucide-react';
@@ -26,6 +26,7 @@ interface TabellaOrdiniAcquistoProps {
   onDuplicateAndEdit: (ordine: OrdineAcquisto) => void;
   fornitori: Fornitore[];
   clienti: Cliente[];
+  aziendaInfo: AziendaInfo | null; // Nuova prop
   updateOrdineAcquistoStatus: (id: string, newStatus: OrdineAcquisto['stato']) => Promise<{ success: boolean; error?: any }>;
   updateArticleStatusInOrder: (orderNumeroOrdine: string, articleIdentifier: string, newArticleStatus: ArticoloOrdineAcquisto['stato']) => Promise<{ success: boolean; error?: any }>;
 }
@@ -69,7 +70,7 @@ const parseGrammaturaForCalculation = (grammaturaString: string | undefined): nu
   return isNaN(gramm) ? null : gramm;
 };
 
-export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDelete, onDuplicateAndEdit, fornitori, clienti, updateOrdineAcquistoStatus, updateArticleStatusInOrder }: TabellaOrdiniAcquistoProps) {
+export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDelete, onDuplicateAndEdit, fornitori, clienti, aziendaInfo, updateOrdineAcquistoStatus, updateArticleStatusInOrder }: TabellaOrdiniAcquistoProps) {
   console.log("[TabellaOrdiniAcquisto] Componente renderizzato con le ultime modifiche.");
   const [ordineToActOn, setOrdineToActOn] = useState<OrdineAcquisto | null>(null);
   const [isActionAlertOpen, setIsActionAlertOpen] = useState(false);
@@ -154,7 +155,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
         notifications.showInfo(`L'ordine '${orderToProcess.numero_ordine}' è annullato. Non è possibile modificare lo stato degli articoli.`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', true, newWindow);
+        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
         return;
       }
 
@@ -215,7 +216,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       if (allArticlesSent) {
           console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
-          exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', true, newWindow);
+          exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
       } else {
           notifications.showError("Non tutti gli articoli sono stati inviati. Impossibile generare il PDF.");
           newWindow.close();
@@ -308,7 +309,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       if (allArticlesSent) {
         console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', false, null);
+        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       } else {
         notifications.showError("Non tutti gli articoli sono stati inviati. Impossibile generare il PDF.");
       }

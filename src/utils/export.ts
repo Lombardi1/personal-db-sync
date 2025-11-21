@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
-import { Cartone, OrdineAcquisto, Fornitore, Cliente, ArticoloOrdineAcquisto, StoricoMovimento } from '@/types';
+import { Cartone, OrdineAcquisto, Fornitore, Cliente, ArticoloOrdineAcquisto, StoricoMovimento, AziendaInfo } from '@/types';
 import { formatData, formatFormato, formatGrammatura, formatFogli, formatPrezzo, getStatoText } from '@/utils/formatters';
 import logoAG from '@/assets/logo-ag.jpg';
 import logoFSC from '@/assets/logo-fsc.jpg';
@@ -307,10 +307,11 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
   }
 }
 
-export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Fornitore[], clienti: Cliente[], section: string, preview: boolean = false, targetWindow: Window | null = null) {
+export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Fornitore[], clienti: Cliente[], section: string, aziendaInfo: AziendaInfo | null, preview: boolean = false, targetWindow: Window | null = null) {
   try {
     console.log(`[exportOrdineAcquistoPDF] Inizio esportazione PDF per ordine: ${ordine.numero_ordine}, preview: ${preview}`);
     console.log(`[exportOrdineAcquistoPDF] Ordine ricevuto:`, JSON.stringify(ordine, null, 2));
+    console.log(`[exportOrdineAcquistoPDF] Azienda Info ricevuta:`, JSON.stringify(aziendaInfo, null, 2));
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     let y = 10;
@@ -329,26 +330,27 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Logo AG Lombardi (sinistra)
     doc.addImage(logoAG, 'JPEG', 10, y, 25, 25); // Rimpicciolito a 25x25mm
     
-    // Info azienda (sinistra, sotto logo)
+    // Info azienda (sinistra, sotto logo) - Ora dinamiche da aziendaInfo
     doc.setFontSize(12); 
-    doc.text('ARTI GRAFICHE', 40, y + 5); 
+    doc.text(aziendaInfo?.nome_azienda || 'ARTI GRAFICHE', 40, y + 5); 
     doc.setFontSize(9); 
-    doc.text('Lombardi SRL', 40, y + 9); 
-    
+    doc.text('Lombardi SRL', 40, y + 9); // Questo sembra essere un suffisso fisso
+
     doc.setFontSize(8); // Uniformato a 8
-    doc.text('C.P. 25050 PASSIRANO (BRESCIA)', 40, y + 14); 
-    doc.text('VIA S.ANTONIO, 51', 40, y + 17); 
-    doc.text('TEL. 030657152 - 0306577500', 40, y + 20); 
-    doc.text('TELEFAX 0306577262', 40, y + 23); 
-    doc.text('E-Mail: info@aglombardi.it', 40, y + 26); 
+    doc.text(aziendaInfo?.indirizzo || 'VIA S.ANTONIO, 51', 40, y + 14); 
+    doc.text(`${aziendaInfo?.cap || ''} ${aziendaInfo?.citta || ''} ${aziendaInfo?.provincia || ''}`.trim() || '25050 PASSIRANO (BRESCIA)', 40, y + 17); 
+    doc.text(`TEL. ${aziendaInfo?.telefono || '030657152 - 0306577500'}`, 40, y + 20); 
+    doc.text(`TELEFAX ${aziendaInfo?.fax || '0306577262'}`, 40, y + 23); 
+    doc.text(`E-Mail: ${aziendaInfo?.email || 'info@aglombardi.it'}`, 40, y + 26); 
     
-    doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 30); 
+    doc.text('LITOGRAFIA - CARTOTECNICA', 40, y + 30); // Questo sembra fisso
     doc.setFontSize(7); // Uniformato a 7
-    doc.text('R.E.A. di BS N. 169198 M. BS 012689', 40, y + 33); 
-    doc.text('C.F. / P.IVA IT 00320390172', 40, y + 36); 
-    doc.text('Banche: agenzie di Ospitaletto BS', 40, y + 39); 
-    doc.text('Banca Popolare di Sondrio', 50, y + 42); 
-    doc.text('Banca Popolare di Bergamo', 50, y + 45); 
+    doc.text(`R.E.A. di BS N. ${aziendaInfo?.rea || '169198'} M. BS ${aziendaInfo?.m_bs || '012689'}`, 40, y + 33); 
+    doc.text(`C.F. / P.IVA IT ${aziendaInfo?.p_iva || '00320390172'}`, 40, y + 36); 
+    doc.text(`Banche: ${aziendaInfo?.banche || 'agenzie di Ospitaletto BS'}`, 40, y + 39); 
+    // Le banche specifiche potrebbero essere parte del campo 'banche' o rimosse se non necessarie
+    // doc.text('Banca Popolare di Sondrio', 50, y + 42); 
+    // doc.text('Banca Popolare di Bergamo', 50, y + 45); 
 
     y += 55; 
 
@@ -372,10 +374,10 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     doc.setFontSize(9); // Titolo del box
     doc.text('Destinazione merce', 132, 45);
     doc.setFontSize(8); // Contenuto del box
-    doc.text('Arti Grafiche Snc', 132, 50);
+    doc.text(aziendaInfo?.nome_azienda || 'Arti Grafiche Snc', 132, 50); // Dinamico
     doc.setFontSize(8); // Contenuto del box
-    doc.text('Via S.Antonio, 51', 132, 54);
-    doc.text('25050 - Passirano (BS)', 132, 58);
+    doc.text(aziendaInfo?.indirizzo || 'Via S.Antonio, 51', 132, 54); // Dinamico
+    doc.text(`${aziendaInfo?.cap || ''} - ${aziendaInfo?.citta || ''} (${aziendaInfo?.provincia || ''})`.trim() || '25050 - Passirano (BS)', 132, 58); // Dinamico
 
     // ========== TIPO DOCUMENTO ==========
     doc.setFillColor(220, 220, 220);
