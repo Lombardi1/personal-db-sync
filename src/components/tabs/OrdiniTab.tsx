@@ -9,15 +9,15 @@ import { esportaTabellaXLS, esportaTabellaPDF } from '@/utils/export';
 
 interface OrdiniTabProps {
   ordini: Cartone[];
-  spostaInGiacenza: (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number) => Promise<{ error: any }>;
-  confermaOrdine: (codice: string, confermato: boolean) => Promise<{ error: any }>;
-  eliminaOrdine: (codice: string) => Promise<void>;
-  modificaOrdine: (codice: string, dati: Partial<Cartone>) => Promise<void>;
+  onConferma: (codice: string, confermato: boolean) => void;
+  onSpostaInMagazzino: (codice: string) => void;
+  onModifica: (codice: string) => void;
+  onElimina: (codice: string) => void;
   storico: any[];
 }
 
-export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrdine, modificaOrdine }: OrdiniTabProps) {
-  console.log("OrdiniTab: Received 'ordini' prop:", ordini.map(o => ({ codice: o.codice, confermato: o.confermato, data_consegna: o.data_consegna }))); // NEW LOG
+export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica, onElimina }: OrdiniTabProps) {
+  console.log("OrdiniTab: Received 'ordini' prop (raw data):", ordini.map(o => ({ codice: o.codice, confermato: o.confermato, data_consegna: o.data_consegna, ddt: o.ddt, data_arrivo: o.data_arrivo, magazzino: o.magazzino }))); // NEW LOG
   const [filtri, setFiltri] = useState({
     codice: '',
     fornitore: '',
@@ -55,6 +55,19 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
             return normalizedField.includes(normalizedValue);
           });
         }
+        // Gestione del filtro 'confermato'
+        else if (key === 'confermato') {
+          filtered = filtered.filter(c => {
+            const isConfirmed = c.confermato;
+            if (value.toLowerCase() === 'sì' || value.toLowerCase() === 'si') {
+              return isConfirmed;
+            }
+            if (value.toLowerCase() === 'no') {
+              return !isConfirmed;
+            }
+            return true; // Se il valore del filtro non è 'sì' o 'no', non filtrare per conferma
+          });
+        }
         // Gestione normale per gli altri campi
         else {
           filtered = filtered.filter(c => {
@@ -73,6 +86,7 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
     });
 
     setOrdiniFiltered(filtered);
+    console.log("OrdiniTab: 'ordiniFiltered' state updated:", filtered.map(o => ({ codice: o.codice, confermato: o.confermato }))); // NEW LOG
   };
 
   const resetFiltri = () => {
@@ -125,7 +139,7 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
 
       <TabellaOrdini 
         ordini={ordiniFiltered}
-        onConferma={confermaOrdine}
+        onConferma={onConferma}
         onSpostaInMagazzino={(codice) => {
           setSelectedCodice(codice);
           setShowModalMagazzino(true);
@@ -134,7 +148,7 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
           setSelectedCodice(codice);
           setShowModalModifica(true);
         }}
-        onElimina={eliminaOrdine}
+        onElimina={onElimina}
       />
 
       {showModalMagazzino && selectedCodice && (
@@ -142,7 +156,7 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
           codice={selectedCodice}
           ordine={ordini.find(o => o.codice === selectedCodice)!}
           onClose={() => setShowModalMagazzino(false)}
-          onConferma={spostaInGiacenza}
+          onConferma={onSpostaInMagazzino}
         />
       )}
 
@@ -150,7 +164,7 @@ export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrd
         <ModalModificaOrdine
           ordine={ordini.find(o => o.codice === selectedCodice)!}
           onClose={() => setShowModalModifica(false)}
-          onModifica={modificaOrdine}
+          onModifica={onModifica}
         />
       )}
     </div>

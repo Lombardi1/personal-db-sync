@@ -321,17 +321,32 @@ export function useCartoni() {
     }
 
     const ordine = { ...cartone };
-    // Rimosse le eliminazioni esplicite di ddt e data_arrivo per conservare le informazioni
-    // delete ordine.ddt;
-    // delete ordine.data_arrivo;
+    // Le eliminazioni esplicite di ddt e data_arrivo sono state rimosse nel commit precedente.
+    // Ora questi campi dovrebbero essere conservati nell'oggetto 'ordine'.
     
     ordine.confermato = true; 
     if (!ordine.data_consegna) {
       ordine.data_consegna = new Date().toISOString().split('T')[0];
     }
 
-    await supabase.from('giacenza').delete().eq('codice', codice);
-    await supabase.from('ordini').insert([ordine]);
+    console.log(`[riportaInOrdini] Tentativo di eliminare da 'giacenza' il codice: ${codice}`);
+    const { error: deleteError } = await supabase.from('giacenza').delete().eq('codice', codice);
+    if (deleteError) {
+      console.error(`[riportaInOrdini] Errore eliminazione da 'giacenza':`, deleteError);
+      notifications.showError(`Errore eliminazione da giacenza: ${deleteError.message}`);
+      return { error: deleteError };
+    }
+    console.log(`[riportaInOrdini] Eliminazione da 'giacenza' riuscita per codice: ${codice}`);
+
+    console.log(`[riportaInOrdini] Tentativo di inserire in 'ordini' il cartone:`, ordine);
+    const { error: insertError } = await supabase.from('ordini').insert([ordine]);
+    if (insertError) {
+      console.error(`[riportaInOrdini] Errore inserimento in 'ordini':`, insertError);
+      notifications.showError(`Errore inserimento in ordini: ${insertError.message}`);
+      return { error: insertError };
+    }
+    console.log(`[riportaInOrdini] Inserimento in 'ordini' riuscito per codice: ${codice}`);
+
 
     const movimento: StoricoMovimento = {
       codice,
@@ -369,7 +384,7 @@ export function useCartoni() {
     const { error: updateOrdiniError } = await supabase.from('ordini').update({ confermato }).eq('codice', codice);
     if (updateOrdiniError) {
       notifications.showError(`Errore aggiornamento stato conferma in ordini: ${updateOrdiniError.message}`);
-      console.error(`[useCartoni - confermaOrdine] Errore aggiornamento 'confermato' in tabella 'ordini':`, updateOrdiniError);
+      console.error(`[useCartoni - confermaOrdine] Errore aggiornamento 'confermato' in tabella 'ordini' (codice: ${codice}):`, updateOrdiniError);
       return { error: updateOrdiniError };
     }
     console.log(`[useCartoni - confermaOrdine] Campo 'confermato' aggiornato in tabella 'ordini' per codice ${codice} a ${confermato}.`);
