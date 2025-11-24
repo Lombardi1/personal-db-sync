@@ -2,7 +2,7 @@ import { LogOut, Users, Settings, Contact, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logoAG from '@/assets/logo-ag.jpg';
+import logoAG from '@/assets/LOGO.png'; // Aggiornato il percorso del logo
 import {
   DropdownMenu,
   DropdownMenuContent,
