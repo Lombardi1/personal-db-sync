@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { OrdineAcquisto } from '@/types';
+import { OrdineAcquisto, ArticoloOrdineAcquisto } from '@/types';
 
 let lastGeneratedFscCommessaInSession: { [year: string]: number } = {};
 
@@ -9,11 +9,10 @@ let lastGeneratedFscCommessaInSession: { [year: string]: number } = {};
  * @returns The highest sequential commessa number found, or 0 if none.
  */
 export async function fetchMaxFscCommessaFromDB(yearShort: string): Promise<number> {
-  // Query all orders that have at least one FSC article
+  // Fetch all orders_acquisto. We will filter articles client-side.
   const { data, error } = await supabase
     .from('ordini_acquisto')
-    .select('articoli')
-    .contains('articoli', [{ fsc: true }]); // Filter for orders containing FSC articles
+    .select('articoli'); // Select only the 'articoli' column
 
   if (error) {
     console.error('Error fetching max FSC commessa number:', error);
@@ -22,9 +21,10 @@ export async function fetchMaxFscCommessaFromDB(yearShort: string): Promise<numb
 
   let maxSeqNum = 0;
   if (data && data.length > 0) {
-    for (const order of data as OrdineAcquisto[]) {
-      if (order.articoli) {
-        for (const article of order.articoli) {
+    for (const order of data) { // 'order' here is { articoli: ArticoloOrdineAcquisto[] }
+      const articoli = order.articoli as ArticoloOrdineAcquisto[]; // Cast to the correct type
+      if (articoli) {
+        for (const article of articoli) {
           if (article.fsc && article.rif_commessa_fsc) {
             const parts = article.rif_commessa_fsc.split('/');
             if (parts.length === 2 && parts[1] === yearShort) {
@@ -52,7 +52,8 @@ export function generateNextFscCommessa(orderYear: number): string {
   
   if (!lastGeneratedFscCommessaInSession[currentYearShort]) {
     // Fallback initialization if resetFscCommessaGenerator wasn't called
-    lastGeneratedFscCommessaInSession[currentYearShort] = (orderYear === 2024) ? 31 : 0;
+    // This ensures the first generated number is 1 if no previous max is set.
+    lastGeneratedFscCommessaInSession[currentYearShort] = 0; 
   }
 
   lastGeneratedFscCommessaInSession[currentYearShort]++;
