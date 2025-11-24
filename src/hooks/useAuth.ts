@@ -26,27 +26,25 @@ export function useAuth() {
     try {
       console.log('🔍 Tentativo login per username:', username);
       
-      // Recupera l'utente dal database (case-insensitive)
-      const { data: users, error: userError } = await supabase
-        .from('app_users')
-        .select('id, username, password_hash')
-        .ilike('username', username)
-        .single();
+      // Chiama la funzione PostgreSQL per recuperare in modo sicuro l'hash della password e l'ID utente
+      const { data: authData, error: authError } = await supabase.rpc('get_user_auth_data', { p_username: username });
 
-      console.log('📊 Risultato query utente:', { users, userError });
+      console.log('📊 Risultato funzione SQL get_user_auth_data:', { authData, authError });
 
-      if (userError || !users) {
-        console.log('❌ Utente non trovato');
+      if (authError || !authData || authData.length === 0) {
+        console.log('❌ Utente non trovato o errore nella funzione SQL');
         throw new Error('Username o password non corretti');
       }
 
-      console.log('✅ Utente trovato:', users.username);
-      console.log('🔑 Hash password dal DB:', users.password_hash);
+      const userRecord = authData[0]; // La funzione restituisce una tabella, prendiamo la prima riga
+      
+      console.log('✅ Utente trovato:', userRecord.username);
+      console.log('🔑 Hash password dal DB:', userRecord.password_hash);
       console.log('🔑 Password inserita:', password);
 
       // Verifica la password
       const bcrypt = await import('bcryptjs');
-      const isValid = await bcrypt.compare(password, users.password_hash);
+      const isValid = await bcrypt.compare(password, userRecord.password_hash);
       
       console.log('🔐 Risultato confronto password:', isValid);
       
@@ -57,11 +55,11 @@ export function useAuth() {
 
       console.log('✅ Password corretta, recupero ruolo...');
 
-      // Recupera il ruolo dell'utente
+      // Recupera il ruolo dell'utente dalla tabella user_roles, usando l'ID di app_users
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', users.id)
+        .eq('user_id', userRecord.user_id) // Ora user_id fa riferimento a app_users.id
         .single();
 
       console.log('📊 Risultato query ruolo:', { roleData, roleError });
@@ -74,8 +72,8 @@ export function useAuth() {
       console.log('✅ Ruolo trovato:', roleData.role);
 
       const loggedUser: User = {
-        id: users.id,
-        username: users.username,
+        id: userRecord.user_id, // Usa l'ID restituito dalla funzione SQL
+        username: userRecord.username,
         role: roleData.role as 'stampa' | 'amministratore' // Cast al nuovo tipo di ruolo
       };
 
