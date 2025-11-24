@@ -125,7 +125,7 @@ export function useCartoni() {
       magazzino: magazzinoFinale,
       fsc: ordine.fsc,
       alimentare: ordine.alimentare,
-      rif_commessa_fsc: ordine.rif_commessa_fsc,
+      rif_commessa_fsc: ordine.rif_commessa_fsc || null, // Ensure it's null if empty/undefined
       data_consegna: ordine.data_consegna || null, // Ensure it's null if empty/undefined
     };
     delete cartoneGiacenza.confermato; // 'confermato' è specifico della tabella 'ordini'
@@ -269,7 +269,7 @@ export function useCartoni() {
       data_consegna: new Date().toISOString().split('T')[0],
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
-      rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc,
+      rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null, // Ensure it's null if empty/undefined
     };
 
     try {
