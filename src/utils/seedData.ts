@@ -57,6 +57,8 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-07-15',
             stato: 'confermato',
             numero_fogli: 1000, // Aggiunto numero_fogli
+            fsc: true, // Aggiunto
+            alimentare: false, // Aggiunto
           },
           {
             codice_ctn: generateNextCartoneCode(),
@@ -70,6 +72,8 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-07-18',
             stato: 'confermato',
             numero_fogli: 2500, // Aggiunto numero_fogli
+            fsc: false, // Aggiunto
+            alimentare: true, // Aggiunto
           },
         ],
       });
@@ -123,6 +127,8 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-07-01',
             stato: 'ricevuto',
             numero_fogli: 500, // Aggiunto numero_fogli
+            fsc: true, // Aggiunto
+            alimentare: true, // Aggiunto
           },
         ],
       });
@@ -149,6 +155,8 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-07-25',
             stato: 'in_attesa',
             numero_fogli: 1200, // Aggiunto numero_fogli
+            fsc: false, // Aggiunto
+            alimentare: false, // Aggiunto
           },
         ],
       });
@@ -176,6 +184,8 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-07-28',
             stato: 'inviato',
             numero_fogli: 800,
+            fsc: true, // Aggiunto
+            alimentare: false, // Aggiunto
           },
           {
             codice_ctn: generateNextCartoneCode(),
@@ -189,6 +199,8 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-07-28',
             stato: 'annullato', // Questo articolo è annullato
             numero_fogli: 300,
+            fsc: false, // Aggiunto
+            alimentare: false, // Aggiunto
           },
         ],
       });
@@ -251,7 +263,9 @@ export async function seedPurchaseOrders() {
             prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
             confermato: newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto',
-            note: ordineData.note || '-'
+            note: ordineData.note || '-',
+            fsc: articolo.fsc, // Aggiunto
+            alimentare: articolo.alimentare, // Aggiunto
           };
           
           // Inserisci in 'ordini' solo se lo stato dell'articolo non è 'ricevuto'

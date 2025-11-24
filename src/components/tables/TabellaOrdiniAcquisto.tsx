@@ -203,7 +203,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           orderToProcess = {
               ...updatedOrderData,
               fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
-              fornitore_tipo: updatedOrderData.fornitori?.tipo_fornitore || 'N/A',
+              fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
               articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
           };
       }
@@ -336,6 +336,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               lavoro: article.lavoro || '',
               data_consegna_prevista: article.data_consegna_prevista || '',
               stato: article.stato,
+              fsc: article.fsc, // Aggiunto
+              alimentare: article.alimentare, // Aggiunto
             };
           })
           .sort((a, b) => {
@@ -370,6 +372,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           codice_ctn: '', descrizione: 'Nessun articolo', tipologia_cartone: '', formato: '', grammatura: '',
           peso_cartone_kg: 0, cliente: '', lavoro: '', data_consegna_prevista: '',
           numero_fogli: 0, // Default for numero_fogli
+          fsc: false, // Aggiunto
+          alimentare: false, // Aggiunto
         }];
     return { order, articles, isExpanded };
   });
@@ -441,6 +445,12 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                             {row.numero_fogli !== undefined && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>} {/* Display numero_fogli */}
                             {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
                             {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                            {(row.fsc || row.alimentare) && (
+                              <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
+                                {row.fsc && <span className="mr-2">FSC: Sì</span>}
+                                {row.alimentare && <span>Alimentare: Sì</span>}
+                              </div>
+                            )}
                           </>
                         ) : (
                           <>

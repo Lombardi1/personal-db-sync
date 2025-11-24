@@ -72,6 +72,8 @@ const articoloSchema = z.object({
   lavoro: z.string().max(255, 'Lavoro troppo lungo').optional().or(z.literal('')),
   data_consegna_prevista: z.string().min(1, 'La data di consegna prevista è obbligatoria per l\'articolo'),
   stato: z.enum(['in_attesa', 'confermato', 'ricevuto', 'annullato', 'inviato'], { required_error: 'Lo stato è obbligatorio' }),
+  fsc: z.boolean().optional(), // Nuovo campo
+  alimentare: z.boolean().optional(), // Nuovo campo
 });
 
 export function ModalOrdineAcquistoForm({
@@ -172,7 +174,7 @@ export function ModalOrdineAcquistoForm({
                 path: [`articoli`, index, `quantita`],
               });
             }
-            if (articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.cliente || articolo.lavoro || articolo.codice_ctn || articolo.numero_fogli) {
+            if (articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.cliente || articolo.lavoro || articolo.codice_ctn || articolo.numero_fogli || articolo.fsc || articolo.alimentare) { // Aggiunto fsc e alimentare
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Questi campi non devono essere usati per questo tipo di fornitore.',
@@ -194,6 +196,8 @@ export function ModalOrdineAcquistoForm({
             stato: (art.stato || 'in_attesa') as ArticoloOrdineAcquisto['stato'],
             numero_fogli: art.numero_fogli || undefined,
             quantita: art.quantita || undefined,
+            fsc: art.fsc || false, // Default a false
+            alimentare: art.alimentare || false, // Default a false
           }))
         : [{ 
             quantita: undefined,
@@ -201,7 +205,9 @@ export function ModalOrdineAcquistoForm({
             prezzo_unitario: 0, 
             codice_ctn: '', 
             data_consegna_prevista: defaultDateForNewArticle, 
-            stato: 'in_attesa' as ArticoloOrdineAcquisto['stato']
+            stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
+            fsc: false, // Default a false
+            alimentare: false, // Default a false
           }];
 
       const defaultVal = initialData ? {
@@ -261,7 +267,9 @@ export function ModalOrdineAcquistoForm({
       numero_fogli: undefined,
       prezzo_unitario: 0, 
       data_consegna_prevista: new Date().toISOString().split('T')[0],
-      stato: 'in_attesa' 
+      stato: 'in_attesa',
+      fsc: false, // Default a false
+      alimentare: false, // Default a false
     };
     append(newArticle);
 
@@ -300,6 +308,8 @@ export function ModalOrdineAcquistoForm({
                 stato: (art.stato || 'in_attesa') as ArticoloOrdineAcquisto['stato'],
                 numero_fogli: art.numero_fogli || undefined,
                 quantita: art.quantita || undefined,
+                fsc: art.fsc || false, // Default a false
+                alimentare: art.alimentare || false, // Default a false
               }))
             : [{ 
                 quantita: undefined, 
@@ -307,7 +317,9 @@ export function ModalOrdineAcquistoForm({
                 prezzo_unitario: 0, 
                 codice_ctn: '', 
                 data_consegna_prevista: defaultDateForNewArticle, 
-                stato: 'in_attesa' as ArticoloOrdineAcquisto['stato']
+                stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
+                fsc: false, // Default a false
+                alimentare: false, // Default a false
               }];
 
           let dataToReset: OrdineAcquisto;
@@ -414,6 +426,9 @@ export function ModalOrdineAcquistoForm({
         if (field.quantita === undefined) {
           setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
         }
+        // Reset fsc and alimentare if not cartone
+        setValue(`articoli.${index}.fsc`, false, { shouldValidate: true });
+        setValue(`articoli.${index}.alimentare`, false, { shouldValidate: true });
       });
     }
   }, [isCartoneFornitore, fields, setValue, ctnGeneratorInitialized]);
@@ -445,7 +460,9 @@ export function ModalOrdineAcquistoForm({
       numero_fogli: undefined,
       prezzo_unitario: 0, 
       data_consegna_prevista: firstArticleDate,
-      stato: 'in_attesa' as ArticoloOrdineAcquisto['stato']
+      stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
+      fsc: false, // Default a false
+      alimentare: false, // Default a false
     };
     if (isCartoneFornitore) {
       newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };

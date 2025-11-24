@@ -147,7 +147,9 @@ export function useOrdiniAcquisto() {
           magazzino: '-', // Default, will be updated by spostaInGiacenza
           prezzo: articolo.prezzo_unitario,
           data_consegna: articolo.data_consegna_prevista,
-          note: ordineAcquisto.note || '-'
+          note: ordineAcquisto.note || '-',
+          fsc: articolo.fsc, // Aggiunto
+          alimentare: articolo.alimentare, // Aggiunto
         };
 
         console.log(`[syncArticleInventoryStatus] Articolo ${codiceCtn} stato: ${articolo.stato}`);

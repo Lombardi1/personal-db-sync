@@ -15,6 +15,8 @@ export interface Cartone {
   data_consegna?: string;
   confermato?: boolean;
   note?: string;
+  fsc?: boolean; // Nuovo campo
+  alimentare?: boolean; // Nuovo campo
 }
 
 export interface StoricoMovimento {
@@ -74,6 +76,8 @@ export interface ArticoloOrdineAcquisto {
   lavoro?: string;
   data_consegna_prevista?: string; // Spostato qui
   stato: 'in_attesa' | 'confermato' | 'ricevuto' | 'annullato' | 'inviato'; // Nuovo campo stato per l'articolo
+  fsc?: boolean; // Nuovo campo
+  alimentare?: boolean; // Nuovo campo
 }
 
 export interface OrdineAcquisto {

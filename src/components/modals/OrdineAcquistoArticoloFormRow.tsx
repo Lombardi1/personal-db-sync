@@ -86,6 +86,8 @@ export function OrdineAcquistoArticoloFormRow({
   const currentCliente = currentArticle?.cliente;
   const currentCodiceCtn = currentArticle?.codice_ctn;
   const currentStatoArticolo = currentArticle?.stato;
+  const currentFsc = currentArticle?.fsc; // Nuovo campo
+  const currentAlimentare = currentArticle?.alimentare; // Nuovo campo
 
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura
   const calculatedQuantitaKg = React.useMemo(() => {
@@ -318,6 +320,39 @@ export function OrdineAcquistoArticoloFormRow({
 
             <Separator className="my-1" /> {/* Reduced margin */}
 
+            {/* Section: Certificazioni */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Certificazioni</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.fsc`}
+                    {...register(`articoli.${index}.fsc`)}
+                    checked={currentFsc}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.fsc`} className="text-xs">FSC</Label>
+                  {errors.articoli?.[index]?.fsc && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fsc?.message}</p>}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.alimentare`}
+                    {...register(`articoli.${index}.alimentare`)}
+                    checked={currentAlimentare}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.alimentare`} className="text-xs">Alimentare</Label>
+                  {errors.articoli?.[index]?.alimentare && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.alimentare?.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-1" /> {/* Reduced margin */}
+
             {/* Section: Consegna */}
             <div className="p-2 bg-gray-50 rounded-lg border"> {/* Reduced padding */}
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
@@ -375,7 +410,7 @@ export function OrdineAcquistoArticoloFormRow({
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
                       type="number"
-                      step="0.001" // Allow 3 decimals
+                      step="0.001" // Allow 3 decimal places
                       {...register(`articoli.${index}.prezzo_unitario`, { valueAsNumber: true })}
                       placeholder="0.000" // Reflect 3 decimals
                       min="0"
