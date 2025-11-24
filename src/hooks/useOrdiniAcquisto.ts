@@ -164,11 +164,11 @@ export function useOrdiniAcquisto() {
   const updateArticleStatusInOrder = useCallback(async (orderNumeroOrdine: string, articleIdentifier: string, newArticleStatus: ArticoloOrdineAcquisto['stato']) => {
     console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Inizio per OA: '${orderNumeroOrdine}', Articolo: '${articleIdentifier}', Nuovo stato: '${newArticleStatus}'`);
 
-    // 1. Fetch the order
+    // 1. Fetch the order without nested select for simplicity
     const { data: ordineAcquistoToUpdate, error: fetchError } = await supabase
       .from('ordini_acquisto')
-      .select(`*, fornitori ( nome, tipo_fornitore )`)
-      .eq('numero_ordine', orderNumeroOrdine.trim()) // Added .trim()
+      .select(`*`) // Simplified select
+      .eq('numero_ordine', orderNumeroOrdine.trim())
       .single();
 
     if (fetchError || !ordineAcquistoToUpdate) {
@@ -218,7 +218,7 @@ export function useOrdiniAcquisto() {
       .from('ordini_acquisto')
       .update({ articoli: updatedArticles as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
       .eq('numero_ordine', orderNumeroOrdine)
-      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .select(`*`) // Simplified select
       .single();
 
     if (updateError) {
@@ -242,10 +242,24 @@ export function useOrdiniAcquisto() {
     }
 
     // 4. Sync inventory status for the updated order
+    // We need fornitore_nome and fornitore_tipo for syncArticleInventoryStatus.
+    // Fetch fornitore details separately or ensure they are available.
+    const { data: fornitoreData, error: fornitoreError } = await supabase
+      .from('fornitori')
+      .select('nome, tipo_fornitore')
+      .eq('id', updatedOrdine.fornitore_id)
+      .single();
+
+    if (fornitoreError || !fornitoreData) {
+      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore recupero dettagli fornitore per OA: ${updatedOrdine.numero_ordine}`, fornitoreError);
+      toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
+      return { success: false, error: fornitoreError };
+    }
+
     const orderWithFornitoreInfo: OrdineAcquisto = {
       ...updatedOrdine,
-      fornitore_nome: updatedOrdine.fornitori?.nome || 'N/A',
-      fornitore_tipo: updatedOrdine.fornitori?.tipo_fornitore || 'N/A',
+      fornitore_nome: fornitoreData.nome || 'N/A',
+      fornitore_tipo: fornitoreData.tipo_fornitore || 'N/A',
       articoli: (updatedOrdine.articoli || []) as ArticoloOrdineAcquisto[],
     };
     await syncArticleInventoryStatus(orderWithFornitoreInfo);
@@ -259,7 +273,7 @@ export function useOrdiniAcquisto() {
     // Recupera l'ordine completo per poter sincronizzare gli articoli
     const { data: currentOrdine, error: fetchError } = await supabase
       .from('ordini_acquisto')
-      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .select(`*`) // Simplified select
       .eq('id', id)
       .single();
 
@@ -304,7 +318,7 @@ export function useOrdiniAcquisto() {
       .from('ordini_acquisto')
       .update({ stato: newStatus, articoli: articlesForDbUpdate as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .select(`*`) // Simplified select
       .single();
 
     if (error) {
@@ -313,10 +327,23 @@ export function useOrdiniAcquisto() {
       return { success: false, error };
     }
     
+    // Fetch fornitore details separately for syncArticleInventoryStatus
+    const { data: fornitoreData, error: fornitoreError } = await supabase
+      .from('fornitori')
+      .select('nome, tipo_fornitore')
+      .eq('id', updatedOrdine.fornitore_id)
+      .single();
+
+    if (fornitoreError || !fornitoreData) {
+      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Errore recupero dettagli fornitore per OA: ${updatedOrdine.numero_ordine}`, fornitoreError);
+      toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
+      return { success: false, error: fornitoreError };
+    }
+
     const orderWithFornitoreInfo: OrdineAcquisto = {
       ...updatedOrdine,
-      fornitore_nome: updatedOrdine.fornitori?.nome || 'N/A',
-      fornitore_tipo: updatedOrdine.fornitori?.tipo_fornitore || 'N/A',
+      fornitore_nome: fornitoreData.nome || 'N/A',
+      fornitore_tipo: fornitoreData.tipo_fornitore || 'N/A',
       articoli: (updatedOrdine.articoli || []) as ArticoloOrdineAcquisto[],
     };
     await syncArticleInventoryStatus(orderWithFornitoreInfo);
@@ -332,7 +359,7 @@ export function useOrdiniAcquisto() {
     const { data: newOrdine, error: ordineError } = await supabase
       .from('ordini_acquisto')
       .insert([orderToInsert])
-      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .select(`*`) // Simplified select
       .single();
 
     if (ordineError) {
@@ -340,10 +367,23 @@ export function useOrdiniAcquisto() {
       return { success: false, error: ordineError };
     }
 
+    // Fetch fornitore details separately for syncArticleInventoryStatus
+    const { data: fornitoreData, error: fornitoreError } = await supabase
+      .from('fornitori')
+      .select('nome, tipo_fornitore')
+      .eq('id', newOrdine.fornitore_id)
+      .single();
+
+    if (fornitoreError || !fornitoreData) {
+      console.error(`[useOrdiniAcquisto - addOrdineAcquisto] Errore recupero dettagli fornitore per OA: ${newOrdine.numero_ordine}`, fornitoreError);
+      toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
+      return { success: false, error: fornitoreError };
+    }
+
     const orderWithFornitoreInfo: OrdineAcquisto = {
       ...newOrdine,
-      fornitore_nome: newOrdine.fornitori?.nome || 'N/A',
-      fornitore_tipo: newOrdine.fornitori?.tipo_fornitore || 'N/A',
+      fornitore_nome: fornitoreData.nome || 'N/A',
+      fornitore_tipo: fornitoreData.tipo_fornitore || 'N/A',
       articoli: (newOrdine.articoli || []) as ArticoloOrdineAcquisto[],
     };
     await syncArticleInventoryStatus(orderWithFornitoreInfo);
@@ -361,7 +401,7 @@ export function useOrdiniAcquisto() {
       .from('ordini_acquisto')
       .update(orderToUpdate)
       .eq('id', id)
-      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .select(`*`) // Simplified select
       .single();
 
     if (ordineError) {
@@ -369,10 +409,23 @@ export function useOrdiniAcquisto() {
       return { success: false, error: ordineError };
     }
 
+    // Fetch fornitore details separately for syncArticleInventoryStatus
+    const { data: fornitoreData, error: fornitoreError } = await supabase
+      .from('fornitori')
+      .select('nome, tipo_fornitore')
+      .eq('id', updatedOrdine.fornitore_id)
+      .single();
+
+    if (fornitoreError || !fornitoreData) {
+      console.error(`[useOrdiniAcquisto - updateOrdineAcquisto] Errore recupero dettagli fornitore per OA: ${updatedOrdine.numero_ordine}`, fornitoreError);
+      toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
+      return { success: false, error: fornitoreError };
+    }
+
     const orderWithFornitoreInfo: OrdineAcquisto = {
       ...updatedOrdine,
-      fornitore_nome: updatedOrdine.fornitori?.nome || 'N/A',
-      fornitore_tipo: updatedOrdine.fornitori?.tipo_fornitore || 'N/A',
+      fornitore_nome: fornitoreData.nome || 'N/A',
+      fornitore_tipo: fornitoreData.tipo_fornitore || 'N/A',
       articoli: (updatedOrdine.articoli || []) as ArticoloOrdineAcquisto[],
     };
     await syncArticleInventoryStatus(orderWithFornitoreInfo);

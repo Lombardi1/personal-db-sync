@@ -126,6 +126,7 @@ export function useCartoni() {
       fsc: ordine.fsc,
       alimentare: ordine.alimentare,
       rif_commessa_fsc: ordine.rif_commessa_fsc,
+      data_consegna: ordine.data_consegna || null, // Ensure it's null if empty/undefined
     };
     delete cartoneGiacenza.confermato; // 'confermato' è specifico della tabella 'ordini'
     
