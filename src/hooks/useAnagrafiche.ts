@@ -129,14 +129,15 @@ export function useAnagrafiche() {
   const loadAnagrafiche = async () => {
     setLoading(true);
     console.log('useAnagrafiche: useMockData è', useMockData);
+    console.log('[useAnagrafiche] Attempting to load anagrafiche data...');
 
     if (useMockData) {
       // Simula il caricamento con dati mock
       await new Promise(resolve => setTimeout(resolve, 500)); // Simula un ritardo di rete
       setClienti(MOCK_CLIENTI); // Carica i clienti mock
       setFornitori(MOCK_FORNITORI);
-      console.log('useAnagrafiche: Caricati dati mock per clienti:', MOCK_CLIENTI);
-      console.log('useAnagrafiche: Caricati dati mock per fornitori:', MOCK_FORNITORI);
+      console.log('useAnagrafiche: Caricati dati mock per clienti:', MOCK_CLIENTI.length, 'items');
+      console.log('useAnagrafiche: Caricati dati mock per fornitori:', MOCK_FORNITORI.length, 'items');
       setLoading(false);
       return;
     }
@@ -147,8 +148,8 @@ export function useAnagrafiche() {
         supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento, considera_iva, banca').order('nome', { ascending: true }) // Aggiunto 'banca'
       ]);
 
-      console.log('useAnagrafiche: Risposta Supabase per clienti:', clientiRes);
-      console.log('useAnagrafiche: Risposta Supabase per fornitori:', fornitoriRes);
+      console.log('useAnagrafiche: Risposta Supabase per clienti:', clientiRes.data?.length, 'items, Error:', clientiRes.error);
+      console.log('useAnagrafiche: Risposta Supabase per fornitori:', fornitoriRes.data?.length, 'items, Error:', fornitoriRes.error);
 
       if (clientiRes.error) {
         console.error('useAnagrafiche: Errore nel recupero dei clienti:', clientiRes.error);

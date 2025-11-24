@@ -103,6 +103,7 @@ export function useOrdiniAcquisto() {
   // but it's called by functions that *do* call them.
   const loadOrdiniAcquisto = useCallback(async () => {
     setLoading(true);
+    console.log('[useOrdiniAcquisto] Attempting to load purchase orders...');
     try {
       const { data: ordiniData, error: ordiniError } = await supabase
         .from('ordini_acquisto')
@@ -115,13 +116,16 @@ export function useOrdiniAcquisto() {
       if (ordiniError) {
         toast.error('Errore nel caricamento degli ordini d\'acquisto.');
         setOrdiniAcquisto([]);
+        console.error('[useOrdiniAcquisto] Error loading purchase orders:', ordiniError);
         return;
       }
 
       if (!ordiniData || ordiniData.length === 0) {
         setOrdiniAcquisto([]);
+        console.log('[useOrdiniAcquisto] No purchase orders found.');
         return;
       }
+      console.log('[useOrdiniAcquisto] Purchase orders loaded:', ordiniData.length, 'items');
 
       const ordiniWithFornitoreInfo: OrdineAcquisto[] = ordiniData.map(ordine => ({
         ...ordine,

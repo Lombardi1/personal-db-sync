@@ -17,6 +17,7 @@ export function useCartoni() {
 
   const loadData = async () => {
     setLoading(true);
+    console.log('[useCartoni] Attempting to load data...');
     try {
       const [giacenzaRes, ordiniRes, esauritiRes, storicoRes] = await Promise.all([
         supabase.from('giacenza').select('*'),
@@ -25,17 +26,36 @@ export function useCartoni() {
         supabase.from('storico').select(`*, app_users(username)`).order('data', { ascending: false })
       ]);
 
-      if (giacenzaRes.data) setGiacenza(giacenzaRes.data);
+      if (giacenzaRes.data) {
+        setGiacenza(giacenzaRes.data);
+        console.log('[useCartoni] Giacenza data loaded:', giacenzaRes.data.length, 'items');
+      } else if (giacenzaRes.error) {
+        console.error('[useCartoni] Error loading giacenza:', giacenzaRes.error);
+      }
+
       if (ordiniRes.data) {
         setOrdini(ordiniRes.data);
+        console.log('[useCartoni] Ordini data loaded:', ordiniRes.data.length, 'items');
+      } else if (ordiniRes.error) {
+        console.error('[useCartoni] Error loading ordini:', ordiniRes.error);
       }
-      if (esauritiRes.data) setEsauriti(esauritiRes.data);
+      
+      if (esauritiRes.data) {
+        setEsauriti(esauritiRes.data);
+        console.log('[useCartoni] Esauriti data loaded:', esauritiRes.data.length, 'items');
+      } else if (esauritiRes.error) {
+        console.error('[useCartoni] Error loading esauriti:', esauritiRes.error);
+      }
+
       if (storicoRes.data) {
         const storicoWithUsernames: StoricoMovimento[] = storicoRes.data.map(mov => ({
           ...mov,
           username: mov.app_users?.username || 'Sconosciuto'
         }));
         setStorico(storicoWithUsernames);
+        console.log('[useCartoni] Storico data loaded:', storicoWithUsernames.length, 'items');
+      } else if (storicoRes.error) {
+        console.error('[useCartoni] Error loading storico:', storicoRes.error);
       }
     } catch (error) {
       console.error('Errore caricamento dati:', error);
