@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Added useEffect for logging
 import { Cartone } from '@/types';
-import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
+import * as notifications from '@/utils/notifications';
 
 interface ModalConfermaMagazzinoProps {
   codice: string;
@@ -10,10 +10,15 @@ interface ModalConfermaMagazzinoProps {
 }
 
 export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: ModalConfermaMagazzinoProps) {
-  const [ddt, setDdt] = useState(ordine.ddt || ''); // Usa il DDT esistente se disponibile
-  const [dataArrivo, setDataArrivo] = useState(ordine.data_arrivo || ''); // Usa la data di arrivo esistente se disponibile
+  const [ddt, setDdt] = useState(ordine.ddt || '');
+  const [dataArrivo, setDataArrivo] = useState(ordine.data_arrivo || '');
   const [fogliEffettivi, setFogliEffettivi] = useState<string>(String(ordine.fogli));
-  const [magazzino, setMagazzino] = useState(ordine.magazzino || ''); // Usa il magazzino esistente se disponibile
+  const [magazzino, setMagazzino] = useState(ordine.magazzino || '');
+
+  useEffect(() => {
+    console.log(`[ModalConfermaMagazzino] Component mounted/re-rendered. Type of onConferma: ${typeof onConferma}`);
+    console.log(`[ModalConfermaMagazzino] Initial fogliEffettivi: '${fogliEffettivi}'`);
+  }, [onConferma, fogliEffettivi]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +28,7 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
       return;
     }
 
+    console.log(`[ModalConfermaMagazzino] Submitting. fogliEffettivi before parseInt: '${fogliEffettivi}'`);
     const fogliNum = parseInt(fogliEffettivi);
     if (isNaN(fogliNum) || fogliNum <= 0) {
       notifications.showError('⚠️ Inserisci un numero di fogli valido.');
@@ -31,6 +37,12 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
 
     onClose();
     
+    if (typeof onConferma !== 'function') {
+      console.error(`[ModalConfermaMagazzino] Error: onConferma is not a function. Type: ${typeof onConferma}`);
+      notifications.showError('Errore interno: funzione di conferma non disponibile.');
+      return;
+    }
+
     const { error } = await onConferma(codice, ddt, dataArrivo, fogliNum, magazzino.trim());
     if (!error) {
       const diff = fogliNum - ordine.fogli;
