@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import bcrypt from 'bcryptjs'; // Importazione statica di bcryptjs
 
 interface User {
   id: string;
@@ -31,7 +32,12 @@ export function useAuth() {
 
       console.log('📊 Risultato funzione SQL get_user_auth_data:', { authData, authError });
 
-      if (authError || !authData || authData.length === 0) {
+      if (authError) {
+        console.error('❌ Errore RPC Supabase in get_user_auth_data:', authError);
+        throw new Error('Errore di comunicazione con il server. Riprova più tardi.');
+      }
+
+      if (!authData || authData.length === 0) {
         console.log('❌ Utente non trovato o errore nella funzione SQL');
         throw new Error('Username o password non corretti');
       }
@@ -40,10 +46,10 @@ export function useAuth() {
       
       console.log('✅ Utente trovato:', userRecord.username);
       console.log('🔑 Hash password dal DB:', userRecord.password_hash);
-      console.log('🔑 Password inserita:', password);
+      // Non loggare la password in chiaro per motivi di sicurezza
+      // console.log('🔑 Password inserita:', password); 
 
       // Verifica la password
-      const bcrypt = await import('bcryptjs');
       const isValid = await bcrypt.compare(password, userRecord.password_hash);
       
       console.log('🔐 Risultato confronto password:', isValid);
