@@ -17,7 +17,6 @@ interface OrdiniTabProps {
 }
 
 export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica, onElimina }: OrdiniTabProps) {
-  console.log("OrdiniTab: Received 'ordini' prop (raw data):", ordini.map(o => ({ codice: o.codice, confermato: o.confermato, data_consegna: o.data_consegna, ddt: o.ddt, data_arrivo: o.data_arrivo, magazzino: o.magazzino }))); // NEW LOG
   const [filtri, setFiltri] = useState({
     codice: '',
     fornitore: '',
@@ -86,7 +85,6 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
     });
 
     setOrdiniFiltered(filtered);
-    console.log("OrdiniTab: 'ordiniFiltered' state updated:", filtered.map(o => ({ codice: o.codice, confermato: o.confermato }))); // NEW LOG
   };
 
   const resetFiltri = () => {
@@ -128,7 +126,6 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
         </Button>
         <Button
           onClick={() => {
-            console.log("[OrdiniTab] Esportando ordiniFiltered. Stato 'confermato' per ogni ordine:", ordiniFiltered.map(o => ({ codice: o.codice, confermato: o.confermato }))); // NEW DEBUG LOG
             esportaTabellaPDF('tab-ordini', 'ordini.pdf', 'ordini', ordiniFiltered); // Passa ordiniFiltered
           }}
           className="bg-[hsl(0,72%,90%)] text-[hsl(var(--ordini-color))] hover:bg-[hsl(0,72%,80%)] text-sm py-2 px-3"
