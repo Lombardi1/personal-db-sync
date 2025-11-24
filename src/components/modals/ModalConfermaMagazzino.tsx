@@ -10,10 +10,10 @@ interface ModalConfermaMagazzinoProps {
 }
 
 export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: ModalConfermaMagazzinoProps) {
-  const [ddt, setDdt] = useState('');
-  const [dataArrivo, setDataArrivo] = useState('');
+  const [ddt, setDdt] = useState(ordine.ddt || ''); // Usa il DDT esistente se disponibile
+  const [dataArrivo, setDataArrivo] = useState(ordine.data_arrivo || ''); // Usa la data di arrivo esistente se disponibile
   const [fogliEffettivi, setFogliEffettivi] = useState<string>(String(ordine.fogli));
-  const [magazzino, setMagazzino] = useState('');
+  const [magazzino, setMagazzino] = useState(ordine.magazzino || ''); // Usa il magazzino esistente se disponibile
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

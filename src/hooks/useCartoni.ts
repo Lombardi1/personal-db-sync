@@ -321,8 +321,9 @@ export function useCartoni() {
     }
 
     const ordine = { ...cartone };
-    delete ordine.ddt;
-    delete ordine.data_arrivo;
+    // Rimosse le eliminazioni esplicite di ddt e data_arrivo per conservare le informazioni
+    // delete ordine.ddt;
+    // delete ordine.data_arrivo;
     
     ordine.confermato = true; 
     if (!ordine.data_consegna) {
