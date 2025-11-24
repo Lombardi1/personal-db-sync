@@ -173,17 +173,19 @@ export function useCartoni() {
 
     // Aggiorna lo stato dell'articolo nell'ordine d'acquisto a 'ricevuto'
     if (ordine.ordine && codice) { 
-      console.log(`[useCartoni - spostaInGiacenza] Chiamando updateArticleStatusInOrder per OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'ricevuto'`);
+      console.log(`[useCartoni - spostaInGiacenza] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'ricevuto'`);
       const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordine.ordine, codice, 'ricevuto'); 
       if (updateArticleError) {
         console.error(`[useCartoni - spostaInGiacenza] Errore durante l'aggiornamento dello stato dell'articolo nell'OA:`, updateArticleError);
-        notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}`);
-        return { error: updateArticleError };
+        notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}. Il cartone è stato comunque spostato in magazzino.`);
+        // NON ritornare qui, permetti all'operazione principale di completarsi
+      } else {
+        console.log(`[useCartoni - spostaInGiacenza] updateArticleStatusInOrder completato con successo: ${updateSuccess}`);
       }
-      console.log(`[useCartoni - spostaInGiacenza] updateArticleStatusInOrder completato con successo: ${updateSuccess}`);
     } else {
       console.warn(`[useCartoni - spostaInGiacenza] Impossibile chiamare updateArticleStatusInOrder: ordine.ordine o codice mancante. Ordine.ordine: '${ordine.ordine}', Codice: '${codice}'`);
-      return { error: new Error('Dati ordine d\'acquisto mancanti per aggiornamento articolo.') };
+      notifications.showInfo(`Impossibile aggiornare lo stato dell'articolo nell'ordine d'acquisto (dati mancanti). Il cartone è stato comunque spostato in magazzino.`);
+      // NON ritornare qui
     }
 
     console.log(`[useCartoni - spostaInGiacenza] Ricarico tutti i dati.`);
@@ -298,10 +300,17 @@ export function useCartoni() {
       }
 
       if (cartoneEsaurito.ordine && codice) {
-        console.log(`[useCartoni - riportaInGiacenza] Chiamando updateArticleStatusInOrder per OA: '${cartoneEsaurito.ordine}', Articolo: '${codice}', Nuovo stato: 'confermato'`);
-        await updateArticleStatusInOrder(cartoneEsaurito.ordine, codice, 'confermato');
+        console.log(`[useCartoni - riportaInGiacenza] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${cartoneEsaurito.ordine}', Articolo: '${codice}', Nuovo stato: 'confermato'`);
+        const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(cartoneEsaurito.ordine, codice, 'confermato');
+        if (updateArticleError) {
+          console.error(`[useCartoni - riportaInGiacenza] Errore durante l'aggiornamento dello stato dell'articolo nell'OA:`, updateArticleError);
+          notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}. Il cartone è stato comunque riportato in giacenza.`);
+        } else {
+          console.log(`[useCartoni - riportaInGiacenza] updateArticleStatusInOrder completato con successo: ${updateSuccess}`);
+        }
       } else {
         console.warn(`[useCartoni - riportaInGiacenza] Impossibile chiamare updateArticleStatusInOrder: ordine.ordine o codice mancante. Ordine.ordine: '${cartoneEsaurito.ordine}', Codice: '${codice}'`);
+        notifications.showInfo(`Impossibile aggiornare lo stato dell'articolo nell'ordine d'acquisto (dati mancanti). Il cartone è stato comunque riportato in giacenza.`);
       }
 
       notifications.showSuccess(`✅ Cartone '${codice}' riportato in giacenza con successo!`);
@@ -347,11 +356,17 @@ export function useCartoni() {
     }
 
     if (ordine.ordine && codice) {
-      console.log(`[useCartoni - riportaInOrdini] Chiamando updateArticleStatusInOrder per OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'confermato'`);
-      await updateArticleStatusInOrder(ordine.ordine, codice, 'confermato');
+      console.log(`[useCartoni - riportaInOrdini] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'confermato'`);
+      const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordine.ordine, codice, 'confermato');
+      if (updateArticleError) {
+        console.error(`[useCartoni - riportaInOrdini] Errore durante l'aggiornamento dello stato dell'articolo nell'OA:`, updateArticleError);
+        notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}. Il cartone è stato comunque riportato in ordini in arrivo.`);
+      } else {
+        console.log(`[useCartoni - riportaInOrdini] updateArticleStatusInOrder completato con successo: ${updateSuccess}`);
+      }
     } else {
       console.warn(`[useCartoni - riportaInOrdini] Impossibile chiamare updateArticleStatusInOrder: ordine.ordine o codice mancante. Ordine.ordine: '${ordine.ordine}', Codice: '${codice}'`);
-      return { error: new Error('Dati ordine d\'acquisto mancanti per aggiornamento articolo.') };
+      notifications.showInfo(`Impossibile aggiornare lo stato dell'articolo nell'ordine d'acquisto (dati mancanti). Il cartone è stato comunque riportato in ordini in arrivo.`);
     }
 
     await loadData();
