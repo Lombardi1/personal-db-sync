@@ -472,9 +472,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
       if (isCartone) {
         articoloColumnText = article.codice_ctn || '';
-        descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${formatGrammatura(article.grammatura || '')} ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
-        if (article.fsc) descrizioneColumnText += `\n\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`; // Modificato qui
-        if (article.alimentare) descrizioneColumnText += ' (ALIMENTARE)'; // Aggiunto
+        descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${formatGrammatura(article.grammatura || '')} ${formatFormato(article.formato || '')}\nNR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
+        if (article.fsc) descrizioneColumnText += `\n\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`;
+        if (article.alimentare) descrizioneColumnText += ' (ALIMENTARE)';
       } else {
         articoloColumnText = article.descrizione || '';
         descrizioneColumnText = ''; 
