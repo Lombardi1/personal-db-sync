@@ -52,6 +52,7 @@ export function generateNextFscCommessa(orderYear: number): string {
   
   if (!lastGeneratedFscCommessaInSession[currentYearShort]) {
     // Fallback initialization if resetFscCommessaGenerator wasn't called
+    // This fallback should ideally not be hit if resetFscCommessaGenerator is called correctly.
     lastGeneratedFscCommessaInSession[currentYearShort] = (orderYear === 2024) ? 31 : 0;
   }
 
@@ -64,11 +65,17 @@ export function generateNextFscCommessa(orderYear: number): string {
 /**
  * Resets the in-session FSC commessa generator for a specific year.
  * Should be called when starting a new order form or when the year changes.
- * @param initialMaxNum The highest sequential number found so far for the given year.
+ * @param initialMaxNum The highest sequential number found so far for the given year (from DB).
  * @param year The full year for which to reset the generator (e.g., 2024).
  */
 export function resetFscCommessaGenerator(initialMaxNum: number, year: number) {
   const currentYearShort = String(year).slice(-2);
-  lastGeneratedFscCommessaInSession[currentYearShort] = initialMaxNum;
-  console.log(`📦 Reset del generatore di commesse FSC per l'anno ${year}. Iniziato da:`, initialMaxNum);
+  // Se initialMaxNum dal DB è 0 e l'anno è 2024, inizializza a 31 per far partire il prossimo da 32.
+  // Altrimenti, usa il valore dal DB.
+  if (initialMaxNum === 0 && year === 2024) {
+    lastGeneratedFscCommessaInSession[currentYearShort] = 31;
+  } else {
+    lastGeneratedFscCommessaInSession[currentYearShort] = initialMaxNum;
+  }
+  console.log(`📦 Reset del generatore di commesse FSC per l'anno ${year}. Iniziato da:`, lastGeneratedFscCommessaInSession[currentYearShort]);
 }

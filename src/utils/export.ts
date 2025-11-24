@@ -478,8 +478,18 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       if (isCartone) {
         articoloColumnText = article.codice_ctn || '';
         descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
-        if (article.fsc) descrizioneColumnText += `\nPROD.CERT.FSC MIX CREDIT BV-COC-334465 RIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`; // Aggiunto
-        if (article.alimentare) descrizioneColumnText += ' (ALIMENTARE)'; // Aggiunto
+        
+        let fscAlimentareText = '';
+        if (article.fsc) {
+            fscAlimentareText += `PROD.CERT.FSC MIX CREDIT BV-COC-334465 RIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`;
+        }
+        if (article.alimentare) {
+            if (fscAlimentareText) fscAlimentareText += ' | '; // Separator if both exist
+            fscAlimentareText += 'ALIMENTARE';
+        }
+        if (fscAlimentareText) {
+            descrizioneColumnText += ` ${fscAlimentareText}`; // Add on the same line
+        }
       } else {
         articoloColumnText = article.descrizione || '';
         descrizioneColumnText = ''; 
@@ -516,12 +526,12 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: articlesHead,
       body: articlesBody,
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle', fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
+      styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak', lineColor: [0, 0, 0], lineWidth: 0.3, valign: 'middle', fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 9 },
       bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 }, 
       columnStyles: {
         0: { cellWidth: 15 }, 
-        1: { cellWidth: 80 }, 
+        1: { cellWidth: 100 }, // Aumentato a 100mm per la descrizione
         2: { cellWidth: 10 }, 
         3: { cellWidth: 22, halign: 'right' }, 
         4: { cellWidth: 15, halign: 'right' }, 
