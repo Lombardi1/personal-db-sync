@@ -40,7 +40,7 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
 
   const handleFilter = (newFiltri: typeof filtri) => {
     setFiltri(newFiltri);
-    let filtered = ordini;
+    let filtered = [...ordini]; // Create a shallow copy to avoid direct state mutation
 
     Object.entries(newFiltri).forEach(([key, value]) => {
       if (value) {
@@ -77,11 +77,18 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
       }
     });
 
-    // Ordina per data di consegna (data più vicina sopra = crescente)
+    // Ordina prima per grammatura (numerico) e poi per formato (alfabetico)
     filtered.sort((a, b) => {
-      const dateA = new Date(a.data_consegna || '9999-12-31').getTime();
-      const dateB = new Date(b.data_consegna || '9999-12-31').getTime();
-      return dateA - dateB;
+      // Estrai solo il valore numerico della grammatura
+      const grammA = parseInt(String(a.grammatura).replace(' g/m²', '')) || 0;
+      const grammB = parseInt(String(b.grammatura).replace(' g/m²', '')) || 0;
+
+      if (grammA !== grammB) {
+        return grammA - grammB; // Ordina per grammatura crescente
+      }
+
+      // Se la grammatura è uguale, ordina per formato (alfabetico)
+      return String(a.formato).localeCompare(String(b.formato));
     });
 
     setOrdiniFiltered(filtered);
