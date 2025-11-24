@@ -2,8 +2,7 @@ import { LogOut, Users, Settings, Contact, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import logoAG from '@/assets/LOGO.png'; // Manteniamo l'importazione originale
-import logoFSC from '@/assets/logo-fsc.jpg'; // Importiamo il logo FSC per il test
+import logoAG from '@/assets/logo-ag.jpg';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +25,7 @@ export function SummaryHeader() {
       <div className="max-w-[1400px] mx-auto px-3 sm:px-5">
         <div className="flex items-center justify-between flex-wrap gap-y-2">
           <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3">
-            <img src={logoAG} alt="AG Lombardi Logo" className="h-12 w-12 sm:h-16 sm:w-16 object-contain" /> {/* TEMPORARY: Using logoFSC for testing */}
+            <img src={logoAG} alt="AG Lombardi Logo" className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
             <span className="hidden sm:inline">Gestionale AGLombardi</span>
             <span className="inline sm:hidden text-lg">AGL</span>
           </h1>

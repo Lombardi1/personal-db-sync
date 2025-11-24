@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
-import logoAG from '@/assets/LOGO.png';
+import logoAG from '@/assets/logo-ag.jpg';
 
 export default function Login() {
   const [username, setUsername] = useState('');

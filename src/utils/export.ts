@@ -4,7 +4,7 @@ import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
 import { Cartone, OrdineAcquisto, Fornitore, Cliente, ArticoloOrdineAcquisto, StoricoMovimento, AziendaInfo } from '@/types';
 import { formatData, formatFormato, formatGrammatura, formatFogli, formatPrezzo, getStatoText } from '@/utils/formatters';
-import logoAG from '@/assets/LOGO.png'; // Percorso aggiornato
+import logoAG from '@/assets/logo-ag.jpg';
 import logoFSC from '@/assets/logo-fsc.jpg';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -152,7 +152,7 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
     }
 
     // Header
-    doc.addImage(logoAG, 'PNG', 10, y, 10, 10); // Reduced logo size
+    doc.addImage(logoAG, 'JPEG', 10, y, 10, 10); // Reduced logo size
     doc.setFontSize(12); // Reduced font size for title
     doc.setFont(undefined, 'bold'); // Set font to bold
     doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]); // Set title color
@@ -328,7 +328,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // ========== HEADER SECTION ==========
     // Logo AG Lombardi (sinistra)
-    doc.addImage(logoAG, 'PNG', 10, y, 25, 25); // Rimpicciolito a 25x25mm
+    doc.addImage(logoAG, 'JPEG', 10, y, 25, 25); // Rimpicciolito a 25x25mm
     
     // Info azienda (sinistra, sotto logo) - Ora dinamiche da aziendaInfo
     doc.setFontSize(12); 
