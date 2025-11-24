@@ -130,6 +130,7 @@ export function useCartoni() {
       magazzino: magazzinoFinale,
       fsc: ordine.fsc, // Aggiunto
       alimentare: ordine.alimentare, // Aggiunto
+      rif_commessa_fsc: ordine.rif_commessa_fsc, // Aggiunto
     };
     delete cartoneGiacenza.confermato; // 'confermato' è specifico della tabella 'ordini'
     
@@ -264,6 +265,7 @@ export function useCartoni() {
       data_consegna: new Date().toISOString().split('T')[0],
       fsc: cartoneEsaurito.fsc, // Aggiunto
       alimentare: cartoneEsaurito.alimentare, // Aggiunto
+      rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc, // Aggiunto
     };
 
     try {

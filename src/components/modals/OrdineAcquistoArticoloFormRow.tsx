@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator'; // Import Separator
+import { generateNextFscCommessa } from '@/utils/fscUtils'; // Importa la funzione di generazione
 
 interface OrdineAcquistoArticoloFormRowProps {
   index: number;
@@ -76,6 +77,8 @@ export function OrdineAcquistoArticoloFormRow({
 
   const watchedArticles = watch('articoli');
   const currentArticle = watchedArticles[index];
+  const orderDate = watch('data_ordine'); // Ottieni la data dell'ordine principale
+  const orderYear = new Date(orderDate).getFullYear();
   
   console.log(`OrdineAcquistoArticoloFormRow[${index}]: currentArticle data:`, currentArticle);
 
@@ -88,6 +91,7 @@ export function OrdineAcquistoArticoloFormRow({
   const currentStatoArticolo = currentArticle?.stato;
   const currentFsc = currentArticle?.fsc; // Nuovo campo
   const currentAlimentare = currentArticle?.alimentare; // Nuovo campo
+  const currentRifCommessaFsc = currentArticle?.rif_commessa_fsc; // Nuovo campo
 
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura
   const calculatedQuantitaKg = React.useMemo(() => {
@@ -111,6 +115,17 @@ export function OrdineAcquistoArticoloFormRow({
       setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true }); // Keep 3 decimals for calculation
     }
   }, [calculatedQuantitaKg, index, setValue, isCartoneFornitore]);
+
+  // Gestione della generazione del rif_commessa_fsc quando FSC viene flaggato
+  React.useEffect(() => {
+    if (isCartoneFornitore && currentFsc && !currentRifCommessaFsc) {
+      setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
+    } else if (isCartoneFornitore && !currentFsc && currentRifCommessaFsc) {
+      // Se FSC viene deflaggato, rimuovi il rif_commessa_fsc
+      setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
+    }
+  }, [isCartoneFornitore, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
+
 
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0);
 
@@ -348,6 +363,19 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.alimentare`} className="text-xs">Alimentare</Label>
                   {errors.articoli?.[index]?.alimentare && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.alimentare?.message}</p>}
                 </div>
+                {currentFsc && (
+                  <div className="md:col-span-2">
+                    <Label htmlFor={`articoli.${index}.rif_commessa_fsc`} className="text-xs">Rif. Commessa FSC</Label>
+                    <Input
+                      id={`articoli.${index}.rif_commessa_fsc`}
+                      {...register(`articoli.${index}.rif_commessa_fsc`)}
+                      readOnly
+                      disabled={true}
+                      className="text-sm font-mono font-bold bg-gray-100"
+                    />
+                    {errors.articoli?.[index]?.rif_commessa_fsc && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.rif_commessa_fsc?.message}</p>}
+                  </div>
+                )}
               </div>
             </div>
 

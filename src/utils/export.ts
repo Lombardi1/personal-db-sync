@@ -478,7 +478,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       if (isCartone) {
         articoloColumnText = article.codice_ctn || '';
         descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
-        if (article.fsc) descrizioneColumnText += ' (FSC)'; // Aggiunto
+        if (article.fsc) descrizioneColumnText += `\nPROD.CERT.FSC MIX CREDIT BV-COC-334465 RIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`; // Aggiunto
         if (article.alimentare) descrizioneColumnText += ' (ALIMENTARE)'; // Aggiunto
       } else {
         articoloColumnText = article.descrizione || '';

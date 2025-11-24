@@ -39,6 +39,7 @@ import { Separator } from '@/components/ui/separator';
 import { OrdineAcquistoArticoloFormRow } from './OrdineAcquistoArticoloFormRow';
 import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCodeFromDB } from '@/utils/cartoneUtils';
 import { fetchMaxOrdineAcquistoNumeroFromDB, generateNextOrdineAcquistoNumero } from '@/utils/ordineAcquistoUtils';
+import { fetchMaxFscCommessaFromDB, generateNextFscCommessa, resetFscCommessaGenerator } from '@/utils/fscUtils'; // Importa le nuove utilità FSC
 
 interface ModalOrdineAcquistoFormProps {
   isOpen: boolean;
@@ -74,6 +75,7 @@ const articoloSchema = z.object({
   stato: z.enum(['in_attesa', 'confermato', 'ricevuto', 'annullato', 'inviato'], { required_error: 'Lo stato è obbligatorio' }),
   fsc: z.boolean().optional(), // Nuovo campo
   alimentare: z.boolean().optional(), // Nuovo campo
+  rif_commessa_fsc: z.string().max(50, 'Rif. Commessa FSC troppo lungo').optional().or(z.literal('')), // NUOVO CAMPO
 });
 
 export function ModalOrdineAcquistoForm({
@@ -174,7 +176,7 @@ export function ModalOrdineAcquistoForm({
                 path: [`articoli`, index, `quantita`],
               });
             }
-            if (articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.cliente || articolo.lavoro || articolo.codice_ctn || articolo.numero_fogli || articolo.fsc || articolo.alimentare) { // Aggiunto fsc e alimentare
+            if (articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.cliente || articolo.lavoro || articolo.codice_ctn || articolo.numero_fogli || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc) { // Aggiunto rif_commessa_fsc
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Questi campi non devono essere usati per questo tipo di fornitore.',
@@ -198,6 +200,7 @@ export function ModalOrdineAcquistoForm({
             quantita: art.quantita || undefined,
             fsc: art.fsc || false, // Default a false
             alimentare: art.alimentare || false, // Default a false
+            rif_commessa_fsc: art.rif_commessa_fsc || '', // Default a stringa vuota
           }))
         : [{ 
             quantita: undefined,
@@ -208,6 +211,7 @@ export function ModalOrdineAcquistoForm({
             stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
             fsc: false, // Default a false
             alimentare: false, // Default a false
+            rif_commessa_fsc: '', // Default a stringa vuota
           }];
 
       const defaultVal = initialData ? {
@@ -251,12 +255,13 @@ export function ModalOrdineAcquistoForm({
   const isCartoneFornitore = selectedFornitore?.tipo_fornitore === 'Cartone';
 
   const [ctnGeneratorInitialized, setCtnGeneratorInitialized] = React.useState(false);
+  const [fscCommessaGeneratorInitialized, setFscCommessaGeneratorInitialized] = React.useState(false); // Nuovo stato
 
   const isCancelled = watch('stato') === 'annullato';
   const isNewOrder = !initialData?.id;
 
-  const resetArticlesAndCtnGenerator = React.useCallback(async (newFornitoreId: string) => {
-    console.log('resetArticlesAndCtnGenerator: Triggered with newFornitoreId:', newFornitoreId);
+  const resetArticlesAndGenerators = React.useCallback(async (newFornitoreId: string) => {
+    console.log('resetArticlesAndGenerators: Triggered with newFornitoreId:', newFornitoreId);
     remove();
     
     const newSelectedFornitore = fornitori.find((f) => f.id === newFornitoreId);
@@ -270,33 +275,42 @@ export function ModalOrdineAcquistoForm({
       stato: 'in_attesa',
       fsc: false, // Default a false
       alimentare: false, // Default a false
+      rif_commessa_fsc: '', // Default a stringa vuota
     };
     append(newArticle);
 
     setCtnGeneratorInitialized(false);
+    setFscCommessaGeneratorInitialized(false); // Reset anche il generatore FSC
 
     if (newIsCartoneFornitore) {
       const maxCode = await fetchMaxCartoneCodeFromDB();
       resetCartoneCodeGenerator(maxCode);
       setValue(`articoli.0.codice_ctn`, generateNextCartoneCode(), { shouldValidate: true });
       setValue(`articoli.0.numero_fogli`, 1, { shouldValidate: true });
+
+      const orderYear = new Date(watch('data_ordine')).getFullYear();
+      const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
+      resetFscCommessaGenerator(maxFscCommessa, orderYear);
     } else {
       resetCartoneCodeGenerator(0);
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true });
+      resetFscCommessaGenerator(0, new Date().getFullYear()); // Reset per anno corrente
     }
     setCtnGeneratorInitialized(true);
-    console.log('resetArticlesAndCtnGenerator: Completed.');
-  }, [remove, append, setValue, fornitori]);
+    setFscCommessaGeneratorInitialized(true); // Inizializza anche il generatore FSC
+    console.log('resetArticlesAndGenerators: Completed.');
+  }, [remove, append, setValue, fornitori, watch]);
 
 
   React.useEffect(() => {
     console.log('ModalOrdineAcquistoForm: useEffect triggered. isOpen:', isOpen, 'initialData:', initialData);
     if (isOpen) {
       setCtnGeneratorInitialized(false);
-      console.log('ModalOrdineAcquistoForm: Setting ctnGeneratorInitialized to false.');
+      setFscCommessaGeneratorInitialized(false); // Reset anche il generatore FSC
+      console.log('ModalOrdineAcquistoForm: Setting ctnGeneratorInitialized and fscCommessaGeneratorInitialized to false.');
 
-      const setupFormAndCtnGenerator = async () => {
-        console.log('ModalOrdineAcquistoForm: setupFormAndCtnGenerator started with initialData:', initialData);
+      const setupFormAndGenerators = async () => {
+        console.log('ModalOrdineAcquistoForm: setupFormAndGenerators started with initialData:', initialData);
         try {
           const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
           
@@ -310,6 +324,7 @@ export function ModalOrdineAcquistoForm({
                 quantita: art.quantita || undefined,
                 fsc: art.fsc || false, // Default a false
                 alimentare: art.alimentare || false, // Default a false
+                rif_commessa_fsc: art.rif_commessa_fsc || '', // Default a stringa vuota
               }))
             : [{ 
                 quantita: undefined, 
@@ -320,6 +335,7 @@ export function ModalOrdineAcquistoForm({
                 stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
                 fsc: false, // Default a false
                 alimentare: false, // Default a false
+                rif_commessa_fsc: '', // Default a stringa vuota
               }];
 
           let dataToReset: OrdineAcquisto;
@@ -348,8 +364,9 @@ export function ModalOrdineAcquistoForm({
           }
           console.log('ModalOrdineAcquistoForm: Data prepared for reset:', dataToReset);
 
+          // Inizializzazione generatore CTN
           const maxCodeFromDB = await fetchMaxCartoneCodeFromDB();
-          console.log('ModalOrdineAcquistoForm: Max CTN code found in DB:', maxCodeFromDB); // Log aggiunto
+          console.log('ModalOrdineAcquistoForm: Max CTN code found in DB:', maxCodeFromDB);
           let initialMaxCtn = maxCodeFromDB;
           if (initialData) {
             const maxCodeInCurrentOrder = initialData.articoli?.reduce((max, art) => {
@@ -363,6 +380,11 @@ export function ModalOrdineAcquistoForm({
           }
           resetCartoneCodeGenerator(initialMaxCtn);
 
+          // Inizializzazione generatore FSC Commessa
+          const orderYear = new Date(dataToReset.data_ordine).getFullYear();
+          const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
+          resetFscCommessaGenerator(maxFscCommessa, orderYear);
+          
           reset(dataToReset);
           console.log('ModalOrdineAcquistoForm: Form reset with data:', dataToReset);
           console.log('ModalOrdineAcquistoForm: Form values after reset:', methods.getValues());
@@ -381,6 +403,10 @@ export function ModalOrdineAcquistoForm({
               if (article.numero_fogli === undefined) {
                 setValue(`articoli.${index}.numero_fogli`, 1, { shouldValidate: true });
               }
+              // Genera rif_commessa_fsc se FSC è true e non è già presente
+              if (article.fsc && !article.rif_commessa_fsc) {
+                setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
+              }
             });
           } else if (!currentIsCartoneFornitore && dataToReset.articoli.length > 0) {
             dataToReset.articoli.forEach((article, index) => {
@@ -391,28 +417,37 @@ export function ModalOrdineAcquistoForm({
           }
 
           setCtnGeneratorInitialized(true);
-          console.log('ModalOrdineAcquistoForm: ctnGeneratorInitialized set to true.');
+          setFscCommessaGeneratorInitialized(true); // Inizializza anche il generatore FSC
+          console.log('ModalOrdineAcquistoForm: ctnGeneratorInitialized and fscCommessaGeneratorInitialized set to true.');
         } catch (error) {
-          console.error('ModalOrdineAcquistoForm: Error during setupFormAndCtnGenerator:', error);
+          console.error('ModalOrdineAcquistoForm: Error during setupFormAndGenerators:', error);
           toast.error('Errore durante l\'inizializzazione del modulo. Riprova.');
           onClose();
         }
       };
-      setupFormAndCtnGenerator();
+      setupFormAndGenerators();
     }
-  }, [isOpen, initialData, reset, setValue, fornitori, resetArticlesAndCtnGenerator]);
+  }, [isOpen, initialData, reset, setValue, fornitori, resetArticlesAndGenerators, methods]); // Aggiunto 'methods' alle dipendenze
 
   // Questo useEffect è stato modificato per non generare un nuovo codice CTN se già presente.
-  // La generazione del codice per il primo articolo è gestita in `setupFormAndCtnGenerator`
-  // e in `resetArticlesAndCtnGenerator`. Per gli articoli aggiunti, è gestita in `handleAddArticle`.
+  // La generazione del codice per il primo articolo è gestita in `setupFormAndGenerators`
+  // e in `resetArticlesAndGenerators`. Per gli articoli aggiunti, è gestita in `handleAddArticle`.
   React.useEffect(() => {
-    if (isCartoneFornitore && ctnGeneratorInitialized) {
+    if (isCartoneFornitore && ctnGeneratorInitialized && fscCommessaGeneratorInitialized) { // Aggiunto fscCommessaGeneratorInitialized
       fields.forEach((field, index) => {
         // Rimosso: if (!field.codice_ctn) { setValue(`articoli.${index}.codice_ctn`, generateNextCartoneCode()); }
-        // Questa logica è ora gestita da `setupFormAndCtnGenerator` per il primo elemento
+        // Questa logica è ora gestita da `setupFormAndGenerators` per il primo elemento
         // e da `handleAddArticle` per gli elementi successivi.
         if (field.numero_fogli === undefined) {
           setValue(`articoli.${index}.numero_fogli`, 1, { shouldValidate: true });
+        }
+        // Genera rif_commessa_fsc se FSC è true e non è già presente
+        if (field.fsc && !field.rif_commessa_fsc) {
+          const orderYear = new Date(watch('data_ordine')).getFullYear();
+          setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
+        } else if (!field.fsc && field.rif_commessa_fsc) {
+          // Se FSC non è flaggato, rimuovi il rif_commessa_fsc
+          setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
         }
       });
     } else if (!isCartoneFornitore) {
@@ -426,12 +461,13 @@ export function ModalOrdineAcquistoForm({
         if (field.quantita === undefined) {
           setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
         }
-        // Reset fsc and alimentare if not cartone
+        // Reset fsc, alimentare and rif_commessa_fsc if not cartone
         setValue(`articoli.${index}.fsc`, false, { shouldValidate: true });
         setValue(`articoli.${index}.alimentare`, false, { shouldValidate: true });
+        setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
       });
     }
-  }, [isCartoneFornitore, fields, setValue, ctnGeneratorInitialized]);
+  }, [isCartoneFornitore, fields, setValue, ctnGeneratorInitialized, fscCommessaGeneratorInitialized, watch]); // Aggiunto fscCommessaGeneratorInitialized e watch
 
   React.useEffect(() => {
     setValue('importo_totale', parseFloat(totalAmount.toFixed(3)));
@@ -448,12 +484,13 @@ export function ModalOrdineAcquistoForm({
   };
 
   const handleAddArticle = () => {
-    if (!ctnGeneratorInitialized) {
-      toast.error("Generatore codici CTN non pronto. Riprova.");
+    if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized) { // Aggiunto fscCommessaGeneratorInitialized
+      toast.error("Generatore codici non pronto. Riprova.");
       return;
     }
     
     const firstArticleDate = watchedArticles[0]?.data_consegna_prevista || new Date().toISOString().split('T')[0];
+    const orderYear = new Date(watch('data_ordine')).getFullYear();
 
     let newArticle: ArticoloOrdineAcquisto = { 
       quantita: undefined, 
@@ -463,9 +500,15 @@ export function ModalOrdineAcquistoForm({
       stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
       fsc: false, // Default a false
       alimentare: false, // Default a false
+      rif_commessa_fsc: '', // Default a stringa vuota
     };
     if (isCartoneFornitore) {
       newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };
+      // Se il primo articolo ha FSC, il nuovo articolo lo eredita e genera il rif_commessa
+      if (watchedArticles[0]?.fsc) {
+        newArticle.fsc = true;
+        newArticle.rif_commessa_fsc = generateNextFscCommessa(orderYear);
+      }
     } else {
       newArticle = { ...newArticle, quantita: 1 };
     }
@@ -565,7 +608,7 @@ export function ModalOrdineAcquistoForm({
                                   const newFornitoreId = fornitori.find(f => f.nome === currentValue)?.id || '';
                                   setValue('fornitore_id', newFornitoreId, { shouldValidate: true });
                                   setOpenCombobox(false);
-                                  resetArticlesAndCtnGenerator(newFornitoreId);
+                                  resetArticlesAndGenerators(newFornitoreId);
                                 }}
                               >
                                 <Check
@@ -623,7 +666,7 @@ export function ModalOrdineAcquistoForm({
               type="button"
               variant="success"
               onClick={handleAddArticle}
-              disabled={isSubmitting || !ctnGeneratorInitialized || isCancelled}
+              disabled={isSubmitting || !ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || isCancelled} // Aggiunto fscCommessaGeneratorInitialized
               className="w-full sm:w-auto self-start gap-2"
             >
               <PlusCircle className="h-4 w-4" /> Aggiungi Articolo

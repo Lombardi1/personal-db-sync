@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Fornitore, Cliente, Cartone } from '@/types';
 import * as notifications from './notifications'; // Aggiornato a percorso relativo
 import { generateNextCartoneCode } from './cartoneUtils';
+import { generateNextFscCommessa, resetFscCommessaGenerator } from './fscUtils'; // Importa le utilità FSC
 
 export async function seedPurchaseOrders() {
   notifications.showInfo('Generazione ordini d\'acquisto di test in corso...');
@@ -34,6 +35,9 @@ export async function seedPurchaseOrders() {
     await supabase.from('storico').delete().neq('codice', 'NON_ESISTENTE'); // Pulisci anche lo storico
     await supabase.from('ordini_acquisto').delete().neq('numero_ordine', 'NON_ESISTENTE'); // Elimina tutti
 
+    // Inizializza i generatori di codici per i dati di test
+    resetFscCommessaGenerator(31, 2024); // Inizia da 31 per generare 32/24
+    
     const ordersToInsert: (Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo'> & { articoli: ArticoloOrdineAcquisto[] })[] = [];
 
     if (fornitoreCartone && randomCliente) {
@@ -59,6 +63,7 @@ export async function seedPurchaseOrders() {
             numero_fogli: 1000, // Aggiunto numero_fogli
             fsc: true, // Aggiunto
             alimentare: false, // Aggiunto
+            rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
           },
           {
             codice_ctn: generateNextCartoneCode(),
@@ -74,6 +79,7 @@ export async function seedPurchaseOrders() {
             numero_fogli: 2500, // Aggiunto numero_fogli
             fsc: false, // Aggiunto
             alimentare: true, // Aggiunto
+            rif_commessa_fsc: '', // Non FSC, quindi vuoto
           },
         ],
       });
@@ -129,6 +135,7 @@ export async function seedPurchaseOrders() {
             numero_fogli: 500, // Aggiunto numero_fogli
             fsc: true, // Aggiunto
             alimentare: true, // Aggiunto
+            rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
           },
         ],
       });
@@ -157,6 +164,7 @@ export async function seedPurchaseOrders() {
             numero_fogli: 1200, // Aggiunto numero_fogli
             fsc: false, // Aggiunto
             alimentare: false, // Aggiunto
+            rif_commessa_fsc: '', // Non FSC, quindi vuoto
           },
         ],
       });
@@ -186,6 +194,7 @@ export async function seedPurchaseOrders() {
             numero_fogli: 800,
             fsc: true, // Aggiunto
             alimentare: false, // Aggiunto
+            rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
           },
           {
             codice_ctn: generateNextCartoneCode(),
@@ -201,6 +210,7 @@ export async function seedPurchaseOrders() {
             numero_fogli: 300,
             fsc: false, // Aggiunto
             alimentare: false, // Aggiunto
+            rif_commessa_fsc: '', // Non FSC, quindi vuoto
           },
         ],
       });
@@ -266,6 +276,7 @@ export async function seedPurchaseOrders() {
             note: ordineData.note || '-',
             fsc: articolo.fsc, // Aggiunto
             alimentare: articolo.alimentare, // Aggiunto
+            rif_commessa_fsc: articolo.rif_commessa_fsc, // Aggiunto
           };
           
           // Inserisci in 'ordini' solo se lo stato dell'articolo non è 'ricevuto'

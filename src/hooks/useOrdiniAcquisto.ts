@@ -150,6 +150,7 @@ export function useOrdiniAcquisto() {
           note: ordineAcquisto.note || '-',
           fsc: articolo.fsc, // Aggiunto
           alimentare: articolo.alimentare, // Aggiunto
+          rif_commessa_fsc: articolo.rif_commessa_fsc, // Aggiunto
         };
 
         console.log(`[syncArticleInventoryStatus] Articolo ${codiceCtn} stato: ${articolo.stato}`);
@@ -388,114 +389,6 @@ export function useOrdiniAcquisto() {
     console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] loadOrdiniAcquisto completato dopo l'aggiornamento.`);
     return { success: true, data: updatedOrdine };
   }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]); // Aggiunto ordiniAcquisto come dipendenza
-
-  // Funzione per aggiornare lo stato di un singolo articolo all'interno di un ordine d'acquisto
-  const updateArticleStatusInOrder = useCallback(async (orderNumeroOrdine: string, articleIdentifier: string, newArticleStatus: ArticoloOrdineAcquisto['stato']) => {
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Aggiornamento stato articolo per OA: ${orderNumeroOrdine}, Identificatore Articolo: ${articleIdentifier}, Nuovo Stato: ${newArticleStatus}`);
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Tentativo di recuperare ordine d'acquisto con numero_ordine: "${orderNumeroOrdine}"`);
-
-    // 1. Fetch the order
-    const { data: ordineAcquistoToUpdate, error: fetchError } = await supabase
-      .from('ordini_acquisto')
-      .select(`*, fornitori ( nome, tipo_fornitore )`)
-      .eq('numero_ordine', orderNumeroOrdine)
-      .single();
-
-    if (fetchError || !ordineAcquistoToUpdate) {
-      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore recupero ordine d'acquisto ${orderNumeroOrdine}:`, fetchError);
-      toast.error(`Errore recupero ordine d'acquisto per aggiornamento articolo.`);
-      return { success: false, error: fetchError };
-    }
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Ordine d'acquisto recuperato:`, ordineAcquistoToUpdate.numero_ordine);
-
-    // 2. Find and update the specific article
-    let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
-    let articleFound = false;
-    updatedArticles = updatedArticles.map(art => {
-      // Check if it matches by codice_ctn (for cartone) or descrizione (for other types)
-      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
-        articleFound = true;
-        return { ...art, stato: newArticleStatus };
-      }
-      return art;
-    });
-
-    if (!articleFound) {
-      console.warn(`[useOrdiniAcquisto - updateArticleStatusInOrder] Articolo con identificatore '${articleIdentifier}' non trovato nell'ordine ${orderNumeroOrdine}.`);
-      toast.error(`Articolo '${articleIdentifier}' non trovato nell'ordine ${orderNumeroOrdine}.`);
-      return { success: false, error: new Error('Article not found') };
-    }
-
-    // Ricalcola l'importo totale basandosi solo sugli articoli NON annullati
-    const newImportoTotale = updatedArticles.reduce((sum, item) => {
-      if (item.stato !== 'annullato') {
-        const qty = item.quantita || 0;
-        const price = item.prezzo_unitario || 0;
-        return sum + (qty * price);
-      }
-      return sum;
-    }, 0);
-
-    // OPTIMISTIC UPDATE START
-    const previousOrdiniAcquisto = ordiniAcquisto;
-    setOrdiniAcquisto(prev => prev.map(order => {
-      if (order.numero_ordine === orderNumeroOrdine) {
-        return { ...order, articoli: updatedArticles, importo_totale: newImportoTotale };
-      }
-      return order;
-    }));
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Eseguito aggiornamento ottimistico per ordine ${orderNumeroOrdine}.`);
-    // OPTIMISTIC UPDATE END
-
-    // 3. Update the order with the modified articles array and new total amount
-    const { data: updatedOrdine, error: updateError } = await supabase
-      .from('ordini_acquisto')
-      .update({ articoli: updatedArticles as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() }) // Also update updated_at
-      .eq('numero_ordine', orderNumeroOrdine)
-      .select(`*, fornitori ( nome, tipo_fornitore )`)
-      .single();
-
-    if (updateError) {
-      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore aggiornamento articoli per ordine ${orderNumeroOrdine}:`, updateError);
-      toast.error(`Errore aggiornamento stato articolo: ${updateError.message}`);
-      setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
-      return { success: false, error: updateError };
-    }
-
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Stato articolo '${articleIdentifier}' aggiornato a ${newArticleStatus} per ordine ${orderNumeroOrdine}. Nuovo importo totale: ${newImportoTotale}.`);
-
-    // NEW LOGIC: Check if all articles are now 'annullato' and update main order status
-    const allArticlesCancelled = updatedArticles.every(art => art.stato === 'annullato');
-    if (allArticlesCancelled && updatedOrdine.stato !== 'annullato') {
-        console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Tutti gli articoli dell'ordine ${orderNumeroOrdine} sono annullati. Aggiorno lo stato dell'ordine principale a 'annullato'.`);
-        const { error: mainStatusUpdateError } = await supabase
-            .from('ordini_acquisto')
-            .update({ stato: 'annullato', updated_at: new Date().toISOString() })
-            .eq('id', updatedOrdine.id);
-
-        if (mainStatusUpdateError) {
-            console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore aggiornamento stato principale ordine ${orderNumeroOrdine} a 'annullato':`, mainStatusUpdateError);
-            toast.error(`Errore aggiornamento stato principale ordine: ${mainStatusUpdateError.message}`);
-        } else {
-            updatedOrdine.stato = 'annullato'; // Update the local updatedOrdine object
-            console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Stato principale ordine ${orderNumeroOrdine} aggiornato a 'annullato'.`);
-        }
-    }
-
-    // 4. Sync inventory status for the updated order
-    const orderWithFornitoreInfo: OrdineAcquisto = {
-      ...updatedOrdine,
-      fornitore_nome: updatedOrdine.fornitori?.nome || 'N/A',
-      fornitore_tipo: updatedOrdine.fornitori?.tipo_fornitore || 'N/A',
-      articoli: (updatedOrdine.articoli || []) as ArticoloOrdineAcquisto[],
-    };
-    await syncArticleInventoryStatus(orderWithFornitoreInfo);
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] syncArticleInventoryStatus completato per ordine ${orderNumeroOrdine}.`);
-
-    await loadOrdiniAcquisto(); // Reload all orders to reflect changes
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] loadOrdiniAcquisto completato dopo l'aggiornamento per ordine ${orderNumeroOrdine}.`);
-    return { success: true, data: updatedOrdine };
-  }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]);
 
   // Funzione per annullare un ordine (imposta lo stato a 'annullato')
   const cancelOrdineAcquisto = useCallback(async (id: string) => {

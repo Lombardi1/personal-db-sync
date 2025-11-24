@@ -78,6 +78,7 @@ export interface ArticoloOrdineAcquisto {
   stato: 'in_attesa' | 'confermato' | 'ricevuto' | 'annullato' | 'inviato'; // Nuovo campo stato per l'articolo
   fsc?: boolean; // Nuovo campo
   alimentare?: boolean; // Nuovo campo
+  rif_commessa_fsc?: string; // NUOVO CAMPO: Riferimento commessa FSC
 }
 
 export interface OrdineAcquisto {
@@ -92,7 +93,7 @@ export interface OrdineAcquisto {
   importo_totale?: number;
   note?: string;
   created_at?: string;
-  updated_at?: string; // Aggiunto per l'ordinamento per ultima modifica
+  updated_at?: string;
 }
 
 // Nuova interfaccia per le informazioni dell'azienda
