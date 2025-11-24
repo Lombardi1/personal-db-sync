@@ -473,22 +473,16 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     const articlesBody = nonCancelledArticles.map(article => {
       let articoloColumnText = '';
-      let descrizioneColumnText: string | string[] = ''; // Changed to string | string[]
+      let descrizioneColumnText = '';
 
       if (isCartone) {
         articoloColumnText = article.codice_ctn || '';
-        const mainDesc = `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
-        let fscText = '';
-        if (article.fsc) {
-          fscText = `PROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`;
-        }
-        if (article.alimentare) {
-          fscText += (fscText ? '\n' : '') + ' (ALIMENTARE)';
-        }
-        descrizioneColumnText = fscText ? [mainDesc, fscText] : [mainDesc]; // Store as array
+        descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
+        if (article.fsc) descrizioneColumnText += `\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`; // Modificato qui
+        if (article.alimentare) descrizioneColumnText += ' (ALIMENTARE)'; // Aggiunto
       } else {
         articoloColumnText = article.descrizione || '';
-        descrizioneColumnText = [article.descrizione || '']; // Still an array for consistency
+        descrizioneColumnText = ''; 
       }
       
       const quantitaFormatted = article.quantita.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -497,7 +491,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
       return [
         articoloColumnText, 
-        descrizioneColumnText, // Pass the array here
+        descrizioneColumnText, 
         isCartone ? 'KG' : 'PZ',
         quantitaFormatted,
         prezzoUnitarioFormatted,
@@ -536,84 +530,6 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         7: { cellWidth: 20, halign: 'center' }, 
       },
       margin: { left: 10, right: 10 },
-      didParseCell: (data) => {
-        // Apply green background to 'Confermato' column if value is '✅ Sì'
-        if (section === 'ordini' && data.section === 'body' && data.column.index === (articlesHead[0].length - 1)) {
-          if (data.cell.text.includes('✅ Sì')) {
-            data.cell.styles.fillColor = [0, 128, 0]; // Strong Green
-            data.cell.styles.textColor = [255, 255, 255]; // White text
-          } else if (data.cell.text.includes('❌ No')) {
-            data.cell.styles.fillColor = [200, 0, 0]; // Strong Red
-            data.cell.styles.textColor = [255, 255, 255]; // White text
-          }
-        }
-        // Handle multi-style content for 'Descrizione' column
-        if (data.section === 'body' && data.column.index === 1) { // 'Descrizione' column
-          const cellContent = data.cell.raw; // Access the raw content (array)
-          if (Array.isArray(cellContent)) {
-            const defaultFontSize = 8;
-            const smallFontSize = 6;
-            const cellWidth = data.cell.width - data.cell.paddingX * 2;
-
-            // Calculate height for main description
-            doc.setFontSize(defaultFontSize);
-            const mainDescHeight = doc.getTextDimensions(cellContent[0], {
-              maxWidth: cellWidth,
-              fontSize: defaultFontSize
-            }).h;
-
-            let requiredHeight = mainDescHeight;
-
-            // Calculate height for FSC text if present
-            if (cellContent.length > 1 && cellContent[1]) {
-              doc.setFontSize(smallFontSize);
-              const fscTextHeight = doc.getTextDimensions(cellContent[1], {
-                maxWidth: cellWidth,
-                fontSize: smallFontSize
-              }).h;
-              requiredHeight += fscTextHeight + 1; // Add 1mm for gap between texts
-            }
-            
-            data.cell.styles.minCellHeight = requiredHeight + data.cell.paddingY * 2; // Add padding back
-            data.cell.text = ''; // Clear text so autoTable doesn't draw it
-          }
-        }
-      },
-      didDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 1) { // 'Descrizione' column
-          const cellContent = data.cell.raw; // Access the raw content (array)
-          if (Array.isArray(cellContent)) {
-            doc.setFont(undefined, 'bold'); // Ensure bold for all text
-            doc.setTextColor(0, 0, 0); // Ensure black for all text
-
-            let currentTextY = data.cell.y + data.cell.paddingY; // Start Y for text
-            const textX = data.cell.x + data.cell.paddingX;
-            const cellWidth = data.cell.width - data.cell.paddingX * 2;
-
-            // Draw main description
-            doc.setFontSize(8); // Default font size for main description
-            const mainDescLines = doc.splitTextToSize(cellContent[0], cellWidth);
-            doc.text(mainDescLines, textX, currentTextY);
-            
-            // Update Y position for the next text block
-            currentTextY += doc.getTextDimensions(cellContent[0], {
-              maxWidth: cellWidth,
-              fontSize: 8
-            }).h + 1; // Add 1mm for gap
-
-            // Draw FSC certification text if present
-            if (cellContent.length > 1 && cellContent[1]) {
-              doc.setFontSize(6); // Smaller font size for FSC text
-              const fscTextLines = doc.splitTextToSize(cellContent[1], cellWidth);
-              doc.text(fscTextLines, textX, currentTextY);
-            }
-          }
-        }
-      },
-      didDrawPage: (data) => {
-        doc.setFontSize(8);
-        doc.text(`Pagina ${data.pageNumber}`, doc.internal.pageSize.width - 10, doc.internal.pageSize.height - 10, { align: 'right' });
-      }
     });
 
     y = (doc as any).lastAutoTable.finalY;
