@@ -1,2 +1,2 @@
-ALTER TABLE public.fornitori
-ADD COLUMN banca text NULL;
+ALTER TABLE giacenza
+ADD COLUMN alimentare BOOLEAN DEFAULT FALSE;
