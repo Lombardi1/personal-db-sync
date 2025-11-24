@@ -323,7 +323,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // ========== HEADER SECTION ==========
     // Logo AG Lombardi (sinistra)
-    doc.addImage(logoAG, 'JPEG', 10, y, 25, 25); // Rimpicciolito a 25x25mm
+    doc.addImage(logoAG, 'JPEG', 10, y, 24, 25); // Larghezza modificata a 24mm
     
     // Info azienda (sinistra, sotto logo) - Ora dinamiche da aziendaInfo
     doc.setFontSize(12); 
