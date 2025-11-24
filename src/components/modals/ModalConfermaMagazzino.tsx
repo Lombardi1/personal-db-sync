@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'; // Added useEffect for logging
+import { useState } from 'react';
 import { Cartone } from '@/types';
-import * as notifications from '@/utils/notifications';
+import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
 
 interface ModalConfermaMagazzinoProps {
   codice: string;
@@ -10,15 +10,10 @@ interface ModalConfermaMagazzinoProps {
 }
 
 export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: ModalConfermaMagazzinoProps) {
-  const [ddt, setDdt] = useState(ordine.ddt || '');
-  const [dataArrivo, setDataArrivo] = useState(ordine.data_arrivo || '');
+  const [ddt, setDdt] = useState('');
+  const [dataArrivo, setDataArrivo] = useState('');
   const [fogliEffettivi, setFogliEffettivi] = useState<string>(String(ordine.fogli));
-  const [magazzino, setMagazzino] = useState(ordine.magazzino || '');
-
-  useEffect(() => {
-    console.log(`[ModalConfermaMagazzino] Component mounted/re-rendered. Type of onConferma: ${typeof onConferma}`);
-    console.log(`[ModalConfermaMagazzino] Initial fogliEffettivi: '${fogliEffettivi}'`);
-  }, [onConferma, fogliEffettivi]);
+  const [magazzino, setMagazzino] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +23,6 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
       return;
     }
 
-    console.log(`[ModalConfermaMagazzino] Submitting. fogliEffettivi before parseInt: '${fogliEffettivi}'`);
     const fogliNum = parseInt(fogliEffettivi);
     if (isNaN(fogliNum) || fogliNum <= 0) {
       notifications.showError('⚠️ Inserisci un numero di fogli valido.');
@@ -37,12 +31,6 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
 
     onClose();
     
-    if (typeof onConferma !== 'function') {
-      console.error(`[ModalConfermaMagazzino] Error: onConferma is not a function. Type: ${typeof onConferma}`);
-      notifications.showError('Errore interno: funzione di conferma non disponibile.');
-      return;
-    }
-
     const { error } = await onConferma(codice, ddt, dataArrivo, fogliNum, magazzino.trim());
     if (!error) {
       const diff = fogliNum - ordine.fogli;

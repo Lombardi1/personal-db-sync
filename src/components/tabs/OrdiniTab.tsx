@@ -9,14 +9,15 @@ import { esportaTabellaXLS, esportaTabellaPDF } from '@/utils/export';
 
 interface OrdiniTabProps {
   ordini: Cartone[];
-  onConferma: (codice: string, confermato: boolean) => void;
-  onSpostaInMagazzino: (codice: string) => void;
-  onModifica: (codice: string) => void;
-  onElimina: (codice: string) => void;
+  spostaInGiacenza: (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number) => Promise<{ error: any }>;
+  confermaOrdine: (codice: string, confermato: boolean) => Promise<{ error: any }>;
+  eliminaOrdine: (codice: string) => Promise<void>;
+  modificaOrdine: (codice: string, dati: Partial<Cartone>) => Promise<void>;
   storico: any[];
 }
 
-export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica, onElimina }: OrdiniTabProps) {
+export function OrdiniTab({ ordini, spostaInGiacenza, confermaOrdine, eliminaOrdine, modificaOrdine }: OrdiniTabProps) {
+  console.log("OrdiniTab: Received 'ordini' prop:", ordini.map(o => ({ codice: o.codice, confermato: o.confermato, data_consegna: o.data_consegna }))); // NEW LOG
   const [filtri, setFiltri] = useState({
     codice: '',
     fornitore: '',
@@ -40,7 +41,7 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
 
   const handleFilter = (newFiltri: typeof filtri) => {
     setFiltri(newFiltri);
-    let filtered = [...ordini]; // Create a shallow copy to avoid direct state mutation
+    let filtered = ordini;
 
     Object.entries(newFiltri).forEach(([key, value]) => {
       if (value) {
@@ -54,19 +55,6 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
             return normalizedField.includes(normalizedValue);
           });
         }
-        // Gestione del filtro 'confermato'
-        else if (key === 'confermato') {
-          filtered = filtered.filter(c => {
-            const isConfirmed = c.confermato;
-            if (value.toLowerCase() === 'sì' || value.toLowerCase() === 'si') {
-              return isConfirmed;
-            }
-            if (value.toLowerCase() === 'no') {
-              return !isConfirmed;
-            }
-            return true; // Se il valore del filtro non è 'sì' o 'no', non filtrare per conferma
-          });
-        }
         // Gestione normale per gli altri campi
         else {
           filtered = filtered.filter(c => {
@@ -77,18 +65,11 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
       }
     });
 
-    // Ordina prima per grammatura (numerico) e poi per formato (alfabetico)
+    // Ordina per data di consegna (data più vicina sopra = crescente)
     filtered.sort((a, b) => {
-      // Estrai solo il valore numerico della grammatura
-      const grammA = parseInt(String(a.grammatura).replace(' g/m²', '')) || 0;
-      const grammB = parseInt(String(b.grammatura).replace(' g/m²', '')) || 0;
-
-      if (grammA !== grammB) {
-        return grammA - grammB; // Ordina per grammatura crescente
-      }
-
-      // Se la grammatura è uguale, ordina per formato (alfabetico)
-      return String(a.formato).localeCompare(String(b.formato));
+      const dateA = new Date(a.data_consegna || '9999-12-31').getTime();
+      const dateB = new Date(b.data_consegna || '9999-12-31').getTime();
+      return dateA - dateB;
     });
 
     setOrdiniFiltered(filtered);
@@ -133,6 +114,7 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
         </Button>
         <Button
           onClick={() => {
+            console.log("[OrdiniTab] Esportando ordiniFiltered. Stato 'confermato' per ogni ordine:", ordiniFiltered.map(o => ({ codice: o.codice, confermato: o.confermato }))); // NEW DEBUG LOG
             esportaTabellaPDF('tab-ordini', 'ordini.pdf', 'ordini', ordiniFiltered); // Passa ordiniFiltered
           }}
           className="bg-[hsl(0,72%,90%)] text-[hsl(var(--ordini-color))] hover:bg-[hsl(0,72%,80%)] text-sm py-2 px-3"
@@ -143,7 +125,7 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
 
       <TabellaOrdini 
         ordini={ordiniFiltered}
-        onConferma={onConferma}
+        onConferma={confermaOrdine}
         onSpostaInMagazzino={(codice) => {
           setSelectedCodice(codice);
           setShowModalMagazzino(true);
@@ -152,7 +134,7 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
           setSelectedCodice(codice);
           setShowModalModifica(true);
         }}
-        onElimina={onElimina}
+        onElimina={eliminaOrdine}
       />
 
       {showModalMagazzino && selectedCodice && (
@@ -160,7 +142,7 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
           codice={selectedCodice}
           ordine={ordini.find(o => o.codice === selectedCodice)!}
           onClose={() => setShowModalMagazzino(false)}
-          onConferma={onSpostaInMagazzino}
+          onConferma={spostaInGiacenza}
         />
       )}
 
@@ -168,7 +150,7 @@ export function OrdiniTab({ ordini, onConferma, onSpostaInMagazzino, onModifica,
         <ModalModificaOrdine
           ordine={ordini.find(o => o.codice === selectedCodice)!}
           onClose={() => setShowModalModifica(false)}
-          onModifica={onModifica}
+          onModifica={modificaOrdine}
         />
       )}
     </div>
