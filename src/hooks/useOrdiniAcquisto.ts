@@ -4,134 +4,37 @@ import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone } from '@/types';
 import { toast } from 'sonner';
 import { generateNextCartoneCode } from '@/utils/cartoneUtils';
 
-console.log('*** [useOrdiniAcquisto.ts] Modulo caricato e pronto per l\'esportazione. ***'); // Log di debug molto evidente
-
 export function useOrdiniAcquisto() {
   const [ordiniAcquisto, setOrdiniAcquisto] = useState<OrdineAcquisto[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadOrdiniAcquisto = useCallback(async () => {
-    console.log('[useOrdiniAcquisto] loadOrdiniAcquisto chiamato.');
-    setLoading(true);
-    try {
-      const { data: ordiniData, error: ordiniError } = await supabase
-        .from('ordini_acquisto')
-        .select(`
-          *,
-          fornitori ( nome, tipo_fornitore )
-        `)
-        .order('created_at', { ascending: false }); // Inizialmente ordina per data di creazione, poi riordiniamo in JS
-
-      if (ordiniError) {
-        console.error('useOrdiniAcquisto: Errore nel recupero degli ordini principali:', ordiniError);
-        toast.error('Errore nel caricamento degli ordini d\'acquisto.');
-        setOrdiniAcquisto([]);
-        return;
-      }
-
-      if (!ordiniData || ordiniData.length === 0) {
-        console.log('useOrdiniAcquisto: Nessun ordine d\'acquisto trovato.');
-        setOrdiniAcquisto([]);
-        return;
-      }
-
-      const ordiniWithFornitoreInfo: OrdineAcquisto[] = ordiniData.map(ordine => ({
-        ...ordine,
-        fornitore_nome: ordine.fornitori?.nome || 'N/A',
-        fornitore_tipo: ordine.fornitori?.tipo_fornitore || 'N/A',
-        articoli: (ordine.articoli || []) as ArticoloOrdineAcquisto[], // Cast the JSONB array
-      }));
-      
-      console.log('useOrdiniAcquisto: Fornitore type for each order:', ordiniWithFornitoreInfo.map(o => ({ numero_ordine: o.numero_ordine, fornitore_tipo: o.fornitore_tipo }))); // NEW LOG
-      console.log('useOrdiniAcquisto: Ordini con info fornitore (prima dell\'ordinamento):', ordiniWithFornitoreInfo.map(o => ({ numero_ordine: o.numero_ordine, stato: o.stato, data_ordine: o.data_ordine, updated_at: o.updated_at })));
-
-      // Applica l'ordinamento desiderato:
-      // 1. Per data di ultima modifica (updated_at) decrescente
-      // 2. Se updated_at è uguale, per stato ('in_attesa' prima)
-      // 3. Se anche lo stato è uguale, per data ordine (data_ordine) decrescente
-      const sortedOrdini = [...ordiniWithFornitoreInfo].sort((a, b) => {
-        // Primary sort: by updated_at (most recent first)
-        const dateAUpdated = new Date(a.updated_at || a.created_at || 0).getTime(); // Fallback to created_at if updated_at is null
-        const dateBUpdated = new Date(b.updated_at || b.created_at || 0).getTime(); // Fallback to created_at if updated_at is null
-
-        if (dateAUpdated !== dateBUpdated) {
-          return dateBUpdated - dateAUpdated; // Descending order for updated_at
-        }
-
-        // Secondary sort: Prioritize 'in_attesa' status
-        const statusOrder = {
-          'in_attesa': 1,
-          'inviato': 2,
-          'confermato': 3,
-          'ricevuto': 4,
-          'annullato': 5,
-        };
-        const statusA = statusOrder[a.stato] || 99;
-        const statusB = statusOrder[b.stato] || 99;
-
-        if (statusA !== statusB) {
-          return statusA - statusB;
-        }
-
-        // Tertiary sort: by data_ordine (most recent first)
-        const dateAOrder = new Date(a.data_ordine).getTime();
-        const dateBOrder = new Date(b.data_ordine).getTime();
-        return dateBOrder - dateAOrder;
-      });
-
-      console.log('useOrdiniAcquisto: Ordini finali ordinati (dopo l\'ordinamento):', sortedOrdini.map(o => ({ numero_ordine: o.numero_ordine, stato: o.stato, data_ordine: o.data_ordine, updated_at: o.updated_at })));
-      setOrdiniAcquisto(sortedOrdini);
-      console.log('[useOrdiniAcquisto] Stato ordiniAcquisto aggiornato.');
-    } catch (error) {
-      console.error('useOrdiniAcquisto: Errore generico nel caricamento ordini d\'acquisto:', error);
-      toast.error('Errore nel caricamento degli ordini d\'acquisto.');
-      setOrdiniAcquisto([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []); // Dipendenze vuote per useCallback
-
-  // Helper per sincronizzare lo stato degli articoli con le tabelle di magazzino (ordini e giacenza)
+  // 1. Define syncArticleInventoryStatus first, as it's a helper for others and has no internal dependencies on other useCallback functions in this file.
   const syncArticleInventoryStatus = useCallback(async (ordineAcquisto: OrdineAcquisto) => {
     console.log(`[syncArticleInventoryStatus] Sincronizzazione articoli per OA: ${ordineAcquisto.numero_ordine}`);
-    console.log(`[syncArticleInventoryStatus] Fornitore Tipo per OA ${ordineAcquisto.numero_ordine}: ${ordineAcquisto.fornitore_tipo}`); // NEW LOG
     const fornitoreNome = ordineAcquisto.fornitore_nome || 'N/A';
     const isCartoneFornitore = ordineAcquisto.fornitore_tipo === 'Cartone';
-    console.log(`[syncArticleInventoryStatus] isCartoneFornitore: ${isCartoneFornitore}`); // NEW LOG
 
-    // NEW: Initial cleanup - remove all articles associated with this purchase order from 'ordini'
-    // We no longer delete from 'giacenza' here, as 'spostaInGiacenza' handles that.
     await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
-    console.log(`[syncArticleInventoryStatus] Eseguita pulizia iniziale per OA: ${ordineAcquisto.numero_ordine} da 'ordini'.`);
 
     if (!isCartoneFornitore) {
-      console.log(`[syncArticleInventoryStatus] Non è un fornitore di cartone, nessuna azione aggiuntiva richiesta dopo la pulizia.`);
       return;
     }
 
-    // Defensive check for articles array
     if (!Array.isArray(ordineAcquisto.articoli)) {
-      console.error(`[syncArticleInventoryStatus] Errore: ordineAcquisto.articoli non è un array per OA: ${ordineAcquisto.numero_ordine}`, ordineAcquisto.articoli);
       toast.error(`Errore interno: Articoli dell'ordine non validi per ${ordineAcquisto.numero_ordine}.`);
       return;
     }
 
-    console.log(`[syncArticleInventoryStatus] Preparing to process ${ordineAcquisto.articoli.length} articles.`);
-    console.log(`[syncArticleInventoryStatus] Articles array content:`, JSON.stringify(ordineAcquisto.articoli, null, 2));
-
-    for (const articolo of ordineAcquisto.articoli) { // Changed from Promise.all(map) to for...of loop
+    for (const articolo of ordineAcquisto.articoli) {
       try {
-        console.log(`[syncArticleInventoryStatus] Processing article:`, articolo);
         const codiceCtn = articolo.codice_ctn;
         if (!codiceCtn) {
-          console.warn(`[syncArticleInventoryStatus] Articolo senza codice CTN. Saltato:`, articolo);
-          continue; // Use continue for for...of loop
+          continue;
         }
 
         const numFogli = articolo.numero_fogli;
         if (numFogli === undefined || numFogli <= 0) {
-          console.warn(`[syncArticleInventoryStatus] Articolo cartone ${codiceCtn} con numero_fogli non valido (${numFogli}). Saltato.`);
-          continue; // Use continue for for...of loop
+          continue;
         }
 
         const cartoneBase: Cartone = {
@@ -144,38 +47,29 @@ export function useOrdiniAcquisto() {
           fogli: numFogli,
           cliente: articolo.cliente || 'N/A',
           lavoro: articolo.lavoro || 'N/A',
-          magazzino: '-', // Default, will be updated by spostaInGiacenza
+          magazzino: '-',
           prezzo: articolo.prezzo_unitario,
           data_consegna: articolo.data_consegna_prevista,
           note: ordineAcquisto.note || '-',
-          fsc: articolo.fsc, // Aggiunto
-          alimentare: articolo.alimentare, // Aggiunto
-          rif_commessa_fsc: articolo.rif_commessa_fsc, // Aggiunto
+          fsc: articolo.fsc,
+          alimentare: articolo.alimentare,
+          rif_commessa_fsc: articolo.rif_commessa_fsc,
         };
 
-        console.log(`[syncArticleInventoryStatus] Articolo ${codiceCtn} stato: ${articolo.stato}`);
         if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
           const isConfirmedForOrdiniTable = articolo.stato === 'confermato';
-          console.log(`[syncArticleInventoryStatus] Preparando inserimento in 'ordini' per ${codiceCtn}. Dati:`, { ...cartoneBase, confermato: isConfirmedForOrdiniTable });
           const { error: insertError } = await supabase.from('ordini').insert([{ ...cartoneBase, confermato: isConfirmedForOrdiniTable }]);
           if (insertError) {
-            console.error(`[syncArticleInventoryStatus] Errore inserimento ${codiceCtn} in 'ordini':`, insertError);
             toast.error(`Errore inserimento in ordini: ${insertError.message}`);
-          } else {
-            console.log(`[syncArticleInventoryStatus] Inserito/Aggiornato ${codiceCtn} in 'ordini' con stato '${articolo.stato}'. Campo 'confermato' impostato a: ${isConfirmedForOrdiniTable}.`);
           }
         } else if (articolo.stato === 'ricevuto') {
-          // NEW LOGIC: If article is 'ricevuto', check if it already exists in 'giacenza'
-          // If it exists, update its fields (ddt, data_arrivo, magazzino)
-          // If it doesn't exist, insert it with default values (which will be updated by spostaInGiacenza)
           const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
             .from('giacenza')
             .select('ddt, data_arrivo, magazzino')
             .eq('codice', codiceCtn)
             .single();
 
-          if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') { // PGRST116 means "no rows found"
-            console.error(`[syncArticleInventoryStatus] Errore recupero giacenza per ${codiceCtn}:`, fetchGiacenzaError);
+          if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') {
             toast.error(`Errore recupero giacenza: ${fetchGiacenzaError.message}`);
             continue;
           }
@@ -187,68 +81,260 @@ export function useOrdiniAcquisto() {
           };
 
           if (existingGiacenza) {
-            console.log(`[syncArticleInventoryStatus] Aggiornando 'giacenza' per ${codiceCtn} (stato 'ricevuto'). Dati:`, { ...cartoneBase, ...giacenzaDataToUpdate });
             const { error: updateError } = await supabase.from('giacenza').update({ ...cartoneBase, ...giacenzaDataToUpdate }).eq('codice', codiceCtn);
             if (updateError) {
-              console.error(`[syncArticleInventoryStatus] Errore aggiornamento ${codiceCtn} in 'giacenza':`, updateError);
               toast.error(`Errore aggiornamento in giacenza: ${updateError.message}`);
-            } else {
-              console.log(`[syncArticleInventoryStatus] Aggiornato ${codiceCtn} in 'giacenza' con stato 'ricevuto'.`);
             }
           } else {
-            console.log(`[syncArticleInventoryStatus] Inserendo in 'giacenza' per ${codiceCtn} (stato 'ricevuto'). Dati:`, { ...cartoneBase, ...giacenzaDataToUpdate });
             const { error: insertError } = await supabase.from('giacenza').insert([{ ...cartoneBase, ...giacenzaDataToUpdate }]);
             if (insertError) {
-              console.error(`[syncArticleInventoryStatus] Errore inserimento ${codiceCtn} in 'giacenza':`, insertError);
               toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
-            } else {
-              console.log(`[syncArticleInventoryStatus] Inserito ${codiceCtn} in 'giacenza' con stato 'ricevuto'.`);
             }
           }
         }
       } catch (e: any) {
-        console.error(`[syncArticleInventoryStatus] Errore interno durante l'elaborazione dell'articolo ${articolo?.codice_ctn || 'sconosciuto'}:`, e);
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
       }
-    } // End for...of loop
-    console.log(`[syncArticleInventoryStatus] Sincronizzazione completata per OA: ${ordineAcquisto.numero_ordine}`);
-  }, []); // Dipendenze vuote per useCallback
+    }
+  }, []); // Dependencies are empty, as it only uses supabase and toast (which are stable)
 
-  useEffect(() => {
-    loadOrdiniAcquisto();
+  // 2. Define loadOrdiniAcquisto early, as many functions call it.
+  // It does not directly call syncArticleInventoryStatus or updateArticleStatusInOrder,
+  // but it's called by functions that *do* call them.
+  const loadOrdiniAcquisto = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: ordiniData, error: ordiniError } = await supabase
+        .from('ordini_acquisto')
+        .select(`
+          *,
+          fornitori ( nome, tipo_fornitore )
+        `)
+        .order('created_at', { ascending: false });
 
-    const ordiniAcquistoChannel = supabase
-      .channel('ordini_acquisto_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini_acquisto' }, () => {
-        console.log('[useOrdiniAcquisto] Rilevato cambiamento in ordini_acquisto via real-time. Ricarico dati.');
-        loadOrdiniAcquisto();
-      })
-      .subscribe();
+      if (ordiniError) {
+        toast.error('Errore nel caricamento degli ordini d\'acquisto.');
+        setOrdiniAcquisto([]);
+        return;
+      }
 
-    return () => {
-      supabase.removeChannel(ordiniAcquistoChannel);
+      if (!ordiniData || ordiniData.length === 0) {
+        setOrdiniAcquisto([]);
+        return;
+      }
+
+      const ordiniWithFornitoreInfo: OrdineAcquisto[] = ordiniData.map(ordine => ({
+        ...ordine,
+        fornitore_nome: ordine.fornitori?.nome || 'N/A',
+        fornitore_tipo: ordine.fornitori?.tipo_fornitore || 'N/A',
+        articoli: (ordine.articoli || []) as ArticoloOrdineAcquisto[],
+      }));
+      
+      const sortedOrdini = [...ordiniWithFornitoreInfo].sort((a, b) => {
+        const dateAUpdated = new Date(a.updated_at || a.created_at || 0).getTime();
+        const dateBUpdated = new Date(b.updated_at || b.created_at || 0).getTime();
+
+        if (dateAUpdated !== dateBUpdated) {
+          return dateBUpdated - dateAUpdated;
+        }
+
+        const statusOrder = { 'in_attesa': 1, 'inviato': 2, 'confermato': 3, 'ricevuto': 4, 'annullato': 5 };
+        const statusA = statusOrder[a.stato] || 99;
+        const statusB = statusOrder[b.stato] || 99;
+
+        if (statusA !== statusB) {
+          return statusA - statusB;
+        }
+
+        const dateAOrder = new Date(a.data_ordine).getTime();
+        const dateBOrder = new Date(b.data_ordine).getTime();
+        return dateBOrder - dateAOrder;
+      });
+
+      setOrdiniAcquisto(sortedOrdini);
+    } catch (error) {
+      toast.error('Errore nel caricamento degli ordini d\'acquisto.');
+      setOrdiniAcquisto([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Empty dependency array is fine for loadOrdiniAcquisto itself.
+
+  // 3. Define updateArticleStatusInOrder, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
+  const updateArticleStatusInOrder = useCallback(async (orderNumeroOrdine: string, articleIdentifier: string, newArticleStatus: ArticoloOrdineAcquisto['stato']) => {
+    // 1. Fetch the order
+    const { data: ordineAcquistoToUpdate, error: fetchError } = await supabase
+      .from('ordini_acquisto')
+      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .eq('numero_ordine', orderNumeroOrdine)
+      .single();
+
+    if (fetchError || !ordineAcquistoToUpdate) {
+      toast.error(`Errore recupero ordine d'acquisto per aggiornamento articolo.`);
+      return { success: false, error: fetchError };
+    }
+
+    // 2. Find and update the specific article
+    let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
+    let articleFound = false;
+    updatedArticles = updatedArticles.map(art => {
+      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
+        articleFound = true;
+        return { ...art, stato: newArticleStatus };
+      }
+      return art;
+    });
+
+    if (!articleFound) {
+      toast.error(`Articolo '${articleIdentifier}' non trovato nell'ordine ${orderNumeroOrdine}.`);
+      return { success: false, error: new Error('Article not found') };
+    }
+
+    const newImportoTotale = updatedArticles.reduce((sum, item) => {
+      if (item.stato !== 'annullato') {
+        const qty = item.quantita || 0;
+        const price = item.prezzo_unitario || 0;
+        return sum + (qty * price);
+      }
+      return sum;
+    }, 0);
+
+    // OPTIMISTIC UPDATE START
+    const previousOrdiniAcquisto = ordiniAcquisto;
+    setOrdiniAcquisto(prev => prev.map(order => {
+      if (order.numero_ordine === orderNumeroOrdine) {
+        return { ...order, articoli: updatedArticles, importo_totale: newImportoTotale };
+      }
+      return order;
+    }));
+    // OPTIMISTIC UPDATE END
+
+    // 3. Update the order with the modified articles array and new total amount
+    const { data: updatedOrdine, error: updateError } = await supabase
+      .from('ordini_acquisto')
+      .update({ articoli: updatedArticles as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
+      .eq('numero_ordine', orderNumeroOrdine)
+      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .single();
+
+    if (updateError) {
+      toast.error(`Errore aggiornamento stato articolo: ${updateError.message}`);
+      setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
+      return { success: false, error: updateError };
+    }
+
+    const allArticlesCancelled = updatedArticles.every(art => art.stato === 'annullato');
+    if (allArticlesCancelled && updatedOrdine.stato !== 'annullato') {
+        const { error: mainStatusUpdateError } = await supabase
+            .from('ordini_acquisto')
+            .update({ stato: 'annullato', updated_at: new Date().toISOString() })
+            .eq('id', updatedOrdine.id);
+
+        if (mainStatusUpdateError) {
+            toast.error(`Errore aggiornamento stato principale ordine: ${mainStatusUpdateError.message}`);
+        } else {
+            updatedOrdine.stato = 'annullato';
+        }
+    }
+
+    // 4. Sync inventory status for the updated order
+    const orderWithFornitoreInfo: OrdineAcquisto = {
+      ...updatedOrdine,
+      fornitore_nome: updatedOrdine.fornitori?.nome || 'N/A',
+      fornitore_tipo: updatedOrdine.fornitori?.tipo_fornitore || 'N/A',
+      articoli: (updatedOrdine.articoli || []) as ArticoloOrdineAcquisto[],
     };
-  }, [loadOrdiniAcquisto]); // Aggiunto loadOrdiniAcquisto come dipendenza
+    await syncArticleInventoryStatus(orderWithFornitoreInfo);
 
+    await loadOrdiniAcquisto();
+    return { success: true, data: updatedOrdine };
+  }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]); // Dependencies are correct here.
+
+  // 4. Define updateOrdineAcquistoStatus, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
+  const updateOrdineAcquistoStatus = useCallback(async (id: string, newStatus: OrdineAcquisto['stato']) => {
+    // Recupera l'ordine completo per poter sincronizzare gli articoli
+    const { data: currentOrdine, error: fetchError } = await supabase
+      .from('ordini_acquisto')
+      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !currentOrdine) {
+      toast.error(`Errore recupero ordine per aggiornamento stato: ${fetchError?.message}`);
+      return { success: false, error: fetchError };
+    }
+
+    let articlesForDbUpdate = currentOrdine.articoli as ArticoloOrdineAcquisto[];
+    if (newStatus === 'annullato') {
+      articlesForDbUpdate = articlesForDbUpdate.map(art => ({ ...art, stato: 'annullato' }));
+    } else if (newStatus === 'inviato') {
+      articlesForDbUpdate = articlesForDbUpdate.map(art => ({ ...art, stato: 'inviato' }));
+    } else if (newStatus === 'in_attesa') {
+      articlesForDbUpdate = articlesForDbUpdate.map(art => ({ ...art, stato: 'in_attesa' }));
+    }
+
+    const newImportoTotale = articlesForDbUpdate.reduce((sum, item) => {
+      if (item.stato !== 'annullato') {
+        const qty = item.quantita || 0;
+        const price = item.prezzo_unitario || 0;
+        return sum + (qty * price);
+      }
+      return sum;
+    }, 0);
+
+    // OPTIMISTIC UPDATE START
+    const previousOrdiniAcquisto = ordiniAcquisto;
+    setOrdiniAcquisto(prev => prev.map(order => 
+      order.id === id 
+        ? { 
+            ...order, 
+            stato: newStatus,
+            articoli: articlesForDbUpdate,
+            importo_totale: newImportoTotale,
+          } 
+        : order
+    ));
+    // OPTIMISTIC UPDATE END
+
+    const { data: updatedOrdine, error } = await supabase
+      .from('ordini_acquisto')
+      .update({ stato: newStatus, articoli: articlesForDbUpdate as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select(`*, fornitori ( nome, tipo_fornitore )`)
+      .single();
+
+    if (error) {
+      toast.error(`Errore aggiornamento stato ordine: ${error.message}`);
+      setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
+      return { success: false, error };
+    }
+    
+    const orderWithFornitoreInfo: OrdineAcquisto = {
+      ...updatedOrdine,
+      fornitore_nome: updatedOrdine.fornitori?.nome || 'N/A',
+      fornitore_tipo: updatedOrdine.fornitori?.tipo_fornitore || 'N/A',
+      articoli: (updatedOrdine.articoli || []) as ArticoloOrdineAcquisto[],
+    };
+    await syncArticleInventoryStatus(orderWithFornitoreInfo);
+
+    await loadOrdiniAcquisto();
+    return { success: true, data: updatedOrdine };
+  }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]);
+
+  // 5. Define addOrdineAcquisto, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
   const addOrdineAcquisto = useCallback(async (ordine: Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo' | 'updated_at'>) => {
-    console.log('addOrdineAcquisto: Tentativo di aggiungere ordine:', ordine);
     const orderToInsert = { ...ordine };
 
     const { data: newOrdine, error: ordineError } = await supabase
       .from('ordini_acquisto')
       .insert([orderToInsert])
-      .select(`
-        *,
-        fornitori ( nome, tipo_fornitore )
-      `)
+      .select(`*, fornitori ( nome, tipo_fornitore )`)
       .single();
 
     if (ordineError) {
-      console.error('addOrdineAcquisto: Errore aggiunta ordine:', ordineError);
       toast.error(`Errore aggiunta ordine: ${ordineError.message}`);
       return { success: false, error: ordineError };
     }
-    console.log('addOrdineAcquisto: Ordine aggiunto con successo (newOrdine):', newOrdine);
 
     const orderWithFornitoreInfo: OrdineAcquisto = {
       ...newOrdine,
@@ -259,10 +345,11 @@ export function useOrdiniAcquisto() {
     await syncArticleInventoryStatus(orderWithFornitoreInfo);
 
     toast.success(`✅ Ordine d'acquisto '${newOrdine.numero_ordine}' aggiunto con successo!`);
-    await loadOrdiniAcquisto(); // This should refresh the list
+    await loadOrdiniAcquisto();
     return { success: true, data: newOrdine };
-  }, [loadOrdiniAcquisto, syncArticleInventoryStatus]); // Aggiunto loadOrdiniAcquisto e syncArticleInventoryStatus come dipendenze
+  }, [loadOrdiniAcquisto, syncArticleInventoryStatus]);
 
+  // 6. Define updateOrdineAcquisto, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
   const updateOrdineAcquisto = useCallback(async (id: string, ordine: Partial<Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo' | 'updated_at'>>) => {
     const orderToUpdate = { ...ordine };
 
@@ -270,10 +357,7 @@ export function useOrdiniAcquisto() {
       .from('ordini_acquisto')
       .update(orderToUpdate)
       .eq('id', id)
-      .select(`
-        *,
-        fornitori ( nome, tipo_fornitore )
-      `)
+      .select(`*, fornitori ( nome, tipo_fornitore )`)
       .single();
 
     if (ordineError) {
@@ -292,108 +376,10 @@ export function useOrdiniAcquisto() {
     toast.success(`✅ Ordine d'acquisto '${updatedOrdine.numero_ordine || id}' modificato con successo!`);
     await loadOrdiniAcquisto();
     return { success: true, data: updatedOrdine };
-  }, [loadOrdiniAcquisto, syncArticleInventoryStatus]); // Aggiunto loadOrdiniAcquisto e syncArticleInventoryStatus come dipendenze
+  }, [loadOrdiniAcquisto, syncArticleInventoryStatus]);
 
-  // Nuova funzione per aggiornare solo lo stato di un ordine d'acquisto
-  const updateOrdineAcquistoStatus = useCallback(async (id: string, newStatus: OrdineAcquisto['stato']) => {
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] INIZIO. ID: ${id}, Nuovo Stato: ${newStatus}`); // Log all'inizio
-    
-    // Recupera l'ordine completo per poter sincronizzare gli articoli
-    const { data: currentOrdine, error: fetchError } = await supabase
-      .from('ordini_acquisto')
-      .select(`
-        *,
-        fornitori ( nome, tipo_fornitore )
-      `)
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !currentOrdine) {
-      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Errore recupero ordine (ID: ${id}):`, fetchError);
-      toast.error(`Errore recupero ordine per aggiornamento stato: ${fetchError?.message}`);
-      return { success: false, error: fetchError };
-    }
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Ordine corrente recuperato (ID: ${id}):`, currentOrdine.numero_ordine, 'Stato:', currentOrdine.stato);
-
-    let articlesForDbUpdate = currentOrdine.articoli as ArticoloOrdineAcquisto[];
-    if (newStatus === 'annullato') {
-      articlesForDbUpdate = articlesForDbUpdate.map(art => ({ ...art, stato: 'annullato' }));
-      console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Tutti gli articoli impostati ad 'annullato'.`);
-    } else if (newStatus === 'inviato') {
-      articlesForDbUpdate = articlesForDbUpdate.map(art => ({ ...art, stato: 'inviato' }));
-      console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Tutti gli articoli impostati ad 'inviato'.`);
-    } else if (newStatus === 'in_attesa') {
-      articlesForDbUpdate = articlesForDbUpdate.map(art => ({ ...art, stato: 'in_attesa' }));
-      console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Tutti gli articoli impostati ad 'in_attesa'.`);
-    }
-    // If the main order status is 'confermato' or 'ricevuto', we don't automatically change article statuses here.
-    // Individual article status changes will be handled by updateArticleStatusInOrder.
-
-    // Ricalcola l'importo totale basandosi solo sugli articoli NON annullati
-    const newImportoTotale = articlesForDbUpdate.reduce((sum, item) => {
-      if (item.stato !== 'annullato') {
-        const qty = item.quantita || 0;
-        const price = item.prezzo_unitario || 0;
-        return sum + (qty * price);
-      }
-      return sum;
-    }, 0);
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Nuovo importo totale calcolato: ${newImportoTotale}`);
-
-    // OPTIMISTIC UPDATE START
-    const previousOrdiniAcquisto = ordiniAcquisto;
-    setOrdiniAcquisto(prev => prev.map(order => 
-      order.id === id 
-        ? { 
-            ...order, 
-            stato: newStatus,
-            articoli: articlesForDbUpdate,
-            importo_totale: newImportoTotale,
-          } 
-        : order
-    ));
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Eseguito aggiornamento ottimistico.`);
-    // OPTIMISTIC UPDATE END
-
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Articoli da aggiornare nel DB:`, articlesForDbUpdate);
-
-    const { data: updatedOrdine, error } = await supabase
-      .from('ordini_acquisto')
-      .update({ stato: newStatus, articoli: articlesForDbUpdate as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select(`
-        *,
-        fornitori ( nome, tipo_fornitore )
-      `)
-      .single();
-
-    if (error) {
-      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Errore DB durante aggiornamento stato ordine (ID: ${id}):`, error);
-      toast.error(`Errore aggiornamento stato ordine: ${error.message}`);
-      setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
-      return { success: false, error };
-    }
-
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Stato ordine ${id} aggiornato a ${newStatus} nel DB. Dati aggiornati:`, { stato: updatedOrdine.stato, updated_at: updatedOrdine.updated_at, importo_totale: updatedOrdine.importo_totale });
-    
-    const orderWithFornitoreInfo: OrdineAcquisto = {
-      ...updatedOrdine,
-      fornitore_nome: updatedOrdine.fornitori?.nome || 'N/A',
-      fornitore_tipo: updatedOrdine.fornitori?.tipo_fornitore || 'N/A',
-      articoli: (updatedOrdine.articoli || []) as ArticoloOrdineAcquisto[],
-    };
-    await syncArticleInventoryStatus(orderWithFornitoreInfo);
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] syncArticleInventoryStatus completato.`);
-
-    await loadOrdiniAcquisto();
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] loadOrdiniAcquisto completato dopo l'aggiornamento.`);
-    return { success: true, data: updatedOrdine };
-  }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]); // Aggiunto ordiniAcquisto come dipendenza
-
-  // Funzione per annullare un ordine (imposta lo stato a 'annullato')
+  // 7. Define cancelOrdineAcquisto, which depends on updateOrdineAcquistoStatus
   const cancelOrdineAcquisto = useCallback(async (id: string) => {
-    console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] INIZIO. ID: ${id}`); // Log all'inizio
-    // Prima, recupera l'ordine per ottenere il suo numero_ordine e lo stato attuale
     const { data: ordineToUpdate, error: fetchError } = await supabase
       .from('ordini_acquisto')
       .select('numero_ordine, stato')
@@ -401,82 +387,77 @@ export function useOrdiniAcquisto() {
       .single();
 
     if (fetchError) {
-      console.error(`[useOrdiniAcquisto - cancelOrdineAcquisto] Errore recupero ordine per annullamento (ID: ${id}):`, fetchError);
       toast.error(`Errore recupero ordine per annullamento: ${fetchError.message}`);
       return { success: false, error: fetchError };
     }
-    console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] Ordine recuperato (ID: ${id}):`, ordineToUpdate);
 
-    // Se l'ordine è già annullato, non fare nulla e informa l'utente
     if (ordineToUpdate?.stato === 'annullato') {
       toast.info(`L'ordine '${ordineToUpdate.numero_ordine}' è già annullato.`);
-      console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] Ordine ${ordineToUpdate.numero_ordine} già annullato. Nessuna azione.`);
       return { success: true };
     }
 
-    // Usa la nuova funzione per aggiornare lo stato
-    console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] Chiamando updateOrdineAcquistoStatus per ID: ${id}, nuovo stato: 'annullato'`);
     const { success, error } = await updateOrdineAcquistoStatus(id, 'annullato');
 
     if (success) {
       toast.success(`✅ Ordine d'acquisto '${ordineToUpdate?.numero_ordine}' annullato con successo!`);
-      console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] Ordine ${ordineToUpdate?.numero_ordine} annullato con successo.`);
     } else {
       toast.error(`Errore annullamento ordine: ${error?.message}`);
-      console.error(`[useOrdiniAcquisto - cancelOrdineAcquisto] Errore durante l'annullamento dell'ordine ${ordineToUpdate?.numero_ordine}:`, error);
     }
     return { success, error };
-  }, [updateOrdineAcquistoStatus]); // Aggiunto updateOrdineAcquistoStatus come dipendenza
+  }, [updateOrdineAcquistoStatus]);
 
-  // Nuova funzione per eliminare definitivamente un ordine
+  // 8. Define deleteOrdineAcquistoPermanently, which depends on loadOrdiniAcquisto
   const deleteOrdineAcquistoPermanently = useCallback(async (id: string, numeroOrdine: string) => {
-    console.log('[deleteOrdineAcquistoPermanently] Tentativo di eliminare definitivamente ordine con ID:', id, 'Numero Ordine:', numeroOrdine);
     try {
-      // OPTIMISTIC UPDATE START
       const previousOrdiniAcquisto = ordiniAcquisto;
       setOrdiniAcquisto(prev => prev.filter(order => order.id !== id));
-      console.log(`[deleteOrdineAcquistoPermanently] Eseguito aggiornamento ottimistico per eliminazione ordine ${numeroOrdine}.`);
-      // OPTIMISTIC UPDATE END
 
-      // Rimuovi prima gli articoli correlati dalle tabelle 'ordini' e 'giacenza'
-      console.log(`[deleteOrdineAcquistoPermanently] Tentativo di rimuovere articoli correlati dalle tabelle di magazzino per numero_ordine: ${numeroOrdine}`);
       await supabase.from('ordini').delete().eq('ordine', numeroOrdine);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
-      console.log(`[deleteOrdineAcquistoPermanently] Articoli correlati per numero_ordine: ${numeroOrdine} rimossi con successo (o non presenti).`);
       
-      // Poi elimina l'ordine d'acquisto principale
-      console.log(`[deleteOrdineAcquistoPermanently] Tentativo di eliminare l'ordine d'acquisto principale con ID: ${id}`);
       const { error } = await supabase
         .from('ordini_acquisto')
         .delete()
         .eq('id', id);
 
       if (error) {
-        console.error('[deleteOrdineAcquistoPermanently] Errore eliminazione definitiva ordine:', error);
         setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
-        throw error; // Rilancia l'errore per essere catturato dal blocco catch esterno
+        throw error;
       }
 
       toast.success(`🗑️ Ordine d'acquisto '${numeroOrdine}' eliminato definitivamente!`);
-      console.log(`[deleteOrdineAcquistoPermanently] Ordine d'acquisto ${numeroOrdine} eliminato definitivamente.`);
-      await loadOrdiniAcquisto(); // Keep this for eventual consistency
+      await loadOrdiniAcquisto();
       return { success: true };
     } catch (error: any) {
-      console.error('[deleteOrdineAcquistoPermanently] Errore catturato:', error); // Logga l'errore effettivo
       toast.error(`Errore eliminazione definitiva ordine: ${error.message || 'Errore sconosciuto'}`);
       return { success: false, error };
     }
-  }, [loadOrdiniAcquisto, ordiniAcquisto]); // Aggiunto ordiniAcquisto come dipendenza
+  }, [loadOrdiniAcquisto, ordiniAcquisto]);
+
+  useEffect(() => {
+    loadOrdiniAcquisto();
+
+    const ordiniAcquistoChannel = supabase
+      .channel('ordini_acquisto_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini_acquisto' }, () => {
+        loadOrdiniAcquisto();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordiniAcquistoChannel);
+    };
+  }, [loadOrdiniAcquisto]);
 
   return {
     ordiniAcquisto,
     loading,
     addOrdineAcquisto,
     updateOrdineAcquisto,
-    updateOrdineAcquistoStatus, // Esposto la nuova funzione
-    updateArticleStatusInOrder, // Esposto la nuova funzione per aggiornare lo stato del singolo articolo
-    cancelOrdineAcquisto, // Rinominate
-    deleteOrdineAcquistoPermanently, // Nuova funzione
+    updateOrdineAcquistoStatus,
+    updateArticleStatusInOrder,
+    cancelOrdineAcquisto,
+    deleteOrdineAcquistoPermanently,
     loadOrdiniAcquisto,
   };
 }
