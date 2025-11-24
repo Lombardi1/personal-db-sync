@@ -85,7 +85,7 @@ export function Header({
       <div className="max-w-[1400px] mx-auto px-3 sm:px-5">
         <div className="flex items-center justify-between flex-wrap gap-y-2">
           <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3">
-            <img src={logoFSC} alt="AG Lombardi Logo" className="h-12 w-12 sm:h-16 sm:w-16 object-contain" /> {/* TEMPORARY: Using logoFSC for testing */}
+            <img src={logoAG} alt="AG Lombardi Logo" className="h-12 w-12 sm:h-16 sm:w-16 object-contain" /> {/* TEMPORARY: Using logoFSC for testing */}
             <span className="hidden sm:inline">{title}</span>
             <span className="inline sm:hidden text-lg">AGL</span>
           </h1>
