@@ -26,7 +26,7 @@ export function useAuth() {
     try {
       console.log('🔍 Tentativo login per username:', username);
       
-      // Chiama la funzione PostgreSQL per recuperare in modo sicuro l'hash della password e l'ID utente
+      // Chiama la funzione PostgreSQL per recuperare in modo sicuro l'hash della password, l'ID utente e il ruolo
       const { data: authData, error: authError } = await supabase.rpc('get_user_auth_data', { p_username: username });
 
       console.log('📊 Risultato funzione SQL get_user_auth_data:', { authData, authError });
@@ -53,28 +53,12 @@ export function useAuth() {
         throw new Error('Username o password non corretti');
       }
 
-      console.log('✅ Password corretta, recupero ruolo...');
-
-      // Recupera il ruolo dell'utente dalla tabella user_roles, usando l'ID di app_users
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userRecord.user_id) // Ora user_id fa riferimento a app_users.id
-        .single();
-
-      console.log('📊 Risultato query ruolo:', { roleData, roleError });
-
-      if (roleError || !roleData) {
-        console.log('❌ Ruolo non trovato');
-        throw new Error('Ruolo utente non trovato');
-      }
-
-      console.log('✅ Ruolo trovato:', roleData.role);
+      console.log('✅ Password corretta, ruolo recuperato:', userRecord.user_role);
 
       const loggedUser: User = {
         id: userRecord.user_id, // Usa l'ID restituito dalla funzione SQL
         username: userRecord.username,
-        role: roleData.role as 'stampa' | 'amministratore' // Cast al nuovo tipo di ruolo
+        role: userRecord.user_role as 'stampa' | 'amministratore' // Recupera il ruolo direttamente dal risultato RPC
       };
 
       setUser(loggedUser);
