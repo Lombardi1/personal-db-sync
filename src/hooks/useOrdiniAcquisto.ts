@@ -96,7 +96,7 @@ export function useOrdiniAcquisto() {
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
       }
     }
-  }, []); // Dependencies are empty, as it only uses supabase and toast (which are stable)
+  }, []);
 
   // 2. Define loadOrdiniAcquisto early, as many functions call it.
   // It does not directly call syncArticleInventoryStatus or updateArticleStatusInOrder,
@@ -158,21 +158,25 @@ export function useOrdiniAcquisto() {
     } finally {
       setLoading(false);
     }
-  }, []); // Empty dependency array is fine for loadOrdiniAcquisto itself.
+  }, []);
 
   // 3. Define updateArticleStatusInOrder, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
   const updateArticleStatusInOrder = useCallback(async (orderNumeroOrdine: string, articleIdentifier: string, newArticleStatus: ArticoloOrdineAcquisto['stato']) => {
+    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Inizio per OA: '${orderNumeroOrdine}', Articolo: '${articleIdentifier}', Nuovo stato: '${newArticleStatus}'`);
+
     // 1. Fetch the order
     const { data: ordineAcquistoToUpdate, error: fetchError } = await supabase
       .from('ordini_acquisto')
       .select(`*, fornitori ( nome, tipo_fornitore )`)
-      .eq('numero_ordine', orderNumeroOrdine)
+      .eq('numero_ordine', orderNumeroOrdine.trim()) // Added .trim()
       .single();
 
     if (fetchError || !ordineAcquistoToUpdate) {
-      toast.error(`Errore recupero ordine d'acquisto per aggiornamento articolo.`);
+      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore recupero ordine d'acquisto '${orderNumeroOrdine.trim()}':`, fetchError);
+      toast.error(`Errore recupero ordine d'acquisto per aggiornamento articolo: ${fetchError?.message || 'Ordine non trovato o errore sconosciuto.'}`);
       return { success: false, error: fetchError };
     }
+    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Ordine d'acquisto trovato:`, ordineAcquistoToUpdate);
 
     // 2. Find and update the specific article
     let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
@@ -248,7 +252,7 @@ export function useOrdiniAcquisto() {
 
     await loadOrdiniAcquisto();
     return { success: true, data: updatedOrdine };
-  }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]); // Dependencies are correct here.
+  }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]);
 
   // 4. Define updateOrdineAcquistoStatus, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
   const updateOrdineAcquistoStatus = useCallback(async (id: string, newStatus: OrdineAcquisto['stato']) => {
