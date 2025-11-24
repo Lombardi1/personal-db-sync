@@ -25,7 +25,7 @@ export function SummaryHeader() {
       <div className="max-w-[1400px] mx-auto px-3 sm:px-5">
         <div className="flex items-center justify-between flex-wrap gap-y-2">
           <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3">
-            <img src={logoAG} alt="AG Lombardi Logo" className="h-9 w-9 sm:h-11 sm:w-11 object-contain" />
+            <img src={logoAG} alt="AG Lombardi Logo" className="h-12 w-12 sm:h-16 sm:w-16 object-contain" />
             <span className="hidden sm:inline">Gestionale AGLombardi</span>
             <span className="inline sm:hidden text-lg">AGL</span>
           </h1>
