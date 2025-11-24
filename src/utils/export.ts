@@ -267,9 +267,6 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
       }
     }
 
-    console.log('[esportaTabellaPDF] Dati finali per autoTable. Head:', head, 'Body (primi 5 elementi):', body.slice(0, 5));
-    console.log('[esportaTabellaPDF] Calling autoTable...');
-
     autoTable(doc, {
       startY: y,
       head: head,
@@ -296,11 +293,9 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
         doc.text(`Pagina ${data.pageNumber}`, doc.internal.pageSize.width - 10, doc.internal.pageSize.height - 10, { align: 'right' });
       }
     });
-    console.log('[esportaTabellaPDF] autoTable call finished.');
 
     doc.save(finalFileName);
     toast.success('✅ File PDF esportato con successo!');
-    console.log('[esportaTabellaPDF] Esportazione PDF completata con successo.');
   } catch (error: any) {
     console.error('Errore esportazione PDF:', error);
     toast.error(`Errore durante l'esportazione PDF: ${error.message || 'Errore sconosciuto'}`);
@@ -478,7 +473,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       if (isCartone) {
         articoloColumnText = article.codice_ctn || '';
         descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${article.grammatura || ''} G.F.TO ${formatFormato(article.formato || '')} NR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
-        if (article.fsc) descrizioneColumnText += `\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`; // Modificato qui
+        if (article.fsc) descrizioneColumnText += `\n\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`; // Modificato qui
         if (article.alimentare) descrizioneColumnText += ' (ALIMENTARE)'; // Aggiunto
       } else {
         articoloColumnText = article.descrizione || '';
@@ -592,7 +587,6 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       doc.save(finalFileName);
       toast.success('✅ File PDF Ordine d\'Acquisto esportato con successo!');
     }
-    console.log('[exportOrdineAcquistoPDF] Esportazione PDF completata con successo.');
   } catch (error: any) {
     console.error('Errore esportazione PDF Ordine d\'Acquisto:', error);
     toast.error(`Errore durante l'esportazione PDF Ordine d'Acquisto: ${error.message || 'Errore sconosciuto'}`);
