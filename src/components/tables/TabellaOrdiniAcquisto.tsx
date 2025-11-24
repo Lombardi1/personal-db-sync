@@ -240,8 +240,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       let orderToProcess: OrdineAcquisto = {
         ...fetchedOrderData,
-        fornitore_nome: fetchedOrderData.fornitori?.nome || 'N/A',
-        fornitore_tipo: fetchedOrderData.fornitori?.tipo_fornitore || 'N/A',
+        fornitore_nome: fetchedOrderData.fornitore_nome || 'N/A',
+        fornitore_tipo: fetchedOrderData.fornitore_tipo || 'N/A',
         articoli: (fetchedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
       };
 
@@ -289,7 +289,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
         orderToProcess = {
           ...updatedOrderData,
           fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
-          fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
+          fornitore_tipo: updatedOrderData.fornitori?.tipo_fornitore || 'N/A',
           articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
         };
       }
@@ -434,17 +434,17 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                       <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
                         {row.isCartoneFornitore ? (
                           <>
-                            {row.codice_ctn && <div className="font-bold mb-1"><span className="codice">{row.codice_ctn}</span></div>}
-                            {row.tipologia_cartone && <div className="mb-1 font-bold">Tipologia: {row.tipologia_cartone}</div>}
-                            {row.formato && <div className="mb-1 font-bold">Formato: {formatFormato(row.formato)}</div>}
-                            {row.grammatura && <div className="mb-1 font-bold">Grammatura: {formatGrammatura(row.grammatura)}</div>}
-                            {row.numero_fogli !== undefined && <div className="mb-1 font-bold">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>} {/* Display numero_fogli */}
-                            {row.cliente && <div className="mb-1 font-bold">Cliente: {row.cliente}</div>}
-                            {row.lavoro && <div className="mb-1 font-bold">Lavoro: {row.lavoro}</div>}
+                            {row.codice_ctn && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.codice_ctn}</span></div>}
+                            {row.tipologia_cartone && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Tipologia: {row.tipologia_cartone}</div>}
+                            {row.formato && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Formato: {formatFormato(row.formato)}</div>}
+                            {row.grammatura && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Grammatura: {formatGrammatura(row.grammatura)}</div>}
+                            {row.numero_fogli !== undefined && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>} {/* Display numero_fogli */}
+                            {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
+                            {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
                           </>
                         ) : (
                           <>
-                            <div className="font-bold">{row.descrizione || 'N/A'}</div>
+                            <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione || 'N/A'}</div>
                           </>
                         )}
                       </td>
