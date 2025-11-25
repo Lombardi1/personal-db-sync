@@ -93,33 +93,6 @@ export function OrdineAcquistoArticoloFormRow({
   const currentAlimentare = currentArticle?.alimentare; // Nuovo campo
   const currentRifCommessaFsc = currentArticle?.rif_commessa_fsc; // Nuovo campo
 
-  // State for controlled input values to retain formatting
-  const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(
-    currentArticle?.prezzo_unitario !== undefined && currentArticle.prezzo_unitario !== null
-      ? currentArticle.prezzo_unitario.toFixed(3).replace('.', ',')
-      : ''
-  );
-  const [displayQuantita, setDisplayQuantita] = React.useState<string>(
-    !isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null
-      ? currentArticle.quantita.toFixed(3).replace('.', ',')
-      : ''
-  );
-
-  // Update display states when form values change (e.g., initial load, external update)
-  React.useEffect(() => {
-    if (currentArticle?.prezzo_unitario !== undefined && currentArticle.prezzo_unitario !== null) {
-      setDisplayPrezzoUnitario(currentArticle.prezzo_unitario.toFixed(3).replace('.', ','));
-    } else {
-      setDisplayPrezzoUnitario('');
-    }
-    if (!isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null) {
-      setDisplayQuantita(currentArticle.quantita.toFixed(3).replace('.', ','));
-    } else if (!isCartoneFornitore) {
-      setDisplayQuantita('');
-    }
-  }, [currentArticle?.prezzo_unitario, currentArticle?.quantita, isCartoneFornitore]);
-
-
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura
   const calculatedQuantitaKg = React.useMemo(() => {
     if (!isCartoneFornitore) return 0; // Only for cartone suppliers
@@ -268,30 +241,17 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="text" // Changed to text
-                      value={displayPrezzoUnitario} // Controlled value
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue); // Update display immediately
-                        const numericValue = parseFloat(rawValue.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
-                        } else {
-                          setDisplayPrezzoUnitario('');
-                        }
-                      }}
-                      placeholder="0,000" // Updated placeholder
-                      min="0" // min attribute is still useful for validation, even with type="text"
+                      type="number"
+                      step="0.001" // Allow 3 decimal places
+                      {...register(`articoli.${index}.prezzo_unitario`, { valueAsNumber: true })}
+                      placeholder="0.000" // Reflect 3 decimals
+                      min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
+                      onChange={(e) => {
+                        const value = e.target.value.replace(',', '.'); // Replace comma with dot
+                        setValue(`articoli.${index}.prezzo_unitario`, parseFloat(value), { shouldValidate: true });
+                      }}
                     />
                     <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
                       €/kg
@@ -458,30 +418,17 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
                     id={`articoli.${index}.quantita`}
-                    type="text" // Changed to text
-                    value={displayQuantita} // Controlled value
-                    onChange={(e) => {
-                      const rawValue = e.target.value;
-                      setDisplayQuantita(rawValue); // Update display immediately
-                      const numericValue = parseFloat(rawValue.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
-                      } else {
-                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
-                      } else {
-                        setDisplayQuantita('');
-                      }
-                    }}
-                    placeholder="0,000" // Updated placeholder
-                    min="0"
+                    type="number"
+                    {...register(`articoli.${index}.quantita`, { valueAsNumber: true })}
+                    placeholder="0"
+                    min="0.001" // Allow 3 decimals
+                    step="0.001" // Allow 3 decimals
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(',', '.'); // Replace comma with dot
+                      setValue(`articoli.${index}.quantita`, parseFloat(value), { shouldValidate: true });
+                    }}
                   />
                   {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
                 </div>
@@ -490,30 +437,17 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="text" // Changed to text
-                      value={displayPrezzoUnitario} // Controlled value
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue); // Update display immediately
-                        const numericValue = parseFloat(rawValue.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
-                        } else {
-                          setDisplayPrezzoUnitario('');
-                        }
-                      }}
-                      placeholder="0,000" // Updated placeholder
+                      type="number"
+                      step="0.001" // Allow 3 decimal places
+                      {...register(`articoli.${index}.prezzo_unitario`, { valueAsNumber: true })}
+                      placeholder="0.000" // Reflect 3 decimals
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
+                      onChange={(e) => {
+                        const value = e.target.value.replace(',', '.'); // Replace comma with dot
+                        setValue(`articoli.${index}.prezzo_unitario`, parseFloat(value), { shouldValidate: true });
+                      }}
                     />
                     <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
                       €/unità

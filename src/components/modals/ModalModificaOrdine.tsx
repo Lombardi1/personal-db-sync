@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Cartone } from '@/types';
+import { formatFormato, formatGrammatura } from '@/utils/formatters';
 import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
-import { formatFormato, formatGrammatura } from '@/utils/formatters'; // Importa formatFormato e formatGrammatura
 
 interface ModalModificaOrdineProps {
   ordine: Cartone;
@@ -20,24 +20,17 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
     cliente: ordine.cliente,
     lavoro: ordine.lavoro,
     magazzino: ordine.magazzino,
-    prezzo: ordine.prezzo !== undefined && ordine.prezzo !== null ? ordine.prezzo.toFixed(3).replace('.', ',') : '', // Modificato: usa toFixed(3) e replace per il valore iniziale, o stringa vuota
+    prezzo: ordine.prezzo.toFixed(3), // Modificato: usa toFixed(3) per il valore iniziale
     data_consegna: ordine.data_consegna,
     note: ordine.note || ''
   });
 
   const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleBlur = (field: string, value: any) => {
     if (field === 'prezzo') {
-      const numericValue = parseFloat(String(value).replace(',', '.'));
-      if (!isNaN(numericValue)) {
-        setFormData(prev => ({ ...prev, [field]: numericValue.toFixed(3).replace('.', ',') }));
-      } else {
-        setFormData(prev => ({ ...prev, [field]: '' }));
-      }
+      // Replace comma with dot for internal numeric handling
+      value = String(value).replace(',', '.');
     }
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,7 +46,7 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
       magazzino: formData.magazzino.trim(),
-      prezzo: parseFloat(formData.prezzo.replace(',', '.')), // Parse after comma replacement
+      prezzo: parseFloat(formData.prezzo), // Parse after comma replacement
       data_consegna: formData.data_consegna,
       note: formData.note.trim() || '-'
     };
@@ -200,12 +193,12 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
                 <i className="fas fa-euro-sign mr-1"></i> Prezzo €/kg
               </label>
               <input
-                type="text" // Changed to text
+                type="number"
+                step="0.001" // Allow 3 decimal places
                 value={formData.prezzo}
                 onChange={(e) => handleChange('prezzo', e.target.value)}
-                onBlur={(e) => handleBlur('prezzo', e.target.value)} // Added onBlur
                 className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-                placeholder="es. 1,850" // Reflect 3 decimals, with comma
+                placeholder="es. 1.850" // Reflect 3 decimals
                 required
               />
             </div>
