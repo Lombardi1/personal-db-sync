@@ -273,7 +273,7 @@ export function OrdineAcquistoArticoloFormRow({
                           setDisplayPrezzoUnitario('');
                         }
                       }}
-                      placeholder="0,000" // Updated placeholder
+                      placeholder="Es. 0,870" // Updated placeholder
                       min="0" // min attribute is still useful for validation, even with type="text"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -463,7 +463,7 @@ export function OrdineAcquistoArticoloFormRow({
                         setDisplayQuantita('');
                       }
                     }}
-                    placeholder="0,000" // Updated placeholder
+                    placeholder="Es. 0,870" // Updated placeholder
                     min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
@@ -495,7 +495,7 @@ export function OrdineAcquistoArticoloFormRow({
                           setDisplayPrezzoUnitario('');
                         }
                       }}
-                      placeholder="0,000" // Updated placeholder
+                      placeholder="Es. 0,870" // Updated placeholder
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"

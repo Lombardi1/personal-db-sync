@@ -246,8 +246,7 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
               onChange={(e) => handleChange('prezzo', e.target.value)}
               onBlur={(e) => handleBlur('prezzo', e.target.value)} // Added onBlur
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-              placeholder="es. 1,850" // Reflect 3 decimals
-              min="0"
+              placeholder="Es. 0,870" // Updated placeholder
               required
             />
           </div>
