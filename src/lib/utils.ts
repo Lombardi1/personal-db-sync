@@ -38,12 +38,13 @@ export function normalizeAnagraficaData(data: AnagraficaBase | Fornitore | Clien
     ...(data.created_at && { created_at: data.created_at }),
   };
   
-  // Se è un fornitore, aggiunge tipo_fornitore e considera_iva
+  // Se è un fornitore, aggiunge tipo_fornitore, considera_iva e banca
   if ('tipo_fornitore' in data) {
     return {
       ...baseData,
       tipo_fornitore: (data as Fornitore).tipo_fornitore || '',
-      considera_iva: (data as Fornitore).considera_iva || false // NUOVO
+      considera_iva: (data as Fornitore).considera_iva || false,
+      banca: (data as Fornitore).banca || '' // NUOVO: Aggiunto il campo banca
     } as Fornitore;
   }
   
