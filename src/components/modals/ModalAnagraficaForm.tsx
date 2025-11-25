@@ -100,6 +100,7 @@ export function ModalAnagraficaForm({
     reset,
     setValue,
     watch,
+    getValues, // Aggiunto getValues qui
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(anagraficaSchema),
@@ -144,12 +145,12 @@ export function ModalAnagraficaForm({
         } else if (type === 'fornitore') {
           setValue('banca' as any, '');
         }
-        console.log('[ModalAnagraficaForm] After reset, form values:', methods.getValues()); // LOG AGGIUNTO
+        console.log('[ModalAnagraficaForm] After reset, form values:', getValues()); // Corretto: usa getValues()
         console.log('[ModalAnagraficaForm] After reset, watchedBanca:', watchedBanca); // LOG AGGIUNTO
       };
       initializeForm();
     }
-  }, [isOpen, initialData, normalizedInitialData, reset, setValue, type, methods]); // Aggiunto methods alle dipendenze
+  }, [isOpen, initialData, normalizedInitialData, reset, setValue, type, getValues]); // Aggiunto getValues alle dipendenze
 
   const handleFormSubmit = async (data: FormData) => {
     try {
