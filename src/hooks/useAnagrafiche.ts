@@ -145,7 +145,7 @@ export function useAnagrafiche() {
     try {
       const [clientiRes, fornitoriRes] = await Promise.all([
         supabase.from('clienti').select('*, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true }),
-        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento, considera_iva, banca').order('nome', { ascending: true }) // Aggiunto 'banca'
+        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento, considera_iva, banca').order('codice_anagrafica', { ascending: false }) // Modificato: ordinamento per codice_anagrafica decrescente
       ]);
 
       console.log('useAnagrafiche: Risposta Supabase per clienti:', clientiRes.data?.length, 'items, Error:', clientiRes.error);

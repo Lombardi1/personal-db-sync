@@ -18,6 +18,12 @@ interface FiltersProps {
     stato?: string; // Aggiunto per ordini d'acquisto
     data_ordine_filter?: string; // Nuovo filtro: data_ordine_filter
     fornitore_tipo?: string; // Nuovo filtro
+    // Nuovi filtri per anagrafiche
+    nome?: string;
+    citta?: string;
+    partita_iva?: string;
+    email?: string;
+    telefono?: string;
   };
   onFilter: (filtri: any) => void;
   onReset: () => void;
@@ -32,6 +38,10 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
     const newFiltri = { ...filtri, [field]: value };
     onFilter(newFiltri);
   };
+
+  const isAnagraficaSection = sezione === 'clienti' || sezione === 'fornitori';
+  const isCartoniSection = !isAnagraficaSection && sezione !== 'ordini-acquisto';
+  const isOrdiniAcquistoSection = sezione === 'ordini-acquisto';
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-4 sm:mb-5">
@@ -74,7 +84,8 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {sezione !== 'ordini-acquisto' && (
+            {/* Filtri per sezioni Cartoni (Giacenza, Ordini, Esauriti, Carico) */}
+            {isCartoniSection && (
               <>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
@@ -197,7 +208,8 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
               </div>
             )}
 
-            {sezione === 'ordini-acquisto' && (
+            {/* Filtri per Ordini d'Acquisto */}
+            {isOrdiniAcquistoSection && (
               <>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
@@ -257,8 +269,8 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     <i className="fas fa-box-open"></i> Tipologia Fornitore
                   </label>
                   <select
-                    value={filtri.fornitore_tipo || ''}
-                    onChange={(e) => handleChange('fornitore_tipo', e.target.value)}
+                    value={filtri.tipo_fornitore || ''}
+                    onChange={(e) => handleChange('tipo_fornitore', e.target.value)}
                     className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
                   >
                     <option value="">Tutte</option>
@@ -268,6 +280,102 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     <option value="Altro">Altro</option>
                   </select>
                 </div>
+              </>
+            )}
+
+            {/* Nuovi filtri per Anagrafiche (Clienti e Fornitori) */}
+            {isAnagraficaSection && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-barcode"></i> Codice
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.codice || ''}
+                    onChange={(e) => handleChange('codice', e.target.value)}
+                    placeholder="CLI-001 / FOR-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-building"></i> Nome
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.nome || ''}
+                    onChange={(e) => handleChange('nome', e.target.value)}
+                    placeholder="Nome Azienda"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-city"></i> Città
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.citta || ''}
+                    onChange={(e) => handleChange('citta', e.target.value)}
+                    placeholder="Città"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-id-card"></i> P.IVA / Cod. Fiscale
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.partita_iva || ''}
+                    onChange={(e) => handleChange('partita_iva', e.target.value)}
+                    placeholder="P.IVA / Cod. Fiscale"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-envelope"></i> Email
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.email || ''}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    placeholder="Email"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-phone"></i> Telefono
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.telefono || ''}
+                    onChange={(e) => handleChange('telefono', e.target.value)}
+                    placeholder="Telefono"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                  />
+                </div>
+                {sezione === 'fornitori' && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                      <i className="fas fa-box-open"></i> Tipologia Fornitore
+                    </label>
+                    <select
+                      value={filtri.tipo_fornitore || ''}
+                      onChange={(e) => handleChange('tipo_fornitore', e.target.value)}
+                      className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                    >
+                      <option value="">Tutte</option>
+                      <option value="Cartone">Cartone</option>
+                      <option value="Inchiostro">Inchiostro</option>
+                      <option value="Colla">Colla</option>
+                      <option value="Altro">Altro</option>
+                    </select>
+                  </div>
+                )}
               </>
             )}
           </div>

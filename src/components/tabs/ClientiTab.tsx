@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Cliente, AnagraficaBase } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Filters } from '@/components/Filters'; // Importa Filters
 
 interface ClientiTabProps {
   clienti: Cliente[];
@@ -35,6 +36,54 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [clienteToDelete, setClienteToDelete] = useState<Cliente | null>(null);
+
+  const [filtri, setFiltri] = useState({
+    codice: '',
+    nome: '',
+    citta: '',
+    partita_iva: '',
+    email: '',
+    telefono: '',
+  });
+  const [clientiFiltered, setClientiFiltered] = useState<Cliente[]>([]);
+
+  useEffect(() => {
+    handleFilter(filtri);
+  }, [clienti]); // Dipendenza aggiunta: clienti
+
+  const handleFilter = (newFiltri: typeof filtri) => {
+    setFiltri(newFiltri);
+    let filtered = clienti;
+
+    Object.entries(newFiltri).forEach(([key, value]) => {
+      if (value) {
+        filtered = filtered.filter(c => {
+          const field = c[key as keyof Cliente];
+          // Gestione speciale per partita_iva che può essere anche codice_fiscale
+          if (key === 'partita_iva') {
+            return (String(c.partita_iva || '').toLowerCase().includes(value.toLowerCase()) ||
+                    String(c.codice_fiscale || '').toLowerCase().includes(value.toLowerCase()));
+          }
+          return String(field || '').toLowerCase().includes(value.toLowerCase());
+        });
+      }
+    });
+
+    setClientiFiltered(filtered);
+  };
+
+  const resetFiltri = () => {
+    const emptyFiltri = {
+      codice: '',
+      nome: '',
+      citta: '',
+      partita_iva: '',
+      email: '',
+      telefono: '',
+    };
+    setFiltri(emptyFiltri);
+    handleFilter(emptyFiltri); // Applica i filtri vuoti per mostrare tutti i clienti
+  };
 
   const handleAddClick = () => {
     setEditingCliente(null);
@@ -82,6 +131,14 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
         Gestisci l'anagrafica dei clienti.
       </p>
 
+      <Filters 
+        filtri={filtri} 
+        onFilter={handleFilter} 
+        onReset={resetFiltri}
+        matchCount={clientiFiltered.length}
+        sezione="clienti"
+      />
+
       {clienti.length === 0 ? (
         <p className="text-center text-sm sm:text-base text-[hsl(var(--muted-foreground))] py-6 sm:py-8">
           Nessun cliente registrato. Clicca "Nuovo Cliente" per aggiungerne uno.
@@ -103,7 +160,7 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clienti.map((cliente) => (
+              {clientiFiltered.map((cliente) => (
                 <TableRow key={cliente.id}>
                   <TableCell className="font-medium text-xs sm:text-sm">{cliente.codice_anagrafica || '-'}</TableCell>
                   <TableCell className="font-medium text-xs sm:text-sm">{cliente.nome}</TableCell>

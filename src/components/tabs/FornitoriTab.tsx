@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Fornitore, AnagraficaBase, AziendaInfo } from '@/types'; // Importa AziendaInfo
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Filters } from '@/components/Filters'; // Importa Filters
 
 interface FornitoriTabProps {
   fornitori: Fornitore[];
@@ -36,6 +37,56 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
   const [editingFornitore, setEditingFornitore] = useState<Fornitore | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [fornitoreToDelete, setFornitoreToDelete] = useState<Fornitore | null>(null);
+
+  const [filtri, setFiltri] = useState({
+    codice: '',
+    nome: '',
+    tipo_fornitore: '',
+    citta: '',
+    partita_iva: '',
+    email: '',
+    telefono: '',
+  });
+  const [fornitoriFiltered, setFornitoriFiltered] = useState<Fornitore[]>([]);
+
+  useEffect(() => {
+    handleFilter(filtri);
+  }, [fornitori]); // Dipendenza aggiunta: fornitori
+
+  const handleFilter = (newFiltri: typeof filtri) => {
+    setFiltri(newFiltri);
+    let filtered = fornitori;
+
+    Object.entries(newFiltri).forEach(([key, value]) => {
+      if (value) {
+        filtered = filtered.filter(f => {
+          const field = f[key as keyof Fornitore];
+          // Gestione speciale per partita_iva che può essere anche codice_fiscale
+          if (key === 'partita_iva') {
+            return (String(f.partita_iva || '').toLowerCase().includes(value.toLowerCase()) ||
+                    String(f.codice_fiscale || '').toLowerCase().includes(value.toLowerCase()));
+          }
+          return String(field || '').toLowerCase().includes(value.toLowerCase());
+        });
+      }
+    });
+
+    setFornitoriFiltered(filtered);
+  };
+
+  const resetFiltri = () => {
+    const emptyFiltri = {
+      codice: '',
+      nome: '',
+      tipo_fornitore: '',
+      citta: '',
+      partita_iva: '',
+      email: '',
+      telefono: '',
+    };
+    setFiltri(emptyFiltri);
+    handleFilter(emptyFiltri); // Applica i filtri vuoti per mostrare tutti i fornitori
+  };
 
   const handleAddClick = () => {
     setEditingFornitore(null);
@@ -91,6 +142,14 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
         Gestisci l'anagrafica dei fornitori.
       </p>
 
+      <Filters 
+        filtri={filtri} 
+        onFilter={handleFilter} 
+        onReset={resetFiltri}
+        matchCount={fornitoriFiltered.length}
+        sezione="fornitori"
+      />
+
       {fornitori.length === 0 ? (
         <p className="text-center text-sm sm:text-base text-[hsl(var(--muted-foreground))] py-6 sm:py-8">
           Nessun fornitore registrato. Clicca "Nuovo Fornitore" per aggiungerne uno.
@@ -114,7 +173,7 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
               </TableRow>
             </TableHeader>
             <TableBody>
-              {fornitori.map((fornitore) => (
+              {fornitoriFiltered.map((fornitore) => (
                 <TableRow key={fornitore.id}>
                   <TableCell className="font-medium text-xs sm:text-sm">{fornitore.codice_anagrafica || '-'}</TableCell>
                   <TableCell className="font-medium text-xs sm:text-sm">{fornitore.nome}</TableCell>
