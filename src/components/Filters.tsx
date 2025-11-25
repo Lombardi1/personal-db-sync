@@ -286,18 +286,7 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
             {/* Nuovi filtri per Anagrafiche (Clienti e Fornitori) */}
             {isAnagraficaSection && (
               <>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
-                    <i className="fas fa-barcode"></i> Codice
-                  </label>
-                  <input
-                    type="text"
-                    value={filtri.codice || ''}
-                    onChange={(e) => handleChange('codice', e.target.value)}
-                    placeholder="CLI-001 / FOR-001"
-                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-                  />
-                </div>
+                {/* Rimosso il filtro per codice */}
                 <div className="flex flex-col gap-1">
                   <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
                     <i className="fas fa-building"></i> Nome
