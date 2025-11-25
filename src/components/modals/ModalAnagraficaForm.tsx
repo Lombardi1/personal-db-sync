@@ -141,16 +141,16 @@ export function ModalAnagraficaForm({
         }
         // Imposta il valore di banca per i fornitori
         if (type === 'fornitore' && 'banca' in defaultValues) {
-          setValue('banca' as any, defaultValues.banca || '');
+          setValue('banca' as any, defaultValues.banca || '', { shouldValidate: true }); // Imposta esplicitamente il valore
         } else if (type === 'fornitore') {
-          setValue('banca' as any, '');
+          setValue('banca' as any, '', { shouldValidate: true }); // Imposta a stringa vuota se non presente
         }
         console.log('[ModalAnagraficaForm] After reset, form values:', getValues()); // Corretto: usa getValues()
         console.log('[ModalAnagraficaForm] After reset, watchedBanca:', watchedBanca); // LOG AGGIUNTO
       };
       initializeForm();
     }
-  }, [isOpen, initialData, normalizedInitialData, reset, setValue, type, getValues]); // Aggiunto getValues alle dipendenze
+  }, [isOpen, initialData, normalizedInitialData, reset, setValue, type, getValues, watchedBanca]); // Aggiunto watchedBanca alle dipendenze
 
   const handleFormSubmit = async (data: FormData) => {
     try {
