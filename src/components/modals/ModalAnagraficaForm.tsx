@@ -73,12 +73,16 @@ export function ModalAnagraficaForm({
 }: ModalAnagraficaFormProps) {
   const { aziendaInfo } = useAziendaInfo(); // Recupera le info azienda
   const bancheDisponibili = React.useMemo(() => {
+    let banks = new Set<string>();
     if (aziendaInfo?.banche) {
-      // Assumiamo che le banche siano una stringa separata da virgole o a capo
-      return aziendaInfo.banche.split(/[\n,;]+/).map(b => b.trim()).filter(b => b.length > 0);
+      aziendaInfo.banche.split(/[\n,;]+/).map(b => b.trim()).filter(b => b.length > 0).forEach(b => banks.add(b));
     }
-    return [];
-  }, [aziendaInfo?.banche]);
+    // Add the current supplier's bank if it's not already in the list
+    if (initialData?.banca && initialData.banca.trim() !== '' && !banks.has(initialData.banca.trim())) {
+      banks.add(initialData.banca.trim());
+    }
+    return Array.from(banks).sort(); // Sort for consistent order
+  }, [aziendaInfo?.banche, initialData?.banca]);
 
   const normalizedInitialData = React.useMemo(() => normalizeAnagraficaData(initialData), [initialData]);
 
