@@ -20,7 +20,7 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
     cliente: ordine.cliente,
     lavoro: ordine.lavoro,
     magazzino: ordine.magazzino,
-    prezzo: ordine.prezzo !== undefined && ordine.prezzo !== null ? ordine.prezzo.toFixed(3).replace('.', ',') : '', // Modificato: usa toFixed(3) e replace per il valore iniziale, o stringa vuota
+    prezzo: ordine.prezzo !== undefined && ordine.prezzo !== null && ordine.prezzo !== 0 ? ordine.prezzo.toFixed(3).replace('.', ',') : '', // Modificato: non mostra 0,000
     data_consegna: ordine.data_consegna,
     note: ordine.note || ''
   });
@@ -32,10 +32,10 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
   const handleBlur = (field: string, value: any) => {
     if (field === 'prezzo') {
       const numericValue = parseFloat(String(value).replace(',', '.'));
-      if (!isNaN(numericValue)) {
+      if (!isNaN(numericValue) && numericValue !== 0) { // Non formatta se è 0
         setFormData(prev => ({ ...prev, [field]: numericValue.toFixed(3).replace('.', ',') }));
       } else {
-        setFormData(prev => ({ ...prev, [field]: '' }));
+        setFormData(prev => ({ ...prev, [field]: '' })); // Imposta a vuoto se NaN o 0
       }
     }
   };

@@ -42,10 +42,10 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
   const handleBlur = (field: string, value: any) => {
     if (field === 'prezzo') {
       const numericValue = parseFloat(String(value).replace(',', '.'));
-      if (!isNaN(numericValue)) {
+      if (!isNaN(numericValue) && numericValue !== 0) { // Non formatta se è 0
         setFormData(prev => ({ ...prev, [field]: numericValue.toFixed(3).replace('.', ',') }));
       } else {
-        setFormData(prev => ({ ...prev, [field]: '' }));
+        setFormData(prev => ({ ...prev, [field]: '' })); // Imposta a vuoto se NaN o 0
       }
     }
   };

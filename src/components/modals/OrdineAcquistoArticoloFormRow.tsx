@@ -95,15 +95,30 @@ export function OrdineAcquistoArticoloFormRow({
 
   // State for controlled input values to retain formatting
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => 
-    currentArticle?.prezzo_unitario !== undefined && currentArticle.prezzo_unitario !== null
+    currentArticle?.prezzo_unitario !== undefined && currentArticle.prezzo_unitario !== null && currentArticle.prezzo_unitario !== 0
       ? currentArticle.prezzo_unitario.toFixed(3).replace('.', ',')
       : ''
   );
   const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => 
-    !isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null
+    !isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null && currentArticle.quantita !== 0
       ? currentArticle.quantita.toFixed(3).replace('.', ',')
       : ''
   );
+
+  // Update display states when form values change (e.g., initial load, external update)
+  React.useEffect(() => {
+    if (currentArticle?.prezzo_unitario !== undefined && currentArticle.prezzo_unitario !== null && currentArticle.prezzo_unitario !== 0) {
+      setDisplayPrezzoUnitario(currentArticle.prezzo_unitario.toFixed(3).replace('.', ','));
+    } else {
+      setDisplayPrezzoUnitario('');
+    }
+    if (!isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null && currentArticle.quantita !== 0) {
+      setDisplayQuantita(currentArticle.quantita.toFixed(3).replace('.', ','));
+    } else if (!isCartoneFornitore) {
+      setDisplayQuantita('');
+    }
+  }, [currentArticle?.prezzo_unitario, currentArticle?.quantita, isCartoneFornitore]);
+
 
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura
   const calculatedQuantitaKg = React.useMemo(() => {
@@ -267,7 +282,7 @@ export function OrdineAcquistoArticoloFormRow({
                       }}
                       onBlur={(e) => {
                         const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
+                        if (!isNaN(numericValue) && numericValue !== 0) { // Non formatta se è 0
                           setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
                         } else {
                           setDisplayPrezzoUnitario('');
@@ -457,7 +472,7 @@ export function OrdineAcquistoArticoloFormRow({
                     }}
                     onBlur={(e) => {
                       const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
+                      if (!isNaN(numericValue) && numericValue !== 0) { // Non formatta se è 0
                         setDisplayQuantita(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
                       } else {
                         setDisplayQuantita('');
@@ -489,7 +504,7 @@ export function OrdineAcquistoArticoloFormRow({
                       }}
                       onBlur={(e) => {
                         const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
+                        if (!isNaN(numericValue) && numericValue !== 0) { // Non formatta se è 0
                           setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
                         } else {
                           setDisplayPrezzoUnitario('');
