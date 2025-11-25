@@ -90,7 +90,7 @@ export function ModalAnagraficaForm({
 
   const normalizedInitialData = React.useMemo(() => {
     const normalized = normalizeAnagraficaData(initialData);
-    console.log('[ModalAnagraficaForm] normalizedInitialData:', normalized); // LOG AGGIUNTO
+    console.log('[ModalAnagraficaForm] normalizedInitialData:', JSON.stringify(normalized, null, 2)); // LOG AGGIUNTO: stringify per vedere il contenuto
     return normalized;
   }, [initialData]);
 
@@ -127,30 +127,15 @@ export function ModalAnagraficaForm({
             defaultValues = { ...defaultValues, codice_anagrafica: generateNextFornitoreCode(), considera_iva: false, banca: '' }; // Default banca vuota
           }
         }
-        reset(defaultValues);
-        if (type === 'fornitore' && 'tipo_fornitore' in defaultValues) {
-          setValue('tipo_fornitore' as any, defaultValues.tipo_fornitore);
-        } else if (type === 'fornitore') {
-          setValue('tipo_fornitore' as any, '');
-        }
-        // Imposta il valore di considera_iva per entrambi i tipi
-        if ('considera_iva' in defaultValues) {
-          setValue('considera_iva' as any, defaultValues.considera_iva);
-        } else {
-          setValue('considera_iva' as any, false);
-        }
-        // Imposta il valore di banca per i fornitori
-        if (type === 'fornitore' && 'banca' in defaultValues) {
-          setValue('banca' as any, defaultValues.banca || '', { shouldValidate: true }); // Imposta esplicitamente il valore
-        } else if (type === 'fornitore') {
-          setValue('banca' as any, '', { shouldValidate: true }); // Imposta a stringa vuota se non presente
-        }
-        console.log('[ModalAnagraficaForm] After reset, form values:', getValues()); // Corretto: usa getValues()
-        console.log('[ModalAnagraficaForm] After reset, watchedBanca:', watchedBanca); // LOG AGGIUNTO
+        reset(defaultValues); // Affidati a reset per impostare tutti i valori
+
+        console.log('[ModalAnagraficaForm] After reset, getValues("banca"):', getValues('banca')); // NEW LOG
+        console.log('[ModalAnagraficaForm] After reset, form values:', getValues());
+        console.log('[ModalAnagraficaForm] After reset, watchedBanca:', watch('banca')); // Usa watch direttamente qui per il logging
       };
       initializeForm();
     }
-  }, [isOpen, initialData, normalizedInitialData, reset, setValue, type, getValues, watchedBanca]); // Aggiunto watchedBanca alle dipendenze
+  }, [isOpen, initialData, normalizedInitialData, reset, type, getValues, watch]); // Aggiunto watch alle dipendenze
 
   const handleFormSubmit = async (data: FormData) => {
     try {
@@ -246,6 +231,7 @@ export function ModalAnagraficaForm({
                 </Label>
                 <div className="col-span-3">
                   <Select
+                    key={initialData?.id || 'new-fornitore-banca-select'} // Aggiunta la key per forzare il re-render
                     onValueChange={(value) => setValue('banca', value === '__NONE__' ? '' : value, { shouldValidate: true })}
                     value={watchedBanca || '__NONE__'}
                     disabled={isSubmitting}
@@ -254,7 +240,7 @@ export function ModalAnagraficaForm({
                       <SelectValue placeholder="Seleziona banca" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__NONE__">Nessuna</SelectItem> {/* Modificato: value="__NONE__" */}
+                      <SelectItem value="__NONE__">Nessuna</SelectItem>
                       {bancheDisponibili.map((bancaOption, index) => (
                         <SelectItem key={index} value={bancaOption}>
                           {bancaOption}
