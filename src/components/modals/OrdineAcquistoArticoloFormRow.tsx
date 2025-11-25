@@ -478,8 +478,8 @@ export function OrdineAcquistoArticoloFormRow({
                         setDisplayQuantita('');
                       }
                     }}
-                    placeholder="0,001" // Updated placeholder
-                    min="0.001"
+                    placeholder="0,000" // Updated placeholder
+                    min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />

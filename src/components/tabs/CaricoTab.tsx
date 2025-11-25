@@ -36,10 +36,6 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
   }, []);
 
   const handleChange = (field: string, value: any) => {
-    if (field === 'prezzo') {
-      // Replace comma with dot for internal numeric handling
-      value = String(value).replace(',', '.');
-    }
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

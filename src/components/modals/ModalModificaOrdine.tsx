@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Cartone } from '@/types';
 import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
+import { formatFormato, formatGrammatura } from '@/utils/formatters'; // Importa formatFormato e formatGrammatura
 
 interface ModalModificaOrdineProps {
   ordine: Cartone;
@@ -19,16 +20,12 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
     cliente: ordine.cliente,
     lavoro: ordine.lavoro,
     magazzino: ordine.magazzino,
-    prezzo: ordine.prezzo.toFixed(3).replace('.', ','), // Modificato: usa toFixed(3) e replace per il valore iniziale
+    prezzo: ordine.prezzo !== undefined && ordine.prezzo !== null ? ordine.prezzo.toFixed(3).replace('.', ',') : '', // Modificato: usa toFixed(3) e replace per il valore iniziale, o stringa vuota
     data_consegna: ordine.data_consegna,
     note: ordine.note || ''
   });
 
   const handleChange = (field: string, value: any) => {
-    if (field === 'prezzo') {
-      // Replace comma with dot for internal numeric handling
-      value = String(value).replace(',', '.');
-    }
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
