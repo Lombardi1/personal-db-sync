@@ -43,6 +43,17 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleBlur = (field: string, value: any) => {
+    if (field === 'prezzo') {
+      const numericValue = parseFloat(String(value).replace(',', '.'));
+      if (!isNaN(numericValue)) {
+        setFormData(prev => ({ ...prev, [field]: numericValue.toFixed(3).replace('.', ',') }));
+      } else {
+        setFormData(prev => ({ ...prev, [field]: '' }));
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -65,7 +76,7 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
       magazzino: '-',
-      prezzo: parseFloat(formData.prezzo), // Parse after comma replacement
+      prezzo: parseFloat(formData.prezzo.replace(',', '.')), // Parse after comma replacement
       data_consegna: formData.data_consegna,
       confermato: formData.confermato,
       note: formData.note.trim() || '-'
@@ -234,12 +245,12 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
               <i className="fas fa-euro-sign mr-1"></i> Prezzo €/kg *
             </label>
             <input
-              type="number"
-              step="0.001" // Allow 3 decimal places
+              type="text" // Changed to text
               value={formData.prezzo}
               onChange={(e) => handleChange('prezzo', e.target.value)}
+              onBlur={(e) => handleBlur('prezzo', e.target.value)} // Added onBlur
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-              placeholder="es. 1.850" // Reflect 3 decimals
+              placeholder="es. 1,850" // Reflect 3 decimals
               min="0"
               required
             />
