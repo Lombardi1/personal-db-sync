@@ -43,6 +43,7 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
   };
 
   const handleEditClick = (fornitore: Fornitore) => {
+    console.log('[FornitoriTab] Editing fornitore:', fornitore); // LOG AGGIUNTO
     setEditingFornitore(fornitore);
     setIsModalOpen(true);
   };

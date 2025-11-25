@@ -71,8 +71,10 @@ export function ModalAnagraficaForm({
   onSubmit,
   initialData,
 }: ModalAnagraficaFormProps) {
+  console.log('[ModalAnagraficaForm] Component rendered. initialData:', initialData); // LOG AGGIUNTO
   const { aziendaInfo } = useAziendaInfo(); // Recupera le info azienda
   const bancheDisponibili = React.useMemo(() => {
+    console.log('[ModalAnagraficaForm] Computing bancheDisponibili. aziendaInfo.banche:', aziendaInfo?.banche, 'initialData.banca:', initialData?.banca); // LOG AGGIUNTO
     let banks = new Set<string>();
     if (aziendaInfo?.banche) {
       aziendaInfo.banche.split(/[\n,;]+/).map(b => b.trim()).filter(b => b.length > 0).forEach(b => banks.add(b));
@@ -81,10 +83,16 @@ export function ModalAnagraficaForm({
     if (initialData?.banca && initialData.banca.trim() !== '' && !banks.has(initialData.banca.trim())) {
       banks.add(initialData.banca.trim());
     }
-    return Array.from(banks).sort(); // Sort for consistent order
+    const sortedBanks = Array.from(banks).sort();
+    console.log('[ModalAnagraficaForm] bancheDisponibili:', sortedBanks); // LOG AGGIUNTO
+    return sortedBanks;
   }, [aziendaInfo?.banche, initialData?.banca]);
 
-  const normalizedInitialData = React.useMemo(() => normalizeAnagraficaData(initialData), [initialData]);
+  const normalizedInitialData = React.useMemo(() => {
+    const normalized = normalizeAnagraficaData(initialData);
+    console.log('[ModalAnagraficaForm] normalizedInitialData:', normalized); // LOG AGGIUNTO
+    return normalized;
+  }, [initialData]);
 
   const {
     register,
@@ -101,6 +109,7 @@ export function ModalAnagraficaForm({
   const watchedTipoFornitore = watch('tipo_fornitore' as any);
   const watchedConsideraIva = watch('considera_iva' as any);
   const watchedBanca = watch('banca' as any); // Watch per il campo banca
+  console.log('[ModalAnagraficaForm] Render - watchedBanca:', watchedBanca); // LOG AGGIUNTO
 
   React.useEffect(() => {
     if (isOpen) {
@@ -135,10 +144,12 @@ export function ModalAnagraficaForm({
         } else if (type === 'fornitore') {
           setValue('banca' as any, '');
         }
+        console.log('[ModalAnagraficaForm] After reset, form values:', methods.getValues()); // LOG AGGIUNTO
+        console.log('[ModalAnagraficaForm] After reset, watchedBanca:', watchedBanca); // LOG AGGIUNTO
       };
       initializeForm();
     }
-  }, [isOpen, initialData, normalizedInitialData, reset, setValue, type]);
+  }, [isOpen, initialData, normalizedInitialData, reset, setValue, type, methods]); // Aggiunto methods alle dipendenze
 
   const handleFormSubmit = async (data: FormData) => {
     try {
@@ -342,7 +353,7 @@ export function ModalAnagraficaForm({
             </Label>
             <div className="col-span-3">
               <Input id="sdi" {...register('sdi')} className="col-span-3" />
-              {errors.sdi && <p className="text-destructive text-xs mt-1">{errors.sdi.message}</p>}
+              {errors.sdi && <p className className="text-destructive text-xs mt-1">{errors.sdi.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
