@@ -147,29 +147,29 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
           <Table className="min-w-full table-auto">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs sm:text-sm min-w-[80px]">Codice</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[120px]">Nome</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[100px] whitespace-normal">P.IVA / Cod. Fiscale</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[80px] whitespace-normal">Città</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[100px]">Telefono</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[120px] whitespace-normal">Email</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[100px] whitespace-normal">Cond. Pagamento</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[70px]">Codice</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[100px]">Nome</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[90px] whitespace-normal">P.IVA / Cod. Fiscale</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[70px] whitespace-normal">Città</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[70px]">Telefono</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[100px] whitespace-normal">Email</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[80px] whitespace-normal">Cond. Pagamento</TableHead>
                 <TableHead className="text-xs sm:text-sm min-w-[40px]">IVA</TableHead>
-                <TableHead className="text-right text-xs sm:text-sm min-w-[80px]">Azioni</TableHead>
+                <TableHead className="text-right text-xs sm:text-sm min-w-[70px]">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {clientiFiltered.map((cliente) => (
                 <TableRow key={cliente.id}>
-                  <TableCell className="font-medium text-xs sm:text-sm min-w-[80px]">{cliente.codice_anagrafica || '-'}</TableCell>
-                  <TableCell className="font-medium text-xs sm:text-sm min-w-[120px]">{cliente.nome}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[100px] whitespace-normal">{cliente.partita_iva || cliente.codice_fiscale || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[80px] whitespace-normal">{cliente.citta || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[100px]">{cliente.telefono || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[120px] whitespace-normal">{cliente.email || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[100px] whitespace-normal">{cliente.condizione_pagamento || '-'}</TableCell>
+                  <TableCell className="font-medium text-xs sm:text-sm min-w-[70px]">{cliente.codice_anagrafica || '-'}</TableCell>
+                  <TableCell className="font-medium text-xs sm:text-sm min-w-[100px] whitespace-normal">{cliente.nome}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[90px] whitespace-normal">{cliente.partita_iva || cliente.codice_fiscale || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[70px] whitespace-normal">{cliente.citta || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[70px] whitespace-normal">{cliente.telefono || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[100px] whitespace-normal">{cliente.email || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[80px] whitespace-normal">{cliente.condizione_pagamento || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm min-w-[40px]">{cliente.considera_iva ? 'Sì' : 'No'}</TableCell>
-                  <TableCell className="text-right min-w-[80px]">
+                  <TableCell className="text-right min-w-[70px]">
                     <div className="flex justify-end gap-1 sm:gap-2">
                       <Button
                         variant="outline"
