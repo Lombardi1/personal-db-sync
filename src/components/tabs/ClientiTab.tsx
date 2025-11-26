@@ -21,8 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Filters } from '@/components/Filters'; // Importa Filters
+import { Filters } from '@/components/Filters';
 
 interface ClientiTabProps {
   clienti: Cliente[];
@@ -144,33 +143,33 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
           Nessun cliente registrato. Clicca "Nuovo Cliente" per aggiungerne uno.
         </p>
       ) : (
-        <ScrollArea className="w-full rounded-md border">
-          <Table className="min-w-full">
+        <div className="w-full rounded-md border overflow-x-auto">
+          <Table className="min-w-full table-auto">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs sm:text-sm">Codice</TableHead>
-                <TableHead className="text-xs sm:text-sm">Nome</TableHead>
-                <TableHead className="text-xs sm:text-sm">P.IVA / Cod. Fiscale</TableHead>
-                <TableHead className="text-xs sm:text-sm">Città</TableHead>
-                <TableHead className="text-xs sm:text-sm">Telefono</TableHead>
-                <TableHead className="text-xs sm:text-sm">Email</TableHead>
-                <TableHead className="text-xs sm:text-sm">Cond. Pagamento</TableHead> {/* NUOVO */}
-                <TableHead className="text-xs sm:text-sm">IVA</TableHead> {/* NUOVO */}
-                <TableHead className="text-right text-xs sm:text-sm">Azioni</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[80px]">Codice</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[120px]">Nome</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[100px] whitespace-normal">P.IVA / Cod. Fiscale</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[80px] whitespace-normal">Città</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[100px]">Telefono</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[120px] whitespace-normal">Email</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[100px] whitespace-normal">Cond. Pagamento</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[40px]">IVA</TableHead>
+                <TableHead className="text-right text-xs sm:text-sm min-w-[80px]">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {clientiFiltered.map((cliente) => (
                 <TableRow key={cliente.id}>
-                  <TableCell className="font-medium text-xs sm:text-sm">{cliente.codice_anagrafica || '-'}</TableCell>
-                  <TableCell className="font-medium text-xs sm:text-sm">{cliente.nome}</TableCell>
-                  <TableCell className="text-xs sm:text-sm">{cliente.partita_iva || cliente.codice_fiscale || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm">{cliente.citta || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm">{cliente.telefono || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm">{cliente.email || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm">{cliente.condizione_pagamento || '-'}</TableCell> {/* NUOVO */}
-                  <TableCell className="text-xs sm:text-sm">{cliente.considera_iva ? 'Sì' : 'No'}</TableCell> {/* NUOVO */}
-                  <TableCell className="text-right">
+                  <TableCell className="font-medium text-xs sm:text-sm min-w-[80px]">{cliente.codice_anagrafica || '-'}</TableCell>
+                  <TableCell className="font-medium text-xs sm:text-sm min-w-[120px]">{cliente.nome}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[100px] whitespace-normal">{cliente.partita_iva || cliente.codice_fiscale || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[80px] whitespace-normal">{cliente.citta || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[100px]">{cliente.telefono || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[120px] whitespace-normal">{cliente.email || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[100px] whitespace-normal">{cliente.condizione_pagamento || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[40px]">{cliente.considera_iva ? 'Sì' : 'No'}</TableCell>
+                  <TableCell className="text-right min-w-[80px]">
                     <div className="flex justify-end gap-1 sm:gap-2">
                       <Button
                         variant="outline"
@@ -194,8 +193,7 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
               ))}
             </TableBody>
           </Table>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
       )}
 
       <ModalAnagraficaForm
