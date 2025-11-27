@@ -17,7 +17,7 @@ import AziendaInfoPage from "./pages/AziendaInfo";
 import FustelleDashboard from "./pages/FustelleDashboard";
 import PolimeriDashboard from "./pages/PolimeriDashboard";
 import GestioneFustelle from "./pages/GestioneFustelle"; // Importa la nuova pagina GestioneFustelle
-// Rimosso: import PulitoriDashboard from "./pages/PulitoriDashboard"; // NUOVO: Importa la nuova pagina PulitoriDashboard
+import PulitoriDashboard from "./pages/PulitoriDashboard"; // NUOVO: Importa la nuova pagina PulitoriDashboard
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -110,13 +110,10 @@ const App = () => {
               element={renderProtectedRoute(<PolimeriDashboard />, ['amministratore'])}
             />
 
-            {/* Rimosso: Route per gestione pulitori */}
-            {/*
             <Route
               path="/gestione-pulitori"
               element={renderProtectedRoute(<PulitoriDashboard />, ['amministratore'])}
             />
-            */}
             
             <Route path="*" element={<NotFound />} />
           </Routes>

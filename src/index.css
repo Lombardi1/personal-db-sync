@@ -62,8 +62,8 @@ All colors MUST be HSL.
     --fustelle-color-dark: 280 80% 30%;
     --polimeri-color: 170 70% 35%; /* NUOVO: Colore per Magazzino Polimeri (verde acqua) */
     --polimeri-color-dark: 170 70% 25%;
-    --pulitori-color: 200 80% 40%; /* Rimosso: NUOVO: Colore per Magazzino Pulitori (blu chiaro) */
-    --pulitori-color-dark: 200 80% 30%; /* Rimosso */
+    --pulitori-color: 200 80% 40%; /* NUOVO: Colore per Magazzino Pulitori (blu chiaro) */
+    --pulitori-color-dark: 200 80% 30%;
 
     /* Nuovi colori per gli stati degli ordini d'acquisto */
     --stato-in-attesa: 39 100% 50%; /* Arancione */

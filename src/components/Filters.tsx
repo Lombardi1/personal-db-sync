@@ -36,9 +36,9 @@ interface FiltersProps {
     codice_fustella?: string; // Nuovo filtro per Storico Fustelle
     tipo?: string; // Nuovo filtro per Storico Fustelle
     username?: string; // Nuovo filtro per Storico Fustelle
-    // Rimosso: Nuovi filtri per Polimeri
-    // Rimosso: nr_fustella?: string; // Nuovo filtro per Polimeri (corrisponde a NR. Fustella)
-    // Rimosso: codice_polimero?: string; // Nuovo filtro per Storico Polimeri
+    // Nuovi filtri per Polimeri
+    nr_fustella?: string; // Nuovo filtro per Polimeri (corrisponde a NR. Fustella)
+    codice_polimero?: string; // Nuovo filtro per Storico Polimeri
   };
   onFilter: (filtri: any) => void;
   onReset: () => void;
@@ -534,8 +534,7 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
               </>
             )}
 
-            {/* Rimosso: Filtri per Giacenza Polimeri */}
-            {/*
+            {/* Filtri per Giacenza Polimeri */}
             {isPolimeriGiacenzaSection && (
               <>
                 <div className="flex flex-col gap-1">
@@ -612,10 +611,8 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                 </div>
               </>
             )}
-            */}
 
-            {/* Rimosso: Filtri per Storico Polimeri */}
-            {/*
+            {/* Filtri per Storico Polimeri */}
             {isStoricoPolimeriSection && (
               <>
                 <div className="flex flex-col gap-1">
@@ -659,7 +656,6 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                 </div>
               </>
             )}
-            */}
           </div>
         </div>
       </CollapsibleContent>

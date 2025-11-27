@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Warehouse, Shapes, Layers } from 'lucide-react'; // Rimosso: SprayCan
+import { ShoppingCart, Warehouse, Shapes, Layers, SprayCan } from 'lucide-react'; // Importa l'icona SprayCan
 import { useCartoni } from '@/hooks/useCartoni';
 // Rimosso l'import di RecentActivity
 
@@ -96,8 +96,6 @@ export default function Summary() {
                 <Layers className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Gestione Magazzino Polimeri</span>
               </Button>
-              {/* Rimosso: Pulsante per gestione pulitori */}
-              {/*
               <Button
                 onClick={() => navigate('/gestione-pulitori')}
                 size="lg" 
@@ -106,7 +104,6 @@ export default function Summary() {
                 <SprayCan className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Gestione Magazzino Pulitori</span>
               </Button>
-              */}
             </div>
             
             {/* Attività Recenti rimosse */}
