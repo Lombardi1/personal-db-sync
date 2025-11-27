@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox'; // Importa il componente Checkbox di shadcn/ui
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ModalModificaFustellaProps {
   fustella: Fustella;
@@ -38,7 +38,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     pulitore: fustella.pulitore || false,
     pinza_tagliata: fustella.pinza_tagliata || false,
     tasselli_intercambiabili: fustella.tasselli_intercambiabili || false,
-    nr_tasselli: fustella.nr_tasselli || null,
+    nr_tasselli: fustella.nr_tasselli || null, // Modificato a null
     incollatura: fustella.incollatura || false,
     incollatrice: fustella.incollatrice || '',
     tipo_incollatura: fustella.tipo_incollatura || '',
@@ -343,13 +343,20 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
             </div>
           </div>
 
-          <div className="flex items-center space-x-2"> {/* Modificato per usare flex items-center space-x-2 */}
-            <Checkbox
-              id="fustella-disponibile"
-              checked={formData.disponibile}
-              onCheckedChange={(checked) => handleChange('disponibile', checked)}
-            />
-            <Label htmlFor="fustella-disponibile" className="text-xs sm:text-sm font-medium">Disponibile</Label>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.disponibile}
+                onChange={(e) => handleChange('disponibile', e.target.checked)}
+                className="toggle-checkbox"
+                id="fustella-disponibile"
+              />
+              <label htmlFor="fustella-disponibile" className="toggle-label">
+                <span className="toggle-ball"></span>
+              </label>
+              <span className="text-xs sm:text-sm font-medium">Disponibile</span>
+            </label>
           </div>
         </div>
 
@@ -363,13 +370,37 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
           </Button>
           <Button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] rounded-md font-semibold hover:bg-[hsl(214,32%,91%)] transition-colors text-sm sm:text-base"
+            onClick={() => {
+              setFormData({
+                codice: generateNextFustellaCode(),
+                descrizione: '',
+                formato: '',
+                materiale: '',
+                ubicazione: '',
+                note: '',
+                disponibile: true,
+                fornitore: '',
+                codice_fornitore: '',
+                cliente: '',
+                lavoro: '',
+                fustellatrice: '',
+                resa: '',
+                pulitore: false,
+                pinza_tagliata: false,
+                tasselli_intercambiabili: false,
+                nr_tasselli: null,
+                incollatura: false,
+                incollatrice: '',
+                tipo_incollatura: '',
+              });
+            }}
+            className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
           >
-            Annulla
+            <i className="fas fa-eraser mr-1 sm:mr-2"></i>
+            Pulisci Form
           </Button>
         </div>
       </form>
-    </DialogContent>
+    </div>
   );
 }

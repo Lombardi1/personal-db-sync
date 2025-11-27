@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox'; // Importa il componente Checkbox di shadcn/ui
+import { Checkbox } from '@/components/ui/checkbox';
 import * as notifications from '@/utils/notifications';
 import { generateNextFustellaCode, resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils';
 
@@ -30,7 +30,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     pulitore: false,
     pinza_tagliata: false,
     tasselli_intercambiabili: false,
-    nr_tasselli: null as number | null,
+    nr_tasselli: null as number | null, // Modificato a null
     incollatura: false,
     incollatrice: '',
     tipo_incollatura: '',
@@ -65,10 +65,10 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       formato: formData.formato.trim(),
       materiale: formData.materiale.trim(),
       ubicazione: formData.ubicazione.trim(),
-      note: formData.note.trim() || null,
+      note: formData.note.trim() || null, // Usa null per note vuote
       disponibile: formData.disponibile,
       fornitore: formData.fornitore.trim(),
-      codice_fornitore: formData.codice_fornitore.trim() || null,
+      codice_fornitore: formData.codice_fornitore.trim() || null, // Usa null per codice_fornitore vuoto
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
       fustellatrice: formData.fustellatrice.trim(),
@@ -78,8 +78,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       tasselli_intercambiabili: formData.tasselli_intercambiabili,
       nr_tasselli: formData.nr_tasselli,
       incollatura: formData.incollatura,
-      incollatrice: formData.incollatura ? formData.incollatrice.trim() : null,
-      tipo_incollatura: formData.incollatura ? formData.tipo_incollatura.trim() : null,
+      incollatrice: formData.incollatura ? formData.incollatrice.trim() : null, // Usa null se incollatura è false
+      tipo_incollatura: formData.incollatura ? formData.tipo_incollatura.trim() : null, // Usa null se incollatura è false
     };
 
     const { error } = await aggiungiFustella(nuovaFustella);
@@ -88,7 +88,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       notifications.showSuccess(`✅ Fustella '${formData.codice}' registrata con successo!`);
 
       setFormData({
-        codice: generateNextFustellaCode(),
+        codice: generateNextFustellaCode(), // Genera un nuovo codice per il prossimo inserimento
         descrizione: '',
         formato: '',
         materiale: '',
@@ -384,13 +384,20 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
             />
           </div>
 
-          <div className="flex items-center space-x-2"> {/* Modificato per usare flex items-center space-x-2 */}
-            <Checkbox
-              id="fustella-disponibile"
-              checked={formData.disponibile}
-              onCheckedChange={(checked) => handleChange('disponibile', checked)}
-            />
-            <Label htmlFor="fustella-disponibile" className="text-xs sm:text-sm font-medium">Disponibile</Label>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.disponibile}
+                onChange={(e) => handleChange('disponibile', e.target.checked)}
+                className="toggle-checkbox"
+                id="fustella-disponibile"
+              />
+              <label htmlFor="fustella-disponibile" className="toggle-label">
+                <span className="toggle-ball"></span>
+              </label>
+              <span className="text-xs sm:text-sm font-medium">Disponibile</span>
+            </label>
           </div>
         </div>
 
