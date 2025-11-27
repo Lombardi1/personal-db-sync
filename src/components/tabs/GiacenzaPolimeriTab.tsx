@@ -3,7 +3,6 @@ import { Polimero } from '@/types'; // Rimosso: StoricoMovimentoPolimero
 import { Filters } from '@/components/Filters';
 import { Button } from '@/components/ui/button';
 import * as notifications from '@/utils/notifications';
-import { esportaTabellaXLS, esportaTabellaPDF } from '@/utils/export';
 import { TabellaPolimeri } from '@/components/tables/TabellaPolimeri';
 import {
   AlertDialog,
@@ -126,7 +125,8 @@ export function GiacenzaPolimeriTab({
         <i className="fas fa-layer-group"></i> Giacenza Polimeri
       </h2>
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      {/* RIMOSSI I PULSANTI DI ESPORTAZIONE */}
+      {/* <div className="mb-3 flex flex-wrap gap-2">
         <Button
           onClick={() => notifications.showInfo('Funzionalità di esportazione XLS in costruzione.')}
           className="bg-[hsl(var(--polimeri-color))] text-white hover:bg-[hsl(var(--polimeri-color-dark))] text-sm py-2 px-3"
@@ -139,7 +139,7 @@ export function GiacenzaPolimeriTab({
         >
           <i className="fas fa-file-pdf mr-1 sm:mr-2"></i> <span className="hidden sm:inline">Esporta</span> PDF
         </Button>
-      </div>
+      </div> */}
 
       {polimeriFiltered.length === 0 ? (
         <p className="text-sm sm:text-base text-[hsl(var(--muted-foreground))]">Nessun polimero in giacenza.</p>

@@ -3,7 +3,6 @@ import { Fustella, StoricoMovimentoFustella } from '@/types';
 import { Filters } from '@/components/Filters';
 import { Button } from '@/components/ui/button';
 import * as notifications from '@/utils/notifications';
-import { esportaTabellaXLS, esportaTabellaPDF } from '@/utils/export';
 import { TabellaFustelle } from '@/components/tables/TabellaFustelle'; // Importa la nuova tabella
 import {
   AlertDialog,
@@ -133,7 +132,8 @@ export function GiacenzaFustelleTab({
         <i className="fas fa-shapes"></i> Giacenza Fustelle
       </h2>
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      {/* RIMOSSI I PULSANTI DI ESPORTAZIONE */}
+      {/* <div className="mb-3 flex flex-wrap gap-2">
         <Button
           onClick={() => notifications.showInfo('Funzionalità di esportazione XLS in costruzione.')}
           className="bg-[hsl(var(--fustelle-color))] text-white hover:bg-[hsl(var(--fustelle-color-dark))] text-sm py-2 px-3"
@@ -146,7 +146,7 @@ export function GiacenzaFustelleTab({
         >
           <i className="fas fa-file-pdf mr-1 sm:mr-2"></i> <span className="hidden sm:inline">Esporta</span> PDF
         </Button>
-      </div>
+      </div> */}
 
       {fustelleFiltered.length === 0 ? (
         <p className="text-sm sm:text-base text-[hsl(var(--muted-foreground))]">Nessuna fustella in giacenza.</p>
