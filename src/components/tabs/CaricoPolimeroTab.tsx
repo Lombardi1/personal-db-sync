@@ -39,6 +39,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
   useEffect(() => {
     const fetchFustellaData = async () => {
       const fornitoreCode = formData.codice_fornitore.trim(); // Usa codice_fornitore come trigger
+      console.log(`[CaricoPolimeroTab] Debounced fetchFustellaData triggered for codice_fornitore: '${fornitoreCode}'`); // NEW LOG
       if (fornitoreCode) {
         setIsFetchingFustella(true);
         try {
@@ -47,6 +48,8 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
             .select('codice, cliente, lavoro, resa') // Seleziona 'codice' (che è nr_fustella per polimero)
             .eq('codice_fornitore', fornitoreCode) // Query per codice_fornitore
             .single(); // Assumiamo una fustella per codice_fornitore, o la prima trovata
+
+          console.log(`[CaricoPolimeroTab] Supabase response for codice_fornitore '${fornitoreCode}': data=`, data, 'error=', error); // NEW LOG
 
           if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
             throw error;
@@ -81,7 +84,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
           setIsFetchingFustella(false);
         }
       } else {
-        // Se il campo codice_fornitore è vuoto, pulisci i campi correlati
+        console.log('[CaricoPolimeroTab] codice_fornitore is empty, resetting related fields.'); // NEW LOG
         setFormData(prev => ({
           ...prev,
           nr_fustella: '',
