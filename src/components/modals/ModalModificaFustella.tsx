@@ -358,7 +358,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
               <span className="text-xs sm:text-sm font-medium">Disponibile</span>
             </label>
           </div>
-        </div>
+          </div> {/* This closing div was missing */}
 
         <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
           <Button
@@ -401,6 +401,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
           </Button>
         </div>
       </form>
-    </div>
+    </DialogContent>
+    </Dialog>
   );
 }
