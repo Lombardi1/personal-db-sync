@@ -36,6 +36,9 @@ interface FiltersProps {
     codice_fustella?: string; // Nuovo filtro per Storico Fustelle
     tipo?: string; // Nuovo filtro per Storico Fustelle
     username?: string; // Nuovo filtro per Storico Fustelle
+    // Nuovi filtri per Polimeri
+    nr_fustella?: string; // Nuovo filtro per Polimeri (corrisponde a NR. Fustella)
+    codice_polimero?: string; // Nuovo filtro per Storico Polimeri
   };
   onFilter: (filtri: any) => void;
   onReset: () => void;
@@ -56,6 +59,8 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
   const isOrdiniAcquistoSection = sezione === 'ordini-acquisto';
   const isFustelleGiacenzaSection = sezione === 'fustelle-giacenza'; // Nuova sezione per Giacenza Fustelle
   const isStoricoFustelleSection = sezione === 'storico-fustelle'; // Nuova sezione per Storico Fustelle
+  const isPolimeriGiacenzaSection = sezione === 'polimeri-giacenza'; // Nuova sezione per Giacenza Polimeri
+  const isStoricoPolimeriSection = sezione === 'storico-polimeri'; // Nuova sezione per Storico Polimeri
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-4 sm:mb-5">
@@ -524,6 +529,129 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     onChange={(e) => handleChange('username', e.target.value)}
                     placeholder="Nome Utente"
                     className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Filtri per Giacenza Polimeri */}
+            {isPolimeriGiacenzaSection && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-barcode"></i> Codice Polimero
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.codice || ''}
+                    onChange={(e) => handleChange('codice', e.target.value)}
+                    placeholder="PLM-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-hashtag"></i> Nr. Fustella
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.nr_fustella || ''}
+                    onChange={(e) => handleChange('nr_fustella', e.target.value)}
+                    placeholder="FST-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-id-card"></i> Codice Fornitore
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.codice_fornitore || ''}
+                    onChange={(e) => handleChange('codice_fornitore', e.target.value)}
+                    placeholder="FOR-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-user"></i> Cliente
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.cliente || ''}
+                    onChange={(e) => handleChange('cliente', e.target.value)}
+                    placeholder="Cliente Beta"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-briefcase"></i> Lavoro
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.lavoro || ''}
+                    onChange={(e) => handleChange('lavoro', e.target.value)}
+                    placeholder="LAV-2025-002"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-chart-line"></i> Resa
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.resa || ''}
+                    onChange={(e) => handleChange('resa', e.target.value)}
+                    placeholder="1/1"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Filtri per Storico Polimeri */}
+            {isStoricoPolimeriSection && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-barcode"></i> Codice Polimero
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.codice_polimero || ''}
+                    onChange={(e) => handleChange('codice_polimero', e.target.value)}
+                    placeholder="PLM-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-exchange-alt"></i> Tipo Movimento
+                  </label>
+                  <select
+                    value={filtri.tipo || ''}
+                    onChange={(e) => handleChange('tipo', e.target.value)}
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  >
+                    <option value="">Tutti</option>
+                    <option value="carico">Carico</option>
+                    <option value="scarico">Scarico</option>
+                    <option value="modifica">Modifica</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-user"></i> Utente
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.username || ''}
+                    onChange={(e) => handleChange('username', e.target.value)}
+                    placeholder="Nome Utente"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
                   />
                 </div>
               </>

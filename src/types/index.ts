@@ -151,3 +151,27 @@ export interface StoricoMovimentoFustella {
   user_id?: string;
   username?: string;
 }
+
+// NUOVE INTERFACCE PER POLIMERI
+export interface Polimero {
+  codice: string; // Corrisponde a ID
+  nr_fustella?: string; // Corrisponde a NR. Fustella (rinominato da immagine)
+  codice_fornitore?: string; // Corrisponde a Codice Fornitore
+  cliente?: string; // Corrisponde a Cliente
+  lavoro?: string; // Corrisponde a Lavoro
+  resa?: string; // Corrisponde a Resa
+  note?: string; // Corrisponde a Note
+  data_creazione?: string;
+  ultima_modifica?: string;
+  disponibile: boolean;
+}
+
+export interface StoricoMovimentoPolimero {
+  id?: string;
+  codice_polimero: string;
+  tipo: 'carico' | 'scarico' | 'modifica';
+  data: string;
+  note: string;
+  user_id?: string;
+  username?: string;
+}
