@@ -61,6 +61,10 @@ export default {
           DEFAULT: "hsl(var(--fustelle-color))",
           dark: "hsl(var(--fustelle-color-dark))",
         },
+        polimeri: { // NUOVO: Colore per Magazzino Polimeri
+          DEFAULT: "hsl(var(--polimeri-color))",
+          dark: "hsl(var(--polimeri-color-dark))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

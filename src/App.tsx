@@ -14,7 +14,8 @@ import Anagrafica from "./pages/Anagrafica";
 import OrdiniAcquisto from "./pages/OrdiniAcquisto";
 import StoricoStampa from "./pages/StoricoStampa";
 import AziendaInfoPage from "./pages/AziendaInfo";
-import FustelleDashboard from "./pages/FustelleDashboard"; // Importa la nuova pagina FustelleDashboard
+import FustelleDashboard from "./pages/FustelleDashboard";
+import PolimeriDashboard from "./pages/PolimeriDashboard"; // Importa la nuova pagina PolimeriDashboard
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -97,9 +98,14 @@ const App = () => {
               element={renderProtectedRoute(<AziendaInfoPage />, ['amministratore'])}
             />
 
-            <Route // NUOVA ROTTA PER FUSTELLE
+            <Route
               path="/gestione-fustelle"
               element={renderProtectedRoute(<FustelleDashboard />, ['amministratore'])}
+            />
+
+            <Route // NUOVA ROTTA PER POLIMERI
+              path="/gestione-polimeri"
+              element={renderProtectedRoute(<PolimeriDashboard />, ['amministratore'])}
             />
             
             <Route path="*" element={<NotFound />} />
