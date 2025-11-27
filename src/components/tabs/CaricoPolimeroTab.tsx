@@ -47,26 +47,27 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
             .from('fustelle')
             .select('codice, cliente, lavoro, resa') // Seleziona 'codice' (che è nr_fustella per polimero)
             .eq('codice_fornitore', fornitoreCode) // Query per codice_fornitore
-            .single(); // Assumiamo una fustella per codice_fornitore, o la prima trovata
+            .limit(1); // CAMBIATO: da .single() a .limit(1)
 
           console.log(`[CaricoPolimeroTab] Supabase response for codice_fornitore '${fornitoreCode}': data=`, data, 'error=', error); // NEW LOG
 
-          if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
+          if (error) { // Gestisce qualsiasi errore, inclusi errori di più righe se .single() fosse ancora presente
             throw error;
           }
 
-          if (data) {
+          if (data && data.length > 0) { // Controlla se l'array di dati non è vuoto
+            const fustellaData = data[0]; // Prende il primo elemento
             setFormData(prev => ({
               ...prev,
-              nr_fustella: data.codice || '', // Precompila nr_fustella con il codice della fustella
-              cliente: data.cliente || '',
-              lavoro: data.lavoro || '',
-              resa: data.resa || '',
+              nr_fustella: fustellaData.codice || '', // Precompila nr_fustella con il codice della fustella
+              cliente: fustellaData.cliente || '',
+              lavoro: fustellaData.lavoro || '',
+              resa: fustellaData.resa || '',
               // codice_fornitore è il trigger, quindi è già impostato
             }));
             notifications.showInfo(`Dati fustella per codice fornitore '${fornitoreCode}' caricati.`);
           } else {
-            // Se nessuna fustella trovata, pulisci i campi correlati
+            // Se nessuna fustella trovata, o i dati sono vuoti, pulisci i campi correlati
             setFormData(prev => ({
               ...prev,
               nr_fustella: '',
@@ -91,7 +92,6 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
           cliente: '',
           lavoro: '',
           resa: '',
-          // codice_fornitore rimane vuoto
         }));
       }
     };
