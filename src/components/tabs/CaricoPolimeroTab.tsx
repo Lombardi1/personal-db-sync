@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Polimero, Fustella } from '@/types'; // Importa Fustella
+import { Polimero } from '@/types'; // Importa Fustella
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,18 +35,18 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
     initializeAndGenerateCode();
   }, []);
 
-  // Effetto per precompilare i campi dalla fustella
+  // Effetto per precompilare i campi dalla fustella in base al Codice Fornitore
   useEffect(() => {
     const fetchFustellaData = async () => {
-      const fustellaCode = formData.nr_fustella.trim();
-      if (fustellaCode) {
+      const fornitoreCode = formData.codice_fornitore.trim(); // Usa codice_fornitore come trigger
+      if (fornitoreCode) {
         setIsFetchingFustella(true);
         try {
           const { data, error } = await supabase
             .from('fustelle')
-            .select('cliente, lavoro, resa, codice_fornitore') // Seleziona anche codice_fornitore
-            .eq('codice', fustellaCode)
-            .single();
+            .select('codice, cliente, lavoro, resa') // Seleziona 'codice' (che è nr_fustella per polimero)
+            .eq('codice_fornitore', fornitoreCode) // Query per codice_fornitore
+            .single(); // Assumiamo una fustella per codice_fornitore, o la prima trovata
 
           if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
             throw error;
@@ -55,22 +55,24 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
           if (data) {
             setFormData(prev => ({
               ...prev,
+              nr_fustella: data.codice || '', // Precompila nr_fustella con il codice della fustella
               cliente: data.cliente || '',
               lavoro: data.lavoro || '',
               resa: data.resa || '',
-              codice_fornitore: data.codice_fornitore || '', // Precompila anche codice_fornitore
+              // codice_fornitore è il trigger, quindi è già impostato
             }));
-            notifications.showInfo(`Dati fustella '${fustellaCode}' caricati.`);
+            notifications.showInfo(`Dati fustella per codice fornitore '${fornitoreCode}' caricati.`);
           } else {
-            // Se la fustella non è trovata, pulisci i campi correlati
+            // Se nessuna fustella trovata, pulisci i campi correlati
             setFormData(prev => ({
               ...prev,
+              nr_fustella: '',
               cliente: '',
               lavoro: '',
               resa: '',
-              codice_fornitore: '',
+              // codice_fornitore rimane come inserito dall'utente
             }));
-            notifications.showInfo(`Fustella '${fustellaCode}' non trovata. Inserisci i dati manualmente.`);
+            notifications.showInfo(`Nessuna fustella trovata per codice fornitore '${fornitoreCode}'. Inserisci i dati manualmente.`);
           }
         } catch (error: any) {
           console.error('Errore nel recupero dati fustella:', error);
@@ -79,13 +81,14 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
           setIsFetchingFustella(false);
         }
       } else {
-        // Se il campo nr_fustella è vuoto, pulisci i campi correlati
+        // Se il campo codice_fornitore è vuoto, pulisci i campi correlati
         setFormData(prev => ({
           ...prev,
+          nr_fustella: '',
           cliente: '',
           lavoro: '',
           resa: '',
-          codice_fornitore: '',
+          // codice_fornitore rimane vuoto
         }));
       }
     };
@@ -95,7 +98,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
     }, 500); // Debounce per evitare chiamate API eccessive
 
     return () => clearTimeout(timeoutId);
-  }, [formData.nr_fustella]); // Dipendenza: si attiva quando nr_fustella cambia
+  }, [formData.codice_fornitore]); // Dipendenza: si attiva quando codice_fornitore cambia
 
   const handleChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
