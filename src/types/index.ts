@@ -127,11 +127,19 @@ export interface Fustella {
   data_creazione?: string;
   ultima_modifica?: string;
   disponibile: boolean; // Indica se la fustella è fisicamente presente e utilizzabile
-  // NUOVI CAMPI
   fornitore?: string;
+  codice_fornitore?: string; // Nuovo campo
   cliente?: string;
   lavoro?: string;
+  fustellatrice?: string; // Nuovo campo
   resa?: string; // Assumiamo stringa per ora
+  pulitore?: boolean; // Nuovo campo
+  pinza_tagliata?: boolean; // Nuovo campo
+  tasselli_intercambiabili?: boolean; // Nuovo campo
+  nr_tasselli?: number; // Nuovo campo
+  incollatura?: boolean; // Nuovo campo
+  incollatrice?: string; // Nuovo campo
+  tipo_incollatura?: string; // Nuovo campo
 }
 
 export interface StoricoMovimentoFustella {

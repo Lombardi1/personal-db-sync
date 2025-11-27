@@ -29,6 +29,10 @@ interface FiltersProps {
     ubicazione?: string; // Mantenuto per Fustelle
     materiale?: string; // Mantenuto per Fustelle
     resa?: string; // Nuovo filtro per Fustelle
+    codice_fornitore?: string; // Nuovo filtro per Fustelle
+    fustellatrice?: string; // Nuovo filtro per Fustelle
+    incollatrice?: string; // Nuovo filtro per Fustelle
+    tipo_incollatura?: string; // Nuovo filtro per Fustelle
     codice_fustella?: string; // Nuovo filtro per Storico Fustelle
     tipo?: string; // Nuovo filtro per Storico Fustelle
     username?: string; // Nuovo filtro per Storico Fustelle
@@ -407,6 +411,18 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-id-card"></i> Codice Fornitore
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.codice_fornitore || ''}
+                    onChange={(e) => handleChange('codice_fornitore', e.target.value)}
+                    placeholder="FOR-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
                     <i className="fas fa-user"></i> Cliente
                   </label>
                   <input
@@ -431,6 +447,18 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-cogs"></i> Fustellatrice
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.fustellatrice || ''}
+                    onChange={(e) => handleChange('fustellatrice', e.target.value)}
+                    placeholder="Bobst 102"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
                     <i className="fas fa-chart-line"></i> Resa
                   </label>
                   <input
@@ -438,6 +466,18 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     value={filtri.resa || ''}
                     onChange={(e) => handleChange('resa', e.target.value)}
                     placeholder="1/2"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-tape"></i> Tipo Incollatura
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.tipo_incollatura || ''}
+                    onChange={(e) => handleChange('tipo_incollatura', e.target.value)}
+                    placeholder="Lineare"
                     className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
                   />
                 </div>

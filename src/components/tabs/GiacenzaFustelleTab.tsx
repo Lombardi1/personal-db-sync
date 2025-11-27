@@ -4,6 +4,18 @@ import { Filters } from '@/components/Filters';
 import { Button } from '@/components/ui/button';
 import * as notifications from '@/utils/notifications';
 import { esportaTabellaXLS, esportaTabellaPDF } from '@/utils/export';
+import { TabellaFustelle } from '@/components/tables/TabellaFustelle'; // Importa la nuova tabella
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ModalModificaFustella } from '@/components/modals/ModalModificaFustella'; // Importa il modale di modifica
 
 interface GiacenzaFustelleTabProps {
   fustelle: Fustella[];
@@ -24,12 +36,20 @@ export function GiacenzaFustelleTab({
 }: GiacenzaFustelleTabProps) {
   const [filtri, setFiltri] = useState({
     codice: '',
-    fornitore: '', // Nuovo filtro
-    cliente: '',   // Nuovo filtro
-    lavoro: '',    // Nuovo filtro
-    resa: '',      // Nuovo filtro
+    fornitore: '',
+    codice_fornitore: '',
+    cliente: '',
+    lavoro: '',
+    fustellatrice: '',
+    resa: '',
+    tipo_incollatura: '',
   });
   const [fustelleFiltered, setFustelleFiltered] = useState<Fustella[]>([]);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [fustellaToDelete, setFustellaToDelete] = useState<Fustella | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [fustellaToEdit, setFustellaToEdit] = useState<Fustella | null>(null);
+
 
   useEffect(() => {
     handleFilter(filtri);
@@ -55,12 +75,42 @@ export function GiacenzaFustelleTab({
     const emptyFiltri = {
       codice: '',
       fornitore: '',
+      codice_fornitore: '',
       cliente: '',
       lavoro: '',
+      fustellatrice: '',
       resa: '',
+      tipo_incollatura: '',
     };
     setFiltri(emptyFiltri);
     setFustelleFiltered(fustelle);
+  };
+
+  const handleDeleteClick = (codice: string) => {
+    const fustella = fustelle.find(f => f.codice === codice);
+    if (fustella) {
+      setFustellaToDelete(fustella);
+      setIsDeleteAlertOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (fustellaToDelete) {
+      await eliminaFustella(fustellaToDelete.codice);
+      setFustellaToDelete(null);
+      setIsDeleteAlertOpen(false);
+    }
+  };
+
+  const handleEditClick = (fustella: Fustella) => {
+    setFustellaToEdit(fustella);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (codice: string, dati: Partial<Fustella>) => {
+    await modificaFustella(codice, dati);
+    setIsEditModalOpen(false);
+    setFustellaToEdit(null);
   };
 
   if (loading) {
@@ -74,7 +124,7 @@ export function GiacenzaFustelleTab({
         onFilter={handleFilter}
         onReset={resetFiltri}
         matchCount={fustelleFiltered.length}
-        sezione="fustelle-giacenza" // Nuova sezione per i filtri
+        sezione="fustelle-giacenza"
       />
 
       <h2 className="text-xl sm:text-2xl font-bold text-[hsl(var(--fustelle-color))] mb-4 sm:mb-5 flex items-center gap-2">
@@ -99,12 +149,38 @@ export function GiacenzaFustelleTab({
       {fustelleFiltered.length === 0 ? (
         <p className="text-sm sm:text-base text-[hsl(var(--muted-foreground))]">Nessuna fustella in giacenza.</p>
       ) : (
-        <div className="bg-white border border-[hsl(214,32%,91%)] rounded-lg shadow-sm p-6">
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Tabella Giacenza Fustelle (in costruzione)
-          </p>
-          {/* Qui andrà la TabellaFustelle */}
-        </div>
+        <TabellaFustelle
+          fustelle={fustelleFiltered}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          onChangeDisponibilita={cambiaDisponibilitaFustella}
+        />
+      )}
+
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Eliminazione Fustella</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare la fustella <strong>{fustellaToDelete?.codice}</strong>?
+              Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {isEditModalOpen && fustellaToEdit && (
+        <ModalModificaFustella
+          fustella={fustellaToEdit}
+          onClose={() => setIsEditModalOpen(false)}
+          onModifica={handleEditSubmit}
+        />
       )}
     </div>
   );

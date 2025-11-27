@@ -21,10 +21,19 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     ubicazione: '',
     note: '',
     disponibile: true,
-    fornitore: '', // Nuovo campo
-    cliente: '',   // Nuovo campo
-    lavoro: '',    // Nuovo campo
-    resa: '',      // Nuovo campo
+    fornitore: '',
+    codice_fornitore: '',
+    cliente: '',
+    lavoro: '',
+    fustellatrice: '',
+    resa: '',
+    pulitore: false,
+    pinza_tagliata: false,
+    tasselli_intercambiabili: false,
+    nr_tasselli: undefined as number | undefined,
+    incollatura: false,
+    incollatrice: '',
+    tipo_incollatura: '',
   });
 
   useEffect(() => {
@@ -36,7 +45,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     initializeAndGenerateCode();
   }, []);
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -44,7 +53,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     e.preventDefault();
 
     if (!formData.descrizione || !formData.formato || !formData.materiale || !formData.ubicazione ||
-        !formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa) { // Validazione nuovi campi
+        !formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
+        !formData.fustellatrice || (formData.incollatura && (!formData.incollatrice || !formData.tipo_incollatura))) {
       notifications.showError('⚠️ Compila tutti i campi obbligatori (*)');
       return;
     }
@@ -57,10 +67,19 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       ubicazione: formData.ubicazione.trim(),
       note: formData.note.trim() || '-',
       disponibile: formData.disponibile,
-      fornitore: formData.fornitore.trim(), // Nuovo campo
-      cliente: formData.cliente.trim(),     // Nuovo campo
-      lavoro: formData.lavoro.trim(),       // Nuovo campo
-      resa: formData.resa.trim(),           // Nuovo campo
+      fornitore: formData.fornitore.trim(),
+      codice_fornitore: formData.codice_fornitore.trim() || undefined,
+      cliente: formData.cliente.trim(),
+      lavoro: formData.lavoro.trim(),
+      fustellatrice: formData.fustellatrice.trim(),
+      resa: formData.resa.trim(),
+      pulitore: formData.pulitore,
+      pinza_tagliata: formData.pinza_tagliata,
+      tasselli_intercambiabili: formData.tasselli_intercambiabili,
+      nr_tasselli: formData.nr_tasselli,
+      incollatura: formData.incollatura,
+      incollatrice: formData.incollatura ? formData.incollatrice.trim() : undefined,
+      tipo_incollatura: formData.incollatura ? formData.tipo_incollatura.trim() : undefined,
     };
 
     const { error } = await aggiungiFustella(nuovaFustella);
@@ -76,10 +95,19 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
         ubicazione: '',
         note: '',
         disponibile: true,
-        fornitore: '', // Reset nuovi campi
+        fornitore: '',
+        codice_fornitore: '',
         cliente: '',
         lavoro: '',
+        fustellatrice: '',
         resa: '',
+        pulitore: false,
+        pinza_tagliata: false,
+        tasselli_intercambiabili: false,
+        nr_tasselli: undefined,
+        incollatura: false,
+        incollatrice: '',
+        tipo_incollatura: '',
       });
     } else {
       notifications.showError('Errore durante il salvataggio della fustella');
@@ -167,7 +195,6 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
             />
           </div>
 
-          {/* NUOVI CAMPI */}
           <div>
             <Label htmlFor="fornitore" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
               <i className="fas fa-truck mr-1"></i> Fornitore *
@@ -180,6 +207,20 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
               placeholder="es. Fornitore Fustelle Srl"
               required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="codice_fornitore" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+              <i className="fas fa-id-card mr-1"></i> Codice Fornitore
+            </Label>
+            <Input
+              id="codice_fornitore"
+              type="text"
+              value={formData.codice_fornitore}
+              onChange={(e) => handleChange('codice_fornitore', e.target.value)}
+              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+              placeholder="es. FOR-001"
             />
           </div>
 
@@ -214,6 +255,21 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
           </div>
 
           <div>
+            <Label htmlFor="fustellatrice" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+              <i className="fas fa-cogs mr-1"></i> Fustellatrice *
+            </Label>
+            <Input
+              id="fustellatrice"
+              type="text"
+              value={formData.fustellatrice}
+              onChange={(e) => handleChange('fustellatrice', e.target.value)}
+              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+              placeholder="es. Bobst 102"
+              required
+            />
+          </div>
+
+          <div>
             <Label htmlFor="resa" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
               <i className="fas fa-chart-line mr-1"></i> Resa *
             </Label>
@@ -227,7 +283,92 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
               required
             />
           </div>
-          {/* FINE NUOVI CAMPI */}
+
+          <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="pulitore"
+                checked={formData.pulitore}
+                onCheckedChange={(checked) => handleChange('pulitore', checked)}
+              />
+              <Label htmlFor="pulitore" className="text-xs sm:text-sm">Pulitore</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="pinza_tagliata"
+                checked={formData.pinza_tagliata}
+                onCheckedChange={(checked) => handleChange('pinza_tagliata', checked)}
+              />
+              <Label htmlFor="pinza_tagliata" className="text-xs sm:text-sm">Pinza Tagliata</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="tasselli_intercambiabili"
+                checked={formData.tasselli_intercambiabili}
+                onCheckedChange={(checked) => handleChange('tasselli_intercambiabili', checked)}
+              />
+              <Label htmlFor="tasselli_intercambiabili" className="text-xs sm:text-sm">Tasselli Intercambiabili</Label>
+            </div>
+          </div>
+
+          {formData.tasselli_intercambiabili && (
+            <div>
+              <Label htmlFor="nr_tasselli" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+                <i className="fas fa-hashtag mr-1"></i> Nr. Tasselli
+              </Label>
+              <Input
+                id="nr_tasselli"
+                type="number"
+                value={formData.nr_tasselli || ''}
+                onChange={(e) => handleChange('nr_tasselli', parseInt(e.target.value) || undefined)}
+                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                min="0"
+              />
+            </div>
+          )}
+
+          <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="incollatura"
+                checked={formData.incollatura}
+                onCheckedChange={(checked) => handleChange('incollatura', checked)}
+              />
+              <Label htmlFor="incollatura" className="text-xs sm:text-sm">Incollatura</Label>
+            </div>
+            {formData.incollatura && (
+              <>
+                <div>
+                  <Label htmlFor="incollatrice" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+                    <i className="fas fa-cogs mr-1"></i> Incollatrice *
+                  </Label>
+                  <Input
+                    id="incollatrice"
+                    type="text"
+                    value={formData.incollatrice}
+                    onChange={(e) => handleChange('incollatrice', e.target.value)}
+                    className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                    placeholder="es. Bobst Masterfold"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="tipo_incollatura" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+                    <i className="fas fa-tape mr-1"></i> Tipo Incollatura *
+                  </Label>
+                  <Input
+                    id="tipo_incollatura"
+                    type="text"
+                    value={formData.tipo_incollatura}
+                    onChange={(e) => handleChange('tipo_incollatura', e.target.value)}
+                    className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                    placeholder="es. Lineare, 4 punti"
+                    required
+                  />
+                </div>
+              </>
+            )}
+          </div>
 
           <div className="md:col-span-2 lg:col-span-3">
             <Label htmlFor="note" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
@@ -280,9 +421,18 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
                 note: '',
                 disponibile: true,
                 fornitore: '',
+                codice_fornitore: '',
                 cliente: '',
                 lavoro: '',
+                fustellatrice: '',
                 resa: '',
+                pulitore: false,
+                pinza_tagliata: false,
+                tasselli_intercambiabili: false,
+                nr_tasselli: undefined,
+                incollatura: false,
+                incollatrice: '',
+                tipo_incollatura: '',
               });
             }}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
