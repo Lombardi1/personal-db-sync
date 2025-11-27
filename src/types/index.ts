@@ -116,14 +116,14 @@ export interface AziendaInfo {
   updated_at?: string;
 }
 
-// NUOVE INTERFACCE PER FUSTELLE
+-- NUOVE INTERFACCE PER FUSTELLE
 export interface Fustella {
   codice: string;
-  descrizione: string;
-  formato: string;
-  materiale: string;
-  ubicazione: string;
-  note?: string;
+  // Rimosso: descrizione: string;
+  // Rimosso: formato: string;
+  // Rimosso: materiale: string;
+  // Rimosso: ubicazione: string;
+  // Rimosso: note?: string;
   data_creazione?: string;
   ultima_modifica?: string;
   disponibile: boolean; // Indica se la fustella è fisicamente presente e utilizzabile

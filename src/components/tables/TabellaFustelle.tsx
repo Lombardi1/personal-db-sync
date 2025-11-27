@@ -21,7 +21,7 @@ export function TabellaFustelle({ fustelle, onEdit, onDelete, onChangeDisponibil
           <thead>
             <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[60px]">Codice</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px]">Descrizione</th>
+              {/* Rimosso: <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px]">Descrizione</th> */}
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Fornitore</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Cod. Fornitore</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Cliente</th>
@@ -45,7 +45,7 @@ export function TabellaFustelle({ fustelle, onEdit, onDelete, onChangeDisponibil
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">
                   <span className="codice">{fustella.codice}</span>
                 </td>
-                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-normal max-w-[100px] overflow-hidden text-ellipsis">{fustella.descrizione}</td>
+                {/* Rimosso: <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-normal max-w-[100px] overflow-hidden text-ellipsis">{fustella.descrizione}</td> */}
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.fornitore || '-'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.codice_fornitore || '-'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.cliente || '-'}</td>

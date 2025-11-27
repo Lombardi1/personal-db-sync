@@ -15,11 +15,7 @@ interface CaricoFustellaTabProps {
 export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) {
   const [formData, setFormData] = useState({
     codice: 'FST-001',
-    descrizione: '',
-    // Rimosso: formato: '',
-    // Rimosso: materiale: '',
-    // Rimosso: ubicazione: '',
-    // Rimosso: note: '',
+    // Rimosso: descrizione: '',
     disponibile: true,
     fornitore: '',
     codice_fornitore: '',
@@ -52,20 +48,16 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.descrizione || 
+    if (/*!formData.descrizione ||*/ 
         !formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
         !formData.fustellatrice || (formData.incollatura && (!formData.incollatrice || !formData.tipo_incollatura))) {
       notifications.showError('⚠️ Compila tutti i campi obbligatori (*)');
       return;
     }
 
-    const nuovaFustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica' | 'formato' | 'materiale' | 'ubicazione' | 'note'> = {
+    const nuovaFustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica' | 'formato' | 'materiale' | 'ubicazione' | 'note' | 'descrizione'> = {
       codice: formData.codice,
-      descrizione: formData.descrizione.trim(),
-      // Rimosso: formato: formData.formato.trim(),
-      // Rimosso: materiale: formData.materiale.trim(),
-      // Rimosso: ubicazione: formData.ubicazione.trim(),
-      // Rimosso: note: formData.note.trim() || null,
+      // Rimosso: descrizione: formData.descrizione.trim(),
       disponibile: formData.disponibile,
       fornitore: formData.fornitore.trim(),
       codice_fornitore: formData.codice_fornitore.trim() || null,
@@ -89,11 +81,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
 
       setFormData({
         codice: generateNextFustellaCode(),
-        descrizione: '',
-        // Rimosso: formato: '',
-        // Rimosso: materiale: '',
-        // Rimosso: ubicazione: '',
-        // Rimosso: note: '',
+        // Rimosso: descrizione: '',
         disponibile: true,
         fornitore: '',
         codice_fornitore: '',
@@ -135,24 +123,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
             />
           </div>
 
-          <div>
-            <Label htmlFor="descrizione" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
-              <i className="fas fa-tag mr-1"></i> Descrizione *
-            </Label>
-            <Input
-              id="descrizione"
-              type="text"
-              value={formData.descrizione}
-              onChange={(e) => handleChange('descrizione', e.target.value)}
-              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
-              placeholder="es. Fustella scatola pizza"
-              required
-            />
-          </div>
-
-          {/* Rimosso: Formato */}
-          {/* Rimosso: Materiale */}
-          {/* Rimosso: Ubicazione */}
+          {/* Rimosso: Descrizione */}
 
           <div>
             <Label htmlFor="fornitore" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
@@ -328,8 +299,6 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
               </>
             )}
           </div>
-
-          {/* Rimosso: Note */}
         </div>
 
         <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
@@ -345,11 +314,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
             onClick={() => {
               setFormData({
                 codice: generateNextFustellaCode(),
-                descrizione: '',
-                // Rimosso: formato: '',
-                // Rimosso: materiale: '',
-                // Rimosso: ubicazione: '',
-                // Rimosso: note: '',
+                // Rimosso: descrizione: '',
                 disponibile: true,
                 fornitore: '',
                 codice_fornitore: '',
