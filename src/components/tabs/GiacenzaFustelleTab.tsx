@@ -24,10 +24,10 @@ export function GiacenzaFustelleTab({
 }: GiacenzaFustelleTabProps) {
   const [filtri, setFiltri] = useState({
     codice: '',
-    descrizione: '',
-    formato: '',
-    materiale: '',
-    ubicazione: '',
+    fornitore: '', // Nuovo filtro
+    cliente: '',   // Nuovo filtro
+    lavoro: '',    // Nuovo filtro
+    resa: '',      // Nuovo filtro
   });
   const [fustelleFiltered, setFustelleFiltered] = useState<Fustella[]>([]);
 
@@ -43,7 +43,7 @@ export function GiacenzaFustelleTab({
       if (value) {
         filtered = filtered.filter(f => {
           const field = f[key as keyof Fustella];
-          return String(field).toLowerCase().includes(value.toLowerCase());
+          return String(field || '').toLowerCase().includes(value.toLowerCase());
         });
       }
     });
@@ -54,10 +54,10 @@ export function GiacenzaFustelleTab({
   const resetFiltri = () => {
     const emptyFiltri = {
       codice: '',
-      descrizione: '',
-      formato: '',
-      materiale: '',
-      ubicazione: '',
+      fornitore: '',
+      cliente: '',
+      lavoro: '',
+      resa: '',
     };
     setFiltri(emptyFiltri);
     setFustelleFiltered(fustelle);

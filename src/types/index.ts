@@ -127,6 +127,11 @@ export interface Fustella {
   data_creazione?: string;
   ultima_modifica?: string;
   disponibile: boolean; // Indica se la fustella è fisicamente presente e utilizzabile
+  // NUOVI CAMPI
+  fornitore?: string;
+  cliente?: string;
+  lavoro?: string;
+  resa?: string; // Assumiamo stringa per ora
 }
 
 export interface StoricoMovimentoFustella {

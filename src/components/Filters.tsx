@@ -24,6 +24,14 @@ interface FiltersProps {
     partita_iva?: string;
     email?: string;
     telefono?: string;
+    // Nuovi filtri per Fustelle
+    descrizione?: string; // Mantenuto per Fustelle
+    ubicazione?: string; // Mantenuto per Fustelle
+    materiale?: string; // Mantenuto per Fustelle
+    resa?: string; // Nuovo filtro per Fustelle
+    codice_fustella?: string; // Nuovo filtro per Storico Fustelle
+    tipo?: string; // Nuovo filtro per Storico Fustelle
+    username?: string; // Nuovo filtro per Storico Fustelle
   };
   onFilter: (filtri: any) => void;
   onReset: () => void;
@@ -40,8 +48,10 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
   };
 
   const isAnagraficaSection = sezione === 'clienti' || sezione === 'fornitori';
-  const isCartoniSection = !isAnagraficaSection && sezione !== 'ordini-acquisto';
+  const isCartoniSection = ['dashboard', 'ordini', 'esauriti', 'carico'].includes(sezione); // Aggiornato per includere 'carico'
   const isOrdiniAcquistoSection = sezione === 'ordini-acquisto';
+  const isFustelleGiacenzaSection = sezione === 'fustelle-giacenza'; // Nuova sezione per Giacenza Fustelle
+  const isStoricoFustelleSection = sezione === 'storico-fustelle'; // Nuova sezione per Storico Fustelle
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-4 sm:mb-5">
@@ -365,6 +375,117 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     </select>
                   </div>
                 )}
+              </>
+            )}
+
+            {/* Filtri per Giacenza Fustelle */}
+            {isFustelleGiacenzaSection && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-barcode"></i> Codice Fustella
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.codice || ''}
+                    onChange={(e) => handleChange('codice', e.target.value)}
+                    placeholder="FST-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-truck"></i> Fornitore
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.fornitore || ''}
+                    onChange={(e) => handleChange('fornitore', e.target.value)}
+                    placeholder="Fornitore Fustelle"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-user"></i> Cliente
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.cliente || ''}
+                    onChange={(e) => handleChange('cliente', e.target.value)}
+                    placeholder="Cliente Alpha"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-briefcase"></i> Lavoro
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.lavoro || ''}
+                    onChange={(e) => handleChange('lavoro', e.target.value)}
+                    placeholder="LAV-2025-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-chart-line"></i> Resa
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.resa || ''}
+                    onChange={(e) => handleChange('resa', e.target.value)}
+                    placeholder="1/2"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Filtri per Storico Fustelle */}
+            {isStoricoFustelleSection && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-barcode"></i> Codice Fustella
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.codice_fustella || ''}
+                    onChange={(e) => handleChange('codice_fustella', e.target.value)}
+                    placeholder="FST-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-exchange-alt"></i> Tipo Movimento
+                  </label>
+                  <select
+                    value={filtri.tipo || ''}
+                    onChange={(e) => handleChange('tipo', e.target.value)}
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  >
+                    <option value="">Tutti</option>
+                    <option value="carico">Carico</option>
+                    <option value="scarico">Scarico</option>
+                    <option value="modifica">Modifica</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-user"></i> Utente
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.username || ''}
+                    onChange={(e) => handleChange('username', e.target.value)}
+                    placeholder="Nome Utente"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
               </>
             )}
           </div>

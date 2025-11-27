@@ -21,6 +21,10 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     ubicazione: '',
     note: '',
     disponibile: true,
+    fornitore: '', // Nuovo campo
+    cliente: '',   // Nuovo campo
+    lavoro: '',    // Nuovo campo
+    resa: '',      // Nuovo campo
   });
 
   useEffect(() => {
@@ -39,7 +43,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.descrizione || !formData.formato || !formData.materiale || !formData.ubicazione) {
+    if (!formData.descrizione || !formData.formato || !formData.materiale || !formData.ubicazione ||
+        !formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa) { // Validazione nuovi campi
       notifications.showError('⚠️ Compila tutti i campi obbligatori (*)');
       return;
     }
@@ -52,6 +57,10 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       ubicazione: formData.ubicazione.trim(),
       note: formData.note.trim() || '-',
       disponibile: formData.disponibile,
+      fornitore: formData.fornitore.trim(), // Nuovo campo
+      cliente: formData.cliente.trim(),     // Nuovo campo
+      lavoro: formData.lavoro.trim(),       // Nuovo campo
+      resa: formData.resa.trim(),           // Nuovo campo
     };
 
     const { error } = await aggiungiFustella(nuovaFustella);
@@ -67,6 +76,10 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
         ubicazione: '',
         note: '',
         disponibile: true,
+        fornitore: '', // Reset nuovi campi
+        cliente: '',
+        lavoro: '',
+        resa: '',
       });
     } else {
       notifications.showError('Errore durante il salvataggio della fustella');
@@ -154,6 +167,68 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
             />
           </div>
 
+          {/* NUOVI CAMPI */}
+          <div>
+            <Label htmlFor="fornitore" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+              <i className="fas fa-truck mr-1"></i> Fornitore *
+            </Label>
+            <Input
+              id="fornitore"
+              type="text"
+              value={formData.fornitore}
+              onChange={(e) => handleChange('fornitore', e.target.value)}
+              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+              placeholder="es. Fornitore Fustelle Srl"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="cliente" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+              <i className="fas fa-user mr-1"></i> Cliente *
+            </Label>
+            <Input
+              id="cliente"
+              type="text"
+              value={formData.cliente}
+              onChange={(e) => handleChange('cliente', e.target.value)}
+              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+              placeholder="es. Cliente Alpha"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="lavoro" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+              <i className="fas fa-briefcase mr-1"></i> Lavoro *
+            </Label>
+            <Input
+              id="lavoro"
+              type="text"
+              value={formData.lavoro}
+              onChange={(e) => handleChange('lavoro', e.target.value)}
+              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+              placeholder="es. LAV-2025-001"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="resa" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+              <i className="fas fa-chart-line mr-1"></i> Resa *
+            </Label>
+            <Input
+              id="resa"
+              type="text"
+              value={formData.resa}
+              onChange={(e) => handleChange('resa', e.target.value)}
+              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+              placeholder="es. 1/2"
+              required
+            />
+          </div>
+          {/* FINE NUOVI CAMPI */}
+
           <div className="md:col-span-2 lg:col-span-3">
             <Label htmlFor="note" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
               <i className="fas fa-sticky-note mr-1"></i> Note
@@ -204,6 +279,10 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
                 ubicazione: '',
                 note: '',
                 disponibile: true,
+                fornitore: '',
+                cliente: '',
+                lavoro: '',
+                resa: '',
               });
             }}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
