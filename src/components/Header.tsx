@@ -46,9 +46,9 @@ export function Header({
       currentSection = 'storico-stampa';
     } else if (location.pathname === '/azienda-info') {
       currentSection = 'azienda-info';
-    } else if (location.pathname === '/gestione-fustelle') {
+    } else if (location.pathname === '/gestione-fustelle') { // NUOVO: Colore per la pagina Fustelle
       currentSection = 'fustelle';
-    } else if (location.pathname === '/gestione-polimeri') { // NUOVO: Colore per la pagina Polimeri
+    } else if (location.pathname === '/gestione-polimeri') {
       currentSection = 'polimeri';
     } else if (location.pathname === '/gestione-magazzino') {
       const queryParams = new URLSearchParams(location.search);
@@ -76,9 +76,9 @@ export function Header({
       case 'ordini-acquisto':
       case 'azienda-info':
         return 'hsl(var(--summary-header-color))';
-      case 'fustelle':
+      case 'fustelle': // NUOVO: Colore per la pagina Fustelle
         return 'linear-gradient(135deg, hsl(var(--fustelle-color)), hsl(var(--fustelle-color-dark)))';
-      case 'polimeri': // NUOVO: Colore per la pagina Polimeri
+      case 'polimeri':
         return 'linear-gradient(135deg, hsl(var(--polimeri-color)), hsl(var(--polimeri-color-dark)))';
       default:
         return 'linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%))';

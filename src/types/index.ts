@@ -115,3 +115,26 @@ export interface AziendaInfo {
   created_at?: string;
   updated_at?: string;
 }
+
+// NUOVE INTERFACCE PER FUSTELLE
+export interface Fustella {
+  codice: string;
+  descrizione: string;
+  formato: string;
+  materiale: string;
+  ubicazione: string;
+  note?: string;
+  data_creazione?: string;
+  ultima_modifica?: string;
+  disponibile: boolean; // Indica se la fustella è fisicamente presente e utilizzabile
+}
+
+export interface StoricoMovimentoFustella {
+  id?: string;
+  codice_fustella: string;
+  tipo: 'carico' | 'scarico' | 'modifica'; // Carico: creazione/ripristino, Scarico: utilizzo/eliminazione, Modifica: aggiornamento dettagli
+  data: string;
+  note: string;
+  user_id?: string;
+  username?: string;
+}

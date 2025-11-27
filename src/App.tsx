@@ -15,7 +15,8 @@ import OrdiniAcquisto from "./pages/OrdiniAcquisto";
 import StoricoStampa from "./pages/StoricoStampa";
 import AziendaInfoPage from "./pages/AziendaInfo";
 import FustelleDashboard from "./pages/FustelleDashboard";
-import PolimeriDashboard from "./pages/PolimeriDashboard"; // Importa la nuova pagina PolimeriDashboard
+import PolimeriDashboard from "./pages/PolimeriDashboard";
+import GestioneFustelle from "./pages/GestioneFustelle"; // Importa la nuova pagina GestioneFustelle
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -100,10 +101,10 @@ const App = () => {
 
             <Route
               path="/gestione-fustelle"
-              element={renderProtectedRoute(<FustelleDashboard />, ['amministratore'])}
+              element={renderProtectedRoute(<GestioneFustelle />, ['amministratore'])} // Usa GestioneFustelle
             />
 
-            <Route // NUOVA ROTTA PER POLIMERI
+            <Route
               path="/gestione-polimeri"
               element={renderProtectedRoute(<PolimeriDashboard />, ['amministratore'])}
             />
