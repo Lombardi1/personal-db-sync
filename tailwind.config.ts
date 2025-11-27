@@ -65,10 +65,10 @@ export default {
           DEFAULT: "hsl(var(--polimeri-color))",
           dark: "hsl(var(--polimeri-color-dark))",
         },
-        pulitori: { // NUOVO: Colore per Magazzino Pulitori
-          DEFAULT: "hsl(var(--pulitori-color))",
-          dark: "hsl(var(--pulitori-color-dark))",
-        },
+        // Rimosso: pulitori: { // NUOVO: Colore per Magazzino Pulitori
+        // Rimosso:   DEFAULT: "hsl(var(--pulitori-color))",
+        // Rimosso:   dark: "hsl(var(--pulitori-color-dark))",
+        // Rimosso: },
       },
       borderRadius: {
         lg: "var(--radius)",

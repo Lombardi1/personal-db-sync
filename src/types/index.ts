@@ -119,11 +119,6 @@ export interface AziendaInfo {
 -- NUOVE INTERFACCE PER FUSTELLE
 export interface Fustella {
   codice: string;
-  // Rimosso: descrizione: string;
-  // Rimosso: formato: string;
-  // Rimosso: materiale: string;
-  // Rimosso: ubicazione: string;
-  // Rimosso: note?: string;
   data_creazione?: string;
   ultima_modifica?: string;
   disponibile: boolean; // Indica se la fustella è fisicamente presente e utilizzabile
@@ -152,26 +147,26 @@ export interface StoricoMovimentoFustella {
   username?: string;
 }
 
-// NUOVE INTERFACCE PER POLIMERI
-export interface Polimero {
-  codice: string; // Corrisponde a ID
-  nr_fustella?: string; // Corrisponde a NR. Fustella (rinominato da immagine)
-  codice_fornitore?: string; // Corrisponde a Codice Fornitore
-  cliente?: string; // Corrisponde a Cliente
-  lavoro?: string; // Corrisponde a Lavoro
-  resa?: string; // Corrisponde a Resa
-  note?: string; // Corrisponde a Note
-  data_creazione?: string;
-  ultima_modifica?: string;
-  disponibile: boolean;
-}
+// Rimosso: NUOVE INTERFACCE PER POLIMERI
+// Rimosso: export interface Polimero {
+// Rimosso:   codice: string; // Corrisponde a ID
+// Rimosso:   nr_fustella?: string; // Corrisponde a NR. Fustella (rinominato da immagine)
+// Rimosso:   codice_fornitore?: string; // Corrisponde a Codice Fornitore
+// Rimosso:   cliente?: string; // Corrisponde a Cliente
+// Rimosso:   lavoro?: string; // Corrisponde a Lavoro
+// Rimosso:   resa?: string; // Corrisponde a Resa
+// Rimosso:   note?: string; // Corrisponde a Note
+// Rimosso:   data_creazione?: string;
+// Rimosso:   ultima_modifica?: string;
+// Rimosso:   disponibile: boolean;
+// Rimosso: }
 
-export interface StoricoMovimentoPolimero {
-  id?: string;
-  codice_polimero: string;
-  tipo: 'carico' | 'scarico' | 'modifica';
-  data: string;
-  note: string;
-  user_id?: string;
-  username?: string;
-}
+// Rimosso: export interface StoricoMovimentoPolimero {
+// Rimosso:   id?: string;
+// Rimosso:   codice_polimero: string;
+// Rimosso:   tipo: 'carico' | 'scarico' | 'modifica';
+// Rimosso:   data: string;
+// Rimosso:   note: string;
+// Rimosso:   user_id?: string;
+// Rimosso:   username?: string;
+// Rimosso: }
