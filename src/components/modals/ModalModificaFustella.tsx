@@ -24,10 +24,10 @@ interface ModalModificaFustellaProps {
 export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalModificaFustellaProps) {
   const [formData, setFormData] = useState<Partial<Fustella>>({
     descrizione: fustella.descrizione,
-    formato: fustella.formato,
-    materiale: fustella.materiale,
-    ubicazione: fustella.ubicazione,
-    note: fustella.note || '',
+    // Rimosso: formato: fustella.formato,
+    // Rimosso: materiale: fustella.materiale,
+    // Rimosso: ubicazione: fustella.ubicazione,
+    // Rimosso: note: fustella.note || '',
     disponibile: fustella.disponibile,
     fornitore: fustella.fornitore || '',
     codice_fornitore: fustella.codice_fornitore || '',
@@ -51,7 +51,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.descrizione || !formData.formato || !formData.materiale || !formData.ubicazione ||
+    if (!formData.descrizione || 
         !formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
         !formData.fustellatrice || (formData.incollatura && (!formData.incollatrice || !formData.tipo_incollatura))) {
       notifications.showError('⚠️ Compila tutti i campi obbligatori (*)');
@@ -60,10 +60,10 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
 
     const datiAggiornati: Partial<Fustella> = {
       descrizione: formData.descrizione?.trim(),
-      formato: formData.formato?.trim(),
-      materiale: formData.materiale?.trim(),
-      ubicazione: formData.ubicazione?.trim(),
-      note: formData.note?.trim() || null,
+      // Rimosso: formato: formData.formato?.trim(),
+      // Rimosso: materiale: formData.materiale?.trim(),
+      // Rimosso: ubicazione: formData.ubicazione?.trim(),
+      // Rimosso: note: formData.note?.trim() || null,
       disponibile: formData.disponibile,
       fornitore: formData.fornitore?.trim(),
       codice_fornitore: formData.codice_fornitore?.trim() || null,
@@ -115,48 +115,9 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
               />
             </div>
 
-            <div>
-              <Label htmlFor="formato" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
-                <i className="fas fa-expand-arrows-alt mr-1"></i> Formato *
-              </Label>
-              <Input
-                id="formato"
-                type="text"
-                value={formData.formato}
-                onChange={(e) => handleChange('formato', e.target.value)}
-                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="materiale" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
-                <i className="fas fa-layer-group mr-1"></i> Materiale *
-              </Label>
-              <Input
-                id="materiale"
-                type="text"
-                value={formData.materiale}
-                onChange={(e) => handleChange('materiale', e.target.value)}
-                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="ubicazione" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
-                <i className="fas fa-map-marker-alt mr-1"></i> Ubicazione *
-              </Label>
-              <Input
-                id="ubicazione"
-                type="text"
-                value={formData.ubicazione}
-                onChange={(e) => handleChange('ubicazione', e.target.value)}
-                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
-                placeholder="es. Reparto A, Scaffale 3"
-                required
-              />
-            </div>
+            {/* Rimosso: Formato */}
+            {/* Rimosso: Materiale */}
+            {/* Rimosso: Ubicazione */}
 
             <div>
               <Label htmlFor="fornitore" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
@@ -328,19 +289,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
               )}
             </div>
 
-            <div className="md:col-span-2 lg:col-span-3">
-              <Label htmlFor="note" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
-                <i className="fas fa-sticky-note mr-1"></i> Note
-              </Label>
-              <Textarea
-                id="note"
-                value={formData.note}
-                onChange={(e) => handleChange('note', e.target.value)}
-                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
-                rows={3}
-                placeholder="Note opzionali..."
-              />
-            </div>
+            {/* Rimosso: Note */}
           </div>
 
           <div className="flex items-center gap-3">
