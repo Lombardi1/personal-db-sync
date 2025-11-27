@@ -358,11 +358,11 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
               <span className="text-xs sm:text-sm font-medium">Disponibile</span>
             </label>
           </div>
-          </div> {/* This closing div was missing */}
-
+        </form>
         <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
           <Button
             type="submit"
+            onClick={handleSubmit}
             className="bg-[hsl(var(--fustelle-color))] text-white hover:bg-[hsl(var(--fustelle-color-dark))] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
           >
             <i className="fas fa-save mr-1 sm:mr-2"></i>
@@ -370,38 +370,14 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
           </Button>
           <Button
             type="button"
-            onClick={() => {
-              setFormData({
-                codice: generateNextFustellaCode(),
-                descrizione: '',
-                formato: '',
-                materiale: '',
-                ubicazione: '',
-                note: '',
-                disponibile: true,
-                fornitore: '',
-                codice_fornitore: '',
-                cliente: '',
-                lavoro: '',
-                fustellatrice: '',
-                resa: '',
-                pulitore: false,
-                pinza_tagliata: false,
-                tasselli_intercambiabili: false,
-                nr_tasselli: null,
-                incollatura: false,
-                incollatrice: '',
-                tipo_incollatura: '',
-              });
-            }}
+            onClick={onClose}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
           >
-            <i className="fas fa-eraser mr-1 sm:mr-2"></i>
-            Pulisci Form
+            <i className="fas fa-times mr-1 sm:mr-2"></i>
+            Annulla
           </Button>
         </div>
-      </form>
-    </DialogContent>
+      </DialogContent>
     </Dialog>
   );
 }
