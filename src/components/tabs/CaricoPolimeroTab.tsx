@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Polimero } from '@/types';
+import { Polimero, Fustella } from '@/types'; // Importa Fustella
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as notifications from '@/utils/notifications';
 import { generateNextPolimeroCode, resetPolimeroCodeGenerator, fetchMaxPolimeroCodeFromDB } from '@/utils/polimeroUtils';
+import { supabase } from '@/lib/supabase'; // Importa supabase
 
 interface CaricoPolimeroTabProps {
   aggiungiPolimero: (polimero: Omit<Polimero, 'data_creazione' | 'ultima_modifica'>) => Promise<{ error: any }>;
@@ -23,6 +24,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
     note: '',
     disponibile: true,
   });
+  const [isFetchingFustella, setIsFetchingFustella] = useState(false);
 
   useEffect(() => {
     const initializeAndGenerateCode = async () => {
@@ -32,6 +34,68 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
     };
     initializeAndGenerateCode();
   }, []);
+
+  // Effetto per precompilare i campi dalla fustella
+  useEffect(() => {
+    const fetchFustellaData = async () => {
+      const fustellaCode = formData.nr_fustella.trim();
+      if (fustellaCode) {
+        setIsFetchingFustella(true);
+        try {
+          const { data, error } = await supabase
+            .from('fustelle')
+            .select('cliente, lavoro, resa, codice_fornitore') // Seleziona anche codice_fornitore
+            .eq('codice', fustellaCode)
+            .single();
+
+          if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
+            throw error;
+          }
+
+          if (data) {
+            setFormData(prev => ({
+              ...prev,
+              cliente: data.cliente || '',
+              lavoro: data.lavoro || '',
+              resa: data.resa || '',
+              codice_fornitore: data.codice_fornitore || '', // Precompila anche codice_fornitore
+            }));
+            notifications.showInfo(`Dati fustella '${fustellaCode}' caricati.`);
+          } else {
+            // Se la fustella non è trovata, pulisci i campi correlati
+            setFormData(prev => ({
+              ...prev,
+              cliente: '',
+              lavoro: '',
+              resa: '',
+              codice_fornitore: '',
+            }));
+            notifications.showInfo(`Fustella '${fustellaCode}' non trovata. Inserisci i dati manualmente.`);
+          }
+        } catch (error: any) {
+          console.error('Errore nel recupero dati fustella:', error);
+          notifications.showError(`Errore nel recupero dati fustella: ${error.message}`);
+        } finally {
+          setIsFetchingFustella(false);
+        }
+      } else {
+        // Se il campo nr_fustella è vuoto, pulisci i campi correlati
+        setFormData(prev => ({
+          ...prev,
+          cliente: '',
+          lavoro: '',
+          resa: '',
+          codice_fornitore: '',
+        }));
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      fetchFustellaData();
+    }, 500); // Debounce per evitare chiamate API eccessive
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.nr_fustella]); // Dipendenza: si attiva quando nr_fustella cambia
 
   const handleChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -109,6 +173,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
               placeholder="es. FST-001"
               required
+              disabled={isFetchingFustella}
             />
           </div>
 
@@ -124,6 +189,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
               placeholder="es. FOR-001"
               required
+              disabled={isFetchingFustella}
             />
           </div>
 
@@ -139,6 +205,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
               placeholder="es. Cliente Alpha"
               required
+              disabled={isFetchingFustella}
             />
           </div>
 
@@ -154,6 +221,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
               placeholder="es. LAV-2025-001"
               required
+              disabled={isFetchingFustella}
             />
           </div>
 
@@ -169,6 +237,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
               placeholder="es. 1/2"
               required
+              disabled={isFetchingFustella}
             />
           </div>
 
@@ -207,6 +276,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
           <Button
             type="submit"
             className="bg-[hsl(var(--polimeri-color))] text-white hover:bg-[hsl(var(--polimeri-color-dark))] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
+            disabled={isFetchingFustella}
           >
             <i className="fas fa-save mr-1 sm:mr-2"></i>
             Salva Polimero
@@ -226,6 +296,7 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
               });
             }}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
+            disabled={isFetchingFustella}
           >
             <i className="fas fa-eraser mr-1 sm:mr-2"></i>
             Pulisci Form
