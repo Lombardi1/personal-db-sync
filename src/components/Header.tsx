@@ -50,9 +50,9 @@ export function Header({
       currentSection = 'fustelle';
     } else if (location.pathname === '/gestione-polimeri') {
       currentSection = 'polimeri';
-    } else if (location.pathname === '/gestione-pulitori') { // NUOVO: Colore per la pagina Pulitori
+    } /* Rimosso: else if (location.pathname === '/gestione-pulitori') { // NUOVO: Colore per la pagina Pulitori
       currentSection = 'pulitori';
-    } else if (location.pathname === '/gestione-magazzino') {
+    } */ else if (location.pathname === '/gestione-magazzino') {
       const queryParams = new URLSearchParams(location.search);
       currentSection = queryParams.get('tab') || 'giacenza';
     }
@@ -82,8 +82,8 @@ export function Header({
         return 'linear-gradient(135deg, hsl(var(--fustelle-color)), hsl(var(--fustelle-color-dark)))';
       case 'polimeri':
         return 'linear-gradient(135deg, hsl(var(--polimeri-color)), hsl(var(--polimeri-color-dark)))';
-      case 'pulitori': // NUOVO: Colore per la pagina Pulitori
-        return 'linear-gradient(135deg, hsl(var(--pulitori-color)), hsl(var(--pulitori-color-dark)))';
+      /* Rimosso: case 'pulitori': // NUOVO: Colore per la pagina Pulitori
+        return 'linear-gradient(135deg, hsl(var(--pulitori-color)), hsl(var(--pulitori-color-dark)))'; */
       default:
         return 'linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%))';
     }
