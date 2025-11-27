@@ -6,7 +6,7 @@ interface FustelleTabsProps {
   setActiveTab: (tab: string) => void;
   counts: {
     giacenza: number;
-    storico: number;
+    // Rimosso: storico: number;
   };
 }
 
@@ -14,7 +14,7 @@ export function FustelleTabs({ activeTab, setActiveTab, counts }: FustelleTabsPr
   const tabs = [
     { id: 'giacenza', icon: 'fa-shapes', label: 'Giacenza', count: counts.giacenza },
     { id: 'carico', icon: 'fa-plus-square', label: 'Carico Fustella' },
-    { id: 'storico', icon: 'fa-history', label: 'Storico Fustelle', count: counts.storico }
+    // Rimosso: { id: 'storico', icon: 'fa-history', label: 'Storico Fustelle', count: counts.storico }
   ];
 
   return (

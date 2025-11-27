@@ -10,7 +10,7 @@ import { Home } from 'lucide-react';
 // Importa i componenti delle schede (li creeremo a breve)
 import { GiacenzaFustelleTab } from '@/components/tabs/GiacenzaFustelleTab';
 import { CaricoFustellaTab } from '@/components/tabs/CaricoFustellaTab';
-import { StoricoFustelleTab } from '@/components/tabs/StoricoFustelleTab';
+// Rimosso: import { StoricoFustelleTab } from '@/components/tabs/StoricoFustelleTab';
 
 const GestioneFustelle = () => {
   const location = useLocation();
@@ -57,14 +57,14 @@ const GestioneFustelle = () => {
           setActiveTab={setActiveTab}
           counts={{
             giacenza: fustelleData.fustelle.length,
-            storico: fustelleData.storicoFustelle.length
+            // Rimosso: storico: fustelleData.storicoFustelle.length
           }}
         />
 
         <div className="bg-white border border-[hsl(214,32%,91%)] rounded-b-lg rounded-tr-lg shadow-sm p-6">
           {activeTab === 'giacenza' && <GiacenzaFustelleTab {...fustelleData} />}
           {activeTab === 'carico' && <CaricoFustellaTab aggiungiFustella={fustelleData.aggiungiFustella} />}
-          {activeTab === 'storico' && <StoricoFustelleTab storico={fustelleData.storicoFustelle} />}
+          {/* Rimosso: {activeTab === 'storico' && <StoricoFustelleTab storico={fustelleData.storicoFustelle} />} */}
         </div>
       </div>
 

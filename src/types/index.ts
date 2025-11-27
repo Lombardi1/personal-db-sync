@@ -137,15 +137,15 @@ export interface Fustella {
   tipo_incollatura?: string; // Nuovo campo
 }
 
-export interface StoricoMovimentoFustella {
-  id?: string;
-  codice_fustella: string;
-  tipo: 'carico' | 'scarico' | 'modifica'; // Carico: creazione/ripristino, Scarico: utilizzo/eliminazione, Modifica: aggiornamento dettagli
-  data: string;
-  note: string;
-  user_id?: string;
-  username?: string;
-}
+// Rimosso: export interface StoricoMovimentoFustella {
+//   id?: string;
+//   codice_fustella: string;
+//   tipo: 'carico' | 'scarico' | 'modifica'; // Carico: creazione/ripristino, Scarico: utilizzo/eliminazione, Modifica: aggiornamento dettagli
+//   data: string;
+//   note: string;
+//   user_id?: string;
+//   username?: string;
+// }
 
 // NUOVE INTERFACCE PER POLIMERI
 export interface Polimero {
