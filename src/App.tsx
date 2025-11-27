@@ -13,7 +13,8 @@ import StampaDashboard from "./pages/StampaDashboard";
 import Anagrafica from "./pages/Anagrafica";
 import OrdiniAcquisto from "./pages/OrdiniAcquisto";
 import StoricoStampa from "./pages/StoricoStampa";
-import AziendaInfoPage from "./pages/AziendaInfo"; // Importa la nuova pagina
+import AziendaInfoPage from "./pages/AziendaInfo";
+import FustelleDashboard from "./pages/FustelleDashboard"; // Importa la nuova pagina FustelleDashboard
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -91,9 +92,14 @@ const App = () => {
               element={renderProtectedRoute(<StoricoStampa />, ['stampa'])}
             />
 
-            <Route // NUOVA ROTTA PER AZIENDA INFO
+            <Route
               path="/azienda-info"
               element={renderProtectedRoute(<AziendaInfoPage />, ['amministratore'])}
+            />
+
+            <Route // NUOVA ROTTA PER FUSTELLE
+              path="/gestione-fustelle"
+              element={renderProtectedRoute(<FustelleDashboard />, ['amministratore'])}
             />
             
             <Route path="*" element={<NotFound />} />

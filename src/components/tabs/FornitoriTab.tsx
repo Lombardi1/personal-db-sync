@@ -158,32 +158,32 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
           <Table className="min-w-full table-auto">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs sm:text-sm min-w-[70px]">Codice</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[60px]">Codice</TableHead>
                 <TableHead className="text-xs sm:text-sm min-w-[100px]">Nome</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[80px] whitespace-normal">Tipo Fornitore</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[90px] whitespace-normal">P.IVA / Cod. Fiscale</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[70px] whitespace-normal">Città</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[70px] whitespace-normal">Tipo Fornitore</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[80px] whitespace-normal">P.IVA / Cod. Fiscale</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[60px] whitespace-normal">Città</TableHead>
                 <TableHead className="text-xs sm:text-sm min-w-[70px]">Telefono</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[100px] whitespace-normal">Email</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[80px] whitespace-normal">Cond. Pagamento</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[40px]">IVA</TableHead>
-                <TableHead className="text-xs sm:text-sm min-w-[100px] whitespace-normal">Banca</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[90px] whitespace-normal">Email</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[70px] whitespace-normal">Cond. Pagamento</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[30px]">IVA</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[90px] whitespace-normal">Banca</TableHead>
                 <TableHead className="text-right text-xs sm:text-sm min-w-[70px]">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {fornitoriFiltered.map((fornitore) => (
                 <TableRow key={fornitore.id}>
-                  <TableCell className="font-medium text-xs sm:text-sm min-w-[70px]">{fornitore.codice_anagrafica || '-'}</TableCell>
+                  <TableCell className="font-medium text-xs sm:text-sm min-w-[60px]">{fornitore.codice_anagrafica || '-'}</TableCell>
                   <TableCell className="font-medium text-xs sm:text-sm min-w-[100px] whitespace-normal">{fornitore.nome}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[80px] whitespace-normal">{fornitore.tipo_fornitore || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[90px] whitespace-normal">{fornitore.partita_iva || fornitore.codice_fiscale || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[70px] whitespace-normal">{fornitore.citta || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[70px] whitespace-normal">{fornitore.tipo_fornitore || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[80px] whitespace-normal">{fornitore.partita_iva || fornitore.codice_fiscale || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[60px] whitespace-normal">{fornitore.citta || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm min-w-[70px] whitespace-normal">{fornitore.telefono || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[100px] whitespace-normal">{fornitore.email || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[80px] whitespace-normal">{fornitore.condizione_pagamento || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[40px]">{fornitore.considera_iva ? 'Sì' : 'No'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[100px] whitespace-normal">{fornitore.banca || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[90px] whitespace-normal">{fornitore.email || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[70px] whitespace-normal">{fornitore.condizione_pagamento || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[30px]">{fornitore.considera_iva ? 'Sì' : 'No'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[90px] whitespace-normal">{fornitore.banca || '-'}</TableCell>
                   <TableCell className="text-right min-w-[70px]">
                     <div className="flex justify-end gap-1 sm:gap-2">
                       <Button

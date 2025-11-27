@@ -58,6 +58,8 @@ All colors MUST be HSL.
     --summary-header-color: 30 100% 50%; /* Colore arancione per l'header della dashboard */
     --ordini-acquisto-color: 25 95% 55%; /* Nuovo colore per Ordini d'Acquisto (arancione scuro) */
     --ordini-acquisto-color-dark: 25 95% 45%;
+    --fustelle-color: 280 80% 40%; /* NUOVO: Colore per Magazzino Fustelle (viola) */
+    --fustelle-color-dark: 280 80% 30%;
 
     /* Nuovi colori per gli stati degli ordini d'acquisto */
     --stato-in-attesa: 39 100% 50%; /* Arancione */

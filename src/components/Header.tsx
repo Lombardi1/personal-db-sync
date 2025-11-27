@@ -44,8 +44,10 @@ export function Header({
       currentSection = 'ordini-acquisto';
     } else if (location.pathname === '/storico-stampa') {
       currentSection = 'storico-stampa';
-    } else if (location.pathname === '/azienda-info') { // NUOVO: Colore per la pagina AziendaInfo
+    } else if (location.pathname === '/azienda-info') {
       currentSection = 'azienda-info';
+    } else if (location.pathname === '/gestione-fustelle') { // NUOVO: Colore per la pagina Fustelle
+      currentSection = 'fustelle';
     } else if (location.pathname === '/gestione-magazzino') {
       const queryParams = new URLSearchParams(location.search);
       currentSection = queryParams.get('tab') || 'giacenza';
@@ -70,8 +72,10 @@ export function Header({
       case 'clienti':
       case 'fornitori':
       case 'ordini-acquisto':
-      case 'azienda-info': // NUOVO: Colore per la pagina AziendaInfo
+      case 'azienda-info':
         return 'hsl(var(--summary-header-color))';
+      case 'fustelle': // NUOVO: Colore per la pagina Fustelle
+        return 'linear-gradient(135deg, hsl(var(--fustelle-color)), hsl(var(--fustelle-color-dark)))';
       default:
         return 'linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%))';
     }

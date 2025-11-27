@@ -57,6 +57,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        fustelle: { // NUOVO: Colore per Magazzino Fustelle
+          DEFAULT: "hsl(var(--fustelle-color))",
+          dark: "hsl(var(--fustelle-color-dark))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
