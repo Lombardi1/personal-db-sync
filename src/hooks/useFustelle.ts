@@ -4,6 +4,7 @@ import { Fustella, StoricoMovimentoFustella } from '@/types';
 import * as notifications from '@/utils/notifications';
 import { useAuth } from '@/hooks/useAuth';
 import { resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils';
+import { resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 export function useFustelle() {
   const [fustelle, setFustelle] = useState<Fustella[]>([]);

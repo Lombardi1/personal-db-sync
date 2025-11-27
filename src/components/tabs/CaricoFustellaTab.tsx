@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as notifications from '@/utils/notifications';
 import { generateNextFustellaCode, resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils';
+import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 interface CaricoFustellaTabProps {
   aggiungiFustella: (fustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica'>) => Promise<{ error: any }>;
@@ -15,7 +16,6 @@ interface CaricoFustellaTabProps {
 export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) {
   const [formData, setFormData] = useState({
     codice: 'FST-001',
-    // Rimosso: descrizione: '',
     disponibile: true,
     fornitore: '',
     codice_fornitore: '',
@@ -23,7 +23,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     lavoro: '',
     fustellatrice: '',
     resa: '',
-    pulitore: false,
+    hasPulitore: false, // Nuovo stato per controllare la presenza del pulitore
+    pulitore_codice: '', // Nuovo campo per il codice del pulitore
     pinza_tagliata: false,
     tasselli_intercambiabili: false,
     nr_tasselli: null as number | null,
@@ -33,31 +34,45 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
   });
 
   useEffect(() => {
-    const initializeAndGenerateCode = async () => {
-      const maxCode = await fetchMaxFustellaCodeFromDB();
-      resetFustellaCodeGenerator(maxCode);
+    const initializeAndGenerateCodes = async () => {
+      const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
+      resetFustellaCodeGenerator(maxFustellaCode);
       setFormData(prev => ({ ...prev, codice: generateNextFustellaCode() }));
+
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
+      // Non generiamo il codice del pulitore qui, ma solo quando 'hasPulitore' è spuntato
     };
-    initializeAndGenerateCode();
+    initializeAndGenerateCodes();
   }, []);
 
   const handleChange = (field: keyof typeof formData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newState = { ...prev, [field]: value };
+      if (field === 'hasPulitore') {
+        if (value) {
+          // Se 'hasPulitore' viene spuntato, genera un nuovo codice pulitore
+          newState.pulitore_codice = generateNextPulitoreCode();
+        } else {
+          // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
+          newState.pulitore_codice = '';
+        }
+      }
+      return newState;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (/*!formData.descrizione ||*/ 
-        !formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
+    if (!formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
         !formData.fustellatrice || (formData.incollatura && (!formData.incollatrice || !formData.tipo_incollatura))) {
       notifications.showError('⚠️ Compila tutti i campi obbligatori (*)');
       return;
     }
 
-    const nuovaFustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica' | 'formato' | 'materiale' | 'ubicazione' | 'note' | 'descrizione'> = {
+    const nuovaFustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica'> = {
       codice: formData.codice,
-      // Rimosso: descrizione: formData.descrizione.trim(),
       disponibile: formData.disponibile,
       fornitore: formData.fornitore.trim(),
       codice_fornitore: formData.codice_fornitore.trim() || null,
@@ -65,7 +80,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       lavoro: formData.lavoro.trim(),
       fustellatrice: formData.fustellatrice.trim(),
       resa: formData.resa.trim(),
-      pulitore: formData.pulitore,
+      pulitore_codice: formData.hasPulitore ? formData.pulitore_codice : null, // Inserisce il codice solo se 'hasPulitore' è true
       pinza_tagliata: formData.pinza_tagliata,
       tasselli_intercambiabili: formData.tasselli_intercambiabili,
       nr_tasselli: formData.nr_tasselli,
@@ -74,14 +89,21 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       tipo_incollatura: formData.incollatura ? formData.tipo_incollatura.trim() : null,
     };
 
-    const { error } = await aggiungiFustella(nuovaFustella as Fustella); // Cast to Fustella for type compatibility
+    const { error } = await aggiungiFustella(nuovaFustella);
 
     if (!error) {
       notifications.showSuccess(`✅ Fustella '${formData.codice}' registrata con successo!`);
+      
+      // Re-inizializza i generatori e resetta il form
+      const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
+      resetFustellaCodeGenerator(maxFustellaCode);
+      const nextFustellaCode = generateNextFustellaCode();
+
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
 
       setFormData({
-        codice: generateNextFustellaCode(),
-        // Rimosso: descrizione: '',
+        codice: nextFustellaCode,
         disponibile: true,
         fornitore: '',
         codice_fornitore: '',
@@ -89,7 +111,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
         lavoro: '',
         fustellatrice: '',
         resa: '',
-        pulitore: false,
+        hasPulitore: false,
+        pulitore_codice: '',
         pinza_tagliata: false,
         tasselli_intercambiabili: false,
         nr_tasselli: null,
@@ -122,8 +145,6 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md bg-gray-100 text-xs sm:text-sm font-mono font-bold"
             />
           </div>
-
-          {/* Rimosso: Descrizione */}
 
           <div>
             <Label htmlFor="fornitore" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
@@ -217,11 +238,11 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
           <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="pulitore"
-                checked={formData.pulitore}
-                onCheckedChange={(checked) => handleChange('pulitore', checked)}
+                id="hasPulitore"
+                checked={formData.hasPulitore}
+                onCheckedChange={(checked) => handleChange('hasPulitore', checked)}
               />
-              <Label htmlFor="pulitore" className="text-xs sm:text-sm">Pulitore</Label>
+              <Label htmlFor="hasPulitore" className="text-xs sm:text-sm">Ha Pulitore</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -240,6 +261,21 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
               <Label htmlFor="tasselli_intercambiabili" className="text-xs sm:text-sm">Tasselli Intercambiabili</Label>
             </div>
           </div>
+
+          {formData.hasPulitore && (
+            <div>
+              <Label htmlFor="pulitore_codice" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+                <i className="fas fa-broom mr-1"></i> Codice Pulitore (auto)
+              </Label>
+              <Input
+                id="pulitore_codice"
+                type="text"
+                value={formData.pulitore_codice}
+                disabled
+                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md bg-gray-100 text-xs sm:text-sm font-mono font-bold"
+              />
+            </div>
+          )}
 
           {formData.tasselli_intercambiabili && (
             <div>
@@ -311,10 +347,16 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
           </Button>
           <Button
             type="button"
-            onClick={() => {
+            onClick={async () => { // Modificato per essere async
+              const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
+              resetFustellaCodeGenerator(maxFustellaCode);
+              const nextFustellaCode = generateNextFustellaCode();
+
+              const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+              resetPulitoreCodeGenerator(maxPulitoreCode);
+
               setFormData({
-                codice: generateNextFustellaCode(),
-                // Rimosso: descrizione: '',
+                codice: nextFustellaCode,
                 disponibile: true,
                 fornitore: '',
                 codice_fornitore: '',
@@ -322,7 +364,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
                 lavoro: '',
                 fustellatrice: '',
                 resa: '',
-                pulitore: false,
+                hasPulitore: false,
+                pulitore_codice: '',
                 pinza_tagliata: false,
                 tasselli_intercambiabili: false,
                 nr_tasselli: null,

@@ -119,11 +119,6 @@ export interface AziendaInfo {
 -- NUOVE INTERFACCE PER FUSTELLE
 export interface Fustella {
   codice: string;
-  // Rimosso: descrizione: string;
-  // Rimosso: formato: string;
-  // Rimosso: materiale: string;
-  // Rimosso: ubicazione: string;
-  // Rimosso: note?: string;
   data_creazione?: string;
   ultima_modifica?: string;
   disponibile: boolean; // Indica se la fustella è fisicamente presente e utilizzabile
@@ -133,7 +128,7 @@ export interface Fustella {
   lavoro?: string;
   fustellatrice?: string; // Nuovo campo
   resa?: string; // Assumiamo stringa per ora
-  pulitore?: boolean; // Nuovo campo
+  pulitore_codice?: string | null; // CAMBIATO: da 'pulitore: boolean' a 'pulitore_codice: string | null'
   pinza_tagliata?: boolean; // Nuovo campo
   tasselli_intercambiabili?: boolean; // Nuovo campo
   nr_tasselli?: number; // Nuovo campo

@@ -21,14 +21,13 @@ export function TabellaFustelle({ fustelle, onEdit, onDelete, onChangeDisponibil
           <thead>
             <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[60px]">Codice</th>
-              {/* Rimosso: <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px]">Descrizione</th> */}
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Fornitore</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Cod. Fornitore</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Cliente</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Lavoro</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Fustellatrice</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[50px]">Resa</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[50px]">Pulitore</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[80px]">Codice Pulitore</th> {/* CAMBIATO */}
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[50px]">Pinza Tagliata</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[50px]">Tasselli</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[50px]">Nr. Tasselli</th>
@@ -45,14 +44,13 @@ export function TabellaFustelle({ fustelle, onEdit, onDelete, onChangeDisponibil
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">
                   <span className="codice">{fustella.codice}</span>
                 </td>
-                {/* Rimosso: <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-normal max-w-[100px] overflow-hidden text-ellipsis">{fustella.descrizione}</td> */}
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.fornitore || '-'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.codice_fornitore || '-'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.cliente || '-'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.lavoro || '-'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.fustellatrice || '-'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.resa || '-'}</td>
-                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.pulitore ? 'Sì' : 'No'}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.pulitore_codice || '-'}</td> {/* CAMBIATO */}
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.pinza_tagliata ? 'Sì' : 'No'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.tasselli_intercambiabili ? 'Sì' : 'No'}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{fustella.nr_tasselli || '-'}</td>

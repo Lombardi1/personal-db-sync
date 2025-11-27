@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 interface ModalModificaFustellaProps {
   fustella: Fustella;
@@ -23,7 +24,6 @@ interface ModalModificaFustellaProps {
 
 export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalModificaFustellaProps) {
   const [formData, setFormData] = useState<Partial<Fustella>>({
-    // Rimosso: descrizione: fustella.descrizione,
     disponibile: fustella.disponibile,
     fornitore: fustella.fornitore || '',
     codice_fornitore: fustella.codice_fornitore || '',
@@ -31,31 +31,53 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     lavoro: fustella.lavoro || '',
     fustellatrice: fustella.fustellatrice || '',
     resa: fustella.resa || '',
-    pulitore: fustella.pulitore || false,
+    hasPulitore: !!fustella.pulitore_codice, // Nuovo stato per controllare la presenza del pulitore
+    pulitore_codice: fustella.pulitore_codice || '', // Nuovo campo per il codice del pulitore
     pinza_tagliata: fustella.pinza_tagliata || false,
     tasselli_intercambiabili: fustella.tasselli_intercambiabili || false,
-    nr_tasselli: fustella.nr_tasselli || null, // Modificato a null
+    nr_tasselli: fustella.nr_tasselli || null,
     incollatura: fustella.incollatura || false,
     incollatrice: fustella.incollatrice || '',
     tipo_incollatura: fustella.tipo_incollatura || '',
   });
 
-  const handleChange = (field: keyof Fustella, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    // Inizializza il generatore di codici pulitore all'apertura del modale
+    const initializePulitoreCodeGenerator = async () => {
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
+    };
+    initializePulitoreCodeGenerator();
+  }, []);
+
+  const handleChange = (field: keyof typeof formData, value: any) => {
+    setFormData(prev => {
+      const newState = { ...prev, [field]: value };
+      if (field === 'hasPulitore') {
+        if (value) {
+          // Se 'hasPulitore' viene spuntato e il codice non esiste, genera un nuovo codice
+          if (!newState.pulitore_codice) {
+            newState.pulitore_codice = generateNextPulitoreCode();
+          }
+        } else {
+          // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
+          newState.pulitore_codice = '';
+        }
+      }
+      return newState;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (/*!formData.descrizione ||*/ 
-        !formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
+    if (!formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
         !formData.fustellatrice || (formData.incollatura && (!formData.incollatrice || !formData.tipo_incollatura))) {
       notifications.showError('⚠️ Compila tutti i campi obbligatori (*)');
       return;
     }
 
     const datiAggiornati: Partial<Fustella> = {
-      // Rimosso: descrizione: formData.descrizione?.trim(),
       disponibile: formData.disponibile,
       fornitore: formData.fornitore?.trim(),
       codice_fornitore: formData.codice_fornitore?.trim() || null,
@@ -63,7 +85,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
       lavoro: formData.lavoro?.trim(),
       fustellatrice: formData.fustellatrice?.trim(),
       resa: formData.resa?.trim(),
-      pulitore: formData.pulitore,
+      pulitore_codice: formData.hasPulitore ? formData.pulitore_codice : null, // Inserisce il codice solo se 'hasPulitore' è true
       pinza_tagliata: formData.pinza_tagliata,
       tasselli_intercambiabili: formData.tasselli_intercambiabili,
       nr_tasselli: formData.nr_tasselli,
@@ -93,8 +115,6 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {/* Rimosso: Descrizione */}
-
             <div>
               <Label htmlFor="fornitore" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
                 <i className="fas fa-truck mr-1"></i> Fornitore *
@@ -182,11 +202,11 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
             <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="pulitore"
-                  checked={formData.pulitore}
-                  onCheckedChange={(checked) => handleChange('pulitore', checked)}
+                  id="hasPulitore"
+                  checked={formData.hasPulitore}
+                  onCheckedChange={(checked) => handleChange('hasPulitore', checked)}
                 />
-                <Label htmlFor="pulitore" className="text-xs sm:text-sm">Pulitore</Label>
+                <Label htmlFor="hasPulitore" className="text-xs sm:text-sm">Ha Pulitore</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -205,6 +225,21 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                 <Label htmlFor="tasselli_intercambiabili" className="text-xs sm:text-sm">Tasselli Intercambiabili</Label>
               </div>
             </div>
+
+            {formData.hasPulitore && (
+              <div>
+                <Label htmlFor="pulitore_codice" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+                  <i className="fas fa-broom mr-1"></i> Codice Pulitore (auto)
+                </Label>
+                <Input
+                  id="pulitore_codice"
+                  type="text"
+                  value={formData.pulitore_codice}
+                  disabled
+                  className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md bg-gray-100 text-xs sm:text-sm font-mono font-bold"
+                />
+              </div>
+            )}
 
             {formData.tasselli_intercambiabili && (
               <div>
