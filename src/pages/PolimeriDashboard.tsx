@@ -10,7 +10,7 @@ import { Home } from 'lucide-react';
 // Importa i componenti delle schede
 import { GiacenzaPolimeriTab } from '@/components/tabs/GiacenzaPolimeriTab';
 import { CaricoPolimeroTab } from '@/components/tabs/CaricoPolimeroTab';
-import { StoricoPolimeriTab } from '@/components/tabs/StoricoPolimeriTab';
+// Rimosso: import { StoricoPolimeriTab } from '@/components/tabs/StoricoPolimeriTab';
 
 const GestionePolimeri = () => {
   const location = useLocation();
@@ -57,14 +57,14 @@ const GestionePolimeri = () => {
           setActiveTab={setActiveTab}
           counts={{
             giacenza: polimeriData.polimeri.length,
-            storico: polimeriData.storicoPolimeri.length
+            // Rimosso: storico: polimeriData.storicoPolimeri.length
           }}
         />
 
         <div className="bg-white border border-[hsl(214,32%,91%)] rounded-b-lg rounded-tr-lg shadow-sm p-6">
           {activeTab === 'giacenza' && <GiacenzaPolimeriTab {...polimeriData} />}
           {activeTab === 'carico' && <CaricoPolimeroTab aggiungiPolimero={polimeriData.aggiungiPolimero} />}
-          {activeTab === 'storico' && <StoricoPolimeriTab storico={polimeriData.storicoPolimeri} />}
+          {/* Rimosso: {activeTab === 'storico' && <StoricoPolimeriTab storico={polimeriData.storicoPolimeri} />} */}
         </div>
       </div>
 

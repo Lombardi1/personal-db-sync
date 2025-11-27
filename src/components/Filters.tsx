@@ -39,7 +39,7 @@ interface FiltersProps {
     username?: string; // Nuovo filtro per Storico Fustelle
     // Nuovi filtri per Polimeri
     nr_fustella?: string; // Nuovo filtro per Polimeri (corrisponde a NR. Fustella)
-    codice_polimero?: string; // Nuovo filtro per Storico Polimeri
+    // Rimosso: codice_polimero?: string; // Nuovo filtro per Storico Polimeri
   };
   onFilter: (filtri: any) => void;
   onReset: () => void;
@@ -61,7 +61,7 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
   const isFustelleGiacenzaSection = sezione === 'fustelle-giacenza'; // Nuova sezione per Giacenza Fustelle
   const isStoricoFustelleSection = sezione === 'storico-fustelle'; // Nuova sezione per Storico Fustelle
   const isPolimeriGiacenzaSection = sezione === 'polimeri-giacenza'; // Nuova sezione per Giacenza Polimeri
-  const isStoricoPolimeriSection = sezione === 'storico-polimeri'; // Nuova sezione per Storico Polimeri
+  // Rimosso: const isStoricoPolimeriSection = sezione === 'storico-polimeri'; // Nuova sezione per Storico Polimeri
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-4 sm:mb-5">
@@ -625,8 +625,8 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
               </>
             )}
 
-            {/* Filtri per Storico Polimeri */}
-            {isStoricoPolimeriSection && (
+            {/* Rimosso: Filtri per Storico Polimeri */}
+            {/* {isStoricoPolimeriSection && (
               <>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
@@ -668,7 +668,7 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                   />
                 </div>
               </>
-            )}
+            )} */}
           </div>
         </div>
       </CollapsibleContent>

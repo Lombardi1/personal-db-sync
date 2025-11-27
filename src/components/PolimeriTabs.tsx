@@ -6,7 +6,7 @@ interface PolimeriTabsProps {
   setActiveTab: (tab: string) => void;
   counts: {
     giacenza: number;
-    storico: number;
+    // Rimosso: storico: number;
   };
 }
 
@@ -14,7 +14,7 @@ export function PolimeriTabs({ activeTab, setActiveTab, counts }: PolimeriTabsPr
   const tabs = [
     { id: 'giacenza', icon: 'fa-layer-group', label: 'Giacenza', count: counts.giacenza },
     { id: 'carico', icon: 'fa-plus-square', label: 'Carico Polimero' },
-    { id: 'storico', icon: 'fa-history', label: 'Storico Polimeri', count: counts.storico }
+    // Rimosso: { id: 'storico', icon: 'fa-history', label: 'Storico Polimeri', count: counts.storico }
   ];
 
   return (

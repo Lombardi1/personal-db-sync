@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Polimero, StoricoMovimentoPolimero } from '@/types';
+import { Polimero } from '@/types'; // Rimosso: StoricoMovimentoPolimero
 import { Filters } from '@/components/Filters';
 import { Button } from '@/components/ui/button';
 import * as notifications from '@/utils/notifications';
@@ -19,7 +19,7 @@ import { ModalModificaPolimero } from '@/components/modals/ModalModificaPolimero
 
 interface GiacenzaPolimeriTabProps {
   polimeri: Polimero[];
-  storicoPolimeri: StoricoMovimentoPolimero[];
+  // Rimosso: storicoPolimeri: StoricoMovimentoPolimero[];
   loading: boolean;
   modificaPolimero: (codice: string, dati: Partial<Polimero>) => Promise<{ error: any }>;
   eliminaPolimero: (codice: string) => Promise<{ error: any }>;
@@ -28,7 +28,7 @@ interface GiacenzaPolimeriTabProps {
 
 export function GiacenzaPolimeriTab({
   polimeri,
-  storicoPolimeri,
+  // Rimosso: storicoPolimeri,
   loading,
   modificaPolimero,
   eliminaPolimero,
