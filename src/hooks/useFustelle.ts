@@ -74,6 +74,7 @@ export function useFustelle() {
       data_creazione: new Date().toISOString(),
       ultima_modifica: new Date().toISOString(),
     };
+    console.log('[aggiungiFustella] Attempting to insert:', fustellaToInsert); // Add logging
     const { error } = await supabase.from('fustelle').insert([fustellaToInsert]);
     if (!error) {
       const movimento: StoricoMovimentoFustella = {
@@ -87,6 +88,7 @@ export function useFustelle() {
       await loadData();
       notifications.showSuccess(`✅ Fustella '${fustella.codice}' aggiunta con successo!`);
     } else {
+      console.error('[aggiungiFustella] Supabase error:', error); // Log the full error
       notifications.showError(`Errore aggiunta fustella: ${error.message}`);
     }
     return { error };
@@ -103,7 +105,7 @@ export function useFustelle() {
       ...dati,
       ultima_modifica: new Date().toISOString(),
     };
-
+    console.log('[modificaFustella] Attempting to update:', fustellaToUpdate, 'for codice:', codice); // Add logging
     const { error } = await supabase.from('fustelle').update(fustellaToUpdate).eq('codice', codice);
     if (!error) {
       const movimento: StoricoMovimentoFustella = {
@@ -117,6 +119,7 @@ export function useFustelle() {
       await loadData();
       notifications.showSuccess(`✅ Fustella '${codice}' modificata con successo!`);
     } else {
+      console.error('[modificaFustella] Supabase error:', error); // Log the full error
       notifications.showError(`Errore modifica fustella: ${error.message}`);
     }
     return { error };

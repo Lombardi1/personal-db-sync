@@ -38,7 +38,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     pulitore: fustella.pulitore || false,
     pinza_tagliata: fustella.pinza_tagliata || false,
     tasselli_intercambiabili: fustella.tasselli_intercambiabili || false,
-    nr_tasselli: fustella.nr_tasselli || undefined,
+    nr_tasselli: fustella.nr_tasselli || null, // Modificato a null
     incollatura: fustella.incollatura || false,
     incollatrice: fustella.incollatrice || '',
     tipo_incollatura: fustella.tipo_incollatura || '',
@@ -53,12 +53,35 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
 
     if (!formData.descrizione || !formData.formato || !formData.materiale || !formData.ubicazione ||
         !formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
-        !formData.fustellatrice || !formData.incollatrice || !formData.tipo_incollatura) {
+        !formData.fustellatrice || (formData.incollatura && (!formData.incollatrice || !formData.tipo_incollatura))) {
       notifications.showError('⚠️ Compila tutti i campi obbligatori (*)');
       return;
     }
 
-    const { error } = await onModifica(fustella.codice, formData);
+    const datiAggiornati: Partial<Fustella> = {
+      descrizione: formData.descrizione?.trim(),
+      formato: formData.formato?.trim(),
+      materiale: formData.materiale?.trim(),
+      ubicazione: formData.ubicazione?.trim(),
+      note: formData.note?.trim() || null,
+      disponibile: formData.disponibile,
+      fornitore: formData.fornitore?.trim(),
+      codice_fornitore: formData.codice_fornitore?.trim() || null,
+      cliente: formData.cliente?.trim(),
+      lavoro: formData.lavoro?.trim(),
+      fustellatrice: formData.fustellatrice?.trim(),
+      resa: formData.resa?.trim(),
+      pulitore: formData.pulitore,
+      pinza_tagliata: formData.pinza_tagliata,
+      tasselli_intercambiabili: formData.tasselli_intercambiabili,
+      nr_tasselli: formData.nr_tasselli,
+      incollatura: formData.incollatura,
+      incollatrice: formData.incollatura ? formData.incollatrice?.trim() : null,
+      tipo_incollatura: formData.incollatura ? formData.tipo_incollatura?.trim() : null,
+      ultima_modifica: new Date().toISOString(),
+    };
+
+    const { error } = await onModifica(fustella.codice, datiAggiornati);
     if (!error) {
       notifications.showSuccess(`✅ Fustella '${fustella.codice}' modificata con successo!`);
       onClose();
@@ -255,7 +278,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                   id="nr_tasselli"
                   type="number"
                   value={formData.nr_tasselli || ''}
-                  onChange={(e) => handleChange('nr_tasselli', parseInt(e.target.value) || undefined)}
+                  onChange={(e) => handleChange('nr_tasselli', e.target.value === '' ? null : parseInt(e.target.value))}
                   className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
                   min="0"
                 />
@@ -283,6 +306,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                       value={formData.incollatrice}
                       onChange={(e) => handleChange('incollatrice', e.target.value)}
                       className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                      placeholder="es. Bobst Masterfold"
                       required
                     />
                   </div>
@@ -296,6 +320,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                       value={formData.tipo_incollatura}
                       onChange={(e) => handleChange('tipo_incollatura', e.target.value)}
                       className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                      placeholder="es. Lineare, 4 punti"
                       required
                     />
                   </div>
@@ -318,16 +343,64 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
             </div>
           </div>
 
-          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto text-sm">
-              Annulla
-            </Button>
-            <Button type="submit" className="w-full sm:w-auto text-sm bg-[hsl(var(--fustelle-color))] hover:bg-[hsl(var(--fustelle-color-dark))] text-white">
-              Salva Modifiche
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.disponibile}
+                onChange={(e) => handleChange('disponibile', e.target.checked)}
+                className="toggle-checkbox"
+                id="fustella-disponibile"
+              />
+              <label htmlFor="fustella-disponibile" className="toggle-label">
+                <span className="toggle-ball"></span>
+              </label>
+              <span className="text-xs sm:text-sm font-medium">Disponibile</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
+          <Button
+            type="submit"
+            className="bg-[hsl(var(--fustelle-color))] text-white hover:bg-[hsl(var(--fustelle-color-dark))] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
+          >
+            <i className="fas fa-save mr-1 sm:mr-2"></i>
+            Salva Fustella
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              setFormData({
+                codice: generateNextFustellaCode(),
+                descrizione: '',
+                formato: '',
+                materiale: '',
+                ubicazione: '',
+                note: '',
+                disponibile: true,
+                fornitore: '',
+                codice_fornitore: '',
+                cliente: '',
+                lavoro: '',
+                fustellatrice: '',
+                resa: '',
+                pulitore: false,
+                pinza_tagliata: false,
+                tasselli_intercambiabili: false,
+                nr_tasselli: null,
+                incollatura: false,
+                incollatrice: '',
+                tipo_incollatura: '',
+              });
+            }}
+            className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
+          >
+            <i className="fas fa-eraser mr-1 sm:mr-2"></i>
+            Pulisci Form
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

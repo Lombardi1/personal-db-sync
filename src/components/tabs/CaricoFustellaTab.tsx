@@ -30,7 +30,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     pulitore: false,
     pinza_tagliata: false,
     tasselli_intercambiabili: false,
-    nr_tasselli: undefined as number | undefined,
+    nr_tasselli: null as number | null, // Modificato a null
     incollatura: false,
     incollatrice: '',
     tipo_incollatura: '',
@@ -65,10 +65,10 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       formato: formData.formato.trim(),
       materiale: formData.materiale.trim(),
       ubicazione: formData.ubicazione.trim(),
-      note: formData.note.trim() || '-',
+      note: formData.note.trim() || null, // Usa null per note vuote
       disponibile: formData.disponibile,
       fornitore: formData.fornitore.trim(),
-      codice_fornitore: formData.codice_fornitore.trim() || undefined,
+      codice_fornitore: formData.codice_fornitore.trim() || null, // Usa null per codice_fornitore vuoto
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
       fustellatrice: formData.fustellatrice.trim(),
@@ -78,8 +78,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       tasselli_intercambiabili: formData.tasselli_intercambiabili,
       nr_tasselli: formData.nr_tasselli,
       incollatura: formData.incollatura,
-      incollatrice: formData.incollatura ? formData.incollatrice.trim() : undefined,
-      tipo_incollatura: formData.incollatura ? formData.tipo_incollatura.trim() : undefined,
+      incollatrice: formData.incollatura ? formData.incollatrice.trim() : null, // Usa null se incollatura è false
+      tipo_incollatura: formData.incollatura ? formData.tipo_incollatura.trim() : null, // Usa null se incollatura è false
     };
 
     const { error } = await aggiungiFustella(nuovaFustella);
@@ -104,7 +104,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
         pulitore: false,
         pinza_tagliata: false,
         tasselli_intercambiabili: false,
-        nr_tasselli: undefined,
+        nr_tasselli: null,
         incollatura: false,
         incollatrice: '',
         tipo_incollatura: '',
@@ -320,7 +320,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
                 id="nr_tasselli"
                 type="number"
                 value={formData.nr_tasselli || ''}
-                onChange={(e) => handleChange('nr_tasselli', parseInt(e.target.value) || undefined)}
+                onChange={(e) => handleChange('nr_tasselli', e.target.value === '' ? null : parseInt(e.target.value))}
                 className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
                 min="0"
               />
@@ -429,7 +429,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
                 pulitore: false,
                 pinza_tagliata: false,
                 tasselli_intercambiabili: false,
-                nr_tasselli: undefined,
+                nr_tasselli: null,
                 incollatura: false,
                 incollatrice: '',
                 tipo_incollatura: '',
