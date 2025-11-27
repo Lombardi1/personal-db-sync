@@ -33,6 +33,7 @@ interface FiltersProps {
     fustellatrice?: string; // Nuovo filtro per Fustelle
     incollatrice?: string; // Nuovo filtro per Fustelle
     tipo_incollatura?: string; // Nuovo filtro per Fustelle
+    pulitore_codice?: string; // NUOVO FILTRO PER FUSTELLE
     codice_fustella?: string; // Nuovo filtro per Storico Fustelle
     tipo?: string; // Nuovo filtro per Storico Fustelle
     username?: string; // Nuovo filtro per Storico Fustelle
@@ -483,6 +484,18 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     value={filtri.tipo_incollatura || ''}
                     onChange={(e) => handleChange('tipo_incollatura', e.target.value)}
                     placeholder="Lineare"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-broom"></i> Codice Pulitore
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.pulitore_codice || ''}
+                    onChange={(e) => handleChange('pulitore_codice', e.target.value)}
+                    placeholder="PU-001"
                     className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
                   />
                 </div>

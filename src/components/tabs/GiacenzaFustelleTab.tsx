@@ -43,6 +43,7 @@ export function GiacenzaFustelleTab({
     fustellatrice: '',
     resa: '',
     tipo_incollatura: '',
+    pulitore_codice: '', // NUOVO FILTRO
   });
   const [fustelleFiltered, setFustelleFiltered] = useState<Fustella[]>([]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -81,6 +82,7 @@ export function GiacenzaFustelleTab({
       fustellatrice: '',
       resa: '',
       tipo_incollatura: '',
+      pulitore_codice: '', // RESETTA ANCHE IL NUOVO FILTRO
     };
     setFiltri(emptyFiltri);
     setFustelleFiltered(fustelle);
