@@ -315,6 +315,14 @@ export function ModalOrdineAcquistoForm({
   const isCancelled = watch('stato') === 'annullato';
   const isNewOrder = !initialData?.id;
 
+  // Log errors whenever they change
+  React.useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.error("[ModalOrdineAcquistoForm] Current form errors:", errors);
+      toast.error("Ci sono errori nel modulo. Controlla i campi evidenziati.");
+    }
+  }, [errors]);
+
   const resetArticlesAndGenerators = React.useCallback(async (newFornitoreId: string) => {
     console.log('resetArticlesAndGenerators: Triggered with newFornitoreId:', newFornitoreId);
     remove();
@@ -608,11 +616,7 @@ export function ModalOrdineAcquistoForm({
   const handleFormSubmit = async (data: any) => {
     console.log("[ModalOrdineAcquistoForm] handleFormSubmit triggered."); // NEW LOG
     console.log("[ModalOrdineAcquistoForm] Raw form data:", JSON.stringify(data, null, 2)); // NEW LOG
-    if (Object.keys(errors).length > 0) {
-      console.error("[ModalOrdineAcquistoForm] Zod validation errors:", errors); // NEW LOG
-      toast.error("Ci sono errori nel modulo. Controlla i campi evidenziati.");
-      return;
-    }
+    // Rimosso: if (Object.keys(errors).length > 0) { ... }
     try {
       await onSubmit(data as OrdineAcquisto);
       console.log("[ModalOrdineAcquistoForm] onSubmit successful."); // NEW LOG
