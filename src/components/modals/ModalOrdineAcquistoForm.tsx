@@ -68,8 +68,8 @@ const articoloSchema = z.object({
   grammatura: z.string().max(50, 'Grammatura troppo lungo').nullable(),
   numero_fogli: z.preprocess(
     preprocessNumber,
-    z.number().min(1, 'Il numero di fogli deve essere almeno 1').nullable()
-  ),
+    z.number().min(1, 'Il numero di fogli deve essere almeno 1')
+  ).nullable(),
   cliente: z.string().max(255, 'Cliente troppo lungo').nullable(),
   lavoro: z.string().max(255, 'Lavoro troppo lungo').nullable(),
   fsc: z.boolean().nullable(),
@@ -90,8 +90,8 @@ const articoloSchema = z.object({
   tasselli_intercambiabili: z.boolean().nullable(),
   nr_tasselli: z.preprocess(
     preprocessNumber,
-    z.number().min(0, 'Il numero di tasselli non può essere negativo').nullable()
-  ),
+    z.number().min(0, 'Il numero di tasselli non può essere negativo')
+  ).nullable(),
   incollatura: z.boolean().nullable(),
   incollatrice: z.string().max(255, 'Incollatrice troppo lunga').nullable(),
   tipo_incollatura: z.string().max(255, 'Tipo Incollatura troppo lungo').nullable(),
@@ -99,12 +99,12 @@ const articoloSchema = z.object({
   // Campi comuni
   quantita: z.preprocess(
     preprocessNumber,
-    z.number().min(0.001, 'La quantità deve essere almeno 0.001').nullable()
-  ),
+    z.number().min(0.001, 'La quantità deve essere almeno 0.001')
+  ).nullable(),
   prezzo_unitario: z.preprocess(
     preprocessNumber,
-    z.number().min(0, 'Il prezzo unitario non può essere negativo').nullable()
-  ),
+    z.number().min(0, 'Il prezzo unitario non può essere negativo')
+  ).nullable(),
   data_consegna_prevista: z.string().min(1, 'La data di consegna prevista è obbligatoria per l\'articolo'),
   stato: z.enum(['in_attesa', 'confermato', 'ricevuto', 'annullato', 'inviato'], { required_error: 'Lo stato è obbligatorio' }),
 });
@@ -135,6 +135,14 @@ export function ModalOrdineAcquistoForm({
         const isFustelleFornitore = selectedFornitore?.tipo_fornitore === 'Fustelle';
 
         data.articoli.forEach((articolo, index) => {
+          // Validazioni comuni a tutti gli articoli
+          if (articolo.prezzo_unitario === null || articolo.prezzo_unitario < 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il prezzo unitario è obbligatorio e non può essere negativo.', path: [`articoli`, index, `prezzo_unitario`] });
+          }
+          if (!articolo.data_consegna_prevista) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La data di consegna prevista è obbligatoria per l\'articolo.', path: [`articoli`, index, `data_consegna_prevista`] });
+          }
+
           if (isCartoneFornitore) {
             if (!articolo.tipologia_cartone) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La tipologia cartone è obbligatoria.', path: [`articoli`, index, `tipologia_cartone`] });
@@ -234,8 +242,8 @@ export function ModalOrdineAcquistoForm({
             tipo_incollatura: art.tipo_incollatura || null,
           }))
         : [{ 
-            quantita: null,
-            numero_fogli: null,
+            quantita: null, 
+            numero_fogli: null, 
             prezzo_unitario: 0, 
             codice_ctn: null, 
             data_consegna_prevista: defaultDateForNewArticle, 
@@ -598,8 +606,10 @@ export function ModalOrdineAcquistoForm({
   }, [totalAmount, setValue]);
 
   const handleFormSubmit = async (data: any) => {
+    console.log("[ModalOrdineAcquistoForm] handleFormSubmit triggered with raw data:", JSON.stringify(data, null, 2)); // NEW LOG
     try {
       await onSubmit(data as OrdineAcquisto);
+      console.log("[ModalOrdineAcquistoForm] onSubmit successful."); // NEW LOG
       onClose();
     } catch (error) {
       console.error("Errore durante il salvataggio dell'ordine d'acquisto:", error);
