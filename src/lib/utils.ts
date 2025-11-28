@@ -58,3 +58,29 @@ export function normalizeAnagraficaData(data: AnagraficaBase | Fornitore | Clien
   
   return baseData;
 }
+
+/**
+ * Converte ricorsivamente tutte le stringhe vuote in null all'interno di un oggetto.
+ * Utile per preparare i dati prima di inviarli a Supabase, dove le stringhe vuote
+ * per i campi nullable potrebbero non essere interpretate come null.
+ * @param obj L'oggetto da processare.
+ * @returns L'oggetto con le stringhe vuote convertite in null.
+ */
+export function convertEmptyStringsToNull<T extends object>(obj: T): T {
+  const newObj = { ...obj };
+  for (const key in newObj) {
+    if (Object.prototype.hasOwnProperty.call(newObj, key)) {
+      const value = newObj[key];
+      if (typeof value === 'string' && value.trim() === '') {
+        (newObj as any)[key] = null;
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        (newObj as any)[key] = convertEmptyStringsToNull(value);
+      } else if (Array.isArray(value)) {
+        (newObj as any)[key] = value.map(item => 
+          typeof item === 'object' && item !== null ? convertEmptyStringsToNull(item) : item
+        );
+      }
+    }
+  }
+  return newObj;
+}
