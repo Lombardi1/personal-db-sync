@@ -68,8 +68,8 @@ const articoloSchema = z.object({
   grammatura: z.string().max(50, 'Grammatura troppo lungo').nullable(),
   numero_fogli: z.preprocess(
     preprocessNumber,
-    z.number().min(1, 'Il numero di fogli deve essere almeno 1')
-  ).nullable(),
+    z.number().nullable() // Modificato: accetta null, validazione min() in superRefine
+  ),
   cliente: z.string().max(255, 'Cliente troppo lungo').nullable(),
   lavoro: z.string().max(255, 'Lavoro troppo lungo').nullable(),
   fsc: z.boolean().nullable(),
@@ -90,8 +90,8 @@ const articoloSchema = z.object({
   tasselli_intercambiabili: z.boolean().nullable(),
   nr_tasselli: z.preprocess(
     preprocessNumber,
-    z.number().min(0, 'Il numero di tasselli non può essere negativo')
-  ).nullable(),
+    z.number().nullable() // Modificato: accetta null, validazione min() in superRefine
+  ),
   incollatura: z.boolean().nullable(),
   incollatrice: z.string().max(255, 'Incollatrice troppo lunga').nullable(),
   tipo_incollatura: z.string().max(255, 'Tipo Incollatura troppo lungo').nullable(),
@@ -99,12 +99,12 @@ const articoloSchema = z.object({
   // Campi comuni
   quantita: z.preprocess(
     preprocessNumber,
-    z.number().min(0.001, 'La quantità deve essere almeno 0.001')
-  ).nullable(),
+    z.number().nullable() // Modificato: accetta null, validazione min() in superRefine
+  ),
   prezzo_unitario: z.preprocess(
     preprocessNumber,
-    z.number().min(0, 'Il prezzo unitario non può essere negativo')
-  ).nullable(),
+    z.number().nullable() // Modificato: accetta null, validazione min() in superRefine
+  ),
   data_consegna_prevista: z.string().min(1, 'La data di consegna prevista è obbligatoria per l\'articolo'),
   stato: z.enum(['in_attesa', 'confermato', 'ricevuto', 'annullato', 'inviato'], { required_error: 'Lo stato è obbligatorio' }),
 });
@@ -153,10 +153,10 @@ export function ModalOrdineAcquistoForm({
             if (!articolo.grammatura) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La grammatura è obbligatoria.', path: [`articoli`, index, `grammatura`] });
             }
-            if (!articolo.numero_fogli || articolo.numero_fogli < 1) {
+            if (articolo.numero_fogli === null || articolo.numero_fogli < 1) { // Modificato: controllo per null
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il numero di fogli è obbligatorio e deve essere almeno 1.', path: [`articoli`, index, `numero_fogli`] });
             }
-            if (articolo.numero_fogli && articolo.numero_fogli >= 1 && (articolo.quantita === null || articolo.quantita <= 0)) {
+            if (articolo.numero_fogli !== null && articolo.numero_fogli >= 1 && (articolo.quantita === null || articolo.quantita <= 0)) { // Modificato: controllo per null
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità in kg calcolata deve essere positiva.', path: [`articoli`, index, `quantita`] });
             }
             if (!articolo.cliente) {
@@ -182,13 +182,13 @@ export function ModalOrdineAcquistoForm({
             if (!articolo.resa_fustella) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La resa fustella è obbligatoria.', path: [`articoli`, index, `resa_fustella`] });
             }
-            if (!articolo.quantita || articolo.quantita < 0.001) {
+            if (articolo.quantita === null || articolo.quantita < 0.001) { // Modificato: controllo per null
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001.', path: [`articoli`, index, `quantita`] });
             }
-            if (articolo.hasPulitore && !articolo.pulitore_codice_fustella) {
+            if (articolo.hasPulitore && articolo.pulitore_codice_fustella === null) { // Modificato: controllo per null
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice pulitore è obbligatorio se il pulitore è presente.', path: [`articoli`, index, `pulitore_codice_fustella`] });
             }
-            if (articolo.tasselli_intercambiabili && (articolo.nr_tasselli === undefined || articolo.nr_tasselli === null || articolo.nr_tasselli < 0)) {
+            if (articolo.tasselli_intercambiabili && (articolo.nr_tasselli === null || articolo.nr_tasselli < 0)) { // Modificato: controllo per null
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il numero di tasselli è obbligatorio se i tasselli sono intercambiabili.', path: [`articoli`, index, `nr_tasselli`] });
             }
             if (articolo.incollatura && (articolo.incollatrice === null || articolo.incollatrice === '' || articolo.tipo_incollatura === null || articolo.tipo_incollatura === '')) {
@@ -202,7 +202,7 @@ export function ModalOrdineAcquistoForm({
             if (!articolo.descrizione) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La descrizione è obbligatoria.', path: [`articoli`, index, `descrizione`] });
             }
-            if (!articolo.quantita || articolo.quantita < 0.001) {
+            if (articolo.quantita === null || articolo.quantita < 0.001) { // Modificato: controllo per null
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001.', path: [`articoli`, index, `quantita`] });
             }
             // Campi non consentiti per altri tipi di fornitori
@@ -606,16 +606,16 @@ export function ModalOrdineAcquistoForm({
   }, [totalAmount, setValue]);
 
   const handleFormSubmit = async (data: any) => {
-    console.log("[ModalOrdineAcquistoForm] handleFormSubmit triggered.");
-    console.log("[ModalOrdineAcquistoForm] Raw form data:", JSON.stringify(data, null, 2));
+    console.log("[ModalOrdineAcquistoForm] handleFormSubmit triggered."); // NEW LOG
+    console.log("[ModalOrdineAcquistoForm] Raw form data:", JSON.stringify(data, null, 2)); // NEW LOG
     if (Object.keys(errors).length > 0) {
-      console.error("[ModalOrdineAcquistoForm] Zod validation errors:", errors);
+      console.error("[ModalOrdineAcquistoForm] Zod validation errors:", errors); // NEW LOG
       toast.error("Ci sono errori nel modulo. Controlla i campi evidenziati.");
       return;
     }
     try {
       await onSubmit(data as OrdineAcquisto);
-      console.log("[ModalOrdineAcquistoForm] onSubmit successful.");
+      console.log("[ModalOrdineAcquistoForm] onSubmit successful."); // NEW LOG
       onClose();
     } catch (error) {
       console.error("Errore durante il salvataggio dell'ordine d'acquisto:", error);
