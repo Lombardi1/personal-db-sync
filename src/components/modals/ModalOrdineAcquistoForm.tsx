@@ -676,6 +676,9 @@ export function ModalOrdineAcquistoForm({
 
   const title = initialData?.id ? `Modifica Ordine d'Acquisto` : `Nuovo Ordine d'Acquisto`;
   const description = initialData?.id ? `Modifica i dettagli per l'ordine ${initialData.numero_ordine}.` : `Inserisci i dettagli per il nuovo ordine d'acquisto.`
+  
+  console.log(`[ModalOrdineAcquistoForm] Button disabled state: isSubmitting=${isSubmitting}, isCancelled=${isCancelled}, final disabled=${isSubmitting || isCancelled}`);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
@@ -694,7 +697,13 @@ export function ModalOrdineAcquistoForm({
           </DialogDescription>
         </DialogHeader>
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="grid gap-4 py-4">
+          <form 
+            onSubmit={(e) => {
+              console.log("[ModalOrdineAcquistoForm] Native form onSubmit triggered."); // NEW LOG
+              handleSubmit(handleFormSubmit)(e);
+            }} 
+            className="grid gap-4 py-4"
+          >
             {/* Dettagli Ordine Section */}
             <h4 className="text-lg font-semibold flex items-center gap-2 mb-2">
               <i className="fas fa-info-circle"></i> Dettagli Ordine
