@@ -1,38 +1,10 @@
-CREATE TABLE public.fustelle (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    codice text NOT NULL,
-    descrizione text,
-    formato text,
-    materiale text,
-    ubicazione text,
-    note text,
-    data_creazione timestamp with time zone DEFAULT now() NOT NULL,
-    ultima_modifica timestamp with time zone DEFAULT now() NOT NULL,
-    disponibile boolean DEFAULT true NOT NULL,
-    fornitore text,
-    codice_fornitore text,
-    cliente text,
-    lavoro text,
-    fustellatrice text,
-    resa text,
-    pulitore boolean DEFAULT false NOT NULL,
-    pinza_tagliata boolean DEFAULT false NOT NULL,
-    tasselli_intercambiabili boolean DEFAULT false NOT NULL,
-    nr_tasselli integer,
-    incollatura boolean DEFAULT false NOT NULL,
-    incollatrice text,
-    tipo_incollatura text,
-    CONSTRAINT fustelle_pkey PRIMARY KEY (id),
-    CONSTRAINT fustelle_codice_key UNIQUE (codice)
-);
-
-ALTER TABLE public.fustelle ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Enable read access for all users" ON public.fustelle FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated users" ON public.fustelle FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Enable update for authenticated users" ON public.fustelle FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable delete for authenticated users" ON public.fustelle FOR DELETE USING (auth.role() = 'authenticated');
-
--- Trigger per aggiornare automaticamente 'ultima_modifica'
-CREATE TRIGGER handle_updated_at BEFORE UPDATE ON public.fustelle
-  FOR EACH ROW EXECUTE FUNCTION supabase_private.set_updated_at();
+SELECT
+    t.typname AS enum_name
+FROM
+    pg_type t
+JOIN
+    pg_enum e ON t.oid = e.enumtypid
+JOIN
+    pg_namespace n ON t.typnamespace = n.oid
+WHERE
+    n.nspname = 'public' AND t.typname LIKE '%fornitore_tipo%';
