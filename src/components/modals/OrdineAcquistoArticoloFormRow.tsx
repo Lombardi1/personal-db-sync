@@ -83,12 +83,7 @@ export function OrdineAcquistoArticoloFormRow({
   const orderDate = watch('data_ordine');
   const orderYear = new Date(orderDate).getFullYear();
   
-  // Log errors for this specific article
-  React.useEffect(() => {
-    if (errors.articoli?.[index]) {
-      console.log(`OrdineAcquistoArticoloFormRow[${index}]: Detailed errors for this article:`, errors.articoli[index]);
-    }
-  }, [errors.articoli?.[index], index]);
+  console.log(`OrdineAcquistoArticoloFormRow[${index}]: currentArticle data:`, currentArticle);
 
   // Campi Cartone
   const currentFormato = currentArticle?.formato;
@@ -155,19 +150,19 @@ export function OrdineAcquistoArticoloFormRow({
 
   // Gestione della generazione del rif_commessa_fsc quando FSC viene flaggato
   React.useEffect(() => {
-    if (isCartoneFornitore && currentFsc && currentRifCommessaFsc === null) { // Check for null
+    if (isCartoneFornitore && currentFsc && !currentRifCommessaFsc) {
       setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
-    } else if (isCartoneFornitore && !currentFsc && currentRifCommessaFsc !== null) { // Check for not null
-      setValue(`articoli.${index}.rif_commessa_fsc`, null, { shouldValidate: true });
+    } else if (isCartoneFornitore && !currentFsc && currentRifCommessaFsc) {
+      setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
     }
   }, [isCartoneFornitore, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
 
   // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato
   React.useEffect(() => {
-    if (isFustelleFornitore && currentHasPulitore && currentPulitoreCodiceFustella === null) { // Check for null
+    if (isFustelleFornitore && currentHasPulitore && !currentPulitoreCodiceFustella) {
       setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
-    } else if (isFustelleFornitore && !currentHasPulitore && currentPulitoreCodiceFustella !== null) { // Check for not null
-      setValue(`articoli.${index}.pulitore_codice_fustella`, null, { shouldValidate: true });
+    } else if (isFustelleFornitore && !currentHasPulitore && currentPulitoreCodiceFustella) {
+      setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
     }
   }, [isFustelleFornitore, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
 
@@ -301,7 +296,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, null, { shouldValidate: true }); // Set to null
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
                       onBlur={(e) => {
@@ -342,7 +337,7 @@ export function OrdineAcquistoArticoloFormRow({
                         aria-expanded={openClientCombobox}
                         className={cn(
                           "w-full justify-between text-sm",
-                          currentCliente === null && "text-muted-foreground" // Check for null
+                          !currentCliente && "text-muted-foreground"
                         )}
                         disabled={isSubmitting || isOrderCancelled}
                       >
@@ -408,7 +403,7 @@ export function OrdineAcquistoArticoloFormRow({
                     type="checkbox"
                     id={`articoli.${index}.fsc`}
                     {...register(`articoli.${index}.fsc`)}
-                    checked={currentFsc || false} // Default to false
+                    checked={currentFsc}
                     disabled={isSubmitting || isOrderCancelled}
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
@@ -420,7 +415,7 @@ export function OrdineAcquistoArticoloFormRow({
                     type="checkbox"
                     id={`articoli.${index}.alimentare`}
                     {...register(`articoli.${index}.alimentare`)}
-                    checked={currentAlimentare || false} // Default to false
+                    checked={currentAlimentare}
                     disabled={isSubmitting || isOrderCancelled}
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
@@ -531,7 +526,7 @@ export function OrdineAcquistoArticoloFormRow({
                       if (!isNaN(numericValue)) {
                         setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
                       } else {
-                        setValue(`articoli.${index}.quantita`, null, { shouldValidate: true }); // Set to null
+                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
                       }
                     }}
                     onBlur={(e) => {
@@ -547,7 +542,7 @@ export function OrdineAcquistoArticoloFormRow({
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
-                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}</p>
+                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
@@ -563,7 +558,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, null, { shouldValidate: true }); // Set to null
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
                       onBlur={(e) => {
@@ -599,7 +594,7 @@ export function OrdineAcquistoArticoloFormRow({
                     type="checkbox"
                     id={`articoli.${index}.hasPulitore`}
                     {...register(`articoli.${index}.hasPulitore`)}
-                    checked={currentHasPulitore || false} // Default to false
+                    checked={currentHasPulitore}
                     disabled={isSubmitting || isOrderCancelled}
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
@@ -624,7 +619,7 @@ export function OrdineAcquistoArticoloFormRow({
                     type="checkbox"
                     id={`articoli.${index}.pinza_tagliata`}
                     {...register(`articoli.${index}.pinza_tagliata`)}
-                    checked={currentPinzaTagliata || false} // Default to false
+                    checked={currentPinzaTagliata}
                     disabled={isSubmitting || isOrderCancelled}
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
@@ -636,7 +631,7 @@ export function OrdineAcquistoArticoloFormRow({
                     type="checkbox"
                     id={`articoli.${index}.tasselli_intercambiabili`}
                     {...register(`articoli.${index}.tasselli_intercambiabili`)}
-                    checked={currentTasselliIntercambiabili || false} // Default to false
+                    checked={currentTasselliIntercambiabili}
                     disabled={isSubmitting || isOrderCancelled}
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
@@ -672,7 +667,7 @@ export function OrdineAcquistoArticoloFormRow({
                     type="checkbox"
                     id={`articoli.${index}.incollatura`}
                     {...register(`articoli.${index}.incollatura`)}
-                    checked={currentIncollatura || false} // Default to false
+                    checked={currentIncollatura}
                     disabled={isSubmitting || isOrderCancelled}
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
@@ -756,7 +751,7 @@ export function OrdineAcquistoArticoloFormRow({
                       if (!isNaN(numericValue)) {
                         setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
                       } else {
-                        setValue(`articoli.${index}.quantita`, null, { shouldValidate: true }); // Set to null
+                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
                       }
                     }}
                     onBlur={(e) => {
@@ -788,7 +783,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, null, { shouldValidate: true }); // Set to null
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
                       onBlur={(e) => {

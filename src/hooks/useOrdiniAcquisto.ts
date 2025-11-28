@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone } from '@/types';
 import { toast } from 'sonner';
 import { generateNextCartoneCode } from '@/utils/cartoneUtils';
-import { convertEmptyStringsToNull } from '@/lib/utils'; // Importa la nuova funzione
 
 export function useOrdiniAcquisto() {
   const [ordiniAcquisto, setOrdiniAcquisto] = useState<OrdineAcquisto[]>([]);
@@ -18,18 +17,15 @@ export function useOrdiniAcquisto() {
 
     // Elimina tutti gli articoli di questo ordine dalle tabelle 'ordini' e 'giacenza'
     // Questo è un reset per garantire la coerenza prima di reinserire
-    console.log(`[syncArticleInventoryStatus] Eliminazione articoli esistenti per ordine ${ordineAcquisto.numero_ordine} da 'ordini' e 'giacenza'.`);
     await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
     await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine); // Anche da giacenza
 
     if (!isCartoneFornitore && !isFustelleFornitore) { // Se non è né cartone né fustelle, non sincronizzare l'inventario
-      console.log(`[syncArticleInventoryStatus] Fornitore non di tipo 'Cartone' o 'Fustelle'. Nessuna sincronizzazione inventario.`);
       return;
     }
 
     if (!Array.isArray(ordineAcquisto.articoli)) {
       toast.error(`Errore interno: Articoli dell'ordine non validi per ${ordineAcquisto.numero_ordine}.`);
-      console.error(`[syncArticleInventoryStatus] Errore: Articoli dell'ordine non validi per ${ordineAcquisto.numero_ordine}.`, ordineAcquisto.articoli);
       return;
     }
 
@@ -38,13 +34,11 @@ export function useOrdiniAcquisto() {
         if (isCartoneFornitore) {
           const codiceCtn = articolo.codice_ctn;
           if (!codiceCtn) {
-            console.warn(`[syncArticleInventoryStatus] Articolo senza codice CTN nell'ordine ${ordineAcquisto.numero_ordine}. Saltato.`);
             continue;
           }
 
           const numFogli = articolo.numero_fogli;
-          if (numFogli === undefined || numFogli === null || numFogli <= 0) { // Aggiunto controllo per null
-            console.warn(`[syncArticleInventoryStatus] Articolo ${codiceCtn} con numero di fogli non valido nell'ordine ${ordineAcquisto.numero_ordine}. Saltato.`);
+          if (numFogli === undefined || numFogli <= 0) {
             continue;
           }
 
@@ -59,25 +53,21 @@ export function useOrdiniAcquisto() {
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
             magazzino: '-',
-            prezzo: articolo.prezzo_unitario || 0, // Default a 0 se null
+            prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
             note: ordineAcquisto.note || '-',
-            confermato: false, // Default per ordini in arrivo
-            fsc: articolo.fsc || false,
-            alimentare: articolo.alimentare || false,
-            rif_commessa_fsc: articolo.rif_commessa_fsc || null,
+            fsc: articolo.fsc,
+            alimentare: articolo.alimentare,
+            rif_commessa_fsc: articolo.rif_commessa_fsc,
           };
 
           if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
             const isConfirmedForOrdiniTable = articolo.stato === 'confermato';
-            console.log(`[syncArticleInventoryStatus] Inserimento articolo ${codiceCtn} in 'ordini' con stato: ${articolo.stato}.`);
             const { error: insertError } = await supabase.from('ordini').insert([{ ...cartoneBase, confermato: isConfirmedForOrdiniTable }]);
             if (insertError) {
-              toast.error(`Errore inserimento in ordini per ${codiceCtn}: ${insertError.message}`);
-              console.error(`[syncArticleInventoryStatus] Errore inserimento in 'ordini' per ${codiceCtn}:`, insertError);
+              toast.error(`Errore inserimento in ordini: ${insertError.message}`);
             }
           } else if (articolo.stato === 'ricevuto') {
-            console.log(`[syncArticleInventoryStatus] Articolo ${codiceCtn} con stato 'ricevuto'. Tentativo di inserimento/aggiornamento in 'giacenza'.`);
             const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
               .from('giacenza')
               .select('ddt, data_arrivo, magazzino')
@@ -85,8 +75,7 @@ export function useOrdiniAcquisto() {
               .single();
 
             if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') {
-              toast.error(`Errore recupero giacenza per ${codiceCtn}: ${fetchGiacenzaError.message}`);
-              console.error(`[syncArticleInventoryStatus] Errore recupero giacenza per ${codiceCtn}:`, fetchGiacenzaError);
+              toast.error(`Errore recupero giacenza: ${fetchGiacenzaError.message}`);
               continue;
             }
 
@@ -97,29 +86,24 @@ export function useOrdiniAcquisto() {
             };
 
             if (existingGiacenza) {
-              console.log(`[syncArticleInventoryStatus] Aggiornamento esistente in 'giacenza' per ${codiceCtn}.`);
               const { error: updateError } = await supabase.from('giacenza').update({ ...cartoneBase, ...giacenzaDataToUpdate }).eq('codice', codiceCtn);
               if (updateError) {
-                toast.error(`Errore aggiornamento in giacenza per ${codiceCtn}: ${updateError.message}`);
-                console.error(`[syncArticleInventoryStatus] Errore aggiornamento in 'giacenza' per ${codiceCtn}:`, updateError);
+                toast.error(`Errore aggiornamento in giacenza: ${updateError.message}`);
               }
             } else {
-              console.log(`[syncArticleInventoryStatus] Inserimento nuovo in 'giacenza' per ${codiceCtn}.`);
               const { error: insertError } = await supabase.from('giacenza').insert([{ ...cartoneBase, ...giacenzaDataToUpdate }]);
               if (insertError) {
-                toast.error(`Errore inserimento in giacenza per ${codiceCtn}: ${insertError.message}`);
-                console.error(`[syncArticleInventoryStatus] Errore inserimento in 'giacenza' per ${codiceCtn}:`, insertError);
+                toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
               }
             }
-          } else if (articolo.stato === 'annullato') {
-            console.log(`[syncArticleInventoryStatus] Articolo ${codiceCtn} è annullato. Non inserito in magazzino.`);
           }
         } else if (isFustelleFornitore) {
-          console.log(`[syncArticleInventoryStatus] Articolo Fustella '${articolo.fustella_codice}' dell'ordine '${ordineAcquisto.numero_ordine}' con stato '${articolo.stato}'. Nessuna sincronizzazione inventario dedicata implementata per Fustelle in questa fase.`);
+          // Logica per Fustelle: per ora, non inseriamo in tabelle di inventario dedicate
+          // Se in futuro avremo una tabella 'fustelle_inventario', la logica andrebbe qui.
+          console.log(`[syncArticleInventoryStatus] Articolo Fustella '${articolo.fustella_codice}' dell'ordine '${ordineAcquisto.numero_ordine}' con stato '${articolo.stato}'. Nessuna sincronizzazione inventario implementata per Fustelle.`);
         }
       } catch (e: any) {
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
-        console.error(`[syncArticleInventoryStatus] Errore durante la sincronizzazione dell'articolo:`, e);
       }
     }
   }, []);
@@ -185,7 +169,6 @@ export function useOrdiniAcquisto() {
     } catch (error) {
       toast.error('Errore nel caricamento degli ordini d\'acquisto.');
       setOrdiniAcquisto([]);
-      console.error('[useOrdiniAcquisto] Errore generico nel caricamento degli ordini d\'acquisto:', error);
     } finally {
       setLoading(false);
     }
@@ -223,7 +206,6 @@ export function useOrdiniAcquisto() {
 
     if (!articleFound) {
       toast.error(`Articolo '${articleIdentifier}' non trovato nell'ordine ${orderNumeroOrdine}.`);
-      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Articolo '${articleIdentifier}' non trovato nell'ordine ${orderNumeroOrdine}.`);
       return { success: false, error: new Error('Article not found') };
     }
 
@@ -247,7 +229,6 @@ export function useOrdiniAcquisto() {
     // OPTIMISTIC UPDATE END
 
     // 3. Update the order with the modified articles array and new total amount
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Tentativo di aggiornare l'ordine ${orderNumeroOrdine} in Supabase.`);
     const { data: updatedOrdine, error: updateError } = await supabase
       .from('ordini_acquisto')
       .update({ articoli: updatedArticles as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
@@ -257,23 +238,12 @@ export function useOrdiniAcquisto() {
 
     if (updateError) {
       toast.error(`Errore aggiornamento stato articolo: ${updateError.message}`);
-      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore Supabase durante l'aggiornamento stato articolo:`, updateError);
       setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
       return { success: false, error: updateError };
     }
-    // NEW: Check if updatedOrdine is null/undefined even if no explicit error
-    if (!updatedOrdine) {
-      const customError = new Error(`Aggiornamento ordine ${orderNumeroOrdine} fallito: nessun dato restituito da Supabase.`);
-      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] ${customError.message}`);
-      toast.error(customError.message);
-      setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
-      return { success: false, error: customError };
-    }
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Ordine ${orderNumeroOrdine} aggiornato con successo in Supabase.`);
 
     const allArticlesCancelled = updatedArticles.every(art => art.stato === 'annullato');
     if (allArticlesCancelled && updatedOrdine.stato !== 'annullato') {
-        console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Tutti gli articoli sono annullati, aggiornamento stato principale ordine a 'annullato'.`);
         const { error: mainStatusUpdateError } = await supabase
             .from('ordini_acquisto')
             .update({ stato: 'annullato', updated_at: new Date().toISOString() })
@@ -281,10 +251,8 @@ export function useOrdiniAcquisto() {
 
         if (mainStatusUpdateError) {
             toast.error(`Errore aggiornamento stato principale ordine: ${mainStatusUpdateError.message}`);
-            console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore Supabase durante l'aggiornamento stato principale ordine:`, mainStatusUpdateError);
         } else {
             updatedOrdine.stato = 'annullato';
-            console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Stato principale ordine aggiornato a 'annullato'.`);
         }
     }
 
@@ -312,13 +280,11 @@ export function useOrdiniAcquisto() {
     await syncArticleInventoryStatus(orderWithFornitoreInfo);
 
     await loadOrdiniAcquisto();
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Operazione completata per OA: '${orderNumeroOrdine}'.`);
     return { success: true, data: updatedOrdine };
   }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]);
 
   // 4. Define updateOrdineAcquistoStatus, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
   const updateOrdineAcquistoStatus = useCallback(async (id: string, newStatus: OrdineAcquisto['stato']) => {
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Inizio per ID: '${id}', Nuovo stato: '${newStatus}'`);
     // Recupera l'ordine completo per poter sincronizzare gli articoli
     const { data: currentOrdine, error: fetchError } = await supabase
       .from('ordini_acquisto')
@@ -328,7 +294,6 @@ export function useOrdiniAcquisto() {
 
     if (fetchError || !currentOrdine) {
       toast.error(`Errore recupero ordine per aggiornamento stato: ${fetchError?.message}`);
-      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Errore recupero ordine per aggiornamento stato:`, fetchError);
       return { success: false, error: fetchError };
     }
 
@@ -364,7 +329,6 @@ export function useOrdiniAcquisto() {
     ));
     // OPTIMISTIC UPDATE END
 
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Tentativo di aggiornare lo stato dell'ordine ${currentOrdine.numero_ordine} in Supabase.`);
     const { data: updatedOrdine, error } = await supabase
       .from('ordini_acquisto')
       .update({ stato: newStatus, articoli: articlesForDbUpdate as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
@@ -374,19 +338,9 @@ export function useOrdiniAcquisto() {
 
     if (error) {
       toast.error(`Errore aggiornamento stato ordine: ${error.message}`);
-      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Errore Supabase durante l'aggiornamento stato ordine:`, error);
       setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
       return { success: false, error };
     }
-    // NEW: Check if updatedOrdine is null/undefined even if no explicit error
-    if (!updatedOrdine) {
-      const customError = new Error(`Aggiornamento stato ordine ${currentOrdine.numero_ordine} fallito: nessun dato restituito da Supabase.`);
-      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] ${customError.message}`);
-      toast.error(customError.message);
-      setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
-      return { success: false, error: customError };
-    }
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Stato ordine ${currentOrdine.numero_ordine} aggiornato con successo in Supabase.`);
     
     // Fetch fornitore details separately for syncArticleInventoryStatus
     const { data: fornitoreData, error: fornitoreError } = await supabase
@@ -410,16 +364,13 @@ export function useOrdiniAcquisto() {
     await syncArticleInventoryStatus(orderWithFornitoreInfo);
 
     await loadOrdiniAcquisto();
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Operazione completata per ID: '${id}'.`);
     return { success: true, data: updatedOrdine };
   }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]);
 
   // 5. Define addOrdineAcquisto, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
   const addOrdineAcquisto = useCallback(async (ordine: Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo' | 'updated_at'>) => {
-    const orderToInsert = convertEmptyStringsToNull({ ...ordine }); // Applica la conversione
-    console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Dati da inserire (dopo conversione):`, JSON.stringify(orderToInsert, null, 2));
+    const orderToInsert = { ...ordine };
 
-    console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Tentativo di inserire il nuovo ordine in Supabase.`);
     const { data: newOrdine, error: ordineError } = await supabase
       .from('ordini_acquisto')
       .insert([orderToInsert])
@@ -428,17 +379,8 @@ export function useOrdiniAcquisto() {
 
     if (ordineError) {
       toast.error(`Errore aggiunta ordine: ${ordineError.message}`);
-      console.error(`[useOrdiniAcquisto - addOrdineAcquisto] Errore Supabase durante l'inserimento:`, ordineError);
       return { success: false, error: ordineError };
     }
-    // NEW: Check if newOrdine is null/undefined even if no explicit error
-    if (!newOrdine) {
-      const customError = new Error(`Inserimento ordine ${ordine.numero_ordine} fallito: nessun dato restituito da Supabase.`);
-      console.error(`[useOrdiniAcquisto - addOrdineAcquisto] ${customError.message}`);
-      toast.error(customError.message);
-      return { success: false, error: customError };
-    }
-    console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Ordine inserito con successo in Supabase:`, newOrdine);
 
     // Fetch fornitore details separately for syncArticleInventoryStatus
     const { data: fornitoreData, error: fornitoreError } = await supabase
@@ -463,16 +405,13 @@ export function useOrdiniAcquisto() {
 
     toast.success(`✅ Ordine d'acquisto '${newOrdine.numero_ordine}' aggiunto con successo!`);
     await loadOrdiniAcquisto();
-    console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Operazione completata per ordine: '${newOrdine.numero_ordine}'.`);
     return { success: true, data: newOrdine };
   }, [loadOrdiniAcquisto, syncArticleInventoryStatus]);
 
   // 6. Define updateOrdineAcquisto, which depends on syncArticleInventoryStatus and loadOrdiniAcquisto
   const updateOrdineAcquisto = useCallback(async (id: string, ordine: Partial<Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo' | 'updated_at'>>) => {
-    const orderToUpdate = convertEmptyStringsToNull({ ...ordine }); // Applica la conversione
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Dati da aggiornare per ID: '${id}' (dopo conversione):`, JSON.stringify(orderToUpdate, null, 2));
+    const orderToUpdate = { ...ordine };
 
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Tentativo di aggiornare l'ordine ${id} in Supabase.`);
     const { data: updatedOrdine, error: ordineError } = await supabase
       .from('ordini_acquisto')
       .update(orderToUpdate)
@@ -482,17 +421,8 @@ export function useOrdiniAcquisto() {
 
     if (ordineError) {
       toast.error(`Errore modifica ordine: ${ordineError.message}`);
-      console.error(`[useOrdiniAcquisto - updateOrdineAcquisto] Errore Supabase durante l'aggiornamento:`, ordineError);
       return { success: false, error: ordineError };
     }
-    // NEW: Check if updatedOrdine is null/undefined even if no explicit error
-    if (!updatedOrdine) {
-      const customError = new Error(`Aggiornamento ordine ${id} fallito: nessun dato restituito da Supabase.`);
-      console.error(`[useOrdiniAcquisto - updateOrdineAcquisto] ${customError.message}`);
-      toast.error(customError.message);
-      return { success: false, error: customError };
-    }
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Ordine ${id} aggiornato con successo in Supabase:`, updatedOrdine);
 
     // Fetch fornitore details separately for syncArticleInventoryStatus
     const { data: fornitoreData, error: fornitoreError } = await supabase
@@ -517,13 +447,11 @@ export function useOrdiniAcquisto() {
 
     toast.success(`✅ Ordine d'acquisto '${updatedOrdine.numero_ordine || id}' modificato con successo!`);
     await loadOrdiniAcquisto();
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Operazione completata per ordine: '${updatedOrdine.numero_ordine}'.`);
     return { success: true, data: updatedOrdine };
   }, [loadOrdiniAcquisto, syncArticleInventoryStatus]);
 
   // 7. Define cancelOrdineAcquisto, which depends on updateOrdineAcquistoStatus
   const cancelOrdineAcquisto = useCallback(async (id: string) => {
-    console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] Inizio annullamento per ID: '${id}'.`);
     const { data: ordineToUpdate, error: fetchError } = await supabase
       .from('ordini_acquisto')
       .select('numero_ordine, stato')
@@ -532,13 +460,11 @@ export function useOrdiniAcquisto() {
 
     if (fetchError) {
       toast.error(`Errore recupero ordine per annullamento: ${fetchError.message}`);
-      console.error(`[useOrdiniAcquisto - cancelOrdineAcquisto] Errore recupero ordine per annullamento:`, fetchError);
       return { success: false, error: fetchError };
     }
 
     if (ordineToUpdate?.stato === 'annullato') {
       toast.info(`L'ordine '${ordineToUpdate.numero_ordine}' è già annullato.`);
-      console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] Ordine '${ordineToUpdate.numero_ordine}' già annullato.`);
       return { success: true };
     }
 
@@ -546,10 +472,8 @@ export function useOrdiniAcquisto() {
 
     if (success) {
       toast.success(`✅ Ordine d'acquisto '${ordineToUpdate?.numero_ordine}' annullato con successo!`);
-      console.log(`[useOrdiniAcquisto - cancelOrdineAcquisto] Ordine '${ordineToUpdate?.numero_ordine}' annullato con successo.`);
     } else {
       toast.error(`Errore annullamento ordine: ${error?.message}`);
-      console.error(`[useOrdiniAcquisto - cancelOrdineAcquisto] Errore annullamento ordine:`, error);
     }
     return { success, error };
   }, [updateOrdineAcquistoStatus]);
@@ -557,16 +481,12 @@ export function useOrdiniAcquisto() {
   // 8. Define deleteOrdineAcquistoPermanently, which depends on loadOrdiniAcquisto
   const deleteOrdineAcquistoPermanently = useCallback(async (id: string, numeroOrdine: string) => {
     try {
-      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Inizio eliminazione definitiva per ID: '${id}', Numero Ordine: '${numeroOrdine}'.`);
       const previousOrdiniAcquisto = ordiniAcquisto;
       setOrdiniAcquisto(prev => prev.filter(order => order.id !== id));
 
-      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Eliminazione articoli correlati da 'ordini' per ordine: '${numeroOrdine}'.`);
       await supabase.from('ordini').delete().eq('ordine', numeroOrdine);
-      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Eliminazione articoli correlati da 'giacenza' per ordine: '${numeroOrdine}'.`);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
       
-      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Tentativo di eliminare l'ordine d'acquisto principale da 'ordini_acquisto' per ID: '${id}'.`);
       const { error } = await supabase
         .from('ordini_acquisto')
         .delete()
@@ -574,18 +494,14 @@ export function useOrdiniAcquisto() {
 
       if (error) {
         setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
-        console.error(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Errore Supabase durante l'eliminazione definitiva:`, error);
         throw error;
       }
-      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Ordine d'acquisto principale eliminato con successo da Supabase.`);
 
       toast.success(`🗑️ Ordine d'acquisto '${numeroOrdine}' eliminato definitivamente!`);
-      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Ordine '${numeroOrdine}' eliminato definitivamente.`);
       await loadOrdiniAcquisto();
       return { success: true };
     } catch (error: any) {
       toast.error(`Errore eliminazione definitiva ordine: ${error.message || 'Errore sconosciuto'}`);
-      console.error(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Errore generico durante l'eliminazione definitiva:`, error);
       return { success: false, error };
     }
   }, [loadOrdiniAcquisto, ordiniAcquisto]);
@@ -596,13 +512,11 @@ export function useOrdiniAcquisto() {
     const ordiniAcquistoChannel = supabase
       .channel('ordini_acquisto_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini_acquisto' }, () => {
-        console.log('[useOrdiniAcquisto] Realtime change detected for ordini_acquisto. Reloading data.');
         loadOrdiniAcquisto();
       })
       .subscribe();
 
     return () => {
-      console.log('[useOrdiniAcquisto] Unsubscribing from ordini_acquisto_changes channel.');
       supabase.removeChannel(ordiniAcquistoChannel);
     };
   }, [loadOrdiniAcquisto]);
