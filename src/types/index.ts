@@ -62,11 +62,11 @@ export interface Fornitore extends AnagraficaBase {
 // Nuova interfaccia per gli articoli, ora nidificata nell'OrdineAcquisto
 export interface ArticoloOrdineAcquisto {
   id?: string; // L'ID è ancora utile per la gestione nel frontend (es. React keys)
-  codice_ctn?: string;
-  descrizione?: string;
-  tipologia_cartone?: string;
-  formato?: string;
-  grammatura?: string;
+  codice_ctn?: string; // Usato per i cartoni
+  descrizione?: string; // Usato per non-cartoni
+  tipologia_cartone?: string; // Usato per i cartoni
+  formato?: string; // Usato per i cartoni
+  grammatura?: string; // Usato per i cartoni
   quantita: number; // Questa sarà la quantità in KG per i cartoni, o in unità per gli altri
   numero_fogli?: number; // Nuovo campo per i fogli, usato per i cartoni
   prezzo_unitario: number;
@@ -76,9 +76,23 @@ export interface ArticoloOrdineAcquisto {
   lavoro?: string;
   data_consegna_prevista?: string; // Spostato qui
   stato: 'in_attesa' | 'confermato' | 'ricevuto' | 'annullato' | 'inviato'; // Nuovo campo stato per l'articolo
-  fsc?: boolean; // Nuovo campo
-  alimentare?: boolean; // Nuovo campo
-  rif_commessa_fsc?: string; // NUOVO CAMPO: Riferimento commessa FSC
+  fsc?: boolean; // Nuovo campo per cartoni
+  alimentare?: boolean; // Nuovo campo per cartoni
+  rif_commessa_fsc?: string; // NUOVO CAMPO: Riferimento commessa FSC per cartoni
+
+  // NUOVI CAMPI PER FUSTELLE
+  fustella_codice?: string; // Codice FST-XXX generato
+  codice_fornitore_fustella?: string; // Codice fornitore per la fustella
+  fustellatrice?: string;
+  resa_fustella?: string; // Resa specifica per fustella
+  hasPulitore?: boolean; // Indica se la fustella ha un pulitore
+  pulitore_codice_fustella?: string | null; // Codice PU-XXX generato per il pulitore
+  pinza_tagliata?: boolean;
+  tasselli_intercambiabili?: boolean;
+  nr_tasselli?: number | null;
+  incollatura?: boolean;
+  incollatrice?: string;
+  tipo_incollatura?: string;
 }
 
 export interface OrdineAcquisto {
@@ -131,7 +145,7 @@ export interface Fustella {
   pulitore_codice?: string | null; // CAMBIATO: da 'pulitore: boolean' a 'pulitore_codice: string | null'
   pinza_tagliata?: boolean; // Nuovo campo
   tasselli_intercambiabili?: boolean; // Nuovo campo
-  nr_tasselli?: number; // Nuovo campo
+  nr_tasselli?: number | null; // Nuovo campo
   incollatura?: boolean; // Nuovo campo
   incollatrice?: string; // Nuovo campo
   tipo_incollatura?: string; // Nuovo campo
