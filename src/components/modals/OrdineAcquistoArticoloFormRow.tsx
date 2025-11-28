@@ -83,8 +83,12 @@ export function OrdineAcquistoArticoloFormRow({
   const orderDate = watch('data_ordine');
   const orderYear = new Date(orderDate).getFullYear();
   
-  console.log(`OrdineAcquistoArticoloFormRow[${index}]: currentArticle data:`, currentArticle);
-  console.log(`OrdineAcquistoArticoloFormRow[${index}]: errors:`, errors.articoli?.[index]); // Log errors for this specific article
+  // Log errors for this specific article
+  React.useEffect(() => {
+    if (errors.articoli?.[index]) {
+      console.log(`OrdineAcquistoArticoloFormRow[${index}]: Detailed errors for this article:`, errors.articoli[index]);
+    }
+  }, [errors.articoli?.[index], index]);
 
   // Campi Cartone
   const currentFormato = currentArticle?.formato;
@@ -543,7 +547,7 @@ export function OrdineAcquistoArticoloFormRow({
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
-                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
+                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}</p>
                 </div>
                 <div>
                   <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
