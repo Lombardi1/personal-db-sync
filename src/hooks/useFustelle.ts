@@ -74,6 +74,7 @@ export function useFustelle() {
       ...fustella,
       data_creazione: new Date().toISOString(),
       ultima_modifica: new Date().toISOString(),
+      ordine_acquisto_numero: null, // NUOVO: Imposta a null per le fustelle aggiunte manualmente
     };
     console.log('[aggiungiFustella] Attempting to insert:', fustellaToInsert); // Add logging
     const { error } = await supabase.from('fustelle').insert([fustellaToInsert]);

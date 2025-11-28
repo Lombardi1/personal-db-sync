@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone } from '@/types';
+import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone, Fustella } from '@/types';
 import { toast } from 'sonner';
 import { generateNextCartoneCode } from '@/utils/cartoneUtils';
 
@@ -13,14 +13,16 @@ export function useOrdiniAcquisto() {
     console.log(`[syncArticleInventoryStatus] Sincronizzazione articoli per OA: ${ordineAcquisto.numero_ordine}`);
     const fornitoreNome = ordineAcquisto.fornitore_nome || 'N/A';
     const isCartoneFornitore = ordineAcquisto.fornitore_tipo === 'Cartone';
-    const isFustelleFornitore = ordineAcquisto.fornitore_tipo === 'Fustelle'; // Nuovo flag
+    const isFustelleFornitore = ordineAcquisto.fornitore_tipo === 'Fustelle';
 
-    // Elimina tutti gli articoli di questo ordine dalle tabelle 'ordini' e 'giacenza'
+    // Elimina tutti gli articoli di questo ordine dalle tabelle 'ordini', 'giacenza' e 'fustelle'
     // Questo è un reset per garantire la coerenza prima di reinserire
     await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
-    await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine); // Anche da giacenza
+    await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine);
+    // NUOVO: Elimina le fustelle associate a questo ordine d'acquisto
+    await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
 
-    if (!isCartoneFornitore && !isFustelleFornitore) { // Se non è né cartone né fustelle, non sincronizzare l'inventario
+    if (!isCartoneFornitore && !isFustelleFornitore) {
       return;
     }
 
@@ -31,6 +33,12 @@ export function useOrdiniAcquisto() {
 
     for (const articolo of ordineAcquisto.articoli) {
       try {
+        if (articolo.stato === 'annullato') {
+          // Se l'articolo è annullato, non lo inseriamo in nessuna tabella di inventario.
+          // È già stato rimosso all'inizio della funzione se esisteva.
+          continue;
+        }
+
         if (isCartoneFornitore) {
           const codiceCtn = articolo.codice_ctn;
           if (!codiceCtn) {
@@ -98,9 +106,58 @@ export function useOrdiniAcquisto() {
             }
           }
         } else if (isFustelleFornitore) {
-          // Logica per Fustelle: per ora, non inseriamo in tabelle di inventario dedicate
-          // Se in futuro avremo una tabella 'fustelle_inventario', la logica andrebbe qui.
-          console.log(`[syncArticleInventoryStatus] Articolo Fustella '${articolo.fustella_codice}' dell'ordine '${ordineAcquisto.numero_ordine}' con stato '${articolo.stato}'. Nessuna sincronizzazione inventario implementata per Fustelle.`);
+          const fustellaCodice = articolo.fustella_codice;
+          if (!fustellaCodice) {
+            continue;
+          }
+
+          const fustellaBase: Fustella = {
+            codice: fustellaCodice,
+            fornitore: fornitoreNome,
+            codice_fornitore: articolo.codice_fornitore_fustella || null,
+            cliente: articolo.cliente || 'N/A',
+            lavoro: articolo.lavoro || 'N/A',
+            fustellatrice: articolo.fustellatrice || null,
+            resa: articolo.resa_fustella || null,
+            pulitore_codice: articolo.pulitore_codice_fustella || null,
+            pinza_tagliata: articolo.pinza_tagliata || false,
+            tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
+            nr_tasselli: articolo.nr_tasselli || null,
+            incollatura: articolo.incollatura || false,
+            incollatrice: articolo.incollatrice || null,
+            tipo_incollatura: articolo.tipo_incollatura || null,
+            disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+            data_creazione: new Date().toISOString(), // Set creation date
+            ultima_modifica: new Date().toISOString(), // Set modification date
+            ordine_acquisto_numero: ordineAcquisto.numero_ordine, // Link to purchase order
+          };
+
+          // Inseriamo o aggiorniamo la fustella nella tabella 'fustelle'
+          // Non c'è una tabella 'ordini_fustelle' separata, quindi gestiamo tutto in 'fustelle'
+          const { data: existingFustella, error: fetchFustellaError } = await supabase
+            .from('fustelle')
+            .select('codice')
+            .eq('codice', fustellaCodice)
+            .single();
+
+          if (fetchFustellaError && fetchFustellaError.code !== 'PGRST116') {
+            toast.error(`Errore recupero fustella: ${fetchFustellaError.message}`);
+            continue;
+          }
+
+          if (existingFustella) {
+            // Se esiste, aggiorna
+            const { error: updateError } = await supabase.from('fustelle').update(fustellaBase).eq('codice', fustellaCodice);
+            if (updateError) {
+              toast.error(`Errore aggiornamento fustella: ${updateError.message}`);
+            }
+          } else {
+            // Se non esiste, inserisci
+            const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
+            if (insertError) {
+              toast.error(`Errore inserimento fustella: ${insertError.message}`);
+            }
+          }
         }
       } catch (e: any) {
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
@@ -486,6 +543,8 @@ export function useOrdiniAcquisto() {
 
       await supabase.from('ordini').delete().eq('ordine', numeroOrdine);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
+      // NUOVO: Elimina le fustelle associate a questo ordine d'acquisto
+      await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', numeroOrdine);
       
       const { error } = await supabase
         .from('ordini_acquisto')

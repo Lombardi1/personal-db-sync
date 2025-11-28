@@ -149,6 +149,7 @@ export interface Fustella {
   incollatura?: boolean; // Nuovo campo
   incollatrice?: string; // Nuovo campo
   tipo_incollatura?: string; // Nuovo campo
+  ordine_acquisto_numero?: string; // NUOVO CAMPO: Numero dell'ordine d'acquisto
 }
 
 // NUOVE INTERFACCE PER POLIMERI

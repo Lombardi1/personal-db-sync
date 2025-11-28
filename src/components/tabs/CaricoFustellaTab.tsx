@@ -87,6 +87,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       incollatura: formData.incollatura,
       incollatrice: formData.incollatura ? formData.incollatrice.trim() : null,
       tipo_incollatura: formData.incollatura ? formData.tipo_incollatura.trim() : null,
+      ordine_acquisto_numero: null, // NUOVO: Imposta a null per le fustelle aggiunte manualmente
     };
 
     const { error } = await aggiungiFustella(nuovaFustella);
