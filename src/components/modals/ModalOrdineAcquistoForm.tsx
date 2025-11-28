@@ -606,10 +606,16 @@ export function ModalOrdineAcquistoForm({
   }, [totalAmount, setValue]);
 
   const handleFormSubmit = async (data: any) => {
-    console.log("[ModalOrdineAcquistoForm] handleFormSubmit triggered with raw data:", JSON.stringify(data, null, 2)); // NEW LOG
+    console.log("[ModalOrdineAcquistoForm] handleFormSubmit triggered.");
+    console.log("[ModalOrdineAcquistoForm] Raw form data:", JSON.stringify(data, null, 2));
+    if (Object.keys(errors).length > 0) {
+      console.error("[ModalOrdineAcquistoForm] Zod validation errors:", errors);
+      toast.error("Ci sono errori nel modulo. Controlla i campi evidenziati.");
+      return;
+    }
     try {
       await onSubmit(data as OrdineAcquisto);
-      console.log("[ModalOrdineAcquistoForm] onSubmit successful."); // NEW LOG
+      console.log("[ModalOrdineAcquistoForm] onSubmit successful.");
       onClose();
     } catch (error) {
       console.error("Errore durante il salvataggio dell'ordine d'acquisto:", error);

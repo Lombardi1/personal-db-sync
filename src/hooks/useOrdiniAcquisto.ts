@@ -247,6 +247,7 @@ export function useOrdiniAcquisto() {
     // OPTIMISTIC UPDATE END
 
     // 3. Update the order with the modified articles array and new total amount
+    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Tentativo di aggiornare l'ordine ${orderNumeroOrdine} in Supabase.`);
     const { data: updatedOrdine, error: updateError } = await supabase
       .from('ordini_acquisto')
       .update({ articoli: updatedArticles as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
@@ -256,10 +257,11 @@ export function useOrdiniAcquisto() {
 
     if (updateError) {
       toast.error(`Errore aggiornamento stato articolo: ${updateError.message}`);
-      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore aggiornamento stato articolo:`, updateError);
+      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore Supabase durante l'aggiornamento stato articolo:`, updateError);
       setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
       return { success: false, error: updateError };
     }
+    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Ordine ${orderNumeroOrdine} aggiornato con successo in Supabase.`);
 
     const allArticlesCancelled = updatedArticles.every(art => art.stato === 'annullato');
     if (allArticlesCancelled && updatedOrdine.stato !== 'annullato') {
@@ -271,9 +273,10 @@ export function useOrdiniAcquisto() {
 
         if (mainStatusUpdateError) {
             toast.error(`Errore aggiornamento stato principale ordine: ${mainStatusUpdateError.message}`);
-            console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore aggiornamento stato principale ordine:`, mainStatusUpdateError);
+            console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore Supabase durante l'aggiornamento stato principale ordine:`, mainStatusUpdateError);
         } else {
             updatedOrdine.stato = 'annullato';
+            console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Stato principale ordine aggiornato a 'annullato'.`);
         }
     }
 
@@ -353,6 +356,7 @@ export function useOrdiniAcquisto() {
     ));
     // OPTIMISTIC UPDATE END
 
+    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Tentativo di aggiornare lo stato dell'ordine ${currentOrdine.numero_ordine} in Supabase.`);
     const { data: updatedOrdine, error } = await supabase
       .from('ordini_acquisto')
       .update({ stato: newStatus, articoli: articlesForDbUpdate as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
@@ -362,10 +366,11 @@ export function useOrdiniAcquisto() {
 
     if (error) {
       toast.error(`Errore aggiornamento stato ordine: ${error.message}`);
-      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Errore aggiornamento stato ordine:`, error);
+      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Errore Supabase durante l'aggiornamento stato ordine:`, error);
       setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
       return { success: false, error };
     }
+    console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Stato ordine ${currentOrdine.numero_ordine} aggiornato con successo in Supabase.`);
     
     // Fetch fornitore details separately for syncArticleInventoryStatus
     const { data: fornitoreData, error: fornitoreError } = await supabase
@@ -398,6 +403,7 @@ export function useOrdiniAcquisto() {
     const orderToInsert = convertEmptyStringsToNull({ ...ordine }); // Applica la conversione
     console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Dati da inserire (dopo conversione):`, JSON.stringify(orderToInsert, null, 2));
 
+    console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Tentativo di inserire il nuovo ordine in Supabase.`);
     const { data: newOrdine, error: ordineError } = await supabase
       .from('ordini_acquisto')
       .insert([orderToInsert])
@@ -409,7 +415,7 @@ export function useOrdiniAcquisto() {
       console.error(`[useOrdiniAcquisto - addOrdineAcquisto] Errore Supabase durante l'inserimento:`, ordineError);
       return { success: false, error: ordineError };
     }
-    console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Ordine inserito con successo:`, newOrdine);
+    console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Ordine inserito con successo in Supabase:`, newOrdine);
 
     // Fetch fornitore details separately for syncArticleInventoryStatus
     const { data: fornitoreData, error: fornitoreError } = await supabase
@@ -443,6 +449,7 @@ export function useOrdiniAcquisto() {
     const orderToUpdate = convertEmptyStringsToNull({ ...ordine }); // Applica la conversione
     console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Dati da aggiornare per ID: '${id}' (dopo conversione):`, JSON.stringify(orderToUpdate, null, 2));
 
+    console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Tentativo di aggiornare l'ordine ${id} in Supabase.`);
     const { data: updatedOrdine, error: ordineError } = await supabase
       .from('ordini_acquisto')
       .update(orderToUpdate)
@@ -455,7 +462,7 @@ export function useOrdiniAcquisto() {
       console.error(`[useOrdiniAcquisto - updateOrdineAcquisto] Errore Supabase durante l'aggiornamento:`, ordineError);
       return { success: false, error: ordineError };
     }
-    console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Ordine aggiornato con successo:`, updatedOrdine);
+    console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Ordine ${id} aggiornato con successo in Supabase:`, updatedOrdine);
 
     // Fetch fornitore details separately for syncArticleInventoryStatus
     const { data: fornitoreData, error: fornitoreError } = await supabase
@@ -529,7 +536,7 @@ export function useOrdiniAcquisto() {
       console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Eliminazione articoli correlati da 'giacenza' per ordine: '${numeroOrdine}'.`);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
       
-      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Eliminazione ordine d'acquisto principale da 'ordini_acquisto' per ID: '${id}'.`);
+      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Tentativo di eliminare l'ordine d'acquisto principale da 'ordini_acquisto' per ID: '${id}'.`);
       const { error } = await supabase
         .from('ordini_acquisto')
         .delete()
@@ -540,6 +547,7 @@ export function useOrdiniAcquisto() {
         console.error(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Errore Supabase durante l'eliminazione definitiva:`, error);
         throw error;
       }
+      console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Ordine d'acquisto principale eliminato con successo da Supabase.`);
 
       toast.success(`🗑️ Ordine d'acquisto '${numeroOrdine}' eliminato definitivamente!`);
       console.log(`[useOrdiniAcquisto - deleteOrdineAcquistoPermanently] Ordine '${numeroOrdine}' eliminato definitivamente.`);
