@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import { OrdineAcquisto, ArticoloOrdineAcquisto, Fornitore, Cliente, Cartone } from '@/types';
+import { OrdineAcquisto, ArticoloOrdineAcquisto, Fornitore, Cliente, Cartone, Fustella } from '@/types';
 import * as notifications from './notifications'; // Aggiornato a percorso relativo
 import { generateNextCartoneCode } from './cartoneUtils';
 import { generateNextFscCommessa, resetFscCommessaGenerator } from './fscUtils'; // Importa le utilità FSC
+import { generateNextFustellaCode, resetFustellaCodeGenerator } from './fustellaUtils'; // Importa le utilità Fustella
+import { generateNextPulitoreCode, resetPulitoreCodeGenerator } from './pulitoreUtils'; // Importa le utilità Pulitore
 
 export async function seedPurchaseOrders() {
   notifications.showInfo('Generazione ordini d\'acquisto di test in corso...');
@@ -26,6 +28,7 @@ export async function seedPurchaseOrders() {
 
     const fornitoreCartone = fornitori.find(f => f.tipo_fornitore === 'Cartone');
     const fornitoreInchiostro = fornitori.find(f => f.tipo_fornitore === 'Inchiostro');
+    const fornitoreFustelle = fornitori.find(f => f.tipo_fornitore === 'Fustelle'); // NUOVO: Fornitore Fustelle
     const randomCliente = clienti[Math.floor(Math.random() * clienti.length)];
 
     // Pulisci le tabelle prima di inserire i dati di test
@@ -34,9 +37,13 @@ export async function seedPurchaseOrders() {
     await supabase.from('esauriti').delete().neq('codice', 'NON_ESISTENTE'); // Elimina tutti
     await supabase.from('storico').delete().neq('codice', 'NON_ESISTENTE'); // Pulisci anche lo storico
     await supabase.from('ordini_acquisto').delete().neq('numero_ordine', 'NON_ESISTENTE'); // Elimina tutti
+    await supabase.from('fustelle').delete().neq('codice', 'NON_ESISTENTE'); // NUOVO: Pulisci anche le fustelle
+    await supabase.from('polimeri').delete().neq('codice', 'NON_ESISTENTE'); // NUOVO: Pulisci anche i polimeri
 
     // Inizializza i generatori di codici per i dati di test
     resetFscCommessaGenerator(31, 2024); // Inizia da 31 per generare 32/24
+    resetFustellaCodeGenerator(0); // Inizializza generatore Fustella
+    resetPulitoreCodeGenerator(0); // Inizializza generatore Pulitore
     
     const ordersToInsert: (Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo'> & { articoli: ArticoloOrdineAcquisto[] })[] = [];
 
@@ -216,6 +223,61 @@ export async function seedPurchaseOrders() {
       });
     }
 
+    // NUOVO: Aggiungi un ordine di Fustelle
+    if (fornitoreFustelle && randomCliente) {
+      ordersToInsert.push({
+        fornitore_id: fornitoreFustelle.id!,
+        data_ordine: '2024-07-15',
+        numero_ordine: `PO-2024-006`,
+        stato: 'in_attesa',
+        importo_totale: 0,
+        note: 'Ordine di nuove fustelle per produzione',
+        articoli: [
+          {
+            fustella_codice: generateNextFustellaCode(),
+            codice_fornitore_fustella: 'F-12345',
+            fustellatrice: 'Bobst 102',
+            resa_fustella: '1/1',
+            quantita: 1, // Quantità per fustella
+            prezzo_unitario: 250.00,
+            cliente: randomCliente.nome,
+            lavoro: 'LAV-2024-F01',
+            data_consegna_prevista: '2024-08-01',
+            stato: 'in_attesa',
+            hasPulitore: true,
+            pulitore_codice_fustella: generateNextPulitoreCode(),
+            pinza_tagliata: true,
+            tasselli_intercambiabili: false,
+            nr_tasselli: null,
+            incollatura: false,
+            incollatrice: null,
+            tipo_incollatura: null,
+          },
+          {
+            fustella_codice: generateNextFustellaCode(),
+            codice_fornitore_fustella: 'F-67890',
+            fustellatrice: 'Bobst 142',
+            resa_fustella: '1/2',
+            quantita: 1,
+            prezzo_unitario: 320.00,
+            cliente: randomCliente.nome,
+            lavoro: 'LAV-2024-F02',
+            data_consegna_prevista: '2024-08-05',
+            stato: 'inviato',
+            hasPulitore: false,
+            pulitore_codice_fustella: null,
+            pinza_tagliata: false,
+            tasselli_intercambiabili: true,
+            nr_tasselli: 4,
+            incollatura: true,
+            incollatrice: 'Bobst Masterfold',
+            tipo_incollatura: 'Lineare',
+          },
+        ],
+      });
+    }
+
+
     for (const order of ordersToInsert) {
       // Ricalcola l'importo totale escludendo gli articoli annullati
       const totalAmount = order.articoli.reduce((sum, item) => {
@@ -245,7 +307,9 @@ export async function seedPurchaseOrders() {
         continue;
       }
 
-      if (newOrdine.fornitori?.tipo_fornitore === 'Cartone' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) { // Aggiunto 'inviato'
+      const fornitoreTipo = newOrdine.fornitori?.tipo_fornitore;
+
+      if (fornitoreTipo === 'Cartone' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) { // Aggiunto 'inviato'
         for (const articolo of articoli) {
           const codiceCtn = articolo.codice_ctn; 
           if (!codiceCtn) {
@@ -272,7 +336,6 @@ export async function seedPurchaseOrders() {
             magazzino: '-',
             prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
-            confermato: newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto',
             note: ordineData.note || '-',
             fsc: articolo.fsc, // Aggiunto
             alimentare: articolo.alimentare, // Aggiunto
@@ -297,6 +360,46 @@ export async function seedPurchaseOrders() {
             if (giacenzaError) {
               console.error(`Errore aggiunta cartone ${codiceCtn} a giacenza:`, giacenzaError);
               notifications.showError(`Errore aggiunta cartone ${codiceCtn} a giacenza.`);
+            }
+          }
+        } else if (fornitoreTipo === 'Fustelle' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) {
+          for (const articolo of articoli) {
+            const fustellaCodice = articolo.fustella_codice;
+            if (!fustellaCodice) {
+              console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice Fustella. Saltato.`);
+              continue;
+            }
+
+            if (articolo.stato === 'annullato') {
+              console.log(`Articolo Fustella ${fustellaCodice} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
+              continue;
+            }
+
+            const fustella: Fustella = {
+              codice: fustellaCodice,
+              fornitore: fornitoreFustelle!.nome,
+              codice_fornitore: articolo.codice_fornitore_fustella || null,
+              cliente: articolo.cliente || 'N/A',
+              lavoro: articolo.lavoro || 'N/A',
+              fustellatrice: articolo.fustellatrice || null,
+              resa: articolo.resa_fustella || null,
+              pulitore_codice: articolo.pulitore_codice_fustella || null,
+              pinza_tagliata: articolo.pinza_tagliata || false,
+              tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
+              nr_tasselli: articolo.nr_tasselli || null,
+              incollatura: articolo.incollatura || false,
+              incollatrice: articolo.incollatrice || null,
+              tipo_incollatura: articolo.tipo_incollatura || null,
+              disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+              data_creazione: new Date().toISOString(),
+              ultima_modifica: new Date().toISOString(),
+              ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
+            };
+
+            const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
+            if (fustellaError) {
+              console.error(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle:`, fustellaError);
+              notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
             }
           }
         }

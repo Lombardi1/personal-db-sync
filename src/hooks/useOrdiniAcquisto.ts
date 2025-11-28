@@ -436,7 +436,7 @@ export function useOrdiniAcquisto() {
 
     if (ordineError) {
       toast.error(`Errore aggiunta ordine: ${ordineError.message}`);
-      return { success: false, error: ordineError };
+      throw ordineError; // Rilancia l'errore
     }
 
     // Fetch fornitore details separately for syncArticleInventoryStatus
@@ -449,7 +449,7 @@ export function useOrdiniAcquisto() {
     if (fornitoreError || !fornitoreData) {
       console.error(`[useOrdiniAcquisto - addOrdineAcquisto] Errore recupero dettagli fornitore per OA: ${newOrdine.numero_ordine}`, fornitoreError);
       toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
-      return { success: false, error: fornitoreError };
+      throw fornitoreError; // Rilancia l'errore
     }
 
     const orderWithFornitoreInfo: OrdineAcquisto = {
@@ -478,7 +478,7 @@ export function useOrdiniAcquisto() {
 
     if (ordineError) {
       toast.error(`Errore modifica ordine: ${ordineError.message}`);
-      return { success: false, error: ordineError };
+      throw ordineError; // Rilancia l'errore
     }
 
     // Fetch fornitore details separately for syncArticleInventoryStatus
@@ -491,7 +491,7 @@ export function useOrdiniAcquisto() {
     if (fornitoreError || !fornitoreData) {
       console.error(`[useOrdiniAcquisto - updateOrdineAcquisto] Errore recupero dettagli fornitore per OA: ${updatedOrdine.numero_ordine}`, fornitoreError);
       toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
-      return { success: false, error: fornitoreError };
+      throw fornitoreError; // Rilancia l'errore
     }
 
     const orderWithFornitoreInfo: OrdineAcquisto = {

@@ -117,6 +117,27 @@ const MOCK_FORNITORI: Fornitore[] = [
     banca: 'Banca Intesa Sanpaolo', // NUOVO
     created_at: new Date().toISOString(),
   },
+  { // NUOVO: Fornitore di Fustelle
+    id: 'mock-f4',
+    codice_anagrafica: 'FOR-004',
+    nome: 'Fustelle Perfette Srl',
+    tipo_fornitore: 'Fustelle',
+    indirizzo: 'Via Artigiani 15',
+    citta: 'Verona',
+    cap: '37100',
+    provincia: 'VR',
+    partita_iva: '98765432109',
+    codice_fiscale: 'FSTPRF98A01F205Y',
+    telefono: '0451122334',
+    email: 'info@fustelleperfette.it',
+    pec: 'pec@fustelleperfette.it',
+    sdi: 'ABCDEFH',
+    note: 'Fornitore specializzato in fustelle di alta precisione.',
+    condizione_pagamento: 'Bonifico 60gg',
+    considera_iva: true,
+    banca: 'Banca di Credito Cooperativo',
+    created_at: new Date().toISOString(),
+  },
 ];
 
 export function useAnagrafiche() {
