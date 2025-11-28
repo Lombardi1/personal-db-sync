@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Trash2, Check, ChevronsUpDown } from 'lucide-react';
-import { OrdineAcquisto, ArticoloOrdineAcquisto, Cliente } from '@/types'; // Updated import
-import { formatFormato, formatGrammatura } from '@/utils/formatters'; // Import getStatoBadgeClass and getStatoText
+import { OrdineAcquisto, ArticoloOrdineAcquisto, Cliente } from '@/types';
+import { formatFormato, formatGrammatura } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
 import {
   Command,
@@ -24,13 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator'; // Import Separator
-import { generateNextFscCommessa } from '@/utils/fscUtils'; // Importa la funzione di generazione
+import { Separator } from '@/components/ui/separator';
+import { generateNextFscCommessa } from '@/utils/fscUtils';
+import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
 
 interface OrdineAcquistoArticoloFormRowProps {
   index: number;
   isSubmitting: boolean;
   isCartoneFornitore: boolean;
+  isFustelleFornitore: boolean; // Nuovo prop
   remove: (index?: number | number[]) => void;
   fieldsLength: number;
   clienti: Cliente[];
@@ -67,6 +69,7 @@ export function OrdineAcquistoArticoloFormRow({
   index,
   isSubmitting,
   isCartoneFornitore,
+  isFustelleFornitore, // Nuovo prop
   remove,
   fieldsLength,
   clienti,
@@ -77,21 +80,38 @@ export function OrdineAcquistoArticoloFormRow({
 
   const watchedArticles = watch('articoli');
   const currentArticle = watchedArticles[index];
-  const orderDate = watch('data_ordine'); // Ottieni la data dell'ordine principale
+  const orderDate = watch('data_ordine');
   const orderYear = new Date(orderDate).getFullYear();
   
   console.log(`OrdineAcquistoArticoloFormRow[${index}]: currentArticle data:`, currentArticle);
 
+  // Campi Cartone
   const currentFormato = currentArticle?.formato;
   const currentGrammatura = currentArticle?.grammatura;
-  const currentNumeroFogli = currentArticle?.numero_fogli; // Nuovo campo per i fogli
-  const currentQuantita = currentArticle?.quantita; // This is now in KG for cartone
+  const currentNumeroFogli = currentArticle?.numero_fogli;
   const currentCliente = currentArticle?.cliente;
   const currentCodiceCtn = currentArticle?.codice_ctn;
+  const currentFsc = currentArticle?.fsc;
+  const currentAlimentare = currentArticle?.alimentare;
+  const currentRifCommessaFsc = currentArticle?.rif_commessa_fsc;
+
+  // Campi Fustelle
+  const currentFustellaCodice = currentArticle?.fustella_codice;
+  const currentCodiceFornitoreFustella = currentArticle?.codice_fornitore_fustella;
+  const currentFustellatrice = currentArticle?.fustellatrice;
+  const currentResaFustella = currentArticle?.resa_fustella;
+  const currentHasPulitore = currentArticle?.hasPulitore;
+  const currentPulitoreCodiceFustella = currentArticle?.pulitore_codice_fustella;
+  const currentPinzaTagliata = currentArticle?.pinza_tagliata;
+  const currentTasselliIntercambiabili = currentArticle?.tasselli_intercambiabili;
+  const currentNrTasselli = currentArticle?.nr_tasselli;
+  const currentIncollatura = currentArticle?.incollatura;
+  const currentIncollatrice = currentArticle?.incollatrice;
+  const currentTipoIncollatura = currentArticle?.tipo_incollatura;
+
+  // Campi Comuni
+  const currentQuantita = currentArticle?.quantita;
   const currentStatoArticolo = currentArticle?.stato;
-  const currentFsc = currentArticle?.fsc; // Nuovo campo
-  const currentAlimentare = currentArticle?.alimentare; // Nuovo campo
-  const currentRifCommessaFsc = currentArticle?.rif_commessa_fsc; // Nuovo campo
 
   // State for controlled input values to retain formatting
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => 
@@ -105,9 +125,9 @@ export function OrdineAcquistoArticoloFormRow({
       : ''
   );
 
-  // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura
+  // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura for Cartone
   const calculatedQuantitaKg = React.useMemo(() => {
-    if (!isCartoneFornitore) return 0; // Only for cartone suppliers
+    if (!isCartoneFornitore) return 0;
 
     const formatDims = parseFormatoForCalculation(currentFormato);
     const gramm = parseGrammaturaForCalculation(currentGrammatura);
@@ -115,8 +135,8 @@ export function OrdineAcquistoArticoloFormRow({
 
     if (formatDims && gramm !== null && numeroFogli > 0 && formatDims.lengthM > 0 && formatDims.widthM > 0 && gramm > 0) {
       const areaM2PerSheet = formatDims.lengthM * formatDims.widthM;
-      const weightPerSheetKg = (areaM2PerSheet * gramm) / 1000; // Weight per sheet in kg
-      return weightPerSheetKg * numeroFogli; // Total kg = kg per sheet * number of sheets
+      const weightPerSheetKg = (areaM2PerSheet * gramm) / 1000;
+      return weightPerSheetKg * numeroFogli;
     }
     return 0;
   }, [isCartoneFornitore, currentFormato, currentGrammatura, currentNumeroFogli]);
@@ -124,7 +144,7 @@ export function OrdineAcquistoArticoloFormRow({
   // Update the 'quantita' field (which stores kg for cartone) whenever inputs change
   React.useEffect(() => {
     if (isCartoneFornitore) {
-      setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true }); // Keep 3 decimals for calculation
+      setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true });
     }
   }, [calculatedQuantitaKg, index, setValue, isCartoneFornitore]);
 
@@ -133,10 +153,27 @@ export function OrdineAcquistoArticoloFormRow({
     if (isCartoneFornitore && currentFsc && !currentRifCommessaFsc) {
       setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
     } else if (isCartoneFornitore && !currentFsc && currentRifCommessaFsc) {
-      // Se FSC viene deflaggato, rimuovi il rif_commessa_fsc
       setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
     }
   }, [isCartoneFornitore, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
+
+  // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato
+  React.useEffect(() => {
+    if (isFustelleFornitore && currentHasPulitore && !currentPulitoreCodiceFustella) {
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+    } else if (isFustelleFornitore && !currentHasPulitore && currentPulitoreCodiceFustella) {
+      setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
+    }
+  }, [isFustelleFornitore, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
+
+  // Gestione del nr_tasselli quando tasselli_intercambiabili viene flaggato
+  React.useEffect(() => {
+    if (isFustelleFornitore && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
+      setValue(`articoli.${index}.nr_tasselli`, 0, { shouldValidate: true });
+    } else if (isFustelleFornitore && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
+      setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
+    }
+  }, [isFustelleFornitore, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
 
 
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0);
@@ -145,12 +182,11 @@ export function OrdineAcquistoArticoloFormRow({
 
   return (
     <div className="flex flex-col sm:flex-row gap-2 p-3 border rounded-md bg-muted/50 items-end">
-      <div className="flex-1 grid grid-cols-1 gap-2 w-full"> {/* Main grid for article details, reduced gap */}
+      <div className="flex-1 grid grid-cols-1 gap-2 w-full">
         {isCartoneFornitore ? (
           <>
-            {/* Section: Codice Identificativo */}
-            {/* Rimosso: !isNewOrder per mostrare sempre il codice CTN */}
-            <div className="p-2 bg-gray-50 rounded-lg border"> {/* Reduced padding */}
+            {/* Section: Codice Identificativo Cartone */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo</h5>
               <div>
                 <Label htmlFor={`articoli.${index}.codice_ctn`} className="text-xs">Codice CTN</Label>
@@ -165,10 +201,10 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
 
-            <Separator className="my-1" /> {/* Reduced margin */}
+            <Separator className="my-1" />
 
-            {/* Section: Dettagli Articolo */}
-            <div className="p-2 bg-gray-50 rounded-lg border"> {/* Reduced padding */}
+            {/* Section: Dettagli Articolo Cartone */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 <div>
@@ -179,6 +215,7 @@ export function OrdineAcquistoArticoloFormRow({
                     placeholder="Es. Ondulato Triplo"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
+                    onChange={(e) => setValue(`articoli.${index}.tipologia_cartone`, e.target.value, { shouldValidate: true })}
                   />
                   {errors.articoli?.[index]?.tipologia_cartone && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.tipologia_cartone?.message}</p>}
                 </div>
@@ -221,7 +258,6 @@ export function OrdineAcquistoArticoloFormRow({
                   {errors.articoli?.[index]?.grammatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.grammatura?.message}</p>}
                 </div>
 
-                {/* Input Fogli */}
                 <div>
                   <Label htmlFor={`articoli.${index}.numero_fogli`} className="text-xs">Fogli *</Label>
                   <Input
@@ -236,28 +272,26 @@ export function OrdineAcquistoArticoloFormRow({
                   {errors.articoli?.[index]?.numero_fogli && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.numero_fogli?.message}</p>}
                 </div>
                 
-                {/* Display Quantità (kg) - Read-only */}
                 <div className="col-span-1">
                   <Label className="text-xs">Quantità (kg)</Label>
                   <Input
-                    value={calculatedQuantitaKg.toFixed(0)} // Display with 0 decimals
+                    value={calculatedQuantitaKg.toFixed(0)}
                     readOnly
                     disabled={true}
                     className="text-sm font-bold bg-gray-100"
                   />
                 </div>
 
-                {/* Pricing */}
                 <div>
                   <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="text" // Changed to text
-                      value={displayPrezzoUnitario} // Controlled value
+                      type="text"
+                      value={displayPrezzoUnitario}
                       onChange={(e) => {
                         const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue); // Update display immediately
+                        setDisplayPrezzoUnitario(rawValue);
                         const numericValue = parseFloat(rawValue.replace(',', '.'));
                         if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
@@ -268,13 +302,13 @@ export function OrdineAcquistoArticoloFormRow({
                       onBlur={(e) => {
                         const numericValue = parseFloat(e.target.value.replace(',', '.'));
                         if (!isNaN(numericValue)) {
-                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
                         } else {
                           setDisplayPrezzoUnitario('');
                         }
                       }}
-                      placeholder="Es. 0,870" // Updated placeholder
-                      min="0" // min attribute is still useful for validation, even with type="text"
+                      placeholder="Es. 0,870"
+                      min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
                     />
@@ -287,10 +321,10 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
 
-            <Separator className="my-1" /> {/* Reduced margin */}
+            <Separator className="my-1" />
 
-            {/* Section: Dettagli Utilizzo */}
-            <div className="p-2 bg-gray-50 rounded-lg border"> {/* Reduced padding */}
+            {/* Section: Dettagli Utilizzo Cartone */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Utilizzo</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
@@ -358,9 +392,9 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
 
-            <Separator className="my-1" /> {/* Reduced margin */}
+            <Separator className="my-1" />
 
-            {/* Section: Certificazioni */}
+            {/* Section: Certificazioni Cartone */}
             <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Certificazioni</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -404,10 +438,275 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
 
-            <Separator className="my-1" /> {/* Reduced margin */}
+            <Separator className="my-1" />
 
-            {/* Section: Consegna */}
-            <div className="p-2 bg-gray-50 rounded-lg border"> {/* Reduced padding */}
+            {/* Section: Consegna Cartone */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
+              <div>
+                <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
+                <Input
+                  id={`articoli.${index}.data_consegna_prevista`}
+                  type="date"
+                  {...register(`articoli.${index}.data_consegna_prevista`)}
+                  disabled={isSubmitting || isOrderCancelled}
+                  className="text-sm"
+                />
+                {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
+              </div>
+            </div>
+          </>
+        ) : isFustelleFornitore ? ( // NUOVA SEZIONE PER FUSTELLE
+          <>
+            {/* Section: Codice Identificativo Fustella */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo</h5>
+              <div>
+                <Label htmlFor={`articoli.${index}.fustella_codice`} className="text-xs">Codice Fustella *</Label>
+                <Input
+                  id={`articoli.${index}.fustella_codice`}
+                  {...register(`articoli.${index}.fustella_codice`)}
+                  readOnly
+                  disabled={true}
+                  className="text-sm font-mono font-bold bg-gray-100"
+                />
+                {errors.articoli?.[index]?.fustella_codice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fustella_codice?.message}</p>}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Fustella */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Fustella</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div>
+                  <Label htmlFor={`articoli.${index}.codice_fornitore_fustella`} className="text-xs">Codice Fornitore *</Label>
+                  <Input
+                    id={`articoli.${index}.codice_fornitore_fustella`}
+                    {...register(`articoli.${index}.codice_fornitore_fustella`)}
+                    placeholder="Es. FOR-001"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.codice_fornitore_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.fustellatrice`} className="text-xs">Fustellatrice *</Label>
+                  <Input
+                    id={`articoli.${index}.fustellatrice`}
+                    {...register(`articoli.${index}.fustellatrice`)}
+                    placeholder="Es. Bobst 102"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.fustellatrice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fustellatrice?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.resa_fustella`} className="text-xs">Resa *</Label>
+                  <Input
+                    id={`articoli.${index}.resa_fustella`}
+                    {...register(`articoli.${index}.resa_fustella`)}
+                    placeholder="Es. 1/2"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.resa_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.resa_fustella?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
+                  <Input
+                    id={`articoli.${index}.quantita`}
+                    type="text"
+                    value={displayQuantita}
+                    onChange={(e) => {
+                      const rawValue = e.target.value;
+                      setDisplayQuantita(rawValue);
+                      const numericValue = parseFloat(rawValue.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
+                      } else {
+                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
+                      } else {
+                        setDisplayQuantita('');
+                      }
+                    }}
+                    placeholder="Es. 1"
+                    min="0"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
+                  <div className="relative">
+                    <Input
+                      id={`articoli.${index}.prezzo_unitario`}
+                      type="text"
+                      value={displayPrezzoUnitario}
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue);
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
+                        } else {
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
+                        } else {
+                          setDisplayPrezzoUnitario('');
+                        }
+                      }}
+                      placeholder="Es. 150,00"
+                      min="0"
+                      disabled={isSubmitting || isOrderCancelled}
+                      className="text-sm pr-10"
+                    />
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
+                      €
+                    </span>
+                  </div>
+                  {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Pulitore e Tasselli */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Pulitore e Tasselli</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.hasPulitore`}
+                    {...register(`articoli.${index}.hasPulitore`)}
+                    checked={currentHasPulitore}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.hasPulitore`} className="text-xs">Ha Pulitore</Label>
+                  {errors.articoli?.[index]?.hasPulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
+                </div>
+                {currentHasPulitore && (
+                  <div>
+                    <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
+                    <Input
+                      id={`articoli.${index}.pulitore_codice_fustella`}
+                      {...register(`articoli.${index}.pulitore_codice_fustella`)}
+                      readOnly
+                      disabled={true}
+                      className="text-sm font-mono font-bold bg-gray-100"
+                    />
+                    {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
+                  </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.pinza_tagliata`}
+                    {...register(`articoli.${index}.pinza_tagliata`)}
+                    checked={currentPinzaTagliata}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.pinza_tagliata`} className="text-xs">Pinza Tagliata</Label>
+                  {errors.articoli?.[index]?.pinza_tagliata && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.tasselli_intercambiabili`}
+                    {...register(`articoli.${index}.tasselli_intercambiabili`)}
+                    checked={currentTasselliIntercambiabili}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.tasselli_intercambiabili`} className="text-xs">Tasselli Intercambiabili</Label>
+                  {errors.articoli?.[index]?.tasselli_intercambiabili && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.tasselli_intercambiabili?.message}</p>}
+                </div>
+                {currentTasselliIntercambiabili && (
+                  <div>
+                    <Label htmlFor={`articoli.${index}.nr_tasselli`} className="text-xs">Nr. Tasselli *</Label>
+                    <Input
+                      id={`articoli.${index}.nr_tasselli`}
+                      type="number"
+                      {...register(`articoli.${index}.nr_tasselli`, { valueAsNumber: true })}
+                      placeholder="0"
+                      min="0"
+                      disabled={isSubmitting || isOrderCancelled}
+                      className="text-sm"
+                    />
+                    {errors.articoli?.[index]?.nr_tasselli && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.nr_tasselli?.message}</p>}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Incollatura */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Incollatura</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.incollatura`}
+                    {...register(`articoli.${index}.incollatura`)}
+                    checked={currentIncollatura}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.incollatura`} className="text-xs">Incollatura</Label>
+                  {errors.articoli?.[index]?.incollatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.incollatura?.message}</p>}
+                </div>
+                {currentIncollatura && (
+                  <>
+                    <div>
+                      <Label htmlFor={`articoli.${index}.incollatrice`} className="text-xs">Incollatrice *</Label>
+                      <Input
+                        id={`articoli.${index}.incollatrice`}
+                        {...register(`articoli.${index}.incollatrice`)}
+                        placeholder="Es. Bobst Masterfold"
+                        disabled={isSubmitting || isOrderCancelled}
+                        className="text-sm"
+                      />
+                      {errors.articoli?.[index]?.incollatrice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.incollatrice?.message}</p>}
+                    </div>
+                    <div>
+                      <Label htmlFor={`articoli.${index}.tipo_incollatura`} className="text-xs">Tipo Incollatura *</Label>
+                      <Input
+                        id={`articoli.${index}.tipo_incollatura`}
+                        {...register(`articoli.${index}.tipo_incollatura`)}
+                        placeholder="Es. Lineare, 4 punti"
+                        disabled={isSubmitting || isOrderCancelled}
+                        className="text-sm"
+                      />
+                      {errors.articoli?.[index]?.tipo_incollatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.tipo_incollatura?.message}</p>}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Consegna Fustella */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
               <div>
                 <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
@@ -424,8 +723,8 @@ export function OrdineAcquistoArticoloFormRow({
           </>
         ) : (
           <>
-            {/* Section: Dettagli Articolo (Non-Cartone) */}
-            <div className="p-2 bg-gray-50 rounded-lg border"> {/* Reduced padding */}
+            {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle) */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
@@ -443,11 +742,11 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
                     id={`articoli.${index}.quantita`}
-                    type="text" // Changed to text
-                    value={displayQuantita} // Controlled value
+                    type="text"
+                    value={displayQuantita}
                     onChange={(e) => {
                       const rawValue = e.target.value;
-                      setDisplayQuantita(rawValue); // Update display immediately
+                      setDisplayQuantita(rawValue);
                       const numericValue = parseFloat(rawValue.replace(',', '.'));
                       if (!isNaN(numericValue)) {
                         setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
@@ -458,12 +757,12 @@ export function OrdineAcquistoArticoloFormRow({
                     onBlur={(e) => {
                       const numericValue = parseFloat(e.target.value.replace(',', '.'));
                       if (!isNaN(numericValue)) {
-                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
+                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
                       } else {
                         setDisplayQuantita('');
                       }
                     }}
-                    placeholder="Es. 0,870" // Updated placeholder
+                    placeholder="Es. 0,870"
                     min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
@@ -475,11 +774,11 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="text" // Changed to text
-                      value={displayPrezzoUnitario} // Controlled value
+                      type="text"
+                      value={displayPrezzoUnitario}
                       onChange={(e) => {
                         const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue); // Update display immediately
+                        setDisplayPrezzoUnitario(rawValue);
                         const numericValue = parseFloat(rawValue.replace(',', '.'));
                         if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
@@ -490,12 +789,12 @@ export function OrdineAcquistoArticoloFormRow({
                       onBlur={(e) => {
                         const numericValue = parseFloat(e.target.value.replace(',', '.'));
                         if (!isNaN(numericValue)) {
-                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ',')); // Re-format on blur
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
                         } else {
                           setDisplayPrezzoUnitario('');
                         }
                       }}
-                      placeholder="Es. 0,870" // Updated placeholder
+                      placeholder="Es. 0,870"
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -523,7 +822,7 @@ export function OrdineAcquistoArticoloFormRow({
         )}
         {/* Campo Stato per l'articolo - VISIBILE SOLO SE NON È UN NUOVO ORDINE */}
         {!isNewOrder && (
-          <div className="p-2 bg-gray-50 rounded-lg border"> {/* Reduced padding */}
+          <div className="p-2 bg-gray-50 rounded-lg border">
             <h5 className="text-sm font-semibold mb-2 text-gray-700">Stato Articolo</h5>
             <div>
               <Label htmlFor={`articoli.${index}.stato`} className="text-xs">Stato Articolo *</Label>

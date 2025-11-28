@@ -13,10 +13,14 @@ export function useOrdiniAcquisto() {
     console.log(`[syncArticleInventoryStatus] Sincronizzazione articoli per OA: ${ordineAcquisto.numero_ordine}`);
     const fornitoreNome = ordineAcquisto.fornitore_nome || 'N/A';
     const isCartoneFornitore = ordineAcquisto.fornitore_tipo === 'Cartone';
+    const isFustelleFornitore = ordineAcquisto.fornitore_tipo === 'Fustelle'; // Nuovo flag
 
+    // Elimina tutti gli articoli di questo ordine dalle tabelle 'ordini' e 'giacenza'
+    // Questo è un reset per garantire la coerenza prima di reinserire
     await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
+    await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine); // Anche da giacenza
 
-    if (!isCartoneFornitore) {
+    if (!isCartoneFornitore && !isFustelleFornitore) { // Se non è né cartone né fustelle, non sincronizzare l'inventario
       return;
     }
 
@@ -27,70 +31,76 @@ export function useOrdiniAcquisto() {
 
     for (const articolo of ordineAcquisto.articoli) {
       try {
-        const codiceCtn = articolo.codice_ctn;
-        if (!codiceCtn) {
-          continue;
-        }
-
-        const numFogli = articolo.numero_fogli;
-        if (numFogli === undefined || numFogli <= 0) {
-          continue;
-        }
-
-        const cartoneBase: Cartone = {
-          codice: codiceCtn,
-          fornitore: fornitoreNome,
-          ordine: ordineAcquisto.numero_ordine,
-          tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
-          formato: articolo.formato || 'N/A',
-          grammatura: articolo.grammatura || 'N/A',
-          fogli: numFogli,
-          cliente: articolo.cliente || 'N/A',
-          lavoro: articolo.lavoro || 'N/A',
-          magazzino: '-',
-          prezzo: articolo.prezzo_unitario,
-          data_consegna: articolo.data_consegna_prevista,
-          note: ordineAcquisto.note || '-',
-          fsc: articolo.fsc,
-          alimentare: articolo.alimentare,
-          rif_commessa_fsc: articolo.rif_commessa_fsc,
-        };
-
-        if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
-          const isConfirmedForOrdiniTable = articolo.stato === 'confermato';
-          const { error: insertError } = await supabase.from('ordini').insert([{ ...cartoneBase, confermato: isConfirmedForOrdiniTable }]);
-          if (insertError) {
-            toast.error(`Errore inserimento in ordini: ${insertError.message}`);
-          }
-        } else if (articolo.stato === 'ricevuto') {
-          const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
-            .from('giacenza')
-            .select('ddt, data_arrivo, magazzino')
-            .eq('codice', codiceCtn)
-            .single();
-
-          if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') {
-            toast.error(`Errore recupero giacenza: ${fetchGiacenzaError.message}`);
+        if (isCartoneFornitore) {
+          const codiceCtn = articolo.codice_ctn;
+          if (!codiceCtn) {
             continue;
           }
 
-          const giacenzaDataToUpdate = {
-            ddt: existingGiacenza?.ddt || null,
-            data_arrivo: existingGiacenza?.data_arrivo || new Date().toISOString().split('T')[0],
-            magazzino: existingGiacenza?.magazzino || '-',
+          const numFogli = articolo.numero_fogli;
+          if (numFogli === undefined || numFogli <= 0) {
+            continue;
+          }
+
+          const cartoneBase: Cartone = {
+            codice: codiceCtn,
+            fornitore: fornitoreNome,
+            ordine: ordineAcquisto.numero_ordine,
+            tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
+            formato: articolo.formato || 'N/A',
+            grammatura: articolo.grammatura || 'N/A',
+            fogli: numFogli,
+            cliente: articolo.cliente || 'N/A',
+            lavoro: articolo.lavoro || 'N/A',
+            magazzino: '-',
+            prezzo: articolo.prezzo_unitario,
+            data_consegna: articolo.data_consegna_prevista,
+            note: ordineAcquisto.note || '-',
+            fsc: articolo.fsc,
+            alimentare: articolo.alimentare,
+            rif_commessa_fsc: articolo.rif_commessa_fsc,
           };
 
-          if (existingGiacenza) {
-            const { error: updateError } = await supabase.from('giacenza').update({ ...cartoneBase, ...giacenzaDataToUpdate }).eq('codice', codiceCtn);
-            if (updateError) {
-              toast.error(`Errore aggiornamento in giacenza: ${updateError.message}`);
-            }
-          } else {
-            const { error: insertError } = await supabase.from('giacenza').insert([{ ...cartoneBase, ...giacenzaDataToUpdate }]);
+          if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
+            const isConfirmedForOrdiniTable = articolo.stato === 'confermato';
+            const { error: insertError } = await supabase.from('ordini').insert([{ ...cartoneBase, confermato: isConfirmedForOrdiniTable }]);
             if (insertError) {
-              toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
+              toast.error(`Errore inserimento in ordini: ${insertError.message}`);
+            }
+          } else if (articolo.stato === 'ricevuto') {
+            const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
+              .from('giacenza')
+              .select('ddt, data_arrivo, magazzino')
+              .eq('codice', codiceCtn)
+              .single();
+
+            if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') {
+              toast.error(`Errore recupero giacenza: ${fetchGiacenzaError.message}`);
+              continue;
+            }
+
+            const giacenzaDataToUpdate = {
+              ddt: existingGiacenza?.ddt || null,
+              data_arrivo: existingGiacenza?.data_arrivo || new Date().toISOString().split('T')[0],
+              magazzino: existingGiacenza?.magazzino || '-',
+            };
+
+            if (existingGiacenza) {
+              const { error: updateError } = await supabase.from('giacenza').update({ ...cartoneBase, ...giacenzaDataToUpdate }).eq('codice', codiceCtn);
+              if (updateError) {
+                toast.error(`Errore aggiornamento in giacenza: ${updateError.message}`);
+              }
+            } else {
+              const { error: insertError } = await supabase.from('giacenza').insert([{ ...cartoneBase, ...giacenzaDataToUpdate }]);
+              if (insertError) {
+                toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
+              }
             }
           }
+        } else if (isFustelleFornitore) {
+          // Logica per Fustelle: per ora, non inseriamo in tabelle di inventario dedicate
+          // Se in futuro avremo una tabella 'fustelle_inventario', la logica andrebbe qui.
+          console.log(`[syncArticleInventoryStatus] Articolo Fustella '${articolo.fustella_codice}' dell'ordine '${ordineAcquisto.numero_ordine}' con stato '${articolo.stato}'. Nessuna sincronizzazione inventario implementata per Fustelle.`);
         }
       } catch (e: any) {
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
@@ -186,7 +196,8 @@ export function useOrdiniAcquisto() {
     let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
     let articleFound = false;
     updatedArticles = updatedArticles.map(art => {
-      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
+      // Check for cartone or fustella code
+      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.fustella_codice && art.fustella_codice === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
         articleFound = true;
         return { ...art, stato: newArticleStatus };
       }
