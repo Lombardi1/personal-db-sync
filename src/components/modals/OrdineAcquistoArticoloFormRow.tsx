@@ -84,6 +84,7 @@ export function OrdineAcquistoArticoloFormRow({
   const orderYear = new Date(orderDate).getFullYear();
   
   console.log(`OrdineAcquistoArticoloFormRow[${index}]: currentArticle data:`, currentArticle);
+  console.log(`OrdineAcquistoArticoloFormRow[${index}]: errors:`, errors.articoli?.[index]); // Log errors for this specific article
 
   // Campi Cartone
   const currentFormato = currentArticle?.formato;
