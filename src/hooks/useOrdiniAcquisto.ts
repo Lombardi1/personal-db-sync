@@ -261,6 +261,14 @@ export function useOrdiniAcquisto() {
       setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
       return { success: false, error: updateError };
     }
+    // NEW: Check if updatedOrdine is null/undefined even if no explicit error
+    if (!updatedOrdine) {
+      const customError = new Error(`Aggiornamento ordine ${orderNumeroOrdine} fallito: nessun dato restituito da Supabase.`);
+      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] ${customError.message}`);
+      toast.error(customError.message);
+      setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
+      return { success: false, error: customError };
+    }
     console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Ordine ${orderNumeroOrdine} aggiornato con successo in Supabase.`);
 
     const allArticlesCancelled = updatedArticles.every(art => art.stato === 'annullato');
@@ -370,6 +378,14 @@ export function useOrdiniAcquisto() {
       setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
       return { success: false, error };
     }
+    // NEW: Check if updatedOrdine is null/undefined even if no explicit error
+    if (!updatedOrdine) {
+      const customError = new Error(`Aggiornamento stato ordine ${currentOrdine.numero_ordine} fallito: nessun dato restituito da Supabase.`);
+      console.error(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] ${customError.message}`);
+      toast.error(customError.message);
+      setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
+      return { success: false, error: customError };
+    }
     console.log(`[useOrdiniAcquisto - updateOrdineAcquistoStatus] Stato ordine ${currentOrdine.numero_ordine} aggiornato con successo in Supabase.`);
     
     // Fetch fornitore details separately for syncArticleInventoryStatus
@@ -414,6 +430,13 @@ export function useOrdiniAcquisto() {
       toast.error(`Errore aggiunta ordine: ${ordineError.message}`);
       console.error(`[useOrdiniAcquisto - addOrdineAcquisto] Errore Supabase durante l'inserimento:`, ordineError);
       return { success: false, error: ordineError };
+    }
+    // NEW: Check if newOrdine is null/undefined even if no explicit error
+    if (!newOrdine) {
+      const customError = new Error(`Inserimento ordine ${ordine.numero_ordine} fallito: nessun dato restituito da Supabase.`);
+      console.error(`[useOrdiniAcquisto - addOrdineAcquisto] ${customError.message}`);
+      toast.error(customError.message);
+      return { success: false, error: customError };
     }
     console.log(`[useOrdiniAcquisto - addOrdineAcquisto] Ordine inserito con successo in Supabase:`, newOrdine);
 
@@ -461,6 +484,13 @@ export function useOrdiniAcquisto() {
       toast.error(`Errore modifica ordine: ${ordineError.message}`);
       console.error(`[useOrdiniAcquisto - updateOrdineAcquisto] Errore Supabase durante l'aggiornamento:`, ordineError);
       return { success: false, error: ordineError };
+    }
+    // NEW: Check if updatedOrdine is null/undefined even if no explicit error
+    if (!updatedOrdine) {
+      const customError = new Error(`Aggiornamento ordine ${id} fallito: nessun dato restituito da Supabase.`);
+      console.error(`[useOrdiniAcquisto - updateOrdineAcquisto] ${customError.message}`);
+      toast.error(customError.message);
+      return { success: false, error: customError };
     }
     console.log(`[useOrdiniAcquisto - updateOrdineAcquisto] Ordine ${id} aggiornato con successo in Supabase:`, updatedOrdine);
 

@@ -68,7 +68,7 @@ const articoloSchema = z.object({
   grammatura: z.string().max(50, 'Grammatura troppo lungo').nullable(),
   numero_fogli: z.preprocess(
     preprocessNumber,
-    z.number().nullable() // Modificato: accetta null, validazione min() in superRefine
+    z.number().nullable()
   ),
   cliente: z.string().max(255, 'Cliente troppo lungo').nullable(),
   lavoro: z.string().max(255, 'Lavoro troppo lungo').nullable(),
@@ -90,7 +90,7 @@ const articoloSchema = z.object({
   tasselli_intercambiabili: z.boolean().nullable(),
   nr_tasselli: z.preprocess(
     preprocessNumber,
-    z.number().nullable() // Modificato: accetta null, validazione min() in superRefine
+    z.number().nullable()
   ),
   incollatura: z.boolean().nullable(),
   incollatrice: z.string().max(255, 'Incollatrice troppo lunga').nullable(),
@@ -99,11 +99,11 @@ const articoloSchema = z.object({
   // Campi comuni
   quantita: z.preprocess(
     preprocessNumber,
-    z.number().nullable() // Modificato: accetta null, validazione min() in superRefine
+    z.number().nullable()
   ),
   prezzo_unitario: z.preprocess(
     preprocessNumber,
-    z.number().nullable() // Modificato: accetta null, validazione min() in superRefine
+    z.number().nullable()
   ),
   data_consegna_prevista: z.string().min(1, 'La data di consegna prevista è obbligatoria per l\'articolo'),
   stato: z.enum(['in_attesa', 'confermato', 'ricevuto', 'annullato', 'inviato'], { required_error: 'Lo stato è obbligatorio' }),
@@ -153,10 +153,10 @@ export function ModalOrdineAcquistoForm({
             if (!articolo.grammatura) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La grammatura è obbligatoria.', path: [`articoli`, index, `grammatura`] });
             }
-            if (articolo.numero_fogli === null || articolo.numero_fogli < 1) { // Modificato: controllo per null
+            if (articolo.numero_fogli === null || articolo.numero_fogli < 1) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il numero di fogli è obbligatorio e deve essere almeno 1.', path: [`articoli`, index, `numero_fogli`] });
             }
-            if (articolo.numero_fogli !== null && articolo.numero_fogli >= 1 && (articolo.quantita === null || articolo.quantita <= 0)) { // Modificato: controllo per null
+            if (articolo.numero_fogli !== null && articolo.numero_fogli >= 1 && (articolo.quantita === null || articolo.quantita <= 0)) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità in kg calcolata deve essere positiva.', path: [`articoli`, index, `quantita`] });
             }
             if (!articolo.cliente) {
@@ -182,13 +182,13 @@ export function ModalOrdineAcquistoForm({
             if (!articolo.resa_fustella) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La resa fustella è obbligatoria.', path: [`articoli`, index, `resa_fustella`] });
             }
-            if (articolo.quantita === null || articolo.quantita < 0.001) { // Modificato: controllo per null
+            if (articolo.quantita === null || articolo.quantita < 0.001) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001.', path: [`articoli`, index, `quantita`] });
             }
-            if (articolo.hasPulitore && articolo.pulitore_codice_fustella === null) { // Modificato: controllo per null
+            if (articolo.hasPulitore && articolo.pulitore_codice_fustella === null) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice pulitore è obbligatorio se il pulitore è presente.', path: [`articoli`, index, `pulitore_codice_fustella`] });
             }
-            if (articolo.tasselli_intercambiabili && (articolo.nr_tasselli === null || articolo.nr_tasselli < 0)) { // Modificato: controllo per null
+            if (articolo.tasselli_intercambiabili && (articolo.nr_tasselli === null || articolo.nr_tasselli < 0)) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il numero di tasselli è obbligatorio se i tasselli sono intercambiabili.', path: [`articoli`, index, `nr_tasselli`] });
             }
             if (articolo.incollatura && (articolo.incollatrice === null || articolo.incollatrice === '' || articolo.tipo_incollatura === null || articolo.tipo_incollatura === '')) {
@@ -202,7 +202,7 @@ export function ModalOrdineAcquistoForm({
             if (!articolo.descrizione) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La descrizione è obbligatoria.', path: [`articoli`, index, `descrizione`] });
             }
-            if (articolo.quantita === null || articolo.quantita < 0.001) { // Modificato: controllo per null
+            if (articolo.quantita === null || articolo.quantita < 0.001) {
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001.', path: [`articoli`, index, `quantita`] });
             }
             // Campi non consentiti per altri tipi di fornitori
