@@ -1,0 +1,1 @@
+ALTER TYPE public.fornitore_tipo_enum ADD VALUE 'Fustelle';
