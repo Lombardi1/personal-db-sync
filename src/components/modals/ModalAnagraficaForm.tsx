@@ -219,6 +219,7 @@ export function ModalAnagraficaForm({
                       <SelectItem value="Cartone">Cartone</SelectItem>
                       <SelectItem value="Inchiostro">Inchiostro</SelectItem>
                       <SelectItem value="Colla">Colla</SelectItem>
+                      <SelectItem value="Fustelle">Fustelle</SelectItem> {/* NUOVO: Aggiunto Fustelle */}
                       <SelectItem value="Altro">Altro</SelectItem>
                     </SelectContent>
                   </Select>
@@ -340,7 +341,7 @@ export function ModalAnagraficaForm({
             </Label>
             <div className="col-span-3">
               <Input id="sdi" {...register('sdi')} className="col-span-3" />
-              {errors.sdi && <p className className="text-destructive text-xs mt-1">{errors.sdi.message}</p>}
+              {errors.sdi && <p className="text-destructive text-xs mt-1">{errors.sdi.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
