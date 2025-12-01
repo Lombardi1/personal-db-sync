@@ -290,7 +290,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
         }
         orderToProcess = {
           ...updatedOrderData,
-          fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
+          fornitore_nome: updatedOrderData.fornitore_nome || 'N/A',
           fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
           articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
         };
@@ -298,7 +298,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -516,7 +516,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                             </>
                           ) : row.isFustelleFornitore ? ( // NUOVO BLOCCO PER FUSTELLE
                             <>
-                              {/* Rimosso: {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Nostro: <span className="codice">{row.fustella_codice}</span></div>} */}
+                              {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.fustella_codice}</span></div>}
                               {row.codice_fornitore_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Codice Fornitore: {row.codice_fornitore_fustella}</div>}
                               {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
                               {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
