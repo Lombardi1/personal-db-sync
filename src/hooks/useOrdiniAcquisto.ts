@@ -39,7 +39,7 @@ export function useOrdiniAcquisto() {
           continue;
         }
 
-        if (isCartoneFornitore) {
+        if (articolo.tipo_articolo === 'cartone' && isCartoneFornitore) {
           const codiceCtn = articolo.codice_ctn;
           if (!codiceCtn) {
             continue;
@@ -105,7 +105,7 @@ export function useOrdiniAcquisto() {
               }
             }
           }
-        } else if (isFustelleFornitore) {
+        } else if (articolo.tipo_articolo === 'fustella' && isFustelleFornitore) {
           const fustellaCodice = articolo.fustella_codice;
           if (!fustellaCodice) {
             continue;
@@ -119,7 +119,7 @@ export function useOrdiniAcquisto() {
             lavoro: articolo.lavoro || 'N/A',
             fustellatrice: articolo.fustellatrice || null,
             resa: articolo.resa_fustella || null,
-            pulitore_codice: articolo.pulitore_codice_fustella || null,
+            pulitore_codice: null, // Il pulitore è ora un articolo separato
             pinza_tagliata: articolo.pinza_tagliata || false,
             tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
             nr_tasselli: articolo.nr_tasselli || null,
@@ -158,6 +158,10 @@ export function useOrdiniAcquisto() {
               toast.error(`Errore inserimento fustella: ${insertError.message}`);
             }
           }
+        } else if (articolo.tipo_articolo === 'pulitore' && isFustelleFornitore) {
+          // I pulitori non vengono inseriti nella tabella 'fustelle' o 'giacenza'
+          // Sono solo voci nell'ordine d'acquisto per la fatturazione
+          console.log(`Articolo Pulitore ${articolo.codice_pulitore} dell'ordine ${ordineAcquisto.numero_ordine} processato come voce d'ordine.`);
         }
       } catch (e: any) {
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
@@ -253,8 +257,11 @@ export function useOrdiniAcquisto() {
     let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
     let articleFound = false;
     updatedArticles = updatedArticles.map(art => {
-      // Check for cartone or fustella code
-      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.fustella_codice && art.fustella_codice === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
+      // Check for cartone, fustella, or pulitore code
+      if ((art.tipo_articolo === 'cartone' && art.codice_ctn && art.codice_ctn === articleIdentifier) ||
+          (art.tipo_articolo === 'fustella' && art.fustella_codice && art.fustella_codice === articleIdentifier) ||
+          (art.tipo_articolo === 'pulitore' && art.codice_pulitore && art.codice_pulitore === articleIdentifier) ||
+          (art.tipo_articolo === 'altro' && art.descrizione && art.descrizione === articleIdentifier)) {
         articleFound = true;
         return { ...art, stato: newArticleStatus };
       }

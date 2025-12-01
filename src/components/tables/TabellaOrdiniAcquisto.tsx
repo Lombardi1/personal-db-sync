@@ -155,7 +155,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
         notifications.showInfo(`L'ordine '${orderToProcess.numero_ordine}' è annullato. Non è possibile modificare lo stato degli articoli.`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+        exportOrdineAcquistoPDF(orderToProcess, fornitori, clients, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
         return;
       }
 
@@ -204,14 +204,14 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           orderToProcess = {
               ...updatedOrderData,
               fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
-              fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
+              fornitore_tipo: updatedOrderData.fornitori?.tipo_fornitore || 'N/A',
               articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
           };
       }
 
       // 5. Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clients, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -241,8 +241,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       let orderToProcess: OrdineAcquisto = {
         ...fetchedOrderData,
-        fornitore_nome: fetchedOrderData.fornitore_nome || 'N/A',
-        fornitore_tipo: fetchedOrderData.fornitore_tipo || 'N/A',
+        fornitore_nome: fetchedOrderData.fornitori?.nome || 'N/A',
+        fornitore_tipo: fetchedOrderData.fornitori?.tipo_fornitore || 'N/A',
         articoli: (fetchedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
       };
 
@@ -290,14 +290,14 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
         orderToProcess = {
           ...updatedOrderData,
           fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
-          fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
+          fornitore_tipo: updatedOrderData.fornitori?.tipo_fornitore || 'N/A',
           articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
         };
       }
 
       // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clients, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -329,18 +329,32 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               parentOrder: order,
               isCartoneFornitore: isCartoneFornitore,
               isFustelleFornitore: isFustelleFornitore, // Aggiunto
+              // Default values for all possible fields to avoid undefined issues
+              tipo_articolo: article.tipo_articolo || 'altro',
               codice_ctn: article.codice_ctn || '',
               descrizione: article.descrizione || '',
               tipologia_cartone: article.tipologia_cartone || '',
               formato: article.formato || '',
               grammatura: article.grammatura || '',
-              peso_cartone_kg: article.peso_cartone_kg || 0, 
+              numero_fogli: article.numero_fogli || 0,
               cliente: article.cliente || '',
               lavoro: article.lavoro || '',
               data_consegna_prevista: article.data_consegna_prevista || '',
               stato: article.stato,
-              fsc: article.fsc, // Aggiunto
-              alimentare: article.alimentare, // Aggiunto
+              fsc: article.fsc || false,
+              alimentare: article.alimentare || false,
+              rif_commessa_fsc: article.rif_commessa_fsc || '',
+              fustella_codice: article.fustella_codice || '',
+              codice_fornitore_fustella: article.codice_fornitore_fustella || '',
+              fustellatrice: article.fustellatrice || '',
+              resa_fustella: article.resa_fustella || '',
+              codice_pulitore: article.codice_pulitore || '',
+              pinza_tagliata: article.pinza_tagliata || false,
+              tasselli_intercambiabili: article.tasselli_intercambiabili || false,
+              nr_tasselli: article.nr_tasselli || null,
+              incollatura: article.incollatura || false,
+              incollatrice: article.incollatrice || '',
+              tipo_incollatura: article.tipo_incollatura || '',
             };
           })
           .sort((a, b) => {
@@ -359,14 +373,33 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               return statusA - statusB;
             }
 
-            if (a.isCartoneFornitore) {
+            // Sort by article type
+            const typeOrder = {
+              'cartone': 1,
+              'fustella': 2,
+              'pulitore': 3,
+              'altro': 4,
+            };
+            const typeA = typeOrder[a.tipo_articolo] || 99;
+            const typeB = typeOrder[b.tipo_articolo] || 99;
+
+            if (typeA !== typeB) {
+              return typeA - typeB;
+            }
+
+            // Then by specific codes/descriptions
+            if (a.tipo_articolo === 'cartone') {
               return (a.codice_ctn || '').localeCompare(b.codice_ctn || '');
+            } else if (a.tipo_articolo === 'fustella') {
+              return (a.fustella_codice || '').localeCompare(b.fustella_codice || '');
+            } else if (a.tipo_articolo === 'pulitore') {
+              return (a.codice_pulitore || '').localeCompare(b.codice_pulitore || '');
             } else {
               return (a.descrizione || '').localeCompare(b.descrizione || '');
             }
           })
       : [{
-          quantita: 0, prezzo_unitario: 0, stato: 'in_attesa',
+          quantita: 0, prezzo_unitario: 0, stato: 'in_attesa', tipo_articolo: 'altro', // Default type
           orderId: order.id!, orderNumeroOrdine: order.numero_ordine, orderFornitoreNome: order.fornitore_nome!,
           orderDataOrdine: order.data_ordine,
           orderStato: order.stato, orderImportoTotale: order.importo_totale || 0, orderNote: order.note || '',
@@ -374,10 +407,12 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           isCartoneFornitore: isCartoneFornitore,
           isFustelleFornitore: isFustelleFornitore, // Aggiunto
           codice_ctn: '', descrizione: 'Nessun articolo', tipologia_cartone: '', formato: '', grammatura: '',
-          peso_cartone_kg: 0, cliente: '', lavoro: '', data_consegna_prevista: '',
-          numero_fogli: 0, // Default for numero_fogli
-          fsc: false, // Aggiunto
-          alimentare: false, // Aggiunto
+          numero_fogli: 0,
+          fsc: false, alimentare: false, rif_commessa_fsc: '',
+          fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '',
+          codice_pulitore: '', pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null,
+          incollatura: false, incollatrice: '', tipo_incollatura: '',
+          cliente: '', lavoro: '', data_consegna_prevista: '',
         }];
     return { order, articles, isExpanded };
   });
@@ -439,13 +474,13 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                         </span>
                       </td>
                       <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
-                        {row.isCartoneFornitore ? (
+                        {row.tipo_articolo === 'cartone' ? (
                           <>
                             {row.codice_ctn && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.codice_ctn}</span></div>}
                             {row.tipologia_cartone && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Tipologia: {row.tipologia_cartone}</div>}
                             {row.formato && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Formato: {formatFormato(row.formato)}</div>}
                             {row.grammatura && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Grammatura: {formatGrammatura(row.grammatura)}</div>}
-                            {row.numero_fogli !== undefined && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>} {/* Display numero_fogli */}
+                            {row.numero_fogli !== undefined && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>}
                             {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
                             {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
                             {(row.fsc || row.alimentare) && (
@@ -455,30 +490,45 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                               </div>
                             )}
                           </>
-                        ) : row.isFustelleFornitore ? ( // NUOVO BLOCCO PER FUSTELLE
+                        ) : row.tipo_articolo === 'fustella' ? (
                           <>
                             {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Nostro: <span className="codice">{row.fustella_codice}</span></div>}
                             {row.codice_fornitore_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Codice Fornitore: {row.codice_fornitore_fustella}</div>}
                             {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
-                            {row.hasPulitore && (
+                            {row.pinza_tagliata && <div className="mb-1 text-[9px] sm:text-[10px] font-bold">Pinza Tagliata: Sì</div>}
+                            {row.tasselli_intercambiabili && (
                               <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
-                                Pulitore: Sì {row.pulitore_codice_fustella && `(Codice: ${row.pulitore_codice_fustella})`}
+                                Tasselli Intercambiabili: Sì {row.nr_tasselli !== null && `(Nr: ${row.nr_tasselli})`}
+                              </div>
+                            )}
+                            {row.incollatura && (
+                              <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
+                                Incollatura: Sì {row.incollatrice && `(Macchina: ${row.incollatrice}, Tipo: ${row.tipo_incollatura})`}
                               </div>
                             )}
                             {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
                             {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
                           </>
-                        ) : (
+                        ) : row.tipo_articolo === 'pulitore' ? (
+                          <>
+                            {row.codice_pulitore && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Pulitore: <span className="codice">{row.codice_pulitore}</span></div>}
+                            {row.descrizione && <div className="font-bold text-[9px] sm:text-[10px]">Descrizione: {row.descrizione}</div>}
+                            {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
+                            {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                          </>
+                        ) : ( // 'altro'
                           <>
                             <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione || 'N/A'}</div>
+                            {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
+                            {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
                           </>
                         )}
                       </td>
                       <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[40px]">
-                        {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ''} {/* Show Kg for cartone */}
+                        {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.tipo_articolo === 'cartone' ? 'Kg' : (row.tipo_articolo === 'fustella' || row.tipo_articolo === 'pulitore' || row.tipo_articolo === 'altro' ? 'PZ' : '')}
                       </td>
                       <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
-                        {row.prezzo_unitario.toFixed(3)} {row.isCartoneFornitore ? '€/kg' : '€'}
+                        {row.prezzo_unitario.toFixed(3)} {row.tipo_articolo === 'cartone' ? '€/kg' : '€'}
                       </td>
                       <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[60px]">
                         {(row.quantita * row.prezzo_unitario).toFixed(2)} €
