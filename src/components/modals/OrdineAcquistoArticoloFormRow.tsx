@@ -482,7 +482,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                          setValue(`articoli.${index}.prezzo_unita_di_misura`, undefined, { shouldValidate: true });
                         }
                       }}
                       onBlur={(e) => {

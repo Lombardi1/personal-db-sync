@@ -623,10 +623,13 @@ export function ModalOrdineAcquistoForm({
     console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
     console.log("ModalOrdineAcquistoForm: Current form errors at submission attempt:", errors);
     try {
-      // Filter out pulitore articles that are not linked to a fustella (e.g., if the parent fustella was removed or pulitore_codice_fustella was cleared)
-      const finalArticles = data.articoli.filter((article: ArticoloOrdineAcquisto) => {
+      // Explicitly filter out any null/undefined articles before processing
+      const cleanedArticles = data.articoli.filter(Boolean);
+
+      // Now process cleanedArticles
+      const finalArticles = cleanedArticles.filter((article: ArticoloOrdineAcquisto) => {
         if (article.item_type === 'pulitore' && article.fustella_parent_index !== undefined) {
-          const parentFustella = data.articoli[article.fustella_parent_index];
+          const parentFustella = cleanedArticles[article.fustella_parent_index]; // Use cleanedArticles here
           return parentFustella && parentFustella.item_type === 'fustella' && parentFustella.pulitore_codice_fustella === article.codice_pulitore;
         }
         return true;
@@ -705,7 +708,14 @@ export function ModalOrdineAcquistoForm({
           </DialogDescription>
         </DialogHeader>
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="grid gap-4 py-4">
+          <form onSubmit={handleSubmit((data) => {
+            // Clean the articles array before passing to the actual submit handler
+            const cleanedData = {
+              ...data,
+              articoli: data.articoli.filter(Boolean), // Ensure no null/undefined articles
+            };
+            handleFormSubmit(cleanedData);
+          })} className="grid gap-4 py-4">
             {/* Dettagli Ordine Section */}
             <h4 className="text-lg font-semibold flex items-center gap-2 mb-2">
               <i className="fas fa-info-circle"></i> Dettagli Ordine
