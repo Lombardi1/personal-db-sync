@@ -57,6 +57,7 @@ export async function seedPurchaseOrders() {
         note: 'Ordine di cartoni per cliente Alpha',
         articoli: [
           {
+            tipo_articolo: 'cartone', // NUOVO
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Triplo',
             formato: '120 x 80 cm',
@@ -73,6 +74,7 @@ export async function seedPurchaseOrders() {
             rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
           },
           {
+            tipo_articolo: 'cartone', // NUOVO
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Microonda Bianco',
             formato: '70 x 100 cm',
@@ -102,6 +104,7 @@ export async function seedPurchaseOrders() {
         note: 'Rifornimento inchiostri CMYK',
         articoli: [
           {
+            tipo_articolo: 'altro', // NUOVO
             descrizione: 'Inchiostro Cyan 1kg',
             quantita: 5,
             prezzo_unitario: 25.00,
@@ -109,6 +112,7 @@ export async function seedPurchaseOrders() {
             stato: 'in_attesa',
           },
           {
+            tipo_articolo: 'altro', // NUOVO
             descrizione: 'Inchiostro Magenta 1kg',
             quantita: 5,
             prezzo_unitario: 25.00,
@@ -129,6 +133,7 @@ export async function seedPurchaseOrders() {
         note: 'Ordine urgente di cartoni speciali',
         articoli: [
           {
+            tipo_articolo: 'cartone', // NUOVO
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Cartone Speciale',
             formato: '80 x 120 cm',
@@ -158,6 +163,7 @@ export async function seedPurchaseOrders() {
         note: 'Ordine di cartoni in attesa di conferma',
         articoli: [
           {
+            tipo_articolo: 'cartone', // NUOVO
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Semplice',
             formato: '60 x 80 cm',
@@ -188,6 +194,7 @@ export async function seedPurchaseOrders() {
         note: 'Ordine con articolo annullato',
         articoli: [
           {
+            tipo_articolo: 'cartone', // NUOVO
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Doppio',
             formato: '100 x 140 cm',
@@ -204,6 +211,7 @@ export async function seedPurchaseOrders() {
             rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
           },
           {
+            tipo_articolo: 'cartone', // NUOVO
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Singolo',
             formato: '50 x 70 cm',
@@ -223,18 +231,24 @@ export async function seedPurchaseOrders() {
       });
     }
 
-    // NUOVO: Aggiungi un ordine di Fustelle
+    // NUOVO: Aggiungi un ordine di Fustelle con un pulitore separato
     if (fornitoreFustelle && randomCliente) {
+      const fustellaCodice1 = generateNextFustellaCode();
+      const pulitoreCodice1 = generateNextPulitoreCode();
+      const fustellaCodice2 = generateNextFustellaCode();
+      const pulitoreCodice2 = generateNextPulitoreCode();
+
       ordersToInsert.push({
         fornitore_id: fornitoreFustelle.id!,
         data_ordine: '2024-07-15',
         numero_ordine: `PO-2024-006`,
         stato: 'in_attesa',
         importo_totale: 0,
-        note: 'Ordine di nuove fustelle per produzione',
+        note: 'Ordine di nuove fustelle e pulitori per produzione',
         articoli: [
           {
-            fustella_codice: generateNextFustellaCode(),
+            tipo_articolo: 'fustella', // NUOVO
+            fustella_codice: fustellaCodice1,
             codice_fornitore_fustella: 'F-12345',
             fustellatrice: 'Bobst 102',
             resa_fustella: '1/1',
@@ -244,8 +258,6 @@ export async function seedPurchaseOrders() {
             lavoro: 'LAV-2024-F01',
             data_consegna_prevista: '2024-08-01',
             stato: 'in_attesa',
-            hasPulitore: true,
-            pulitore_codice_fustella: generateNextPulitoreCode(),
             pinza_tagliata: true,
             tasselli_intercambiabili: false,
             nr_tasselli: null,
@@ -254,7 +266,18 @@ export async function seedPurchaseOrders() {
             tipo_incollatura: null,
           },
           {
-            fustella_codice: generateNextFustellaCode(),
+            tipo_articolo: 'pulitore', // NUOVO: Articolo pulitore separato
+            pulitore_codice: pulitoreCodice1,
+            parent_fustella_codice: fustellaCodice1, // Collega alla fustella precedente
+            quantita: 1,
+            prezzo_unitario: 50.00,
+            data_consegna_prevista: '2024-08-01',
+            stato: 'in_attesa',
+            descrizione: `Pulitore per Fustella ${fustellaCodice1}`,
+          },
+          {
+            tipo_articolo: 'fustella', // NUOVO
+            fustella_codice: fustellaCodice2,
             codice_fornitore_fustella: 'F-67890',
             fustellatrice: 'Bobst 142',
             resa_fustella: '1/2',
@@ -264,14 +287,22 @@ export async function seedPurchaseOrders() {
             lavoro: 'LAV-2024-F02',
             data_consegna_prevista: '2024-08-05',
             stato: 'inviato',
-            hasPulitore: false,
-            pulitore_codice_fustella: null,
             pinza_tagliata: false,
             tasselli_intercambiabili: true,
             nr_tasselli: 4,
             incollatura: true,
             incollatrice: 'Bobst Masterfold',
             tipo_incollatura: 'Lineare',
+          },
+          {
+            tipo_articolo: 'pulitore', // NUOVO: Articolo pulitore separato
+            pulitore_codice: pulitoreCodice2,
+            parent_fustella_codice: fustellaCodice2, // Collega alla fustella precedente
+            quantita: 1,
+            prezzo_unitario: 60.00,
+            data_consegna_prevista: '2024-08-05',
+            stato: 'inviato',
+            descrizione: `Pulitore per Fustella ${fustellaCodice2}`,
           },
         ],
       });
@@ -311,6 +342,7 @@ export async function seedPurchaseOrders() {
 
       if (fornitoreTipo === 'Cartone' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) { // Aggiunto 'inviato'
         for (const articolo of articoli) {
+          if (articolo.tipo_articolo !== 'cartone') continue; // Processa solo articoli cartone
           const codiceCtn = articolo.codice_ctn; 
           if (!codiceCtn) {
             console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice CTN. Saltato.`);
@@ -364,42 +396,56 @@ export async function seedPurchaseOrders() {
           }
         } else if (fornitoreTipo === 'Fustelle' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) {
           for (const articolo of articoli) {
-            const fustellaCodice = articolo.fustella_codice;
-            if (!fustellaCodice) {
-              console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice Fustella. Saltato.`);
-              continue;
-            }
-
             if (articolo.stato === 'annullato') {
-              console.log(`Articolo Fustella ${fustellaCodice} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
+              console.log(`Articolo Fustella/Pulitore dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
               continue;
             }
 
-            const fustella: Fustella = {
-              codice: fustellaCodice,
-              fornitore: fornitoreFustelle!.nome,
-              codice_fornitore: articolo.codice_fornitore_fustella || null,
-              cliente: articolo.cliente || 'N/A',
-              lavoro: articolo.lavoro || 'N/A',
-              fustellatrice: articolo.fustellatrice || null,
-              resa: articolo.resa_fustella || null,
-              pulitore_codice: articolo.pulitore_codice_fustella || null,
-              pinza_tagliata: articolo.pinza_tagliata || false,
-              tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
-              nr_tasselli: articolo.nr_tasselli || null,
-              incollatura: articolo.incollatura || false,
-              incollatrice: articolo.incollatrice || null,
-              tipo_incollatura: articolo.tipo_incollatura || null,
-              disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
-              data_creazione: new Date().toISOString(),
-              ultima_modifica: new Date().toISOString(),
-              ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
-            };
+            if (articolo.tipo_articolo === 'fustella') {
+              const fustellaCodice = articolo.fustella_codice;
+              if (!fustellaCodice) {
+                console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice Fustella. Saltato.`);
+                continue;
+              }
 
-            const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
-            if (fustellaError) {
-              console.error(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle:`, fustellaError);
-              notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
+              const fustella: Fustella = {
+                codice: fustellaCodice,
+                fornitore: fornitoreFustelle!.nome,
+                codice_fornitore: articolo.codice_fornitore_fustella || null,
+                cliente: articolo.cliente || 'N/A',
+                lavoro: articolo.lavoro || 'N/A',
+                fustellatrice: articolo.fustellatrice || null,
+                resa: articolo.resa_fustella || null,
+                pulitore_codice: null, // Il pulitore è ora un articolo separato
+                pinza_tagliata: articolo.pinza_tagliata || false,
+                tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
+                nr_tasselli: articolo.nr_tasselli || null,
+                incollatura: articolo.incollatura || false,
+                incollatrice: articolo.incollatrice || null,
+                tipo_incollatura: articolo.tipo_incollatura || null,
+                disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+                data_creazione: new Date().toISOString(),
+                ultima_modifica: new Date().toISOString(),
+                ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
+              };
+
+              const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
+              if (fustellaError) {
+                console.error(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle:`, fustellaError);
+                notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
+              }
+            } else if (articolo.tipo_articolo === 'pulitore') {
+              // Se il pulitore è ricevuto, aggiorna il campo pulitore_codice nella fustella padre
+              if (articolo.stato === 'ricevuto' && articolo.parent_fustella_codice && articolo.pulitore_codice) {
+                const { error: updateFustellaError } = await supabase
+                  .from('fustelle')
+                  .update({ pulitore_codice: articolo.pulitore_codice, ultima_modifica: new Date().toISOString() })
+                  .eq('codice', articolo.parent_fustella_codice);
+                if (updateFustellaError) {
+                  console.error(`Errore aggiornamento pulitore_codice per fustella ${articolo.parent_fustella_codice}:`, updateFustellaError);
+                  notifications.showError(`Errore aggiornamento pulitore_codice per fustella ${articolo.parent_fustella_codice}.`);
+                }
+              }
             }
           }
         }
