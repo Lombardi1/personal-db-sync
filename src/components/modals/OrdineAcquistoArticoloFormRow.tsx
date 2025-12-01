@@ -27,13 +27,12 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { generateNextFscCommessa } from '@/utils/fscUtils';
 import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
-import { useFieldArray } from 'react-hook-form'; // Import useFieldArray
 
 interface OrdineAcquistoArticoloFormRowProps {
   index: number;
   isSubmitting: boolean;
   isCartoneFornitore: boolean;
-  isFustelleFornitore: boolean;
+  isFustelleFornitore: boolean; // Nuovo prop
   remove: (index?: number | number[]) => void;
   fieldsLength: number;
   clienti: Cliente[];
@@ -70,28 +69,17 @@ export function OrdineAcquistoArticoloFormRow({
   index,
   isSubmitting,
   isCartoneFornitore,
-  isFustelleFornitore,
+  isFustelleFornitore, // Nuovo prop
   remove,
   fieldsLength,
   clienti,
   isOrderCancelled,
   isNewOrder,
 }: OrdineAcquistoArticoloFormRowProps) {
-  const { register, setValue, watch, control, formState: { errors } } = useFormContext<OrdineAcquisto>();
-  const { append: appendArticle, remove: removeArticle, fields: allFields } = useFieldArray({
-    control,
-    name: 'articoli',
-  });
+  const { register, setValue, watch, formState: { errors } } = useFormContext<OrdineAcquisto>();
 
   const watchedArticles = watch('articoli');
   const currentArticle = watchedArticles[index];
-  
-  // Defensive check: if currentArticle is undefined/null, return early
-  if (!currentArticle) {
-    console.error(`OrdineAcquistoArticoloFormRow[${index}]: currentArticle is undefined or null. Skipping render.`);
-    return null; 
-  }
-
   const orderDate = watch('data_ordine');
   const orderYear = new Date(orderDate).getFullYear();
   
@@ -110,18 +98,14 @@ export function OrdineAcquistoArticoloFormRow({
   const currentCodiceFornitoreFustella = currentArticle?.codice_fornitore_fustella;
   const currentFustellatrice = currentArticle?.fustellatrice;
   const currentResaFustella = currentArticle?.resa_fustella;
-  const currentPulitoreCodiceFustella = currentArticle?.pulitore_codice_fustella; // This is the PU-XXX code
+  const currentHasPulitore = currentArticle?.hasPulitore;
+  const currentPulitoreCodiceFustella = currentArticle?.pulitore_codice_fustella;
   const currentPinzaTagliata = currentArticle?.pinza_tagliata;
   const currentTasselliIntercambiabili = currentArticle?.tasselli_intercambiabili;
   const currentNrTasselli = currentArticle?.nr_tasselli;
   const currentIncollatura = currentArticle?.incollatura;
   const currentIncollatrice = currentArticle?.incollatrice;
   const currentTipoIncollatura = currentArticle?.tipo_incollatura;
-
-  // Campi Pulitore
-  const currentCodicePulitore = currentArticle?.codice_pulitore;
-  const currentDescrizionePulitore = currentArticle?.descrizione;
-  const currentFustellaParentIndex = currentArticle?.fustella_parent_index;
 
   // Campi Comuni (anche per Fustelle)
   const currentQuantita = currentArticle?.quantita;
@@ -140,14 +124,6 @@ export function OrdineAcquistoArticoloFormRow({
       ? currentArticle.quantita.toFixed(3).replace('.', ',')
       : ''
   );
-
-  // State for hasPulitore checkbox (UI only, not directly from ArticoloOrdineAcquisto)
-  const [hasPulitore, setHasPulitore] = React.useState(!!currentPulitoreCodiceFustella);
-
-  // Effect to initialize hasPulitore state from currentArticle
-  React.useEffect(() => {
-    setHasPulitore(!!currentPulitoreCodiceFustella);
-  }, [currentPulitoreCodiceFustella]);
 
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura for Cartone
   const calculatedQuantitaKg = React.useMemo(() => {
@@ -189,182 +165,32 @@ export function OrdineAcquistoArticoloFormRow({
     }
   }, [isCartoneFornitore, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
 
+  // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato
+  React.useEffect(() => {
+    if (isFustelleFornitore && currentHasPulitore && !currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Generating new Pulitore code.`);
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+    } else if (isFustelleFornitore && !currentHasPulitore && currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Clearing Pulitore code.`);
+      setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
+    }
+  }, [isFustelleFornitore, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
+
   // Gestione del nr_tasselli quando tasselli_intercambiabili viene flaggato
   React.useEffect(() => {
-    if (isFustelleFornitore && currentArticle?.item_type === 'fustella' && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
+    if (isFustelleFornitore && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
       console.log(`[Article ${index}] Setting nr_tasselli to 0.`);
       setValue(`articoli.${index}.nr_tasselli`, 0, { shouldValidate: true });
-    } else if (isFustelleFornitore && currentArticle?.item_type === 'fustella' && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
+    } else if (isFustelleFornitore && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
       console.log(`[Article ${index}] Clearing nr_tasselli.`);
       setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
     }
-  }, [isFustelleFornitore, currentArticle?.item_type, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
-
-  // Handle adding/removing pulitore article when hasPulitore checkbox changes
-  React.useEffect(() => {
-    if (!isFustelleFornitore || currentArticle?.item_type !== 'fustella' || isOrderCancelled) {
-      return;
-    }
-
-    const pulitoreArticleIndex = allFields.findIndex(
-      (field) => field.item_type === 'pulitore' && field.fustella_parent_index === index
-    );
-
-    if (hasPulitore && pulitoreArticleIndex === -1) {
-      // Add pulitore article
-      const newPulitoreCode = generateNextPulitoreCode();
-      const pulitoreArticle: ArticoloOrdineAcquisto = {
-        item_type: 'pulitore',
-        codice_pulitore: newPulitoreCode,
-        descrizione: `Pulitore per Fustella ${currentFustellaCodice || ''}`,
-        quantita: 1,
-        prezzo_unitario: 0,
-        data_consegna_prevista: currentArticle?.data_consegna_prevista || new Date().toISOString().split('T')[0],
-        stato: currentArticle?.stato || 'in_attesa',
-        cliente: currentArticle?.cliente || '',
-        lavoro: currentArticle?.lavoro || '',
-        fustella_parent_index: index,
-      };
-      appendArticle(pulitoreArticle);
-      setValue(`articoli.${index}.pulitore_codice_fustella`, newPulitoreCode, { shouldValidate: true });
-      console.log(`[Article ${index}] Added pulitore article with code: ${newPulitoreCode}`);
-    } else if (!hasPulitore && pulitoreArticleIndex !== -1) {
-      // Remove pulitore article
-      removeArticle(pulitoreArticleIndex);
-      setValue(`articoli.${index}.pulitore_codice_fustella`, null, { shouldValidate: true });
-      console.log(`[Article ${index}] Removed pulitore article.`);
-    } else if (hasPulitore && pulitoreArticleIndex !== -1 && !currentPulitoreCodiceFustella) {
-      // If hasPulitore is true, pulitore article exists, but fustella's pulitore_codice_fustella is missing, regenerate
-      const newPulitoreCode = generateNextPulitoreCode();
-      setValue(`articoli.${index}.pulitore_codice_fustella`, newPulitoreCode, { shouldValidate: true });
-      setValue(`articoli.${pulitoreArticleIndex}.codice_pulitore`, newPulitoreCode, { shouldValidate: true });
-      setValue(`articoli.${pulitoreArticleIndex}.descrizione`, `Pulitore per Fustella ${currentFustellaCodice || ''}`, { shouldValidate: true });
-      console.log(`[Article ${index}] Regenerated pulitore code: ${newPulitoreCode}`);
-    }
-  }, [hasPulitore, isFustelleFornitore, currentArticle?.item_type, currentArticle?.data_consegna_prevista, currentArticle?.stato, currentArticle?.cliente, currentArticle?.lavoro, currentFustellaCodice, currentPulitoreCodiceFustella, index, allFields, appendArticle, removeArticle, setValue, isOrderCancelled]);
+  }, [isFustelleFornitore, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
 
 
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0);
 
   const [openClientCombobox, setOpenClientCombobox] = React.useState(false);
-
-  if (currentArticle?.item_type === 'pulitore') {
-    return (
-      <div className="flex flex-col sm:flex-row gap-2 p-3 border rounded-md bg-muted/50 items-end ml-8 border-l-4 border-purple-300">
-        <div className="flex-1 grid grid-cols-1 gap-2 w-full">
-          <div className="p-2 bg-gray-50 rounded-lg border">
-            <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Pulitore</h5>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              <div>
-                <Label htmlFor={`articoli.${index}.codice_pulitore`} className="text-xs">Codice Pulitore</Label>
-                <Input
-                  id={`articoli.${index}.codice_pulitore`}
-                  {...register(`articoli.${index}.codice_pulitore`)}
-                  readOnly
-                  disabled={true}
-                  className="text-sm font-mono font-bold bg-gray-100"
-                />
-                {errors.articoli?.[index]?.codice_pulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_pulitore?.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione</Label>
-                <Input
-                  id={`articoli.${index}.descrizione`}
-                  {...register(`articoli.${index}.descrizione`)}
-                  readOnly
-                  disabled={true}
-                  className="text-sm bg-gray-100"
-                />
-                {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
-                <Input
-                  id={`articoli.${index}.quantita`}
-                  type="text"
-                  value={displayQuantita}
-                  onChange={(e) => {
-                    const rawValue = e.target.value;
-                    setDisplayQuantita(rawValue);
-                    const numericValue = parseFloat(rawValue.replace(',', '.'));
-                    if (!isNaN(numericValue)) {
-                      setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
-                    } else {
-                      setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
-                    }
-                  }}
-                  onBlur={(e) => {
-                    const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                    if (!isNaN(numericValue)) {
-                      setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
-                    } else {
-                      setDisplayQuantita('');
-                    }
-                  }}
-                  placeholder="Es. 1"
-                  min="0"
-                  disabled={isSubmitting || isOrderCancelled}
-                  className="text-sm"
-                />
-                {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
-                <div className="relative">
-                  <Input
-                    id={`articoli.${index}.prezzo_unitario`}
-                    type="text"
-                    value={displayPrezzoUnitario}
-                    onChange={(e) => {
-                      const rawValue = e.target.value;
-                      setDisplayPrezzoUnitario(rawValue);
-                      const numericValue = parseFloat(rawValue.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                      } else {
-                        setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
-                      } else {
-                        setDisplayPrezzoUnitario('');
-                      }
-                    }}
-                    placeholder="Es. 0,00"
-                    min="0"
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm pr-10"
-                  />
-                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
-                    €
-                  </span>
-                </div>
-                {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-          <span className="text-sm font-semibold whitespace-nowrap">
-            Totale: {itemTotal.toFixed(2)} €
-          </span>
-          <Button
-            type="button"
-            variant="destructive"
-            size="icon"
-            onClick={() => remove(index)}
-            disabled={isSubmitting || fieldsLength === 1 || isOrderCancelled}
-            className="h-7 w-7"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col sm:flex-row gap-2 p-3 border rounded-md bg-muted/50 items-end">
@@ -482,7 +308,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setValue(`articoli.${index}.prezzo_unita_di_misura`, undefined, { shouldValidate: true });
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
                       onBlur={(e) => {
@@ -850,16 +676,17 @@ export function OrdineAcquistoArticoloFormRow({
                   <input
                     type="checkbox"
                     id={`articoli.${index}.hasPulitore`}
-                    checked={hasPulitore}
-                    onChange={(checked) => setHasPulitore(checked)}
+                    {...register(`articoli.${index}.hasPulitore`)}
+                    checked={currentHasPulitore}
                     disabled={isSubmitting || isOrderCancelled}
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.hasPulitore`} className="text-xs">Ha Pulitore</Label>
+                  {errors.articoli?.[index]?.hasPulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
                 </div>
-                {hasPulitore && (
+                {currentHasPulitore && (
                   <div>
-                    <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore (auto)</Label>
+                    <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
                     <Input
                       id={`articoli.${index}.pulitore_codice_fustella`}
                       {...register(`articoli.${index}.pulitore_codice_fustella`)}

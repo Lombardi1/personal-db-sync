@@ -39,7 +39,7 @@ export function useOrdiniAcquisto() {
           continue;
         }
 
-        if (isCartoneFornitore && articolo.item_type === 'cartone') {
+        if (isCartoneFornitore) {
           const codiceCtn = articolo.codice_ctn;
           if (!codiceCtn) {
             continue;
@@ -61,7 +61,7 @@ export function useOrdiniAcquisto() {
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
             magazzino: '-',
-            prezzo: articolo.prezzo_unitario || 0,
+            prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
             note: ordineAcquisto.note || '-',
             fsc: articolo.fsc,
@@ -105,55 +105,57 @@ export function useOrdiniAcquisto() {
               }
             }
           }
-        } else if (isFustelleFornitore && (articolo.item_type === 'fustella' || articolo.item_type === 'pulitore')) {
-          if (articolo.item_type === 'fustella') {
-            const fustellaCodice = articolo.fustella_codice;
-            if (!fustellaCodice) {
-              continue;
+        } else if (isFustelleFornitore) {
+          const fustellaCodice = articolo.fustella_codice;
+          if (!fustellaCodice) {
+            continue;
+          }
+
+          const fustellaBase: Fustella = {
+            codice: fustellaCodice,
+            fornitore: fornitoreNome,
+            codice_fornitore: articolo.codice_fornitore_fustella || null,
+            cliente: articolo.cliente || 'N/A',
+            lavoro: articolo.lavoro || 'N/A',
+            fustellatrice: articolo.fustellatrice || null,
+            resa: articolo.resa_fustella || null,
+            pulitore_codice: articolo.pulitore_codice_fustella || null,
+            pinza_tagliata: articolo.pinza_tagliata || false,
+            tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
+            nr_tasselli: articolo.nr_tasselli || null,
+            incollatura: articolo.incollatura || false,
+            incollatrice: articolo.incollatrice || null,
+            tipo_incollatura: articolo.tipo_incollatura || null,
+            disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+            data_creazione: new Date().toISOString(), // Set creation date
+            ultima_modifica: new Date().toISOString(), // Set modification date
+            ordine_acquisto_numero: ordineAcquisto.numero_ordine, // Link to purchase order
+          };
+
+          // Inseriamo o aggiorniamo la fustella nella tabella 'fustelle'
+          // Non c'è una tabella 'ordini_fustelle' separata, quindi gestiamo tutto in 'fustelle'
+          const { data: existingFustella, error: fetchFustellaError } = await supabase
+            .from('fustelle')
+            .select('codice')
+            .eq('codice', fustellaCodice)
+            .single();
+
+          if (fetchFustellaError && fetchFustellaError.code !== 'PGRST116') {
+            toast.error(`Errore recupero fustella: ${fetchFustellaError.message}`);
+            continue;
+          }
+
+          if (existingFustella) {
+            // Se esiste, aggiorna
+            const { error: updateError } = await supabase.from('fustelle').update(fustellaBase).eq('codice', fustellaCodice);
+            if (updateError) {
+              toast.error(`Errore aggiornamento fustella: ${updateError.message}`);
             }
-
-            const fustellaBase: Fustella = {
-              codice: fustellaCodice,
-              fornitore: fornitoreNome,
-              codice_fornitore: articolo.codice_fornitore_fustella || null,
-              cliente: articolo.cliente || 'N/A',
-              lavoro: articolo.lavoro || 'N/A',
-              fustellatrice: articolo.fustellatrice || null,
-              resa: articolo.resa_fustella || null,
-              pulitore_codice: articolo.pulitore_codice_fustella || null, // Use pulitore_codice_fustella from article
-              pinza_tagliata: articolo.pinza_tagliata || false,
-              tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
-              nr_tasselli: articolo.nr_tasselli || null,
-              incollatura: articolo.incollatura || false,
-              incollatrice: articolo.incollatrice || null,
-              tipo_incollatura: articolo.tipo_incollatura || null,
-              disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
-              data_creazione: new Date().toISOString(), // Set creation date
-              ultima_modifica: new Date().toISOString(), // Set modification date
-              ordine_acquisto_numero: ordineAcquisto.numero_ordine, // Link to purchase order
-            };
-
-            const { data: existingFustella, error: fetchFustellaError } = await supabase
-              .from('fustelle')
-              .select('codice')
-              .eq('codice', fustellaCodice)
-              .single();
-
-            if (fetchFustellaError && fetchFustellaError.code !== 'PGRST116') {
-              toast.error(`Errore recupero fustella: ${fetchFustellaError.message}`);
-              continue;
-            }
-
-            if (existingFustella) {
-              const { error: updateError } = await supabase.from('fustelle').update(fustellaBase).eq('codice', fustellaCodice);
-              if (updateError) {
-                toast.error(`Errore aggiornamento fustella: ${updateError.message}`);
-              }
-            } else {
-              const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
-              if (insertError) {
-                toast.error(`Errore inserimento fustella: ${insertError.message}`);
-              }
+          } else {
+            // Se non esiste, inserisci
+            const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
+            if (insertError) {
+              toast.error(`Errore inserimento fustella: ${insertError.message}`);
             }
           }
         }
@@ -251,8 +253,8 @@ export function useOrdiniAcquisto() {
     let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
     let articleFound = false;
     updatedArticles = updatedArticles.map(art => {
-      // Check for cartone, fustella or pulitore code
-      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.fustella_codice && art.fustella_codice === articleIdentifier) || (art.codice_pulitore && art.codice_pulitore === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
+      // Check for cartone or fustella code
+      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.fustella_codice && art.fustella_codice === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
         articleFound = true;
         return { ...art, stato: newArticleStatus };
       }
