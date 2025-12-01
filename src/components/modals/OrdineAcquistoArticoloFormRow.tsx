@@ -177,13 +177,13 @@ export function OrdineAcquistoArticoloFormRow({
     }
   }, [isCartoneFornitore, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
 
-  // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato
+  // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato (per Fustella)
   React.useEffect(() => {
     if (isFustelleFornitore && articleType === 'fustella' && currentHasPulitore && !currentPulitoreCodiceFustella) {
-      console.log(`[Article ${index}] Generating new Pulitore code.`);
+      console.log(`[Article ${index}] Generating new Pulitore code for Fustella.`);
       setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
     } else if (isFustelleFornitore && articleType === 'fustella' && !currentHasPulitore && currentPulitoreCodiceFustella) {
-      console.log(`[Article ${index}] Clearing Pulitore code.`);
+      console.log(`[Article ${index}] Clearing Pulitore code for Fustella.`);
       setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
     }
   }, [isFustelleFornitore, articleType, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
@@ -228,6 +228,9 @@ export function OrdineAcquistoArticoloFormRow({
 
     if (newType === 'fustella') {
       setValue(`articoli.${index}.fustella_codice`, generateNextFustellaCode(), { shouldValidate: true });
+    } else if (newType === 'pulitore') { // NUOVA LOGICA PER PULITORE
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+      setValue(`articoli.${index}.descrizione`, `Pulitore per fustella`, { shouldValidate: true }); // Descrizione predefinita
     }
   };
 
@@ -617,7 +620,7 @@ export function OrdineAcquistoArticoloFormRow({
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
-                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
+                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}</p>
                 </div>
                 <div>
                   <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
@@ -869,6 +872,24 @@ export function OrdineAcquistoArticoloFormRow({
           </>
         ) : isFustelleFornitore && articleType === 'pulitore' ? ( // NUOVA SEZIONE PER PULITORE
           <>
+            {/* Section: Codice Identificativo Pulitore */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo</h5>
+              <div>
+                <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
+                <Input
+                  id={`articoli.${index}.pulitore_codice_fustella`}
+                  {...register(`articoli.${index}.pulitore_codice_fustella`)}
+                  readOnly
+                  disabled={true}
+                  className="text-sm font-mono font-bold bg-gray-100"
+                />
+                {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
             {/* Section: Dettagli Articolo Pulitore */}
             <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Pulitore</h5>
