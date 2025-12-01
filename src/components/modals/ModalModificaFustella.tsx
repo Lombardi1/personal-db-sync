@@ -31,8 +31,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     lavoro: fustella.lavoro || '',
     fustellatrice: fustella.fustellatrice || '',
     resa: fustella.resa || '',
-    hasPulitore: !!fustella.pulitore_codice, // Nuovo stato per controllare la presenza del pulitore
-    pulitore_codice: fustella.pulitore_codice || '', // Nuovo campo per il codice del pulitore
+    pulitore_codice: fustella.pulitore_codice || null, // Usa direttamente pulitore_codice
     pinza_tagliata: fustella.pinza_tagliata || false,
     tasselli_intercambiabili: fustella.tasselli_intercambiabili || false,
     nr_tasselli: fustella.nr_tasselli || null,
@@ -40,6 +39,9 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     incollatrice: fustella.incollatrice || '',
     tipo_incollatura: fustella.tipo_incollatura || '',
   });
+
+  // Stato locale per la checkbox "Ha Pulitore"
+  const [hasPulitore, setHasPulitore] = useState(!!fustella.pulitore_codice);
 
   useEffect(() => {
     // Inizializza il generatore di codici pulitore all'apertura del modale
@@ -50,22 +52,20 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     initializePulitoreCodeGenerator();
   }, []);
 
+  // Sincronizza lo stato `hasPulitore` con `formData.pulitore_codice`
+  useEffect(() => {
+    if (hasPulitore && !formData.pulitore_codice) {
+      // Se `hasPulitore` è true ma il codice è mancante, genera un nuovo codice
+      setFormData(prev => ({ ...prev, pulitore_codice: generateNextPulitoreCode() }));
+    } else if (!hasPulitore && formData.pulitore_codice) {
+      // Se `hasPulitore` è false ma il codice esiste, puliscilo
+      setFormData(prev => ({ ...prev, pulitore_codice: null }));
+    }
+  }, [hasPulitore, formData.pulitore_codice]);
+
+
   const handleChange = (field: keyof typeof formData, value: any) => {
-    setFormData(prev => {
-      const newState = { ...prev, [field]: value };
-      if (field === 'hasPulitore') {
-        if (value) {
-          // Se 'hasPulitore' viene spuntato e il codice non esiste, genera un nuovo codice
-          if (!newState.pulitore_codice) {
-            newState.pulitore_codice = generateNextPulitoreCode();
-          }
-        } else {
-          // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
-          newState.pulitore_codice = '';
-        }
-      }
-      return newState;
-    });
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,6 +74,12 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     if (!formData.fornitore || !formData.cliente || !formData.lavoro || !formData.resa ||
         !formData.fustellatrice || (formData.incollatura && (!formData.incollatrice || !formData.tipo_incollatura))) {
       notifications.showError('⚠️ Compila tutti i campi obbligatori (*)');
+      return;
+    }
+    
+    // Validazione per il codice pulitore se hasPulitore è true
+    if (hasPulitore && (!formData.pulitore_codice || formData.pulitore_codice.trim() === '')) {
+      notifications.showError('⚠️ Il codice Pulitore è obbligatorio se la fustella ha un pulitore.');
       return;
     }
 
@@ -85,7 +91,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
       lavoro: formData.lavoro?.trim(),
       fustellatrice: formData.fustellatrice?.trim(),
       resa: formData.resa?.trim(),
-      pulitore_codice: formData.hasPulitore ? formData.pulitore_codice : null, // Inserisce il codice solo se 'hasPulitore' è true
+      pulitore_codice: hasPulitore ? formData.pulitore_codice : null, // Inserisce il codice solo se 'hasPulitore' è true
       pinza_tagliata: formData.pinza_tagliata,
       tasselli_intercambiabili: formData.tasselli_intercambiabili,
       nr_tasselli: formData.nr_tasselli,
@@ -203,8 +209,8 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="hasPulitore"
-                  checked={formData.hasPulitore}
-                  onCheckedChange={(checked) => handleChange('hasPulitore', checked)}
+                  checked={hasPulitore}
+                  onCheckedChange={(checked) => setHasPulitore(checked)}
                 />
                 <Label htmlFor="hasPulitore" className="text-xs sm:text-sm">Ha Pulitore</Label>
               </div>
@@ -226,7 +232,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
               </div>
             </div>
 
-            {formData.hasPulitore && (
+            {hasPulitore && (
               <div>
                 <Label htmlFor="pulitore_codice" className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
                   <i className="fas fa-broom mr-1"></i> Codice Pulitore (auto)
@@ -234,7 +240,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                 <Input
                   id="pulitore_codice"
                   type="text"
-                  value={formData.pulitore_codice}
+                  value={formData.pulitore_codice || ''}
                   disabled
                   className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md bg-gray-100 text-xs sm:text-sm font-mono font-bold"
                 />

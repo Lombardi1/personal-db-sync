@@ -87,8 +87,7 @@ export interface ArticoloOrdineAcquisto {
   codice_fornitore_fustella?: string; // Supplier's code for the die
   fustellatrice?: string;
   resa_fustella?: string;
-  hasPulitore?: boolean; // NEW: Checkbox to indicate if it has a cleaner
-  pulitore_associato_codice?: string | null; // NEW: Stores the PU-XXX code of the associated cleaner (if item_type is 'fustella')
+  pulitore_codice_fustella?: string | null; // NEW: Stores the PU-XXX code of the associated cleaner (if item_type is 'fustella')
   pinza_tagliata?: boolean;
   tasselli_intercambiabili?: boolean;
   nr_tasselli?: number | null;
@@ -98,10 +97,11 @@ export interface ArticoloOrdineAcquisto {
 
   // Fields specific to 'pulitore'
   codice_pulitore?: string; // Our PU-XXX code for the cleaner (if item_type is 'pulitore')
+  descrizione?: string; // Description for pulitore (e.g., "Pulitore per FST-XXX")
   fustella_parent_index?: number; // NEW: Index of the parent fustella article in the form's articles array (for UI logic)
 
-  // Fields specific to 'altro' (and reused for pulitore description)
-  descrizione?: string; // General description for other items, or for pulitore (e.g., "Pulitore per FST-XXX")
+  // Fields specific to 'altro'
+  // (descrizione is reused for pulitore)
 }
 
 export interface OrdineAcquisto {
