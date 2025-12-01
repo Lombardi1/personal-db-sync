@@ -534,7 +534,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           const pulitoreTotaleRiga = (article.prezzo_pulitore || 0);
           articlesBody.push([
             article.pulitore_codice_fustella,
-            `Pulitore per Fustella "${article.codice_fornitore_fustella || ''}"`, // Specific description for pulitore
+            `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Specific description for pulitore, without quotes
             'PZ', // UM for pulitore
             '1', // Quantity for pulitore
             pulitorePrezzoFormatted,
