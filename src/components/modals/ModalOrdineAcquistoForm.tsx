@@ -40,7 +40,7 @@ import { OrdineAcquistoArticoloFormRow } from './OrdineAcquistoArticoloFormRow';
 import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCodeFromDB } from '@/utils/cartoneUtils';
 import { fetchMaxOrdineAcquistoNumeroFromDB, generateNextOrdineAcquistoNumero } from '@/utils/ordineAcquistoUtils';
 import { fetchMaxFscCommessaFromDB, generateNextFscCommessa, resetFscCommessaGenerator } from '@/utils/fscUtils';
-import { generateNextFustellaCode, resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils'; // Importa utilità Fustella
+import { generateNextFustellaCode, resetFustellaCodeGenerator, fetchExistingFustellaNumbersFromDB } from '@/utils/fustellaUtils'; // Modificato: fetchExistingFustellaNumbersFromDB
 import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa utilità Pulitore
 
 interface ModalOrdineAcquistoFormProps {
@@ -251,9 +251,8 @@ export function ModalOrdineAcquistoForm({
               console.log(`[superRefine] Adding issue: specific fields for cartone/fustelle present for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per questo tipo di fornitore.', path: [`articoli`, index, `tipologia_cartone`] });
             }
-          }
-        });
-      })
+          })
+        })
     ),
     defaultValues: React.useMemo(() => {
       const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
@@ -373,7 +372,7 @@ export function ModalOrdineAcquistoForm({
     const newIsFustelleFornitore = newSelectedFornitore?.tipo_fornitore === 'Fustelle'; // Nuovo flag
 
     const newArticle: ArticoloOrdineAcquisto = { 
-      quantita: undefined,
+      quantita: undefined, 
       numero_fogli: undefined,
       prezzo_unitario: 0, 
       data_consegna_prevista: new Date().toISOString().split('T')[0],
@@ -417,8 +416,8 @@ export function ModalOrdineAcquistoForm({
       const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
       resetFscCommessaGenerator(maxFscCommessa, orderYear);
     } else if (newIsFustelleFornitore) { // Nuova logica per Fustelle
-      const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-      resetFustellaCodeGenerator(maxFustellaCode);
+      const existingFustellaNumbers = await fetchExistingFustellaNumbersFromDB(); // Modificato
+      resetFustellaCodeGenerator(existingFustellaNumbers); // Modificato
       setValue(`articoli.0.fustella_codice`, generateNextFustellaCode(), { shouldValidate: true });
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true }); // Quantità di default per fustelle
 
@@ -429,7 +428,7 @@ export function ModalOrdineAcquistoForm({
       resetCartoneCodeGenerator(0);
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true });
       resetFscCommessaGenerator(0, orderYear);
-      resetFustellaCodeGenerator(0);
+      resetFustellaCodeGenerator([]); // Modificato
       resetPulitoreCodeGenerator(0);
     }
     setCtnGeneratorInitialized(true);
@@ -544,8 +543,8 @@ export function ModalOrdineAcquistoForm({
           const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
           resetFscCommessaGenerator(maxFscCommessa, orderYear);
 
-          const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-          resetFustellaCodeGenerator(maxFustellaCode);
+          const existingFustellaNumbers = await fetchExistingFustellaNumbersFromDB(); // Modificato
+          resetFustellaCodeGenerator(existingFustellaNumbers); // Modificato
 
           const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
           resetPulitoreCodeGenerator(maxPulitoreCode);

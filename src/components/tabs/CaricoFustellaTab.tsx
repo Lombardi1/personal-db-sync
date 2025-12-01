@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as notifications from '@/utils/notifications';
-import { generateNextFustellaCode, resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils';
+import { generateNextFustellaCode, resetFustellaCodeGenerator, fetchExistingFustellaNumbersFromDB } from '@/utils/fustellaUtils'; // Modificato: fetchExistingFustellaNumbersFromDB
 import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 interface CaricoFustellaTabProps {
@@ -35,8 +35,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
 
   useEffect(() => {
     const initializeAndGenerateCodes = async () => {
-      const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-      resetFustellaCodeGenerator(maxFustellaCode);
+      const existingFustellaNumbers = await fetchExistingFustellaNumbersFromDB(); // Modificato
+      resetFustellaCodeGenerator(existingFustellaNumbers); // Modificato
       setFormData(prev => ({ ...prev, codice: generateNextFustellaCode() }));
 
       const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
@@ -96,8 +96,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       notifications.showSuccess(`✅ Fustella '${formData.codice}' registrata con successo!`);
       
       // Re-inizializza i generatori e resetta il form
-      const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-      resetFustellaCodeGenerator(maxFustellaCode);
+      const existingFustellaNumbers = await fetchExistingFustellaNumbersFromDB(); // Modificato
+      resetFustellaCodeGenerator(existingFustellaNumbers); // Modificato
       const nextFustellaCode = generateNextFustellaCode();
 
       const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
@@ -349,8 +349,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
           <Button
             type="button"
             onClick={async () => { // Modificato per essere async
-              const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-              resetFustellaCodeGenerator(maxFustellaCode);
+              const existingFustellaNumbers = await fetchExistingFustellaNumbersFromDB(); // Modificato
+              resetFustellaCodeGenerator(existingFustellaNumbers); // Modificato
               const nextFustellaCode = generateNextFustellaCode();
 
               const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
