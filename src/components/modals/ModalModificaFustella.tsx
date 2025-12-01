@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
-import { fetchExistingFustellaNumbersFromDB, resetFustellaCodeGenerator } from '@/utils/fustellaUtils'; // Importa le utilità per la fustella
 
 interface ModalModificaFustellaProps {
   fustella: Fustella;
@@ -47,9 +46,6 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     const initializePulitoreCodeGenerator = async () => {
       const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
       resetPulitoreCodeGenerator(maxPulitoreCode);
-      // Inizializza anche il generatore di fustelle per coerenza, anche se non genera qui
-      const existingFustellaNumbers = await fetchExistingFustellaNumbersFromDB();
-      resetFustellaCodeGenerator(existingFustellaNumbers);
     };
     initializePulitoreCodeGenerator();
   }, []);
