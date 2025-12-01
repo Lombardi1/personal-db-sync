@@ -826,7 +826,7 @@ export function ModalOrdineAcquistoForm({
                   isCartoneFornitore={isCartoneFornitore}
                   isFustelleFornitore={isFustelleFornitore}
                   remove={remove}
-                  update={update} // Pass update function
+                  // update={update} // Pass update function
                   fieldsLength={fields.length}
                   clienti={clienti}
                   isOrderCancelled={isCancelled}

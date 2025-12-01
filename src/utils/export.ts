@@ -427,6 +427,14 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
       bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, 
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 50 },
+        5: { cellWidth: 10 },
+      },
       margin: { left: 10, right: 10 },
     });
 
@@ -462,9 +470,12 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Filtra gli articoli annullati e ricalcola il subtotale
     const nonCancelledArticles = ordine.articoli.filter(article => article.stato !== 'annullato');
     const subtotalNonCancelled = nonCancelledArticles.reduce((sum, item) => {
-      const qty = item.quantita || 0;
-      const price = item.prezzo_unitario || 0;
-      return sum + (qty * price);
+      if (item.stato !== 'annullato') { // Tutti gli articoli duplicati sono 'in_attesa', quindi non annullati
+          const qty = item.quantita || 0;
+          const price = item.prezzo_unitario || 0;
+          return sum + (qty * price);
+      }
+      return sum;
     }, 0);
 
     const articlesBody = nonCancelledArticles.map(article => {
@@ -481,35 +492,39 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         umText = 'KG';
         quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       } else if (isFustelle) { // Logica per fornitori di Fustelle
-        articoloColumnText = article.fustella_codice || '';
-        let fustellaDescription = [];
-        if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
-        if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
-        if (article.fustellatrice) fustellaDescription.push(`Fustellatrice: ${article.fustellatrice}`);
-        if (article.cliente) fustellaDescription.push(`Cliente: ${article.cliente}`);
-        if (article.lavoro) fustellaDescription.push(`Lavoro: ${article.lavoro}`);
-        
-        if (article.hasPulitore) {
-          fustellaDescription.push(`Pulitore: Sì`);
-          if (article.pulitore_codice_fustella) {
-            fustellaDescription.push(`Codice Pulitore: ${article.pulitore_codice_fustella}`);
+        if (article.item_type === 'fustella') {
+          articoloColumnText = article.fustella_codice || '';
+          let fustellaDescription = [];
+          if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
+          if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
+          if (article.fustellatrice) fustellaDescription.push(`Fustellatrice: ${article.fustellatrice}`);
+          if (article.cliente) fustellaDescription.push(`Cliente: ${article.cliente}`);
+          if (article.lavoro) fustellaDescription.push(`Lavoro: ${article.lavoro}`);
+          
+          if (article.pulitore_codice_fustella) { // Check for pulitore_codice_fustella
+            fustellaDescription.push(`Pulitore Associato: ${article.pulitore_codice_fustella}`);
           }
-        }
-        if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
-        if (article.tasselli_intercambiabili) {
-          fustellaDescription.push(`Tasselli Intercambiabili: Sì`);
-          if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
-            fustellaDescription.push(`Nr. Tasselli: ${article.nr_tasselli}`);
+          if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
+          if (article.tasselli_intercambiabili) {
+            fustellaDescription.push(`Tasselli Intercambiabili: Sì`);
+            if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
+              fustellaDescription.push(`Nr. Tasselli: ${article.nr_tasselli}`);
+            }
           }
+          if (article.incollatura) {
+            fustellaDescription.push(`Incollatura: Sì`);
+            if (article.incollatrice) fustellaDescription.push(`Incollatrice: ${article.incollatrice}`);
+            if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
+          }
+          descrizioneColumnText = fustellaDescription.join('\n');
+          umText = 'PZ';
+          quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        } else if (article.item_type === 'pulitore') { // Display pulitore details
+          articoloColumnText = article.codice_pulitore || '';
+          descrizioneColumnText = article.descrizione || '';
+          umText = 'PZ';
+          quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
-        if (article.incollatura) {
-          fustellaDescription.push(`Incollatura: Sì`);
-          if (article.incollatrice) fustellaDescription.push(`Incollatrice: ${article.incollatrice}`);
-          if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
-        }
-        descrizioneColumnText = fustellaDescription.join('\n');
-        umText = 'PZ';
-        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
       } else {
         articoloColumnText = article.descrizione || '';
         descrizioneColumnText = ''; 

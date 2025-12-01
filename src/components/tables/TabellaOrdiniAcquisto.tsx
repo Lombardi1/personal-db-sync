@@ -212,7 +212,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // 5. Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -298,7 +298,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -335,7 +335,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
         if (article.item_type === 'fustella') {
           articles.push(baseArticle);
-          // If it's a fustella and has an associated pulitore, find and add it as a sub-item
+          // If it's a fustella with an associated pulitore, find and add it as a sub-item
           const pulitoreArticle = order.articoli.find(
             (subArt) => subArt.item_type === 'pulitore' && subArt.codice_pulitore === article.pulitore_codice_fustella
           );

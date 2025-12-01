@@ -844,7 +844,7 @@ export function OrdineAcquistoArticoloFormRow({
                     type="checkbox"
                     id={`articoli.${index}.hasPulitore`}
                     checked={hasPulitore}
-                    onCheckedChange={(checked) => setHasPulitore(checked)}
+                    onChange={(checked) => setHasPulitore(checked)}
                     disabled={isSubmitting || isOrderCancelled}
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
