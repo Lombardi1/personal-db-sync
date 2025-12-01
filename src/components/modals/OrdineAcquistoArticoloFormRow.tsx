@@ -85,6 +85,13 @@ export function OrdineAcquistoArticoloFormRow({
 
   const watchedArticles = watch('articoli');
   const currentArticle = watchedArticles[index];
+  
+  // Defensive check: if currentArticle is undefined/null, return early
+  if (!currentArticle) {
+    console.error(`OrdineAcquistoArticoloFormRow[${index}]: currentArticle is undefined or null. Skipping render.`);
+    return null; 
+  }
+
   const orderDate = watch('data_ordine');
   const orderYear = new Date(orderDate).getFullYear();
   
