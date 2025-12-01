@@ -464,7 +464,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     const subtotalNonCancelled = nonCancelledArticles.reduce((sum, item) => {
       const qty = item.quantita || 0;
       const price = item.prezzo_unitario || 0;
-      return sum + (qty * price);
+      const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0; // Aggiungi prezzo pulitore
+      return sum + (qty * price) + pulitorePrice;
     }, 0);
 
     const articlesBody = nonCancelledArticles.map(article => {
@@ -491,6 +492,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           if (article.pulitore_codice_fustella) {
             fustellaDescription.push(`Codice Pulitore: ${article.pulitore_codice_fustella}`);
           }
+          if (article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
+            fustellaDescription.push(`Prezzo Pulitore: ${article.prezzo_pulitore.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`);
+          }
         }
         if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
         if (article.tasselli_intercambiabili) {
@@ -515,7 +519,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       }
       
       const prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-      const prezzoTotaleRiga = ((article.quantita || 0) * (article.prezzo_unitario || 0)).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const prezzoTotaleRiga = (((article.quantita || 0) * (article.prezzo_unitario || 0)) + (article.hasPulitore ? (article.prezzo_pulitore || 0) : 0)).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       return [
         articoloColumnText, 

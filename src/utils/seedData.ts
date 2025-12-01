@@ -246,6 +246,7 @@ export async function seedPurchaseOrders() {
             stato: 'in_attesa',
             hasPulitore: true,
             pulitore_codice_fustella: generateNextPulitoreCode(),
+            prezzo_pulitore: 50.00, // Prezzo del pulitore
             pinza_tagliata: true,
             tasselli_intercambiabili: false,
             nr_tasselli: null,
@@ -266,6 +267,7 @@ export async function seedPurchaseOrders() {
             stato: 'inviato',
             hasPulitore: false,
             pulitore_codice_fustella: null,
+            prezzo_pulitore: undefined, // Nessun pulitore, quindi nessun prezzo
             pinza_tagliata: false,
             tasselli_intercambiabili: true,
             nr_tasselli: 4,
@@ -284,7 +286,8 @@ export async function seedPurchaseOrders() {
         if (item.stato !== 'annullato') {
           const qty = item.quantita || 0;
           const price = item.prezzo_unitario || 0;
-          return sum + (qty * price);
+          const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0; // Aggiungi prezzo pulitore
+          return sum + (qty * price) + pulitorePrice;
         }
         return sum;
       }, 0);
@@ -365,42 +368,50 @@ export async function seedPurchaseOrders() {
         } else if (fornitoreTipo === 'Fustelle' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) {
           for (const articolo of articoli) {
             const fustellaCodice = articolo.fustella_codice;
-            if (!fustellaCodice) {
-              console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice Fustella. Saltato.`);
+            const pulitoreCodice = articolo.pulitore_codice_fustella;
+
+            if (!fustellaCodice && !pulitoreCodice) {
+              console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice Fustella o Pulitore. Saltato.`);
               continue;
             }
 
             if (articolo.stato === 'annullato') {
-              console.log(`Articolo Fustella ${fustellaCodice} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
+              console.log(`Articolo Fustella/Pulitore ${fustellaCodice || pulitoreCodice} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
               continue;
             }
 
-            const fustella: Fustella = {
-              codice: fustellaCodice,
-              fornitore: fornitoreFustelle!.nome,
-              codice_fornitore: articolo.codice_fornitore_fustella || null,
-              cliente: articolo.cliente || 'N/A',
-              lavoro: articolo.lavoro || 'N/A',
-              fustellatrice: articolo.fustellatrice || null,
-              resa: articolo.resa_fustella || null,
-              pulitore_codice: articolo.pulitore_codice_fustella || null,
-              pinza_tagliata: articolo.pinza_tagliata || false,
-              tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
-              nr_tasselli: articolo.nr_tasselli || null,
-              incollatura: articolo.incollatura || false,
-              incollatrice: articolo.incollatrice || null,
-              tipo_incollatura: articolo.tipo_incollatura || null,
-              disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
-              data_creazione: new Date().toISOString(),
-              ultima_modifica: new Date().toISOString(),
-              ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
-            };
+            if (fustellaCodice) { // Se è una fustella
+              const fustella: Fustella = {
+                codice: fustellaCodice,
+                fornitore: fornitoreFustelle!.nome,
+                codice_fornitore: articolo.codice_fornitore_fustella || null,
+                cliente: articolo.cliente || 'N/A',
+                lavoro: articolo.lavoro || 'N/A',
+                fustellatrice: articolo.fustellatrice || null,
+                resa: articolo.resa_fustella || null,
+                pulitore_codice: articolo.pulitore_codice_fustella || null,
+                pinza_tagliata: articolo.pinza_tagliata || false,
+                tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
+                nr_tasselli: articolo.nr_tasselli || null,
+                incollatura: articolo.incollatura || false,
+                incollatrice: articolo.incollatrice || null,
+                tipo_incollatura: articolo.tipo_incollatura || null,
+                disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+                data_creazione: new Date().toISOString(),
+                ultima_modifica: new Date().toISOString(),
+                ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
+              };
 
-            const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
-            if (fustellaError) {
-              console.error(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle:`, fustellaError);
-              notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
+              const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
+              if (fustellaError) {
+                console.error(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle:`, fustellaError);
+                notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
+              }
             }
+            // Non gestiamo l'inserimento diretto dei pulitori come entità separate in 'fustelle' qui,
+            // perché il pulitore_codice è già un campo della fustella.
+            // Se un pulitore è un articolo a sé stante (non legato a una fustella specifica),
+            // dovrebbe essere gestito come un articolo 'generico' con descrizione.
           }
         }
       }
