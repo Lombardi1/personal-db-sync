@@ -298,7 +298,6 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     <option value="Inchiostro">Inchiostro</option>
                     <option value="Colla">Colla</option>
                     <option value="Fustelle">Fustelle</option> {/* NUOVO: Aggiunto Fustelle */}
-                    <option value="Pulitore">Pulitore</option> {/* NUOVO: Aggiunto Pulitore */}
                     <option value="Altro">Altro</option>
                   </select>
                 </div>
@@ -384,7 +383,6 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                       <option value="Inchiostro">Inchiostro</option>
                       <option value="Colla">Colla</option>
                       <option value="Fustelle">Fustelle</option> {/* NUOVO: Aggiunto Fustelle */}
-                      <option value="Pulitore">Pulitore</option> {/* NUOVO: Aggiunto Pulitore */}
                       <option value="Altro">Altro</option>
                     </select>
                   </div>

@@ -29,7 +29,7 @@ export async function seedPurchaseOrders() {
     const fornitoreCartone = fornitori.find(f => f.tipo_fornitore === 'Cartone');
     const fornitoreInchiostro = fornitori.find(f => f.tipo_fornitore === 'Inchiostro');
     const fornitoreFustelle = fornitori.find(f => f.tipo_fornitore === 'Fustelle'); // NUOVO: Fornitore Fustelle
-    const fornitorePulitore = fornitori.find(f => f.tipo_fornitore === 'Pulitore'); // NUOVO: Fornitore Pulitore
+    // Rimosso: const fornitorePulitore = fornitori.find(f => f.tipo_fornitore === 'Pulitore'); // Rimosso
     const randomCliente = clienti[Math.floor(Math.random() * clienti.length)];
 
     // Pulisci le tabelle prima di inserire i dati di test
@@ -278,33 +278,35 @@ export async function seedPurchaseOrders() {
       });
     }
 
-    // NUOVO: Aggiungi un ordine di Pulitori
-    if (fornitorePulitore && randomCliente) {
+    // NUOVO: Aggiungi un ordine di Pulitori da un fornitore di Fustelle
+    if (fornitoreFustelle && randomCliente) {
       ordersToInsert.push({
-        fornitore_id: fornitorePulitore.id!,
+        fornitore_id: fornitoreFustelle.id!, // Usa il fornitore di Fustelle
         data_ordine: '2024-07-20',
         numero_ordine: `PO-2024-007`,
         stato: 'in_attesa',
         importo_totale: 0,
-        note: 'Ordine di pulitori per fustelle',
+        note: 'Ordine di pulitori per fustelle esistenti',
         articoli: [
           {
-            descrizione: 'Pulitore per fustella Bobst 102',
+            descrizione: 'Pulitore per fustella F-12345', // Descrizione generica
             quantita: 2,
             prezzo_unitario: 50.00,
             data_consegna_prevista: '2024-08-10',
             stato: 'in_attesa',
             cliente: randomCliente.nome,
             lavoro: 'LAV-2024-P01',
+            // Campi specifici di fustella non presenti
           },
           {
-            descrizione: 'Pulitore per fustella Bobst 142',
+            descrizione: 'Pulitore per fustella F-67890',
             quantita: 1,
             prezzo_unitario: 75.00,
             data_consegna_prevista: '2024-08-12',
             stato: 'in_attesa',
             cliente: randomCliente.nome,
             lavoro: 'LAV-2024-P02',
+            // Campi specifici di fustella non presenti
           },
         ],
       });
@@ -397,42 +399,50 @@ export async function seedPurchaseOrders() {
           }
         } else if (fornitoreTipo === 'Fustelle' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) {
           for (const articolo of articoli) {
-            const fustellaCodice = articolo.fustella_codice;
-            if (!fustellaCodice) {
-              console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice Fustella. Saltato.`);
+            // Se l'articolo ha un codice fustella, è una fustella. Altrimenti, è un pulitore.
+            const isFustellaArticle = !!articolo.fustella_codice;
+            const articleIdentifier = isFustellaArticle ? articolo.fustella_codice : articolo.descrizione;
+
+            if (!articleIdentifier) {
+              console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza identificatore. Saltato.`);
               continue;
             }
 
             if (articolo.stato === 'annullato') {
-              console.log(`Articolo Fustella ${fustellaCodice} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
+              console.log(`Articolo ${articleIdentifier} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
               continue;
             }
 
-            const fustella: Fustella = {
-              codice: fustellaCodice,
-              fornitore: fornitoreFustelle!.nome,
-              codice_fornitore: articolo.codice_fornitore_fustella || null,
-              cliente: articolo.cliente || 'N/A',
-              lavoro: articolo.lavoro || 'N/A',
-              fustellatrice: articolo.fustellatrice || null,
-              resa: articolo.resa_fustella || null,
-              pulitore_codice: articolo.pulitore_codice_fustella || null,
-              pinza_tagliata: articolo.pinza_tagliata || false,
-              tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
-              nr_tasselli: articolo.nr_tasselli || null,
-              incollatura: articolo.incollatura || false,
-              incollatrice: articolo.incollatrice || null,
-              tipo_incollatura: articolo.tipo_incollatura || null,
-              disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
-              data_creazione: new Date().toISOString(),
-              ultima_modifica: new Date().toISOString(),
-              ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
-            };
+            if (isFustellaArticle) {
+              const fustella: Fustella = {
+                codice: articolo.fustella_codice!,
+                fornitore: fornitoreFustelle!.nome,
+                codice_fornitore: articolo.codice_fornitore_fustella || null,
+                cliente: articolo.cliente || 'N/A',
+                lavoro: articolo.lavoro || 'N/A',
+                fustellatrice: articolo.fustellatrice || null,
+                resa: articolo.resa_fustella || null,
+                pulitore_codice: articolo.pulitore_codice_fustella || null,
+                pinza_tagliata: articolo.pinza_tagliata || false,
+                tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
+                nr_tasselli: articolo.nr_tasselli || null,
+                incollatura: articolo.incollatura || false,
+                incollatrice: articolo.incollatrice || null,
+                tipo_incollatura: articolo.tipo_incollatura || null,
+                disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+                data_creazione: new Date().toISOString(),
+                ultima_modifica: new Date().toISOString(),
+                ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
+              };
 
-            const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
-            if (fustellaError) {
-              console.error(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle:`, fustellaError);
-              notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
+              const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
+              if (fustellaError) {
+                console.error(`Errore aggiunta fustella ${fustella.codice} a magazzino fustelle:`, fustellaError);
+                notifications.showError(`Errore aggiunta fustella ${fustella.codice} a magazzino fustelle.`);
+              }
+            } else {
+              // Se è un pulitore, non lo inseriamo nella tabella 'fustelle'
+              console.log(`Articolo ${articleIdentifier} è un pulitore, non inserito nella tabella 'fustelle'.`);
             }
           }
         }

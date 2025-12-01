@@ -138,27 +138,6 @@ const MOCK_FORNITORI: Fornitore[] = [
     banca: 'Banca di Credito Cooperativo',
     created_at: new Date().toISOString(),
   },
-  { // NUOVO: Fornitore di Pulitori
-    id: 'mock-f5',
-    codice_anagrafica: 'FOR-005',
-    nome: 'Pulitori Express Srl',
-    tipo_fornitore: 'Pulitore',
-    indirizzo: 'Via del Lavoro 5',
-    citta: 'Padova',
-    cap: '35100',
-    provincia: 'PD',
-    partita_iva: '11223344557',
-    codice_fiscale: 'PLTRX12A34B567E',
-    telefono: '0491122334',
-    email: 'ordini@pulitoriexpress.it',
-    pec: 'pec@pulitoriexpress.it',
-    sdi: 'HGFEDCB',
-    note: 'Fornitore di pulitori per macchine da stampa.',
-    condizione_pagamento: 'Bonifico 30gg',
-    considera_iva: true,
-    banca: 'Banca Sella',
-    created_at: new Date().toISOString(),
-  },
 ];
 
 export function useAnagrafiche() {
