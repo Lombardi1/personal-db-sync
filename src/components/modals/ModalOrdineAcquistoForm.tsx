@@ -206,7 +206,7 @@ export function ModalOrdineAcquistoForm({
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Incollatrice e tipo incollatura sono obbligatori se l\'incollatura è presente.', path: [`articoli`, index, `incollatrice`] });
             }
             // Campi non consentiti per Fustelle
-            if (articolo.codice_ctn || articolo.descrizione || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.cliente || articolo.lavoro || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc) {
+            if (articolo.codice_ctn || articolo.descrizione || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc) {
               console.log(`[superRefine] Adding issue: non-fustelle fields present for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per i fornitori di fustelle.', path: [`articoli`, index, `codice_ctn`] });
             }
@@ -360,6 +360,8 @@ export function ModalOrdineAcquistoForm({
       incollatura: false,
       incollatrice: '',
       tipo_incollatura: '',
+      cliente: newIsFustelleFornitore ? (newSelectedFornitore?.default_cliente || '') : '', // Precompila cliente
+      lavoro: newIsFustelleFornitore ? (newSelectedFornitore?.default_lavoro || '') : '', // Precompila lavoro
     };
     append(newArticle);
 
@@ -384,6 +386,8 @@ export function ModalOrdineAcquistoForm({
       resetFustellaCodeGenerator(maxFustellaCode);
       setValue(`articoli.0.fustella_codice`, generateNextFustellaCode(), { shouldValidate: true });
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true }); // Quantità di default per fustelle
+      setValue(`articoli.0.cliente`, newSelectedFornitore?.default_cliente || '', { shouldValidate: true }); // Precompila cliente
+      setValue(`articoli.0.lavoro`, newSelectedFornitore?.default_lavoro || '', { shouldValidate: true }); // Precompila lavoro
 
       const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
       resetPulitoreCodeGenerator(maxPulitoreCode);
@@ -541,6 +545,13 @@ export function ModalOrdineAcquistoForm({
                 if (article.hasPulitore && !article.pulitore_codice_fustella) {
                   setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
                 }
+                // Precompila cliente e lavoro con i valori di default del fornitore
+                if (!article.cliente && currentSelectedFornitore?.default_cliente) {
+                  setValue(`articoli.${index}.cliente`, currentSelectedFornitore.default_cliente, { shouldValidate: true });
+                }
+                if (!article.lavoro && currentSelectedFornitore?.default_lavoro) {
+                  setValue(`articoli.${index}.lavoro`, currentSelectedFornitore.default_lavoro, { shouldValidate: true });
+                }
               } else { // Other types of suppliers
                 if (article.quantita === undefined) {
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
@@ -591,6 +602,13 @@ export function ModalOrdineAcquistoForm({
           } else if (!field.tasselli_intercambiabili && (field.nr_tasselli !== undefined && field.nr_tasselli !== null)) {
             setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
           }
+          // Precompila cliente e lavoro con i valori di default del fornitore
+          if (!field.cliente && selectedFornitore?.default_cliente) {
+            setValue(`articoli.${index}.cliente`, selectedFornitore.default_cliente, { shouldValidate: true });
+          }
+          if (!field.lavoro && selectedFornitore?.default_lavoro) {
+            setValue(`articoli.${index}.lavoro`, selectedFornitore.default_lavoro, { shouldValidate: true });
+          }
         } else { // Other types of suppliers
           if (field.codice_ctn) { setValue(`articoli.${index}.codice_ctn`, ''); }
           if (field.numero_fogli !== undefined) { setValue(`articoli.${index}.numero_fogli`, undefined, { shouldValidate: true }); }
@@ -611,10 +629,12 @@ export function ModalOrdineAcquistoForm({
           setValue(`articoli.${index}.incollatura`, false, { shouldValidate: true });
           setValue(`articoli.${index}.incollatrice`, '', { shouldValidate: true });
           setValue(`articoli.${index}.tipo_incollatura`, '', { shouldValidate: true });
+          setValue(`articoli.${index}.cliente`, '', { shouldValidate: true }); // Reset cliente
+          setValue(`articoli.${index}.lavoro`, '', { shouldValidate: true }); // Reset lavoro
         }
       });
     }
-  }, [isCartoneFornitore, isFustelleFornitore, fields, setValue, ctnGeneratorInitialized, fscCommessaGeneratorInitialized, fustellaGeneratorInitialized, pulitoreGeneratorInitialized, watch]);
+  }, [isCartoneFornitore, isFustelleFornitore, fields, setValue, ctnGeneratorInitialized, fscCommessaGeneratorInitialized, fustellaGeneratorInitialized, pulitoreGeneratorInitialized, watch, selectedFornitore?.default_cliente, selectedFornitore?.default_lavoro]);
 
   React.useEffect(() => {
     setValue('importo_totale', parseFloat(totalAmount.toFixed(3)));
@@ -664,6 +684,8 @@ export function ModalOrdineAcquistoForm({
       incollatura: false,
       incollatrice: '',
       tipo_incollatura: '',
+      cliente: '', // Default vuoto
+      lavoro: '', // Default vuoto
     };
     if (isCartoneFornitore) {
       newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };
@@ -672,7 +694,13 @@ export function ModalOrdineAcquistoForm({
         newArticle.rif_commessa_fsc = generateNextFscCommessa(orderYear);
       }
     } else if (isFustelleFornitore) { // Nuova logica per Fustelle
-      newArticle = { ...newArticle, fustella_codice: generateNextFustellaCode(), quantita: 1 };
+      newArticle = { 
+        ...newArticle, 
+        fustella_codice: generateNextFustellaCode(), 
+        quantita: 1,
+        cliente: selectedFornitore?.default_cliente || '', // Precompila cliente
+        lavoro: selectedFornitore?.default_lavoro || '', // Precompila lavoro
+      };
       if (watchedArticles[0]?.hasPulitore) {
         newArticle.hasPulitore = true;
         newArticle.pulitore_codice_fustella = generateNextPulitoreCode();

@@ -45,6 +45,8 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
     partita_iva: '',
     email: '',
     telefono: '',
+    default_cliente: '', // NUOVO
+    default_lavoro: '', // NUOVO
   });
   const [fornitoriFiltered, setFornitoriFiltered] = useState<Fornitore[]>([]);
 
@@ -82,6 +84,8 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
       partita_iva: '',
       email: '',
       telefono: '',
+      default_cliente: '', // NUOVO
+      default_lavoro: '', // NUOVO
     };
     setFiltri(emptyFiltri);
     handleFilter(emptyFiltri); // Applica i filtri vuoti per mostrare tutti i fornitori
@@ -168,6 +172,8 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
                 <TableHead className="text-xs sm:text-sm min-w-[60px] whitespace-normal">Cond. Pagamento</TableHead>
                 <TableHead className="text-xs sm:text-sm min-w-[30px]">IVA</TableHead>
                 <TableHead className="text-xs sm:text-sm min-w-[90px] whitespace-normal">Banca</TableHead>
+                <TableHead className="text-xs sm:text-sm min-w-[90px] whitespace-normal">Cliente Default</TableHead> {/* NUOVO */}
+                <TableHead className="text-xs sm:text-sm min-w-[90px] whitespace-normal">Lavoro Default</TableHead> {/* NUOVO */}
                 <TableHead className="text-right text-xs sm:text-sm min-w-[60px]">Azioni</TableHead>
               </TableRow>
             </TableHeader>
@@ -184,6 +190,8 @@ export function FornitoriTab({ fornitori, addFornitore, updateFornitore, deleteF
                   <TableCell className="text-xs sm:text-sm min-w-[60px] whitespace-normal">{fornitore.condizione_pagamento || '-'}</TableCell>
                   <TableCell className="text-xs sm:text-sm min-w-[30px]">{fornitore.considera_iva ? 'Sì' : 'No'}</TableCell>
                   <TableCell className="text-xs sm:text-sm min-w-[90px] whitespace-normal">{fornitore.banca || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm min-w-[90px] whitespace-normal">{fornitore.default_cliente || '-'}</TableCell> {/* NUOVO */}
+                  <TableCell className="text-xs sm:text-sm min-w-[90px] whitespace-normal">{fornitore.default_lavoro || '-'}</TableCell> {/* NUOVO */}
                   <TableCell className="text-right min-w-[60px]">
                     <div className="flex justify-end gap-1 sm:gap-2">
                       <Button

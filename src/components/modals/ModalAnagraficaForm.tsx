@@ -42,7 +42,7 @@ interface ModalAnagraficaFormProps {
   initialData?: AnagraficaBase | Fornitore | Cliente | null; // Aggiornato tipo
 }
 
-type FormData = AnagraficaBase & { tipo_fornitore?: string; considera_iva?: boolean; banca?: string }; // Aggiornato FormData type
+type FormData = AnagraficaBase & { tipo_fornitore?: string; considera_iva?: boolean; banca?: string; default_cliente?: string; default_lavoro?: string }; // Aggiornato FormData type
 
 const anagraficaSchema = z.object({
   codice_anagrafica: z.string().max(20, 'Codice troppo lungo').optional().or(z.literal('')),
@@ -62,6 +62,8 @@ const anagraficaSchema = z.object({
   tipo_fornitore: z.string().optional().or(z.literal('')),
   considera_iva: z.boolean().optional(),
   banca: z.string().max(255, 'Banca troppo lunga').optional().or(z.literal('')), // Nuovo campo banca
+  default_cliente: z.string().max(255, 'Cliente di default troppo lungo').optional().or(z.literal('')), // NUOVO
+  default_lavoro: z.string().max(255, 'Lavoro di default troppo lungo').optional().or(z.literal('')), // NUOVO
 });
 
 export function ModalAnagraficaForm({
@@ -124,7 +126,7 @@ export function ModalAnagraficaForm({
           } else if (type === 'fornitore') {
             const maxCode = await fetchMaxFornitoreCodeFromDB();
             resetFornitoreCodeGenerator(maxCode);
-            defaultValues = { ...defaultValues, codice_anagrafica: generateNextFornitoreCode(), considera_iva: false, banca: '' }; // Default banca vuota
+            defaultValues = { ...defaultValues, codice_anagrafica: generateNextFornitoreCode(), considera_iva: false, banca: '', default_cliente: '', default_lavoro: '' }; // Default banca e nuovi campi vuoti
           }
         }
         reset(defaultValues); // Affidati a reset per impostare tutti i valori
@@ -141,19 +143,29 @@ export function ModalAnagraficaForm({
     try {
       let dataToSubmit: any = { ...data };
 
-      // Rimuovi tipo_fornitore e banca se è un cliente
+      // Rimuovi tipo_fornitore, banca, default_cliente, default_lavoro se è un cliente
       if (type === 'cliente') {
-        const { tipo_fornitore, banca, ...rest } = dataToSubmit as any;
+        const { tipo_fornitore, banca, default_cliente, default_lavoro, ...rest } = dataToSubmit as any;
         dataToSubmit = rest;
       }
-      // Imposta a null se la banca è una stringa vuota per i fornitori
-      else if (type === 'fornitore' && dataToSubmit.banca === '') {
-        dataToSubmit.banca = null; 
+      // Imposta a null se la banca o i campi default_cliente/default_lavoro sono stringhe vuote per i fornitori
+      else if (type === 'fornitore') {
+        if (dataToSubmit.banca === '') {
+          dataToSubmit.banca = null; 
+        }
+        if (dataToSubmit.default_cliente === '') { // NUOVO
+          dataToSubmit.default_cliente = null;
+        }
+        if (dataToSubmit.default_lavoro === '') { // NUOVO
+          dataToSubmit.default_lavoro = null;
+        }
       }
 
       console.log(`[ModalAnagraficaForm] Dati inviati a onSubmit per ${type}:`, dataToSubmit); // LOG DI DEBUG
       console.log(`[ModalAnagraficaForm] Valore di 'considera_iva' prima di onSubmit:`, dataToSubmit.considera_iva); // LOG DI DEBUG
       console.log(`[ModalAnagraficaForm] Valore di 'banca' prima di onSubmit:`, dataToSubmit.banca); // LOG DI DEBUG
+      console.log(`[ModalAnagraficaForm] Valore di 'default_cliente' prima di onSubmit:`, dataToSubmit.default_cliente); // NUOVO LOG
+      console.log(`[ModalAnagraficaForm] Valore di 'default_lavoro' prima di onSubmit:`, dataToSubmit.default_lavoro); // NUOVO LOG
 
       if (!initialData) {
         const { id, created_at, ...dataWithoutIdAndCreatedAt } = dataToSubmit;
@@ -252,6 +264,28 @@ export function ModalAnagraficaForm({
                   {errors.banca && <p className="text-destructive text-xs mt-1">{errors.banca.message}</p>}
                 </div>
               </div>
+              {watchedTipoFornitore === 'Fustelle' && ( // NUOVO: Campi Cliente e Lavoro di default per Fustelle
+                <>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="default_cliente" className="text-right col-span-1">
+                      Cliente Default
+                    </Label>
+                    <div className="col-span-3">
+                      <Input id="default_cliente" {...register('default_cliente')} className="col-span-3" disabled={isSubmitting} />
+                      {errors.default_cliente && <p className="text-destructive text-xs mt-1">{errors.default_cliente.message}</p>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="default_lavoro" className="text-right col-span-1">
+                      Lavoro Default
+                    </Label>
+                    <div className="col-span-3">
+                      <Input id="default_lavoro" {...register('default_lavoro')} className="col-span-3" disabled={isSubmitting} />
+                      {errors.default_lavoro && <p className="text-destructive text-xs mt-1">{errors.default_lavoro.message}</p>}
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
           <div className="grid grid-cols-4 items-center gap-4">
