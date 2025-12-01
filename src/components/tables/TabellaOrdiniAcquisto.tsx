@@ -43,6 +43,7 @@ interface DisplayRow extends ArticoloOrdineAcquisto {
   parentOrder: OrdineAcquisto;
   isCartoneFornitore: boolean;
   isFustelleFornitore: boolean; // Aggiunto
+  isPulitoreFornitore: boolean; // Aggiunto
 }
 
 // Helper function for parsing format (e.g., "102 x 72 cm" -> 1.02, 0.72)
@@ -310,6 +311,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
     const fornitore = fornitori.find(f => f.id === order.fornitore_id);
     const isCartoneFornitore = fornitore?.tipo_fornitore === 'Cartone';
     const isFustelleFornitore = fornitore?.tipo_fornitore === 'Fustelle'; // Aggiunto
+    const isPulitoreFornitore = fornitore?.tipo_fornitore === 'Pulitore'; // Aggiunto
     const isExpanded = expandedOrders.has(order.id!); 
 
     const articles: DisplayRow[] = (order.articoli && order.articoli.length > 0)
@@ -329,6 +331,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               parentOrder: order,
               isCartoneFornitore: isCartoneFornitore,
               isFustelleFornitore: isFustelleFornitore, // Aggiunto
+              isPulitoreFornitore: isPulitoreFornitore, // Aggiunto
               codice_ctn: article.codice_ctn || '',
               descrizione: article.descrizione || '',
               tipologia_cartone: article.tipologia_cartone || '',
@@ -373,6 +376,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           isFirstArticleOfOrder: true, isLastArticleOfOrder: true, parentOrder: order,
           isCartoneFornitore: isCartoneFornitore,
           isFustelleFornitore: isFustelleFornitore, // Aggiunto
+          isPulitoreFornitore: isPulitoreFornitore, // Aggiunto
           codice_ctn: '', descrizione: 'Nessun articolo', tipologia_cartone: '', formato: '', grammatura: '',
           peso_cartone_kg: 0, cliente: '', lavoro: '', data_consegna_prevista: '',
           numero_fogli: 0, // Default for numero_fogli
@@ -465,6 +469,12 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                 Pulitore: Sì {row.pulitore_codice_fustella && `(Codice: ${row.pulitore_codice_fustella})`}
                               </div>
                             )}
+                            {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
+                            {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                          </>
+                        ) : row.isPulitoreFornitore ? ( // NUOVO BLOCCO PER PULITORE
+                          <>
+                            <div className="font-bold text-[9px] sm:text-[10px]">Pulitore: {row.descrizione || 'N/A'}</div>
                             {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
                             {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
                           </>

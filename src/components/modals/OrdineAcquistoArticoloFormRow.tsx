@@ -33,6 +33,7 @@ interface OrdineAcquistoArticoloFormRowProps {
   isSubmitting: boolean;
   isCartoneFornitore: boolean;
   isFustelleFornitore: boolean; // Nuovo prop
+  isPulitoreFornitore: boolean; // Nuovo prop
   remove: (index?: number | number[]) => void;
   fieldsLength: number;
   clienti: Cliente[];
@@ -70,6 +71,7 @@ export function OrdineAcquistoArticoloFormRow({
   isSubmitting,
   isCartoneFornitore,
   isFustelleFornitore, // Nuovo prop
+  isPulitoreFornitore, // Nuovo prop
   remove,
   fieldsLength,
   clienti,
@@ -107,11 +109,12 @@ export function OrdineAcquistoArticoloFormRow({
   const currentIncollatrice = currentArticle?.incollatrice;
   const currentTipoIncollatura = currentArticle?.tipo_incollatura;
 
-  // Campi Comuni (anche per Fustelle)
+  // Campi Comuni (anche per Fustelle e Pulitore)
   const currentQuantita = currentArticle?.quantita;
   const currentStatoArticolo = currentArticle?.stato;
   const currentCliente = currentArticle?.cliente; // Ora comune
   const currentLavoro = currentArticle?.lavoro; // Ora comune
+  const currentDescrizione = currentArticle?.descrizione; // Ora comune per non-cartone/non-fustelle
 
   // State for controlled input values to retain formatting
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => 
@@ -804,9 +807,107 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
+        ) : isPulitoreFornitore ? ( // NUOVA SEZIONE PER PULITORE
+          <>
+            {/* Section: Dettagli Articolo Pulitore */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione *</Label>
+                  <Input
+                    id={`articoli.${index}.descrizione`}
+                    {...register(`articoli.${index}.descrizione`)}
+                    placeholder="Descrizione pulitore"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
+                  <Input
+                    id={`articoli.${index}.quantita`}
+                    type="text"
+                    value={displayQuantita}
+                    onChange={(e) => {
+                      const rawValue = e.target.value;
+                      setDisplayQuantita(rawValue);
+                      const numericValue = parseFloat(rawValue.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
+                      } else {
+                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
+                      } else {
+                        setDisplayQuantita('');
+                      }
+                    }}
+                    placeholder="Es. 1"
+                    min="0"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
+                  <div className="relative">
+                    <Input
+                      id={`articoli.${index}.prezzo_unitario`}
+                      type="text"
+                      value={displayPrezzoUnitario}
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue);
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
+                        } else {
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
+                        } else {
+                          setDisplayPrezzoUnitario('');
+                        }
+                      }}
+                      placeholder="Es. 50,00"
+                      min="0"
+                      disabled={isSubmitting || isOrderCancelled}
+                      className="text-sm pr-10"
+                    />
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
+                      €
+                    </span>
+                  </div>
+                  {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
+                  <Input
+                    id={`articoli.${index}.data_consegna_prevista`}
+                    type="date"
+                    {...register(`articoli.${index}.data_consegna_prevista`)}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
+                </div>
+              </div>
+            </div>
+          </>
         ) : (
           <>
-            {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle) */}
+            {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle/Non-Pulitore) */}
             <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

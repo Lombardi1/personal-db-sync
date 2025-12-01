@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
 import { Cartone, OrdineAcquisto, Fornitore, Cliente, ArticoloOrdineAcquisto, StoricoMovimento, AziendaInfo } from '@/types';
-import { formatData, formatFormato, formatGrammatura, formatFogli, formatPrezzo, getStatoText } from '@/utils/formatters';
+import { formatData, formatFormato, formatGrammatura, getStatoText } from '@/utils/formatters';
 import logoAG from '@/assets/logo-ag.jpg';
 import logoFSC from '@/assets/logo-fsc.jpg';
 import { format } from 'date-fns';
@@ -455,6 +455,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // ========== TABELLA ARTICOLI ==========
     const isCartone = fornitore?.tipo_fornitore === 'Cartone';
     const isFustelle = fornitore?.tipo_fornitore === 'Fustelle'; // Nuovo flag per Fustelle
+    const isPulitore = fornitore?.tipo_fornitore === 'Pulitore'; // Nuovo flag per Pulitore
     const IVA_RATE = 0.22; // 22% IVA
 
     const articlesHead = [['Articolo', 'Descrizione', 'UM', 'Quantità', 'Prezzo', 'Prezzo\ntotale', 'Iva', 'Data\ncons.']];
@@ -508,6 +509,11 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
         }
         descrizioneColumnText = fustellaDescription.join('\n');
+        umText = 'PZ';
+        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      } else if (isPulitore) { // NUOVA LOGICA PER PULITORE
+        articoloColumnText = article.descrizione || '';
+        descrizioneColumnText = `Pulitore per fustella: ${article.fustella_codice || 'N/A'}`; // Puoi aggiungere più dettagli se disponibili
         umText = 'PZ';
         quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
       } else {

@@ -29,6 +29,7 @@ export async function seedPurchaseOrders() {
     const fornitoreCartone = fornitori.find(f => f.tipo_fornitore === 'Cartone');
     const fornitoreInchiostro = fornitori.find(f => f.tipo_fornitore === 'Inchiostro');
     const fornitoreFustelle = fornitori.find(f => f.tipo_fornitore === 'Fustelle'); // NUOVO: Fornitore Fustelle
+    const fornitorePulitore = fornitori.find(f => f.tipo_fornitore === 'Pulitore'); // NUOVO: Fornitore Pulitore
     const randomCliente = clienti[Math.floor(Math.random() * clienti.length)];
 
     // Pulisci le tabelle prima di inserire i dati di test
@@ -272,6 +273,38 @@ export async function seedPurchaseOrders() {
             incollatura: true,
             incollatrice: 'Bobst Masterfold',
             tipo_incollatura: 'Lineare',
+          },
+        ],
+      });
+    }
+
+    // NUOVO: Aggiungi un ordine di Pulitori
+    if (fornitorePulitore && randomCliente) {
+      ordersToInsert.push({
+        fornitore_id: fornitorePulitore.id!,
+        data_ordine: '2024-07-20',
+        numero_ordine: `PO-2024-007`,
+        stato: 'in_attesa',
+        importo_totale: 0,
+        note: 'Ordine di pulitori per fustelle',
+        articoli: [
+          {
+            descrizione: 'Pulitore per fustella Bobst 102',
+            quantita: 2,
+            prezzo_unitario: 50.00,
+            data_consegna_prevista: '2024-08-10',
+            stato: 'in_attesa',
+            cliente: randomCliente.nome,
+            lavoro: 'LAV-2024-P01',
+          },
+          {
+            descrizione: 'Pulitore per fustella Bobst 142',
+            quantita: 1,
+            prezzo_unitario: 75.00,
+            data_consegna_prevista: '2024-08-12',
+            stato: 'in_attesa',
+            cliente: randomCliente.nome,
+            lavoro: 'LAV-2024-P02',
           },
         ],
       });
