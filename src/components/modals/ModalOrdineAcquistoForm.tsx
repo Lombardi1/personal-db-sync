@@ -216,9 +216,8 @@ export function ModalOrdineAcquistoForm({
               console.log(`[superRefine] Adding issue: specific fields for cartone/fustelle present for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per questo tipo di fornitore.', path: [`articoli`, index, `tipologia_cartone`] });
             }
-          }
-        });
-      })
+          })
+        }),
     ),
     defaultValues: React.useMemo(() => {
       const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
@@ -613,7 +612,7 @@ export function ModalOrdineAcquistoForm({
 
   const handleFormSubmit = async (data: any) => {
     console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
-    console.log("ModalOrdineAcquistoForm: Current form errors before onSubmit call:", errors);
+    console.log("ModalOrdineAcquistoForm: Current form errors at submission attempt:", errors); // Log errors here
     try {
       await onSubmit(data as OrdineAcquisto);
       console.log("ModalOrdineAcquistoForm: onSubmit successful.");
