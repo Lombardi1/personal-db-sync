@@ -42,7 +42,7 @@ interface DisplayRow extends ArticoloOrdineAcquisto {
   isLastArticleOfOrder: boolean;
   parentOrder: OrdineAcquisto;
   isCartoneFornitore: boolean;
-  isFustelleFornitore: boolean; // Aggiunto
+  isFustelleFornitore: boolean;
 }
 
 // Helper function for parsing format (e.g., "102 x 72 cm" -> 1.02, 0.72)
@@ -144,7 +144,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       let orderToProcess: OrdineAcquisto = {
           ...latestOrder,
           fornitore_nome: latestOrder.fornitori?.nome || 'N/A',
-          fornitore_tipo: latestOrder.fornitore_tipo || 'N/A', // Usa fornitore_tipo direttamente
+          fornitore_tipo: latestOrder.fornitori?.tipo_fornitore || 'N/A', // Usa fornitore_tipo direttamente
           articoli: (latestOrder.articoli || []) as ArticoloOrdineAcquisto[],
       };
 
@@ -155,7 +155,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
         notifications.showInfo(`L'ordine '${orderToProcess.numero_ordine}' è annullato. Non è possibile modificare lo stato degli articoli.`);
-        exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+        exportOrdineAcquistoPDF(orderToProcess, fornitori, clients, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
         return;
       }
 
@@ -211,7 +211,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // 5. Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clients, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -297,7 +297,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clients, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -309,7 +309,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
   const groupedRows = ordini.map(order => {
     const fornitore = fornitori.find(f => f.id === order.fornitore_id);
     const isCartoneFornitore = fornitore?.tipo_fornitore === 'Cartone';
-    const isFustelleFornitore = fornitore?.tipo_fornitore === 'Fustelle'; // Aggiunto
+    const isFustelleFornitore = fornitore?.tipo_fornitore === 'Fustelle';
     const isExpanded = expandedOrders.has(order.id!); 
 
     const articles: DisplayRow[] = (order.articoli && order.articoli.length > 0)
@@ -328,7 +328,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               isLastArticleOfOrder: index === order.articoli!.length - 1,
               parentOrder: order,
               isCartoneFornitore: isCartoneFornitore,
-              isFustelleFornitore: isFustelleFornitore, // Aggiunto
+              isFustelleFornitore: isFustelleFornitore,
               codice_ctn: article.codice_ctn || '',
               descrizione: article.descrizione || '',
               tipologia_cartone: article.tipologia_cartone || '',
@@ -339,8 +339,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               lavoro: article.lavoro || '',
               data_consegna_prevista: article.data_consegna_prevista || '',
               stato: article.stato,
-              fsc: article.fsc, // Aggiunto
-              alimentare: article.alimentare, // Aggiunto
+              fsc: article.fsc,
+              alimentare: article.alimentare,
             };
           })
           .sort((a, b) => {
@@ -361,6 +361,17 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
             if (a.isCartoneFornitore) {
               return (a.codice_ctn || '').localeCompare(b.codice_ctn || '');
+            } else if (a.isFustelleFornitore) {
+              // Sort Fustelle articles by fustella_codice, then pulitori by descrizione
+              if (a.fustella_codice && b.fustella_codice) {
+                return a.fustella_codice.localeCompare(b.fustella_codice);
+              }
+              if (a.descrizione && b.descrizione) {
+                return a.descrizione.localeCompare(b.descrizione);
+              }
+              if (a.fustella_codice) return -1; // Fustelle before Pulitori
+              if (b.fustella_codice) return 1;
+              return 0;
             } else {
               return (a.descrizione || '').localeCompare(b.descrizione || '');
             }
@@ -372,12 +383,12 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           orderStato: order.stato, orderImportoTotale: order.importo_totale || 0, orderNote: order.note || '',
           isFirstArticleOfOrder: true, isLastArticleOfOrder: true, parentOrder: order,
           isCartoneFornitore: isCartoneFornitore,
-          isFustelleFornitore: isFustelleFornitore, // Aggiunto
+          isFustelleFornitore: isFustelleFornitore,
           codice_ctn: '', descrizione: 'Nessun articolo', tipologia_cartone: '', formato: '', grammatura: '',
           peso_cartone_kg: 0, cliente: '', lavoro: '', data_consegna_prevista: '',
-          numero_fogli: 0, // Default for numero_fogli
-          fsc: false, // Aggiunto
-          alimentare: false, // Aggiunto
+          numero_fogli: 0,
+          fsc: false,
+          alimentare: false,
         }];
     return { order, articles, isExpanded };
   });
@@ -445,7 +456,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                             {row.tipologia_cartone && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Tipologia: {row.tipologia_cartone}</div>}
                             {row.formato && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Formato: {formatFormato(row.formato)}</div>}
                             {row.grammatura && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Grammatura: {formatGrammatura(row.grammatura)}</div>}
-                            {row.numero_fogli !== undefined && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>} {/* Display numero_fogli */}
+                            {row.numero_fogli !== undefined && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>}
                             {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
                             {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
                             {(row.fsc || row.alimentare) && (
@@ -455,19 +466,28 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                               </div>
                             )}
                           </>
-                        ) : row.isFustelleFornitore ? ( // NUOVO BLOCCO PER FUSTELLE
-                          <>
-                            {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Nostro: <span className="codice">{row.fustella_codice}</span></div>}
-                            {row.codice_fornitore_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Codice Fornitore: {row.codice_fornitore_fustella}</div>}
-                            {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
-                            {row.hasPulitore && (
-                              <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
-                                Pulitore: Sì {row.pulitore_codice_fustella && `(Codice: ${row.pulitore_codice_fustella})`}
-                              </div>
-                            )}
-                            {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
-                            {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
-                          </>
+                        ) : row.isFustelleFornitore ? (
+                          row.fustella_codice ? ( // È una Fustella
+                            <>
+                              {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Nostro: <span className="codice">{row.fustella_codice}</span></div>}
+                              {row.codice_fornitore_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Codice Fornitore: {row.codice_fornitore_fustella}</div>}
+                              {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
+                              {row.hasPulitore && (
+                                <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
+                                  Pulitore: Sì {row.pulitore_codice_fustella && `(Codice: ${row.pulitore_codice_fustella})`}
+                                </div>
+                              )}
+                              {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
+                              {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                            </>
+                          ) : ( // È un Pulitore
+                            <>
+                              <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Tipo: Pulitore</div>
+                              <div className="font-bold text-[9px] sm:text-[10px]">Descrizione: {row.descrizione || 'N/A'}</div>
+                              {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
+                              {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                            </>
+                          )
                         ) : (
                           <>
                             <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione || 'N/A'}</div>
@@ -475,7 +495,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                         )}
                       </td>
                       <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[40px]">
-                        {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ''} {/* Show Kg for cartone */}
+                        {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ''}
                       </td>
                       <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
                         {row.prezzo_unitario.toFixed(3)} {row.isCartoneFornitore ? '€/kg' : '€'}
