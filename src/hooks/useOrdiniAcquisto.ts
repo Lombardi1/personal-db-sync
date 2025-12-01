@@ -39,7 +39,7 @@ export function useOrdiniAcquisto() {
           continue;
         }
 
-        if (articolo.tipo_articolo === 'cartone' && isCartoneFornitore) {
+        if (isCartoneFornitore) {
           const codiceCtn = articolo.codice_ctn;
           if (!codiceCtn) {
             continue;
@@ -106,97 +106,56 @@ export function useOrdiniAcquisto() {
             }
           }
         } else if (isFustelleFornitore) {
-          if (articolo.tipo_articolo === 'fustella') {
-            const fustellaCodice = articolo.fustella_codice;
-            if (!fustellaCodice) {
-              continue;
+          const fustellaCodice = articolo.fustella_codice;
+          if (!fustellaCodice) {
+            continue;
+          }
+
+          const fustellaBase: Fustella = {
+            codice: fustellaCodice,
+            fornitore: fornitoreNome,
+            codice_fornitore: articolo.codice_fornitore_fustella || null,
+            cliente: articolo.cliente || 'N/A',
+            lavoro: articolo.lavoro || 'N/A',
+            fustellatrice: articolo.fustellatrice || null,
+            resa: articolo.resa_fustella || null,
+            pulitore_codice: articolo.pulitore_codice_fustella || null,
+            pinza_tagliata: articolo.pinza_tagliata || false,
+            tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
+            nr_tasselli: articolo.nr_tasselli || null,
+            incollatura: articolo.incollatura || false,
+            incollatrice: articolo.incollatrice || null,
+            tipo_incollatura: articolo.tipo_incollatura || null,
+            disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+            data_creazione: new Date().toISOString(), // Set creation date
+            ultima_modifica: new Date().toISOString(), // Set modification date
+            ordine_acquisto_numero: ordineAcquisto.numero_ordine, // Link to purchase order
+          };
+
+          // Inseriamo o aggiorniamo la fustella nella tabella 'fustelle'
+          // Non c'è una tabella 'ordini_fustelle' separata, quindi gestiamo tutto in 'fustelle'
+          const { data: existingFustella, error: fetchFustellaError } = await supabase
+            .from('fustelle')
+            .select('codice')
+            .eq('codice', fustellaCodice)
+            .single();
+
+          if (fetchFustellaError && fetchFustellaError.code !== 'PGRST116') {
+            toast.error(`Errore recupero fustella: ${fetchFustellaError.message}`);
+            continue;
+          }
+
+          if (existingFustella) {
+            // Se esiste, aggiorna
+            const { error: updateError } = await supabase.from('fustelle').update(fustellaBase).eq('codice', fustellaCodice);
+            if (updateError) {
+              toast.error(`Errore aggiornamento fustella: ${updateError.message}`);
             }
-
-            const fustellaBase: Fustella = {
-              codice: fustellaCodice,
-              fornitore: fornitoreNome,
-              codice_fornitore: articolo.codice_fornitore_fustella || null,
-              cliente: articolo.cliente || 'N/A',
-              lavoro: articolo.lavoro || 'N/A',
-              fustellatrice: articolo.fustellatrice || null,
-              resa: articolo.resa_fustella || null,
-              pulitore_codice: null, // Il pulitore è ora un articolo separato, quindi questo campo è null di default
-              pinza_tagliata: articolo.pinza_tagliata || false,
-              tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
-              nr_tasselli: articolo.nr_tasselli || null,
-              incollatura: articolo.incollatura || false,
-              incollatrice: articolo.incollatrice || null,
-              tipo_incollatura: articolo.tipo_incollatura || null,
-              disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
-              data_creazione: new Date().toISOString(), // Set creation date
-              ultima_modifica: new Date().toISOString(), // Set modification date
-              ordine_acquisto_numero: ordineAcquisto.numero_ordine, // Link to purchase order
-            };
-
-            const { data: existingFustella, error: fetchFustellaError } = await supabase
-              .from('fustelle')
-              .select('codice, pulitore_codice') // Seleziona anche pulitore_codice per mantenerlo se già esistente
-              .eq('codice', fustellaCodice)
-              .single();
-
-            if (fetchFustellaError && fetchFustellaError.code !== 'PGRST116') {
-              toast.error(`Errore recupero fustella: ${fetchFustellaError.message}`);
-              continue;
-            }
-
-            if (existingFustella) {
-              // Se esiste, aggiorna, mantenendo il pulitore_codice esistente se non sovrascritto
-              const fustellaToUpdate = { ...fustellaBase, pulitore_codice: existingFustella.pulitore_codice };
-              const { error: updateError } = await supabase.from('fustelle').update(fustellaToUpdate).eq('codice', fustellaCodice);
-              if (updateError) {
-                toast.error(`Errore aggiornamento fustella: ${updateError.message}`);
-              }
-            } else {
-              // Se non esiste, inserisci
-              const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
-              if (insertError) {
-                toast.error(`Errore inserimento fustella: ${insertError.message}`);
-              }
-            }
-          } else if (articolo.tipo_articolo === 'pulitore') {
-            const pulitoreCodice = articolo.pulitore_codice;
-            const parentFustellaCodice = articolo.parent_fustella_codice;
-
-            if (!pulitoreCodice || !parentFustellaCodice) {
-              console.warn(`[syncArticleInventoryStatus] Articolo pulitore senza codice o fustella padre. Saltato.`);
-              continue;
-            }
-
-            if (articolo.stato === 'ricevuto') {
-              // Quando un pulitore viene ricevuto, aggiorna il campo pulitore_codice nella fustella padre
-              const { error: updateFustellaError } = await supabase
-                .from('fustelle')
-                .update({ pulitore_codice: pulitoreCodice, ultima_modifica: new Date().toISOString() })
-                .eq('codice', parentFustellaCodice);
-
-              if (updateFustellaError) {
-                toast.error(`Errore aggiornamento pulitore_codice per fustella ${parentFustellaCodice}: ${updateFustellaError.message}`);
-              } else {
-                console.log(`[syncArticleInventoryStatus] Pulitore '${pulitoreCodice}' ricevuto e associato a fustella '${parentFustellaCodice}'.`);
-              }
-            } else {
-              // Se il pulitore non è ricevuto, assicurati che non sia associato alla fustella
-              // (o che venga rimosso se lo stato cambia da ricevuto a non ricevuto)
-              const { data: existingFustella, error: fetchFustellaError } = await supabase
-                .from('fustelle')
-                .select('pulitore_codice')
-                .eq('codice', parentFustellaCodice)
-                .single();
-              
-              if (!fetchFustellaError && existingFustella?.pulitore_codice === pulitoreCodice) {
-                const { error: clearPulitoreError } = await supabase
-                  .from('fustelle')
-                  .update({ pulitore_codice: null, ultima_modifica: new Date().toISOString() })
-                  .eq('codice', parentFustellaCodice);
-                if (clearPulitoreError) {
-                  toast.error(`Errore rimozione pulitore_codice per fustella ${parentFustellaCodice}: ${clearPulitoreError.message}`);
-                }
-              }
+          } else {
+            // Se non esiste, inserisci
+            const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
+            if (insertError) {
+              toast.error(`Errore inserimento fustella: ${insertError.message}`);
             }
           }
         }
@@ -294,13 +253,8 @@ export function useOrdiniAcquisto() {
     let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
     let articleFound = false;
     updatedArticles = updatedArticles.map(art => {
-      // Check for cartone, fustella or pulitore code
-      const isMatch = (art.tipo_articolo === 'cartone' && art.codice_ctn === articleIdentifier) ||
-                      (art.tipo_articolo === 'fustella' && art.fustella_codice === articleIdentifier) ||
-                      (art.tipo_articolo === 'pulitore' && art.pulitore_codice === articleIdentifier) ||
-                      (art.tipo_articolo === 'altro' && art.descrizione === articleIdentifier);
-
-      if (isMatch) {
+      // Check for cartone or fustella code
+      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.fustella_codice && art.fustella_codice === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
         articleFound = true;
         return { ...art, stato: newArticleStatus };
       }

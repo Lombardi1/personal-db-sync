@@ -359,30 +359,14 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               return statusA - statusB;
             }
 
-            // Ordina prima le fustelle, poi i pulitori associati, poi gli altri articoli
-            if (a.tipo_articolo === 'fustella' && b.tipo_articolo === 'pulitore' && a.fustella_codice === b.parent_fustella_codice) {
-              return -1; // Fustella prima del suo pulitore
-            }
-            if (b.tipo_articolo === 'fustella' && a.tipo_articolo === 'pulitore' && b.fustella_codice === a.parent_fustella_codice) {
-              return 1; // Pulitore dopo la sua fustella
-            }
-            if (a.tipo_articolo === 'fustella' && b.tipo_articolo !== 'fustella') return -1;
-            if (b.tipo_articolo === 'fustella' && a.tipo_articolo !== 'fustella') return 1;
-            if (a.tipo_articolo === 'pulitore' && b.tipo_articolo !== 'pulitore') return -1;
-            if (b.tipo_articolo === 'pulitore' && a.tipo_articolo !== 'pulitore') return 1;
-
-            if (a.tipo_articolo === 'cartone') {
+            if (a.isCartoneFornitore) {
               return (a.codice_ctn || '').localeCompare(b.codice_ctn || '');
-            } else if (a.tipo_articolo === 'fustella') {
-              return (a.fustella_codice || '').localeCompare(b.fustella_codice || '');
-            } else if (a.tipo_articolo === 'pulitore') {
-              return (a.pulitore_codice || '').localeCompare(b.pulitore_codice || '');
             } else {
               return (a.descrizione || '').localeCompare(b.descrizione || '');
             }
           })
       : [{
-          quantita: 0, prezzo_unitario: 0, stato: 'in_attesa', tipo_articolo: 'altro',
+          quantita: 0, prezzo_unitario: 0, stato: 'in_attesa',
           orderId: order.id!, orderNumeroOrdine: order.numero_ordine, orderFornitoreNome: order.fornitore_nome!,
           orderDataOrdine: order.data_ordine,
           orderStato: order.stato, orderImportoTotale: order.importo_totale || 0, orderNote: order.note || '',
@@ -455,7 +439,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                         </span>
                       </td>
                       <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
-                        {row.tipo_articolo === 'cartone' ? (
+                        {row.isCartoneFornitore ? (
                           <>
                             {row.codice_ctn && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.codice_ctn}</span></div>}
                             {row.tipologia_cartone && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Tipologia: {row.tipologia_cartone}</div>}
@@ -471,43 +455,30 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                               </div>
                             )}
                           </>
-                        ) : row.tipo_articolo === 'fustella' ? ( // BLOCCO PER FUSTELLE
+                        ) : row.isFustelleFornitore ? ( // NUOVO BLOCCO PER FUSTELLE
                           <>
                             {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Nostro: <span className="codice">{row.fustella_codice}</span></div>}
                             {row.codice_fornitore_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Codice Fornitore: {row.codice_fornitore_fustella}</div>}
                             {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
-                            {row.fustellatrice && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fustellatrice: {row.fustellatrice}</div>}
+                            {row.hasPulitore && (
+                              <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
+                                Pulitore: Sì {row.pulitore_codice_fustella && `(Codice: ${row.pulitore_codice_fustella})`}
+                              </div>
+                            )}
                             {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
                             {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
-                            {row.pinza_tagliata && <div className="mb-1 text-[9px] sm:text-[10px] font-bold">Pinza Tagliata: Sì</div>}
-                            {row.tasselli_intercambiabili && (
-                              <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
-                                Tasselli Intercambiabili: Sì {row.nr_tasselli !== null && `(${row.nr_tasselli})`}
-                              </div>
-                            )}
-                            {row.incollatura && (
-                              <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
-                                Incollatura: Sì {row.incollatrice && `(${row.incollatrice}, ${row.tipo_incollatura})`}
-                              </div>
-                            )}
                           </>
-                        ) : row.tipo_articolo === 'pulitore' ? ( // BLOCCO PER PULITORE
-                          <>
-                            {row.pulitore_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Pulitore: <span className="codice">{row.pulitore_codice}</span></div>}
-                            {row.parent_fustella_codice && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Per Fustella: <span className="codice">{row.parent_fustella_codice}</span></div>}
-                            {row.descrizione && <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione}</div>}
-                          </>
-                        ) : ( // BLOCCO PER ALTRI ARTICOLI
+                        ) : (
                           <>
                             <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione || 'N/A'}</div>
                           </>
                         )}
                       </td>
                       <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[40px]">
-                        {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.tipo_articolo === 'cartone' ? 'Kg' : (row.tipo_articolo === 'fustella' || row.tipo_articolo === 'pulitore' ? 'PZ' : '')} {/* Show Kg for cartone, PZ for fustella/pulitore */}
+                        {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ''} {/* Show Kg for cartone */}
                       </td>
                       <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
-                        {row.prezzo_unitario.toFixed(3)} {row.tipo_articolo === 'cartone' ? '€/kg' : '€'}
+                        {row.prezzo_unitario.toFixed(3)} {row.isCartoneFornitore ? '€/kg' : '€'}
                       </td>
                       <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[60px]">
                         {(row.quantita * row.prezzo_unitario).toFixed(2)} €

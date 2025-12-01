@@ -62,44 +62,37 @@ export interface Fornitore extends AnagraficaBase {
 // Nuova interfaccia per gli articoli, ora nidificata nell'OrdineAcquisto
 export interface ArticoloOrdineAcquisto {
   id?: string; // L'ID è ancora utile per la gestione nel frontend (es. React keys)
-  tipo_articolo: 'cartone' | 'fustella' | 'pulitore' | 'altro'; // NUOVO CAMPO: Tipo di articolo
+  codice_ctn?: string; // Usato per i cartoni
+  descrizione?: string; // Usato per non-cartoni
+  tipologia_cartone?: string; // Usato per i cartoni
+  formato?: string; // Usato per i cartoni
+  grammatura?: string; // Usato per i cartoni
+  quantita: number; // Questa sarà la quantità in KG per i cartoni, o in unità per gli altri
+  numero_fogli?: number; // Nuovo campo per i fogli, usato per i cartoni
+  prezzo_unitario: number;
+  importo_riga?: number;
+  peso_cartone_kg?: number; // Questo campo non sarà più usato direttamente per l'input, ma quantita conterrà il peso in kg
+  cliente?: string;
+  lavoro?: string;
+  data_consegna_prevista?: string; // Spostato qui
+  stato: 'in_attesa' | 'confermato' | 'ricevuto' | 'annullato' | 'inviato'; // Nuovo campo stato per l'articolo
+  fsc?: boolean; // Nuovo campo per cartoni
+  alimentare?: boolean; // Nuovo campo per cartoni
+  rif_commessa_fsc?: string; // NUOVO CAMPO: Riferimento commessa FSC per cartoni
 
-  // Campi per Cartone (tipo_articolo: 'cartone')
-  codice_ctn?: string;
-  tipologia_cartone?: string;
-  formato?: string;
-  grammatura?: string;
-  numero_fogli?: number;
-  fsc?: boolean;
-  alimentare?: boolean;
-  rif_commessa_fsc?: string;
-
-  // Campi per Altro (tipo_articolo: 'altro')
-  descrizione?: string;
-  
-  // Campi per Fustelle (tipo_articolo: 'fustella')
+  // NUOVI CAMPI PER FUSTELLE
   fustella_codice?: string; // Codice FST-XXX generato
   codice_fornitore_fustella?: string; // Codice fornitore per la fustella
   fustellatrice?: string;
   resa_fustella?: string; // Resa specifica per fustella
+  hasPulitore?: boolean; // Indica se la fustella ha un pulitore
+  pulitore_codice_fustella?: string | null; // Codice PU-XXX generato per il pulitore
   pinza_tagliata?: boolean;
   tasselli_intercambiabili?: boolean;
   nr_tasselli?: number | null;
   incollatura?: boolean;
   incollatrice?: string;
   tipo_incollatura?: string;
-
-  // Campi per Pulitore (tipo_articolo: 'pulitore')
-  pulitore_codice?: string; // Codice PU-XXX generato per il pulitore
-  parent_fustella_codice?: string; // Codice FST-XXX della fustella a cui è associato il pulitore
-
-  // Campi comuni (quantita, prezzo_unitario, cliente, lavoro, data_consegna_prevista, stato)
-  quantita: number; 
-  prezzo_unitario: number;
-  cliente?: string;
-  lavoro?: string;
-  data_consegna_prevista?: string;
-  stato: 'in_attesa' | 'confermato' | 'ricevuto' | 'annullato' | 'inviato'; 
 }
 
 export interface OrdineAcquisto {
@@ -149,7 +142,7 @@ export interface Fustella {
   lavoro?: string;
   fustellatrice?: string; // Nuovo campo
   resa?: string; // Assumiamo stringa per ora
-  pulitore_codice?: string | null; // CAMBIATO: ora è il codice del pulitore associato (PU-XXX)
+  pulitore_codice?: string | null; // CAMBIATO: da 'pulitore: boolean' a 'pulitore_codice: string | null'
   pinza_tagliata?: boolean; // Nuovo campo
   tasselli_intercambiabili?: boolean; // Nuovo campo
   nr_tasselli?: number | null; // Nuovo campo

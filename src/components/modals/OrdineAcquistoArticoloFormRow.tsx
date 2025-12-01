@@ -38,7 +38,6 @@ interface OrdineAcquistoArticoloFormRowProps {
   clienti: Cliente[];
   isOrderCancelled: boolean;
   isNewOrder: boolean;
-  allFustellaCodesInOrder: string[]; // Nuovo prop per i codici fustella nell'ordine
 }
 
 // Helper function for parsing format (e.g., "102 x 72 cm" -> 1.02, 0.72)
@@ -76,7 +75,6 @@ export function OrdineAcquistoArticoloFormRow({
   clienti,
   isOrderCancelled,
   isNewOrder,
-  allFustellaCodesInOrder, // Nuovo prop
 }: OrdineAcquistoArticoloFormRowProps) {
   const { register, setValue, watch, formState: { errors } } = useFormContext<OrdineAcquisto>();
 
@@ -100,6 +98,8 @@ export function OrdineAcquistoArticoloFormRow({
   const currentCodiceFornitoreFustella = currentArticle?.codice_fornitore_fustella;
   const currentFustellatrice = currentArticle?.fustellatrice;
   const currentResaFustella = currentArticle?.resa_fustella;
+  const currentHasPulitore = currentArticle?.hasPulitore;
+  const currentPulitoreCodiceFustella = currentArticle?.pulitore_codice_fustella;
   const currentPinzaTagliata = currentArticle?.pinza_tagliata;
   const currentTasselliIntercambiabili = currentArticle?.tasselli_intercambiabili;
   const currentNrTasselli = currentArticle?.nr_tasselli;
@@ -107,16 +107,11 @@ export function OrdineAcquistoArticoloFormRow({
   const currentIncollatrice = currentArticle?.incollatrice;
   const currentTipoIncollatura = currentArticle?.tipo_incollatura;
 
-  // Campi Pulitore
-  const currentPulitoreCodice = currentArticle?.pulitore_codice;
-  const currentParentFustellaCodice = currentArticle?.parent_fustella_codice;
-
   // Campi Comuni (anche per Fustelle)
   const currentQuantita = currentArticle?.quantita;
   const currentStatoArticolo = currentArticle?.stato;
   const currentCliente = currentArticle?.cliente; // Ora comune
   const currentLavoro = currentArticle?.lavoro; // Ora comune
-  const currentTipoArticolo = currentArticle?.tipo_articolo; // Nuovo campo
 
   // State for controlled input values to retain formatting
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => 
@@ -125,14 +120,14 @@ export function OrdineAcquistoArticoloFormRow({
       : ''
   );
   const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => 
-    currentArticle?.quantita !== undefined && currentArticle.quantita !== null
+    !isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null
       ? currentArticle.quantita.toFixed(3).replace('.', ',')
       : ''
   );
 
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura for Cartone
   const calculatedQuantitaKg = React.useMemo(() => {
-    if (currentTipoArticolo !== 'cartone') return 0;
+    if (!isCartoneFornitore) return 0;
 
     const formatDims = parseFormatoForCalculation(currentFormato);
     const gramm = parseGrammaturaForCalculation(currentGrammatura);
@@ -149,47 +144,58 @@ export function OrdineAcquistoArticoloFormRow({
     }
     console.log(`[Article ${index}] Calculated Quantita: 0 (conditions not met)`);
     return 0;
-  }, [currentTipoArticolo, currentFormato, currentGrammatura, currentNumeroFogli, index]);
+  }, [isCartoneFornitore, currentFormato, currentGrammatura, currentNumeroFogli]);
 
   // Update the 'quantita' field (which stores kg for cartone) whenever inputs change
   React.useEffect(() => {
-    if (currentTipoArticolo === 'cartone') {
+    if (isCartoneFornitore) {
       console.log(`[Article ${index}] Setting quantita (kg) to: ${calculatedQuantitaKg.toFixed(3)}`);
       setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true });
     }
-  }, [calculatedQuantitaKg, index, setValue, currentTipoArticolo]);
+  }, [calculatedQuantitaKg, index, setValue, isCartoneFornitore]);
 
   // Gestione della generazione del rif_commessa_fsc quando FSC viene flaggato
   React.useEffect(() => {
-    if (currentTipoArticolo === 'cartone' && currentFsc && !currentRifCommessaFsc) {
+    if (isCartoneFornitore && currentFsc && !currentRifCommessaFsc) {
       console.log(`[Article ${index}] Generating new FSC commessa.`);
       setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
-    } else if (currentTipoArticolo === 'cartone' && !currentFsc && currentRifCommessaFsc) {
+    } else if (isCartoneFornitore && !currentFsc && currentRifCommessaFsc) {
       console.log(`[Article ${index}] Clearing FSC commessa.`);
       setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
     }
-  }, [currentTipoArticolo, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
+  }, [isCartoneFornitore, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
+
+  // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato
+  React.useEffect(() => {
+    if (isFustelleFornitore && currentHasPulitore && !currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Generating new Pulitore code.`);
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+    } else if (isFustelleFornitore && !currentHasPulitore && currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Clearing Pulitore code.`);
+      setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
+    }
+  }, [isFustelleFornitore, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
 
   // Gestione del nr_tasselli quando tasselli_intercambiabili viene flaggato
   React.useEffect(() => {
-    if (currentTipoArticolo === 'fustella' && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
+    if (isFustelleFornitore && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
       console.log(`[Article ${index}] Setting nr_tasselli to 0.`);
       setValue(`articoli.${index}.nr_tasselli`, 0, { shouldValidate: true });
-    } else if (currentTipoArticolo === 'fustella' && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
+    } else if (isFustelleFornitore && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
       console.log(`[Article ${index}] Clearing nr_tasselli.`);
       setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
     }
-  }, [currentTipoArticolo, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
+  }, [isFustelleFornitore, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
+
 
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0);
 
   const [openClientCombobox, setOpenClientCombobox] = React.useState(false);
-  const [openParentFustellaCombobox, setOpenParentFustellaCombobox] = React.useState(false); // Nuovo stato per combobox fustella padre
 
   return (
     <div className="flex flex-col sm:flex-row gap-2 p-3 border rounded-md bg-muted/50 items-end">
       <div className="flex-1 grid grid-cols-1 gap-2 w-full">
-        {currentTipoArticolo === 'cartone' ? (
+        {isCartoneFornitore ? (
           <>
             {/* Section: Codice Identificativo Cartone */}
             <div className="p-2 bg-gray-50 rounded-lg border">
@@ -462,7 +468,7 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
-        ) : currentTipoArticolo === 'fustella' ? ( // BLOCCO PER FUSTELLE
+        ) : isFustelleFornitore ? ( // NUOVA SEZIONE PER FUSTELLE
           <>
             {/* Section: Codice Identificativo Fustella */}
             <div className="p-2 bg-gray-50 rounded-lg border">
@@ -662,10 +668,35 @@ export function OrdineAcquistoArticoloFormRow({
 
             <Separator className="my-1" />
 
-            {/* Section: Dettagli Tasselli e Incollatura */}
+            {/* Section: Dettagli Pulitore e Tasselli */}
             <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Tasselli e Incollatura</h5>
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Pulitore e Tasselli</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.hasPulitore`}
+                    {...register(`articoli.${index}.hasPulitore`)}
+                    checked={currentHasPulitore}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.hasPulitore`} className="text-xs">Ha Pulitore</Label>
+                  {errors.articoli?.[index]?.hasPulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
+                </div>
+                {currentHasPulitore && (
+                  <div>
+                    <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
+                    <Input
+                      id={`articoli.${index}.pulitore_codice_fustella`}
+                      {...register(`articoli.${index}.pulitore_codice_fustella`)}
+                      readOnly
+                      disabled={true}
+                      className="text-sm font-mono font-bold bg-gray-100"
+                    />
+                    {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
+                  </div>
+                )}
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -705,6 +736,15 @@ export function OrdineAcquistoArticoloFormRow({
                     {errors.articoli?.[index]?.nr_tasselli && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.nr_tasselli?.message}</p>}
                   </div>
                 )}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Incollatura */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Incollatura</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -761,155 +801,6 @@ export function OrdineAcquistoArticoloFormRow({
                   className="text-sm"
                 />
                 {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
-              </div>
-            </div>
-          </>
-        ) : currentTipoArticolo === 'pulitore' ? ( // BLOCCO PER PULITORE
-          <>
-            {/* Section: Codice Identificativo Pulitore */}
-            <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Pulitore</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor={`articoli.${index}.pulitore_codice`} className="text-xs">Codice Pulitore *</Label>
-                  <Input
-                    id={`articoli.${index}.pulitore_codice`}
-                    {...register(`articoli.${index}.pulitore_codice`)}
-                    readOnly
-                    disabled={true}
-                    className="text-sm font-mono font-bold bg-gray-100"
-                  />
-                  {errors.articoli?.[index]?.pulitore_codice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.parent_fustella_codice`} className="text-xs">Fustella Associata *</Label>
-                  <Popover open={openParentFustellaCombobox} onOpenChange={setOpenParentFustellaCombobox}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openParentFustellaCombobox}
-                        className={cn(
-                          "w-full justify-between text-sm",
-                          !currentParentFustellaCodice && "text-muted-foreground"
-                        )}
-                        disabled={isSubmitting || isOrderCancelled || allFustellaCodesInOrder.length === 0}
-                      >
-                        {currentParentFustellaCodice
-                          ? allFustellaCodesInOrder.find((code) => code === currentParentFustellaCodice)
-                          : "Seleziona fustella..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                      <Command>
-                        <CommandInput placeholder="Cerca fustella..." />
-                        <CommandList>
-                          <CommandEmpty>Nessuna fustella trovata nell'ordine.</CommandEmpty>
-                          <CommandGroup>
-                            {allFustellaCodesInOrder.map((code) => (
-                              <CommandItem
-                                key={code}
-                                value={code}
-                                onSelect={() => {
-                                  setValue(`articoli.${index}.parent_fustella_codice`, code, { shouldValidate: true });
-                                  setOpenParentFustellaCombobox(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    currentParentFustellaCodice === code ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {code}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  {errors.articoli?.[index]?.parent_fustella_codice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.parent_fustella_codice?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
-                  <Input
-                    id={`articoli.${index}.quantita`}
-                    type="text"
-                    value={displayQuantita}
-                    onChange={(e) => {
-                      const rawValue = e.target.value;
-                      setDisplayQuantita(rawValue);
-                      const numericValue = parseFloat(rawValue.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
-                      } else {
-                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
-                      } else {
-                        setDisplayQuantita('');
-                      }
-                    }}
-                    placeholder="Es. 1"
-                    min="0"
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
-                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
-                  <div className="relative">
-                    <Input
-                      id={`articoli.${index}.prezzo_unitario`}
-                      type="text"
-                      value={displayPrezzoUnitario}
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue);
-                        const numericValue = parseFloat(rawValue.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
-                        } else {
-                          setDisplayPrezzoUnitario('');
-                        }
-                      }}
-                      placeholder="Es. 50,00"
-                      min="0"
-                      disabled={isSubmitting || isOrderCancelled}
-                      className="text-sm pr-10"
-                    />
-                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
-                      €
-                    </span>
-                  </div>
-                  {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
-                  <Input
-                    id={`articoli.${index}.data_consegna_prevista`}
-                    type="date"
-                    {...register(`articoli.${index}.data_consegna_prevista`)}
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
-                  {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
-                </div>
               </div>
             </div>
           </>
