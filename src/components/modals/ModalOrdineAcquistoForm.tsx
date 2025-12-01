@@ -360,7 +360,8 @@ export function ModalOrdineAcquistoForm({
     setFustellaGeneratorInitialized(false); // Reset anche il generatore Fustella
     setPulitoreGeneratorInitialized(false); // Reset anche il generatore Pulitore
 
-    const orderYear = new Date(watch('data_ordine')).getFullYear();
+    const orderDateValue = watch('data_ordine');
+    const orderYear = orderDateValue ? new Date(orderDateValue).getFullYear() : new Date().getFullYear();
 
     if (newIsCartoneFornitore) {
       const maxCode = await fetchMaxCartoneCodeFromDB();
@@ -864,7 +865,14 @@ export function ModalOrdineAcquistoForm({
                 {errors.note && <p className="text-destructive text-xs mt-1">{errors.note.message}</p>}
               </div>
             </div>
-
+            {/* NEW LOG FOR ERRORS */}
+            {console.log("ModalOrdineAcquistoForm: Current form errors before footer:", errors)}
+            {Object.keys(errors).length > 0 && (
+              <div className="text-destructive text-sm mt-4 p-2 border border-destructive rounded-md">
+                <p className="font-bold mb-1">Errori di validazione:</p>
+                <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(errors, null, 2)}</pre>
+              </div>
+            )}
             <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto text-sm">
                 Annulla
