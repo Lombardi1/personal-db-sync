@@ -382,7 +382,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
     <div className="w-full rounded-md border overflow-x-auto">
       <div className="w-full">
         <table id="tab-ordini-acquisto" className="w-full border-collapse text-xs table-auto">
-          <thead><tr>
+          <thead>
+            <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[30px]"></th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Numero Ordine</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Data Ordine</th>
@@ -397,8 +398,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px] max-w-[100px]">Note Ordine</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[200px]">Azioni</th>
             </tr></thead>
-          <tbody>
-            {groupedRows.map(({ order, articles, isExpanded }) => {
+          <tbody>{
+            groupedRows.map(({ order, articles, isExpanded }) => {
               const visibleArticles = isExpanded ? articles : [articles[0]];
               const rowSpanValue = visibleArticles.length;
 
@@ -474,8 +475,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                             {row.orderImportoTotale.toFixed(2)} €
                           </td>
                           <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[100px] max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap">{row.orderNote || '-'}</td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[200px]"> {/* Modificato min-w */}
-                            <div className="flex gap-1"> {/* Rimosso flex-wrap */}
+                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[200px]">
+                            <div className="flex gap-1">
                               <Button
                                 variant="default"
                                 size="icon"
@@ -542,8 +543,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                   ))}
                 </React.Fragment>
               );
-            })}
-          </tbody>
+            })}</tbody>
         </table>
       </div>
 
