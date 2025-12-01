@@ -460,13 +460,22 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                             {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Nostro: <span className="codice">{row.fustella_codice}</span></div>}
                             {row.codice_fornitore_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Codice Fornitore: {row.codice_fornitore_fustella}</div>}
                             {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
-                            {row.hasPulitore && (
-                              <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
-                                Pulitore: Sì {row.pulitore_codice_fustella && `(Codice: ${row.pulitore_codice_fustella})`}
-                              </div>
-                            )}
                             {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
                             {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                            {row.hasPulitore && (
+                              <>
+                                {row.pulitore_codice_fustella && (
+                                  <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
+                                    Pulitore: <span className="codice">{row.pulitore_codice_fustella}</span>
+                                  </div>
+                                )}
+                                {row.prezzo_pulitore !== undefined && row.prezzo_pulitore !== null && (
+                                  <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
+                                    Prezzo Pulitore: {row.prezzo_pulitore.toFixed(2)} €
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </>
                         ) : (
                           <>
