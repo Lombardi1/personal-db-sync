@@ -136,8 +136,6 @@ const MOCK_FORNITORI: Fornitore[] = [
     condizione_pagamento: 'Bonifico 60gg',
     considera_iva: true,
     banca: 'Banca di Credito Cooperativo',
-    default_cliente: 'Cliente Fustelle Default', // NUOVO
-    default_lavoro: 'Lavoro Fustelle Default', // NUOVO
     created_at: new Date().toISOString(),
   },
 ];
@@ -168,7 +166,7 @@ export function useAnagrafiche() {
     try {
       const [clientiRes, fornitoriRes] = await Promise.all([
         supabase.from('clienti').select('*, codice_anagrafica, condizione_pagamento, considera_iva').order('nome', { ascending: true }),
-        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento, considera_iva, banca, default_cliente, default_lavoro').order('codice_anagrafica', { ascending: false }) // Modificato: ordinamento per codice_anagrafica decrescente, AGGIUNTO default_cliente, default_lavoro
+        supabase.from('fornitori').select('*, tipo_fornitore, codice_anagrafica, condizione_pagamento, considera_iva, banca').order('codice_anagrafica', { ascending: false }) // Modificato: ordinamento per codice_anagrafica decrescente
       ]);
 
       console.log('useAnagrafiche: Risposta Supabase per clienti:', clientiRes.data?.length, 'items, Error:', clientiRes.error);
@@ -190,7 +188,7 @@ export function useAnagrafiche() {
         setFornitori(fornitoriRes.data);
         // NEW DEBUG LOG: Log considera_iva for each supplier
         fornitoriRes.data.forEach(f => {
-          console.log(`[DEBUG-ANAGRAFICHE] Fornitore: ${f.nome}, considera_iva: ${f.considera_iva}, banca: ${f.banca}, default_cliente: ${f.default_cliente}, default_lavoro: ${f.default_lavoro}`); // Aggiunto banca e nuovi campi
+          console.log(`[DEBUG-ANAGRAFICHE] Fornitore: ${f.nome}, considera_iva: ${f.considera_iva}, banca: ${f.banca}`); // Aggiunto banca
         });
       }
 
@@ -292,7 +290,7 @@ export function useAnagrafiche() {
     console.log('[useAnagrafiche] addFornitore: Dati inviati a Supabase:', fornitore); // LOG DI DEBUG
     if (useMockData) {
       console.log('Mock: Aggiungi fornitore', fornitore);
-      const newMockFornitore = { ...fornitore, id: `mock-f-${Date.now()}`, codice_anagrafica: generateNextFornitoreCode(), created_at: new Date().toISOString(), considera_iva: fornitore.considera_iva || false, banca: fornitore.banca || '', default_cliente: fornitore.default_cliente || '', default_lavoro: fornitore.default_lavoro || '' }; // NUOVO: Aggiunto banca e nuovi campi
+      const newMockFornitore = { ...fornitore, id: `mock-f-${Date.now()}`, codice_anagrafica: generateNextFornitoreCode(), created_at: new Date().toISOString(), considera_iva: fornitore.considera_iva || false, banca: fornitore.banca || '' }; // NUOVO: Aggiunto banca
       setFornitori(prev => [...prev, newMockFornitore]); // Aggiorna lo stato mock
       toast.success(`✅ Mock: Fornitore '${fornitore.nome}' aggiunto con successo!`);
       return { success: true, data: newMockFornitore };
@@ -318,8 +316,6 @@ export function useAnagrafiche() {
     console.log(`[useAnagrafiche] updateFornitore: Aggiornamento fornitore ${id}. Dati inviati a Supabase:`, updateData); // LOG DI DEBUG
     console.log(`[useAnagrafiche] updateFornitore: Valore di 'considera_iva' inviato a Supabase:`, updateData.considera_iva); // LOG DI DEBUG
     console.log(`[useAnagrafiche] updateFornitore: Valore di 'banca' inviato a Supabase:`, updateData.banca); // NUOVO LOG
-    console.log(`[useAnagrafiche] updateFornitore: Valore di 'default_cliente' inviato a Supabase:`, updateData.default_cliente); // NUOVO LOG
-    console.log(`[useAnagrafiche] updateFornitore: Valore di 'default_lavoro' inviato a Supabase:`, updateData.default_lavoro); // NUOVO LOG
     
     if (useMockData) {
       console.log('Mock: Modifica fornitore', id, fornitore);

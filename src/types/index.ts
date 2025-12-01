@@ -57,8 +57,6 @@ export interface Fornitore extends AnagraficaBase {
   tipo_fornitore?: 'Cartone' | 'Inchiostro' | 'Colla' | 'Fustelle' | 'Altro'; // Nuovo campo per il tipo di fornitore
   considera_iva?: boolean; // NUOVO CAMPO ANCHE PER FORNITORE
   banca?: string; // NUOVO CAMPO: Banca associata al fornitore
-  default_cliente?: string; // NUOVO CAMPO: Cliente di default per fornitori Fustelle
-  default_lavoro?: string; // NUOVO CAMPO: Lavoro di default per fornitori Fustelle
 }
 
 // Nuova interfaccia per gli articoli, ora nidificata nell'OrdineAcquisto
