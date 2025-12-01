@@ -157,7 +157,7 @@ export function OrdineAcquistoArticoloFormRow({
       console.log(`[Article ${index}] Setting quantita (kg) to: ${calculatedQuantitaKg.toFixed(3)}`);
       setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true });
     }
-  }, [calculatedQuantitaKg, index, setValue, currentTipoArticolo]);
+  }, [calculatedQuantitaKg, index, setValue, currentTipoArtarticolo]);
 
   // Gestione della generazione del rif_commessa_fsc quando FSC viene flaggato
   React.useEffect(() => {
@@ -189,7 +189,7 @@ export function OrdineAcquistoArticoloFormRow({
   return (
     <div className="flex flex-col sm:flex-row gap-2 p-3 border rounded-md bg-muted/50 items-end">
       <div className="flex-1 grid grid-cols-1 gap-2 w-full">
-        {currentTipoArticolo === 'cartone' && (
+        {currentTipoArticolo === 'cartone' ? (
           <>
             {/* Section: Codice Identificativo Cartone */}
             <div className="p-2 bg-gray-50 rounded-lg border">
@@ -495,7 +495,7 @@ export function OrdineAcquistoArticoloFormRow({
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
-                  {errors.articoli?.[index]?.codice_fornitore_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
+                  {errors.articoli?.[index]?.codice_fornitore_fustella && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor={`articoli.${index}.fustellatrice`} className="text-xs">Fustellatrice *</Label>
