@@ -454,6 +454,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // ========== TABELLA ARTICOLI ==========
     const isCartone = fornitore?.tipo_fornitore === 'Cartone';
+    const isFustelle = fornitore?.tipo_fornitore === 'Fustelle'; // Nuovo flag per Fustelle
     const IVA_RATE = 0.22; // 22% IVA
 
     const articlesHead = [['Articolo', 'Descrizione', 'UM', 'Quantità', 'Prezzo', 'Prezzo\ntotale', 'Iva', 'Data\ncons.']];
@@ -469,25 +470,60 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     const articlesBody = nonCancelledArticles.map(article => {
       let articoloColumnText = '';
       let descrizioneColumnText = '';
+      let umText = '';
+      let quantitaFormatted = '';
 
       if (isCartone) {
         articoloColumnText = article.codice_ctn || '';
         descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${formatGrammatura(article.grammatura || '')} F.TO ${formatFormato(article.formato || '')}\nNR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
         if (article.fsc) descrizioneColumnText += `\n\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`;
         if (article.alimentare) descrizioneColumnText += '\n\nMATERIALE IDONEO AL CONTATTO ALIMENTARE';
+        umText = 'KG';
+        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else if (isFustelle) { // Logica per fornitori di Fustelle
+        articoloColumnText = article.fustella_codice || '';
+        let fustellaDescription = [];
+        if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
+        if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
+        if (article.fustellatrice) fustellaDescription.push(`Fustellatrice: ${article.fustellatrice}`);
+        if (article.cliente) fustellaDescription.push(`Cliente: ${article.cliente}`);
+        if (article.lavoro) fustellaDescription.push(`Lavoro: ${article.lavoro}`);
+        
+        if (article.hasPulitore) {
+          fustellaDescription.push(`Pulitore: Sì`);
+          if (article.pulitore_codice_fustella) {
+            fustellaDescription.push(`Codice Pulitore: ${article.pulitore_codice_fustella}`);
+          }
+        }
+        if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
+        if (article.tasselli_intercambiabili) {
+          fustellaDescription.push(`Tasselli Intercambiabili: Sì`);
+          if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
+            fustellaDescription.push(`Nr. Tasselli: ${article.nr_tasselli}`);
+          }
+        }
+        if (article.incollatura) {
+          fustellaDescription.push(`Incollatura: Sì`);
+          if (article.incollatrice) fustellaDescription.push(`Incollatrice: ${article.incollatrice}`);
+          if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
+        }
+        descrizioneColumnText = fustellaDescription.join('\n');
+        umText = 'PZ';
+        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
       } else {
         articoloColumnText = article.descrizione || '';
         descrizioneColumnText = ''; 
+        umText = 'PZ'; // Default per altri tipi
+        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
       
-      const quantitaFormatted = article.quantita.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const prezzoUnitarioFormatted = article.prezzo_unitario.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-      const prezzoTotaleRiga = (article.quantita * article.prezzo_unitario).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+      const prezzoTotaleRiga = ((article.quantita || 0) * (article.prezzo_unitario || 0)).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       return [
         articoloColumnText, 
         descrizioneColumnText, 
-        isCartone ? 'KG' : 'PZ',
+        umText,
         quantitaFormatted,
         prezzoUnitarioFormatted,
         prezzoTotaleRiga,
