@@ -4,7 +4,7 @@ import * as z from 'zod';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Trash2, Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
+import { Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Cliente } from '@/types';
 import { formatFormato, formatGrammatura } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,7 @@ interface OrdineAcquistoArticoloFormRowProps {
   clienti: Cliente[];
   isOrderCancelled: boolean;
   isNewOrder: boolean;
+  allFustellaCodesInOrder: string[]; // Nuovo prop per i codici fustella nell'ordine
 }
 
 // Helper function for parsing format (e.g., "102 x 72 cm" -> 1.02, 0.72)
@@ -75,9 +76,9 @@ export function OrdineAcquistoArticoloFormRow({
   clienti,
   isOrderCancelled,
   isNewOrder,
+  allFustellaCodesInOrder, // Nuovo prop
 }: OrdineAcquistoArticoloFormRowProps) {
-  const { register, setValue, watch, control, formState: { errors } } = useFormContext<OrdineAcquisto>();
-  const { append } = control._formFunctions; // Access append from control
+  const { register, setValue, watch, formState: { errors } } = useFormContext<OrdineAcquisto>();
 
   const watchedArticles = watch('articoli');
   const currentArticle = watchedArticles[index];
@@ -169,14 +170,6 @@ export function OrdineAcquistoArticoloFormRow({
     }
   }, [currentTipoArticolo, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
 
-  // Gestione della generazione del pulitore_codice quando è un articolo pulitore
-  React.useEffect(() => {
-    if (currentTipoArticolo === 'pulitore' && !currentPulitoreCodice) {
-      console.log(`[Article ${index}] Generating new Pulitore code.`);
-      setValue(`articoli.${index}.pulitore_codice`, generateNextPulitoreCode(), { shouldValidate: true });
-    }
-  }, [currentTipoArticolo, currentPulitoreCodice, index, setValue]);
-
   // Gestione del nr_tasselli quando tasselli_intercambiabili viene flaggato
   React.useEffect(() => {
     if (currentTipoArticolo === 'fustella' && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
@@ -191,26 +184,7 @@ export function OrdineAcquistoArticoloFormRow({
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0);
 
   const [openClientCombobox, setOpenClientCombobox] = React.useState(false);
-
-  const handleAddPulitore = () => {
-    if (!currentFustellaCodice) {
-      toast.error("Impossibile aggiungere un pulitore: il codice fustella non è definito.");
-      return;
-    }
-
-    const newPulitoreArticle: ArticoloOrdineAcquisto = {
-      tipo_articolo: 'pulitore',
-      pulitore_codice: generateNextPulitoreCode(),
-      parent_fustella_codice: currentFustellaCodice,
-      quantita: 1,
-      prezzo_unitario: 0,
-      data_consegna_prevista: currentArticle.data_consegna_prevista,
-      stato: 'in_attesa',
-      descrizione: `Pulitore per Fustella ${currentFustellaCodice}`, // Descrizione di default
-    };
-    append(newPulitoreArticle);
-    toast.success(`✅ Pulitore aggiunto per Fustella ${currentFustellaCodice}`);
-  };
+  const [openParentFustellaCombobox, setOpenParentFustellaCombobox] = React.useState(false); // Nuovo stato per combobox fustella padre
 
   return (
     <div className="flex flex-col sm:flex-row gap-2 p-3 border rounded-md bg-muted/50 items-end">
@@ -488,8 +462,7 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
-        )}
-        {currentTipoArticolo === 'fustella' && ( // NUOVA SEZIONE PER FUSTELLE
+        ) : currentTipoArticolo === 'fustella' ? ( // BLOCCO PER FUSTELLE
           <>
             {/* Section: Codice Identificativo Fustella */}
             <div className="p-2 bg-gray-50 rounded-lg border">
@@ -689,22 +662,10 @@ export function OrdineAcquistoArticoloFormRow({
 
             <Separator className="my-1" />
 
-            {/* Section: Dettagli Pulitore e Tasselli */}
+            {/* Section: Dettagli Tasselli e Incollatura */}
             <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Pulitore e Tasselli</h5>
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Tasselli e Incollatura</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddPulitore}
-                    disabled={isSubmitting || isOrderCancelled || !currentFustellaCodice}
-                    className="gap-1 text-xs"
-                  >
-                    <PlusCircle className="h-3 w-3" /> Aggiungi Pulitore
-                  </Button>
-                </div>
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -744,15 +705,6 @@ export function OrdineAcquistoArticoloFormRow({
                     {errors.articoli?.[index]?.nr_tasselli && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.nr_tasselli?.message}</p>}
                   </div>
                 )}
-              </div>
-            </div>
-
-            <Separator className="my-1" />
-
-            {/* Section: Dettagli Incollatura */}
-            <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Incollatura</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -812,8 +764,7 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
-        )}
-        {currentTipoArticolo === 'pulitore' && (
+        ) : currentTipoArticolo === 'pulitore' ? ( // BLOCCO PER PULITORE
           <>
             {/* Section: Codice Identificativo Pulitore */}
             <div className="p-2 bg-gray-50 rounded-lg border">
@@ -832,13 +783,53 @@ export function OrdineAcquistoArticoloFormRow({
                 </div>
                 <div>
                   <Label htmlFor={`articoli.${index}.parent_fustella_codice`} className="text-xs">Fustella Associata *</Label>
-                  <Input
-                    id={`articoli.${index}.parent_fustella_codice`}
-                    {...register(`articoli.${index}.parent_fustella_codice`)}
-                    readOnly
-                    disabled={true}
-                    className="text-sm font-mono font-bold bg-gray-100"
-                  />
+                  <Popover open={openParentFustellaCombobox} onOpenChange={setOpenParentFustellaCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openParentFustellaCombobox}
+                        className={cn(
+                          "w-full justify-between text-sm",
+                          !currentParentFustellaCodice && "text-muted-foreground"
+                        )}
+                        disabled={isSubmitting || isOrderCancelled || allFustellaCodesInOrder.length === 0}
+                      >
+                        {currentParentFustellaCodice
+                          ? allFustellaCodesInOrder.find((code) => code === currentParentFustellaCodice)
+                          : "Seleziona fustella..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Cerca fustella..." />
+                        <CommandList>
+                          <CommandEmpty>Nessuna fustella trovata nell'ordine.</CommandEmpty>
+                          <CommandGroup>
+                            {allFustellaCodesInOrder.map((code) => (
+                              <CommandItem
+                                key={code}
+                                value={code}
+                                onSelect={() => {
+                                  setValue(`articoli.${index}.parent_fustella_codice`, code, { shouldValidate: true });
+                                  setOpenParentFustellaCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    currentParentFustellaCodice === code ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {code}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {errors.articoli?.[index]?.parent_fustella_codice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.parent_fustella_codice?.message}</p>}
                 </div>
                 <div>
@@ -922,8 +913,7 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
-        )}
-        {currentTipoArticolo === 'altro' && (
+        ) : (
           <>
             {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle) */}
             <div className="p-2 bg-gray-50 rounded-lg border">

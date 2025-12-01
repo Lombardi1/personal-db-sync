@@ -481,35 +481,35 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         umText = 'KG';
         quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       } else if (isFustelle) { // Logica per fornitori di Fustelle
-        articoloColumnText = article.fustella_codice || '';
-        let fustellaDescription = [];
-        if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
-        if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
-        if (article.fustellatrice) fustellaDescription.push(`Fustellatrice: ${article.fustellatrice}`);
-        if (article.cliente) fustellaDescription.push(`Cliente: ${article.cliente}`);
-        if (article.lavoro) fustellaDescription.push(`Lavoro: ${article.lavoro}`);
-        
-        if (article.hasPulitore) {
-          fustellaDescription.push(`Pulitore: Sì`);
-          if (article.pulitore_codice_fustella) {
-            fustellaDescription.push(`Codice Pulitore: ${article.pulitore_codice_fustella}`);
+        if (article.tipo_articolo === 'fustella') {
+          articoloColumnText = article.fustella_codice || '';
+          let fustellaDescription = [];
+          if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
+          if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
+          if (article.fustellatrice) fustellaDescription.push(`Fustellatrice: ${article.fustellatrice}`);
+          if (article.cliente) fustellaDescription.push(`Cliente: ${article.cliente}`);
+          if (article.lavoro) fustellaDescription.push(`Lavoro: ${article.lavoro}`);
+          if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
+          if (article.tasselli_intercambiabili) {
+            fustellaDescription.push(`Tasselli Intercambiabili: Sì`);
+            if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
+              fustellaDescription.push(`Nr. Tasselli: ${article.nr_tasselli}`);
+            }
           }
-        }
-        if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
-        if (article.tasselli_intercambiabili) {
-          fustellaDescription.push(`Tasselli Intercambiabili: Sì`);
-          if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
-            fustellaDescription.push(`Nr. Tasselli: ${article.nr_tasselli}`);
+          if (article.incollatura) {
+            fustellaDescription.push(`Incollatura: Sì`);
+            if (article.incollatrice) fustellaDescription.push(`Incollatrice: ${article.incollatrice}`);
+            if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
           }
+          descrizioneColumnText = fustellaDescription.join('\n');
+          umText = 'PZ';
+          quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        } else if (article.tipo_articolo === 'pulitore') {
+          articoloColumnText = article.pulitore_codice || '';
+          descrizioneColumnText = `Pulitore per Fustella: ${article.parent_fustella_codice || 'N/A'}`;
+          umText = 'PZ';
+          quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
-        if (article.incollatura) {
-          fustellaDescription.push(`Incollatura: Sì`);
-          if (article.incollatrice) fustellaDescription.push(`Incollatrice: ${article.incollatrice}`);
-          if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
-        }
-        descrizioneColumnText = fustellaDescription.join('\n');
-        umText = 'PZ';
-        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
       } else {
         articoloColumnText = article.descrizione || '';
         descrizioneColumnText = ''; 
