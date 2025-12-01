@@ -300,9 +300,9 @@ export function ModalOrdineAcquistoForm({
             incollatura: false,
             incollatrice: '',
             tipo_incollatura: '',
-            cliente: '', // Inizializza cliente
-            lavoro: '', // Inizializza lavoro
-            descrizione: '', // Inizializza descrizione
+            cliente: '', 
+            lavoro: '', 
+            descrizione: '', 
           }];
 
       const defaultVal = initialData ? {
@@ -760,6 +760,14 @@ export function ModalOrdineAcquistoForm({
   const title = initialData?.id ? `Modifica Ordine d'Acquisto` : `Nuovo Ordine d'Acquisto`;
   const description = initialData?.id ? `Modifica i dettagli per l'ordine ${initialData.numero_ordine}.` : `Inserisci i dettagli per il nuovo ordine d'acquisto.`
   
+  // Funzione replacer per JSON.stringify per evitare riferimenti circolari
+  const errorReplacer = (key: string, value: any) => {
+    if (key === 'ref' && value instanceof HTMLElement) {
+      return undefined; // Rimuove gli elementi HTML per interrompere i riferimenti circolari
+    }
+    return value;
+  };
+
   console.log("ModalOrdineAcquistoForm: Current form errors (at render):", errors); // Log errors at render
   
   return (
@@ -952,7 +960,7 @@ export function ModalOrdineAcquistoForm({
             {Object.keys(errors).length > 0 && (
               <div className="text-destructive text-sm mt-4 p-2 border border-destructive rounded-md">
                 <p className="font-bold mb-1">Errori di validazione:</p>
-                <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(errors, null, 2)}</pre>
+                <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(errors, errorReplacer, 2)}</pre>
               </div>
             )}
             <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
