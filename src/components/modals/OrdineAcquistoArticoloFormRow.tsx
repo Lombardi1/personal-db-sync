@@ -107,16 +107,11 @@ export function OrdineAcquistoArticoloFormRow({
   const currentIncollatrice = currentArticle?.incollatrice;
   const currentTipoIncollatura = currentArticle?.tipo_incollatura;
 
-  // Campi Comuni (anche per Fustelle e Pulitore)
+  // Campi Comuni (anche per Fustelle)
   const currentQuantita = currentArticle?.quantita;
   const currentStatoArticolo = currentArticle?.stato;
   const currentCliente = currentArticle?.cliente; // Ora comune
   const currentLavoro = currentArticle?.lavoro; // Ora comune
-  const currentDescrizione = currentArticle?.descrizione; // Ora comune per non-cartone/non-fustelle
-
-  // Determina se l'articolo corrente è una fustella o un pulitore (solo se il fornitore è di tipo Fustelle)
-  const isCurrentArticleFustella = isFustelleFornitore && !!currentFustellaCodice;
-  const isCurrentArticlePulitore = isFustelleFornitore && !!currentDescrizione && !currentFustellaCodice;
 
   // State for controlled input values to retain formatting
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => 
@@ -473,510 +468,345 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
-        ) : isFustelleFornitore ? ( // NUOVA SEZIONE PER FUSTELLE E PULITORI
+        ) : isFustelleFornitore ? ( // NUOVA SEZIONE PER FUSTELLE
           <>
-            {isCurrentArticleFustella && (
-              <>
-                {/* Section: Codice Identificativo Fustella */}
-                <div className="p-2 bg-gray-50 rounded-lg border">
-                  <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo</h5>
-                  <div>
-                    <Label htmlFor={`articoli.${index}.fustella_codice`} className="text-xs">Codice Fustella *</Label>
+            {/* Section: Codice Identificativo Fustella */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo</h5>
+              <div>
+                <Label htmlFor={`articoli.${index}.fustella_codice`} className="text-xs">Codice Fustella *</Label>
+                <Input
+                  id={`articoli.${index}.fustella_codice`}
+                  {...register(`articoli.${index}.fustella_codice`)}
+                  readOnly
+                  disabled={true}
+                  className="text-sm font-mono font-bold bg-gray-100"
+                />
+                {errors.articoli?.[index]?.fustella_codice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fustella_codice?.message}</p>}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Fustella */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Fustella</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div>
+                  <Label htmlFor={`articoli.${index}.codice_fornitore_fustella`} className="text-xs">Codice Fornitore *</Label>
+                  <Input
+                    id={`articoli.${index}.codice_fornitore_fustella`}
+                    {...register(`articoli.${index}.codice_fornitore_fustella`)}
+                    placeholder="Es. FOR-001"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.codice_fornitore_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.fustellatrice`} className="text-xs">Fustellatrice *</Label>
+                  <Input
+                    id={`articoli.${index}.fustellatrice`}
+                    {...register(`articoli.${index}.fustellatrice`)}
+                    placeholder="Es. Bobst 102"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.fustellatrice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fustellatrice?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.resa_fustella`} className="text-xs">Resa *</Label>
+                  <Input
+                    id={`articoli.${index}.resa_fustella`}
+                    {...register(`articoli.${index}.resa_fustella`)}
+                    placeholder="Es. 1/2"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.resa_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.resa_fustella?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
+                  <Input
+                    id={`articoli.${index}.quantita`}
+                    type="text"
+                    value={displayQuantita}
+                    onChange={(e) => {
+                      const rawValue = e.target.value;
+                      setDisplayQuantita(rawValue);
+                      const numericValue = parseFloat(rawValue.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
+                      } else {
+                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
+                      } else {
+                        setDisplayQuantita('');
+                      }
+                    }}
+                    placeholder="Es. 1"
+                    min="0"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
+                  <div className="relative">
                     <Input
-                      id={`articoli.${index}.fustella_codice`}
-                      {...register(`articoli.${index}.fustella_codice`)}
+                      id={`articoli.${index}.prezzo_unitario`}
+                      type="text"
+                      value={displayPrezzoUnitario}
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue);
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
+                        } else {
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
+                        } else {
+                          setDisplayPrezzoUnitario('');
+                        }
+                      }}
+                      placeholder="Es. 150,00"
+                      min="0"
+                      disabled={isSubmitting || isOrderCancelled}
+                      className="text-sm pr-10"
+                    />
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
+                      €
+                    </span>
+                  </div>
+                  {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Utilizzo Fustella (Cliente e Lavoro) */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Utilizzo</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente *</Label>
+                  <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openClientCombobox}
+                        className={cn(
+                          "w-full justify-between text-sm",
+                          !currentCliente && "text-muted-foreground"
+                        )}
+                        disabled={isSubmitting || isOrderCancelled}
+                      >
+                        {currentCliente
+                          ? clienti.find((cliente) => cliente.nome === currentCliente)?.nome
+                          : "Seleziona cliente..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Cerca cliente..." />
+                        <CommandList>
+                          <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
+                          <CommandGroup>
+                            {clienti.map((cliente) => (
+                              <CommandItem
+                                key={cliente.id}
+                                value={cliente.nome}
+                                onSelect={() => {
+                                  setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
+                                  setOpenClientCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {cliente.nome}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro *</Label>
+                  <Input
+                    id={`articoli.${index}.lavoro`}
+                    {...register(`articoli.${index}.lavoro`)}
+                    placeholder="Es. LAV-2025-089"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Pulitore e Tasselli */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Pulitore e Tasselli</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.hasPulitore`}
+                    {...register(`articoli.${index}.hasPulitore`)}
+                    checked={currentHasPulitore}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.hasPulitore`} className="text-xs">Ha Pulitore</Label>
+                  {errors.articoli?.[index]?.hasPulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
+                </div>
+                {currentHasPulitore && (
+                  <div>
+                    <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
+                    <Input
+                      id={`articoli.${index}.pulitore_codice_fustella`}
+                      {...register(`articoli.${index}.pulitore_codice_fustella`)}
                       readOnly
                       disabled={true}
                       className="text-sm font-mono font-bold bg-gray-100"
                     />
-                    {errors.articoli?.[index]?.fustella_codice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fustella_codice?.message}</p>}
+                    {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
                   </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.pinza_tagliata`}
+                    {...register(`articoli.${index}.pinza_tagliata`)}
+                    checked={currentPinzaTagliata}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.pinza_tagliata`} className="text-xs">Pinza Tagliata</Label>
+                  {errors.articoli?.[index]?.pinza_tagliata && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
                 </div>
-
-                <Separator className="my-1" />
-
-                {/* Section: Dettagli Fustella */}
-                <div className="p-2 bg-gray-50 rounded-lg border">
-                  <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Fustella</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                    <div>
-                      <Label htmlFor={`articoli.${index}.codice_fornitore_fustella`} className="text-xs">Codice Fornitore *</Label>
-                      <Input
-                        id={`articoli.${index}.codice_fornitore_fustella`}
-                        {...register(`articoli.${index}.codice_fornitore_fustella`)}
-                        placeholder="Es. FOR-001"
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="text-sm"
-                      />
-                      {errors.articoli?.[index]?.codice_fornitore_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.fustellatrice`} className="text-xs">Fustellatrice *</Label>
-                      <Input
-                        id={`articoli.${index}.fustellatrice`}
-                        {...register(`articoli.${index}.fustellatrice`)}
-                        placeholder="Es. Bobst 102"
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="text-sm"
-                      />
-                      {errors.articoli?.[index]?.fustellatrice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fustellatrice?.message}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.resa_fustella`} className="text-xs">Resa *</Label>
-                      <Input
-                        id={`articoli.${index}.resa_fustella`}
-                        {...register(`articoli.${index}.resa_fustella`)}
-                        placeholder="Es. 1/2"
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="text-sm"
-                      />
-                      {errors.articoli?.[index]?.resa_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.resa_fustella?.message}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
-                      <Input
-                        id={`articoli.${index}.quantita`}
-                        type="text"
-                        value={displayQuantita}
-                        onChange={(e) => {
-                          const rawValue = e.target.value;
-                          setDisplayQuantita(rawValue);
-                          const numericValue = parseFloat(rawValue.replace(',', '.'));
-                          if (!isNaN(numericValue)) {
-                            setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
-                          } else {
-                            setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
-                          }
-                        }}
-                        onBlur={(e) => {
-                          const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                          if (!isNaN(numericValue)) {
-                            setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
-                          } else {
-                            setDisplayQuantita('');
-                          }
-                        }}
-                        placeholder="Es. 1"
-                        min="0"
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="text-sm"
-                      />
-                      {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
-                      <div className="relative">
-                        <Input
-                          id={`articoli.${index}.prezzo_unitario`}
-                          type="text"
-                          value={displayPrezzoUnitario}
-                          onChange={(e) => {
-                            const rawValue = e.target.value;
-                            setDisplayPrezzoUnitario(rawValue);
-                            const numericValue = parseFloat(rawValue.replace(',', '.'));
-                            if (!isNaN(numericValue)) {
-                              setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                            } else {
-                              setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                            }
-                          }}
-                          onBlur={(e) => {
-                            const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                            if (!isNaN(numericValue)) {
-                              setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
-                            } else {
-                              setDisplayPrezzoUnitario('');
-                            }
-                          }}
-                          placeholder="Es. 150,00"
-                          min="0"
-                          disabled={isSubmitting || isOrderCancelled}
-                          className="text-sm pr-10"
-                        />
-                        <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
-                          €
-                        </span>
-                      </div>
-                      {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
-                    </div>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.tasselli_intercambiabili`}
+                    {...register(`articoli.${index}.tasselli_intercambiabili`)}
+                    checked={currentTasselliIntercambiabili}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.tasselli_intercambiabili`} className="text-xs">Tasselli Intercambiabili</Label>
+                  {errors.articoli?.[index]?.tasselli_intercambiabili && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.tasselli_intercambiabili?.message}</p>}
                 </div>
-
-                <Separator className="my-1" />
-
-                {/* Section: Dettagli Utilizzo Fustella (Cliente e Lavoro) */}
-                <div className="p-2 bg-gray-50 rounded-lg border">
-                  <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Utilizzo</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente *</Label>
-                      <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openClientCombobox}
-                            className={cn(
-                              "w-full justify-between text-sm",
-                              !currentCliente && "text-muted-foreground"
-                            )}
-                            disabled={isSubmitting || isOrderCancelled}
-                          >
-                            {currentCliente
-                              ? clienti.find((cliente) => cliente.nome === currentCliente)?.nome
-                              : "Seleziona cliente..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                          <Command>
-                            <CommandInput placeholder="Cerca cliente..." />
-                            <CommandList>
-                              <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
-                              <CommandGroup>
-                                {clienti.map((cliente) => (
-                                  <CommandItem
-                                    key={cliente.id}
-                                    value={cliente.nome}
-                                    onSelect={() => {
-                                      setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
-                                      setOpenClientCombobox(false);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {cliente.nome}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro *</Label>
-                      <Input
-                        id={`articoli.${index}.lavoro`}
-                        {...register(`articoli.${index}.lavoro`)}
-                        placeholder="Es. LAV-2025-089"
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="text-sm"
-                      />
-                      {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
-                    </div>
-                  </div>
-                </div>
-
-                <Separator className="my-1" />
-
-                {/* Section: Dettagli Pulitore e Tasselli */}
-                <div className="p-2 bg-gray-50 rounded-lg border">
-                  <h5 className="text-sm font-semibold mb-2 text-gray-700">Pulitore e Tasselli</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`articoli.${index}.hasPulitore`}
-                        {...register(`articoli.${index}.hasPulitore`)}
-                        checked={currentHasPulitore}
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                      />
-                      <Label htmlFor={`articoli.${index}.hasPulitore`} className="text-xs">Ha Pulitore</Label>
-                      {errors.articoli?.[index]?.hasPulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
-                    </div>
-                    {currentHasPulitore && (
-                      <div>
-                        <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
-                        <Input
-                          id={`articoli.${index}.pulitore_codice_fustella`}
-                          {...register(`articoli.${index}.pulitore_codice_fustella`)}
-                          readOnly
-                          disabled={true}
-                          className="text-sm font-mono font-bold bg-gray-100"
-                        />
-                        {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`articoli.${index}.pinza_tagliata`}
-                        {...register(`articoli.${index}.pinza_tagliata`)}
-                        checked={currentPinzaTagliata}
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                      />
-                      <Label htmlFor={`articoli.${index}.pinza_tagliata`} className="text-xs">Pinza Tagliata</Label>
-                      {errors.articoli?.[index]?.pinza_tagliata && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`articoli.${index}.tasselli_intercambiabili`}
-                        {...register(`articoli.${index}.tasselli_intercambiabili`)}
-                        checked={currentTasselliIntercambiabili}
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                      />
-                      <Label htmlFor={`articoli.${index}.tasselli_intercambiabili`} className="text-xs">Tasselli Intercambiabili</Label>
-                      {errors.articoli?.[index]?.tasselli_intercambiabili && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.tasselli_intercambiabili?.message}</p>}
-                    </div>
-                    {currentTasselliIntercambiabili && (
-                      <div>
-                        <Label htmlFor={`articoli.${index}.nr_tasselli`} className="text-xs">Nr. Tasselli *</Label>
-                        <Input
-                          id={`articoli.${index}.nr_tasselli`}
-                          type="number"
-                          {...register(`articoli.${index}.nr_tasselli`, { valueAsNumber: true })}
-                          placeholder="0"
-                          min="0"
-                          disabled={isSubmitting || isOrderCancelled}
-                          className="text-sm"
-                        />
-                        {errors.articoli?.[index]?.nr_tasselli && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.nr_tasselli?.message}</p>}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <Separator className="my-1" />
-
-                {/* Section: Dettagli Incollatura */}
-                <div className="p-2 bg-gray-50 rounded-lg border">
-                  <h5 className="text-sm font-semibold mb-2 text-gray-700">Incollatura</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`articoli.${index}.incollatura`}
-                        {...register(`articoli.${index}.incollatura`)}
-                        checked={currentIncollatura}
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                      />
-                      <Label htmlFor={`articoli.${index}.incollatura`} className="text-xs">Incollatura</Label>
-                      {errors.articoli?.[index]?.incollatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.incollatura?.message}</p>}
-                    </div>
-                    {currentIncollatura && (
-                      <>
-                        <div>
-                          <Label htmlFor={`articoli.${index}.incollatrice`} className="text-xs">Incollatrice *</Label>
-                          <Input
-                            id={`articoli.${index}.incollatrice`}
-                            {...register(`articoli.${index}.incollatrice`)}
-                            placeholder="Es. Bobst Masterfold"
-                            disabled={isSubmitting || isOrderCancelled}
-                            className="text-sm"
-                          />
-                          {errors.articoli?.[index]?.incollatrice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.incollatrice?.message}</p>}
-                        </div>
-                        <div>
-                          <Label htmlFor={`articoli.${index}.tipo_incollatura`} className="text-xs">Tipo Incollatura *</Label>
-                          <Input
-                            id={`articoli.${index}.tipo_incollatura`}
-                            {...register(`articoli.${index}.tipo_incollatura`)}
-                            placeholder="Es. Lineare, 4 punti"
-                            disabled={isSubmitting || isOrderCancelled}
-                            className="text-sm"
-                          />
-                          {errors.articoli?.[index]?.tipo_incollatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.tipo_incollatura?.message}</p>}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <Separator className="my-1" />
-
-                {/* Section: Consegna Fustella */}
-                <div className="p-2 bg-gray-50 rounded-lg border">
-                  <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
+                {currentTasselliIntercambiabili && (
                   <div>
-                    <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
+                    <Label htmlFor={`articoli.${index}.nr_tasselli`} className="text-xs">Nr. Tasselli *</Label>
                     <Input
-                      id={`articoli.${index}.data_consegna_prevista`}
-                      type="date"
-                      {...register(`articoli.${index}.data_consegna_prevista`)}
+                      id={`articoli.${index}.nr_tasselli`}
+                      type="number"
+                      {...register(`articoli.${index}.nr_tasselli`, { valueAsNumber: true })}
+                      placeholder="0"
+                      min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm"
                     />
-                    {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
+                    {errors.articoli?.[index]?.nr_tasselli && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.nr_tasselli?.message}</p>}
                   </div>
+                )}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Incollatura */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Incollatura</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.incollatura`}
+                    {...register(`articoli.${index}.incollatura`)}
+                    checked={currentIncollatura}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.incollatura`} className="text-xs">Incollatura</Label>
+                  {errors.articoli?.[index]?.incollatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.incollatura?.message}</p>}
                 </div>
-              </>
-            )}
-            {isCurrentArticlePulitore && ( // NUOVA SEZIONE PER PULITORE
-              <>
-                {/* Section: Dettagli Articolo Pulitore */}
-                <div className="p-2 bg-gray-50 rounded-lg border">
-                  <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo Pulitore</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {currentIncollatura && (
+                  <>
                     <div>
-                      <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione *</Label>
+                      <Label htmlFor={`articoli.${index}.incollatrice`} className="text-xs">Incollatrice *</Label>
                       <Input
-                        id={`articoli.${index}.descrizione`}
-                        {...register(`articoli.${index}.descrizione`)}
-                        placeholder="Descrizione pulitore"
+                        id={`articoli.${index}.incollatrice`}
+                        {...register(`articoli.${index}.incollatrice`)}
+                        placeholder="Es. Bobst Masterfold"
                         disabled={isSubmitting || isOrderCancelled}
                         className="text-sm"
                       />
-                      {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
+                      {errors.articoli?.[index]?.incollatrice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.incollatrice?.message}</p>}
                     </div>
                     <div>
-                      <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
+                      <Label htmlFor={`articoli.${index}.tipo_incollatura`} className="text-xs">Tipo Incollatura *</Label>
                       <Input
-                        id={`articoli.${index}.quantita`}
-                        type="text"
-                        value={displayQuantita}
-                        onChange={(e) => {
-                          const rawValue = e.target.value;
-                          setDisplayQuantita(rawValue);
-                          const numericValue = parseFloat(rawValue.replace(',', '.'));
-                          if (!isNaN(numericValue)) {
-                            setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
-                          } else {
-                            setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
-                          }
-                        }}
-                        onBlur={(e) => {
-                          const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                          if (!isNaN(numericValue)) {
-                            setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
-                          } else {
-                            setDisplayQuantita('');
-                          }
-                        }}
-                        placeholder="Es. 1"
-                        min="0"
+                        id={`articoli.${index}.tipo_incollatura`}
+                        {...register(`articoli.${index}.tipo_incollatura`)}
+                        placeholder="Es. Lineare, 4 punti"
                         disabled={isSubmitting || isOrderCancelled}
                         className="text-sm"
                       />
-                      {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
+                      {errors.articoli?.[index]?.tipo_incollatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.tipo_incollatura?.message}</p>}
                     </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
-                      <div className="relative">
-                        <Input
-                          id={`articoli.${index}.prezzo_unitario`}
-                          type="text"
-                          value={displayPrezzoUnitario}
-                          onChange={(e) => {
-                            const rawValue = e.target.value;
-                            setDisplayPrezzoUnitario(rawValue);
-                            const numericValue = parseFloat(rawValue.replace(',', '.'));
-                            if (!isNaN(numericValue)) {
-                              setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                            } else {
-                              setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                            }
-                          }}
-                          onBlur={(e) => {
-                            const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                            if (!isNaN(numericValue)) {
-                              setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
-                            } else {
-                              setDisplayPrezzoUnitario('');
-                            }
-                          }}
-                          placeholder="Es. 50,00"
-                          min="0"
-                          disabled={isSubmitting || isOrderCancelled}
-                          className="text-sm pr-10"
-                        />
-                        <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
-                          €
-                        </span>
-                      </div>
-                      {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
-                      <Input
-                        id={`articoli.${index}.data_consegna_prevista`}
-                        type="date"
-                        {...register(`articoli.${index}.data_consegna_prevista`)}
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="text-sm"
-                      />
-                      {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente *</Label>
-                      <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openClientCombobox}
-                            className={cn(
-                              "w-full justify-between text-sm",
-                              !currentCliente && "text-muted-foreground"
-                            )}
-                            disabled={isSubmitting || isOrderCancelled}
-                          >
-                            {currentCliente
-                              ? clienti.find((cliente) => cliente.nome === currentCliente)?.nome
-                              : "Seleziona cliente..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                          <Command>
-                            <CommandInput placeholder="Cerca cliente..." />
-                            <CommandList>
-                              <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
-                              <CommandGroup>
-                                {clienti.map((cliente) => (
-                                  <CommandItem
-                                    key={cliente.id}
-                                    value={cliente.nome}
-                                    onSelect={() => {
-                                      setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
-                                      setOpenClientCombobox(false);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {cliente.nome}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro *</Label>
-                      <Input
-                        id={`articoli.${index}.lavoro`}
-                        {...register(`articoli.${index}.lavoro`)}
-                        placeholder="Es. LAV-2025-089"
-                        disabled={isSubmitting || isOrderCancelled}
-                        className="text-sm"
-                      />
-                      {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Consegna Fustella */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
+              <div>
+                <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
+                <Input
+                  id={`articoli.${index}.data_consegna_prevista`}
+                  type="date"
+                  {...register(`articoli.${index}.data_consegna_prevista`)}
+                  disabled={isSubmitting || isOrderCancelled}
+                  className="text-sm"
+                />
+                {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
+              </div>
+            </div>
           </>
         ) : (
           <>
-            {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle/Non-Pulitore) */}
+            {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle) */}
             <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

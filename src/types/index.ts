@@ -54,7 +54,7 @@ export interface Cliente extends AnagraficaBase {
   considera_iva?: boolean; // NUOVO CAMPO
 }
 export interface Fornitore extends AnagraficaBase {
-  tipo_fornitore?: 'Cartone' | 'Inchiostro' | 'Colla' | 'Fustelle' | 'Altro'; // Rimosso 'Pulitore'
+  tipo_fornitore?: 'Cartone' | 'Inchiostro' | 'Colla' | 'Fustelle' | 'Altro'; // Nuovo campo per il tipo di fornitore
   considera_iva?: boolean; // NUOVO CAMPO ANCHE PER FORNITORE
   banca?: string; // NUOVO CAMPO: Banca associata al fornitore
 }
