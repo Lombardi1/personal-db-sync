@@ -216,8 +216,9 @@ export function ModalOrdineAcquistoForm({
               console.log(`[superRefine] Adding issue: specific fields for cartone/fustelle present for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per questo tipo di fornitore.', path: [`articoli`, index, `tipologia_cartone`] });
             }
-          })
-        }),
+          }
+        });
+      })
     ),
     defaultValues: React.useMemo(() => {
       const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
