@@ -87,6 +87,7 @@ export interface ArticoloOrdineAcquisto {
   resa_fustella?: string; // Resa specifica per fustella
   hasPulitore?: boolean; // Indica se la fustella ha un pulitore
   pulitore_codice_fustella?: string | null; // Codice PU-XXX generato per il pulitore
+  prezzo_pulitore?: number; // NUOVO CAMPO: Prezzo specifico per il pulitore
   pinza_tagliata?: boolean;
   tasselli_intercambiabili?: boolean;
   nr_tasselli?: number | null;
