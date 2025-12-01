@@ -497,7 +497,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         // Fustella row
         umText = 'PZ';
         quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Modificato a 2 decimali
         prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
 
         let fustellaDescription = [];
@@ -530,7 +530,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
         // Pulitore row (if exists)
         if (article.hasPulitore && article.pulitore_codice_fustella && article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
-          const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+          const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Modificato a 2 decimali
           const pulitoreTotaleRiga = (article.prezzo_pulitore || 0);
           articlesBody.push([
             article.pulitore_codice_fustella,
