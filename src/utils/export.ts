@@ -485,9 +485,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         let fustellaDescription = [];
         if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
         if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
-        if (article.fustellatrice) fustellaDescription.push(`Fustellatrice: ${article.fustellatrice}`);
-        if (article.cliente) fustellaDescription.push(`Cliente: ${article.cliente}`);
-        if (article.lavoro) fustellaDescription.push(`Lavoro: ${article.lavoro}`);
+        // Rimosso: if (article.fustellatrice) fustellaDescription.push(`Fustellatrice: ${article.fustellatrice}`);
+        // Rimosso: if (article.cliente) fustellaDescription.push(`Cliente: ${article.cliente}`);
+        // Rimosso: if (article.lavoro) fustellaDescription.push(`Lavoro: ${article.lavoro}`);
         
         if (article.hasPulitore) {
           fustellaDescription.push(`Pulitore: Sì`);
