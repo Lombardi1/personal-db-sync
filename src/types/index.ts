@@ -62,11 +62,11 @@ export interface Fornitore extends AnagraficaBase {
 
 export interface ArticoloOrdineAcquisto {
   id?: string;
-  item_type: 'cartone' | 'fustella' | 'pulitore' | 'altro'; // NEW: Type of item
+  item_type: 'cartone' | 'fustella' | 'pulitore' | 'altro';
   
   // Common fields
-  quantita: number; // This will be the quantity in KG for cartone, or in units for others
-  prezzo_unitario: number;
+  quantita?: number; // Made optional for initial state
+  prezzo_unitario?: number; // Made optional for initial state
   cliente?: string;
   lavoro?: string;
   data_consegna_prevista?: string;
@@ -87,13 +87,14 @@ export interface ArticoloOrdineAcquisto {
   codice_fornitore_fustella?: string; // Supplier's code for the die
   fustellatrice?: string;
   resa_fustella?: string;
+  hasPulitore?: boolean; // NEW: Checkbox to indicate if it has a cleaner
+  pulitore_associato_codice?: string | null; // NEW: Stores the PU-XXX code of the associated cleaner (if item_type is 'fustella')
   pinza_tagliata?: boolean;
   tasselli_intercambiabili?: boolean;
   nr_tasselli?: number | null;
   incollatura?: boolean;
   incollatrice?: string;
   tipo_incollatura?: string;
-  pulitore_associato_codice?: string | null; // NEW: Stores the PU-XXX code of the associated cleaner (if item_type is 'fustella')
 
   // Fields specific to 'pulitore'
   codice_pulitore?: string; // Our PU-XXX code for the cleaner (if item_type is 'pulitore')

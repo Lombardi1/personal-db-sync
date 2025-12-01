@@ -64,7 +64,7 @@ const baseArticoloSchema = z.object({
   ),
   prezzo_unitario: z.preprocess(
     (val) => (val === '' ? null : Number(String(val).replace(',', '.'))),
-    z.number().min(0, 'Il prezzo unitario non può essere negativo')
+    z.number().min(0, 'Il prezzo unitario non può essere negativo').optional().nullable() // Made optional for initial state
   ),
   data_consegna_prevista: z.string().min(1, 'La data di consegna prevista è obbligatoria per l\'articolo'),
   stato: z.enum(['in_attesa', 'confermato', 'ricevuto', 'annullato', 'inviato'], { required_error: 'Lo stato è obbligatorio' }),
@@ -95,6 +95,7 @@ const cartoneArticoloSchema = baseArticoloSchema.extend({
   codice_fornitore_fustella: z.undefined().or(z.literal('')),
   fustellatrice: z.undefined().or(z.literal('')),
   resa_fustella: z.undefined().or(z.literal('')),
+  hasPulitore: z.undefined(),
   pulitore_associato_codice: z.undefined().or(z.literal('')),
   pinza_tagliata: z.undefined(),
   tasselli_intercambiabili: z.undefined(),
@@ -112,6 +113,7 @@ const fustellaArticoloSchema = baseArticoloSchema.extend({
   codice_fornitore_fustella: z.string().min(1, 'Il codice fornitore fustella è obbligatorio').max(255, 'Codice Fornitore Fustella troppo lungo'),
   fustellatrice: z.string().min(1, 'La fustellatrice è obbligatoria').max(255, 'Fustellatrice troppo lunga'),
   resa_fustella: z.string().min(1, 'La resa fustella è obbligatoria').max(50, 'Resa Fustella troppo lunga'),
+  hasPulitore: z.boolean().optional(), // NEW: hasPulitore for fustella
   pulitore_associato_codice: z.string().max(255, 'Codice Pulitore associato troppo lungo').optional().nullable(),
   pinza_tagliata: z.boolean().optional(),
   tasselli_intercambiabili: z.boolean().optional(),
@@ -141,6 +143,10 @@ const fustellaArticoloSchema = baseArticoloSchema.extend({
   if (data.incollatura && (!data.incollatrice || !data.tipo_incollatura)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Incollatrice e tipo incollatura sono obbligatori se l\'incollatura è presente.', path: [`incollatrice`] });
   }
+  // NEW: Validate pulitore_associato_codice if hasPulitore is true
+  if (data.hasPulitore && (!data.pulitore_associato_codice || data.pulitore_associato_codice.trim() === '')) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice del pulitore è obbligatorio se la fustella ha un pulitore.', path: [`pulitore_associato_codice`] });
+  }
 });
 
 const pulitoreArticoloSchema = baseArticoloSchema.extend({
@@ -161,6 +167,7 @@ const pulitoreArticoloSchema = baseArticoloSchema.extend({
   codice_fornitore_fustella: z.undefined().or(z.literal('')),
   fustellatrice: z.undefined().or(z.literal('')),
   resa_fustella: z.undefined().or(z.literal('')),
+  hasPulitore: z.undefined(),
   pulitore_associato_codice: z.undefined().or(z.literal('')),
   pinza_tagliata: z.undefined(),
   tasselli_intercambiabili: z.undefined(),
@@ -186,6 +193,7 @@ const altroArticoloSchema = baseArticoloSchema.extend({
   codice_fornitore_fustella: z.undefined().or(z.literal('')),
   fustellatrice: z.undefined().or(z.literal('')),
   resa_fustella: z.undefined().or(z.literal('')),
+  hasPulitore: z.undefined(),
   pulitore_associato_codice: z.undefined().or(z.literal('')),
   pinza_tagliata: z.undefined(),
   tasselli_intercambiabili: z.undefined(),
@@ -229,13 +237,15 @@ export function ModalOrdineAcquistoForm({
     defaultValues: React.useMemo(() => {
       const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
       
-      const articlesToUse = initialData?.articoli && initialData.articoli.length > 0 
-        ? initialData.articoli.map(art => ({ 
+      const articlesToUse: ArticoloOrdineAcquisto[] = [];
+      if (initialData?.articoli && initialData.articoli.length > 0) {
+        initialData.articoli.forEach(art => {
+          articlesToUse.push({
             ...art, 
             data_consegna_prevista: art.data_consegna_prevista || defaultDateForNewArticle, 
             stato: (art.stato || 'in_attesa') as ArticoloOrdineAcquisto['stato'],
             quantita: art.quantita || undefined,
-            prezzo_unitario: art.prezzo_unitario || 0,
+            prezzo_unitario: art.prezzo_unitario || undefined, // Ensure it's undefined if 0 or null for initial state
             cliente: art.cliente || '',
             lavoro: art.lavoro || '',
             // Cartone fields
@@ -252,6 +262,7 @@ export function ModalOrdineAcquistoForm({
             codice_fornitore_fustella: art.codice_fornitore_fustella || '',
             fustellatrice: art.fustellatrice || '',
             resa_fustella: art.resa_fustella || '',
+            hasPulitore: art.hasPulitore || false, // Initialize hasPulitore
             pulitore_associato_codice: art.pulitore_associato_codice || null,
             pinza_tagliata: art.pinza_tagliata || false,
             tasselli_intercambiabili: art.tasselli_intercambiabili || false,
@@ -265,20 +276,38 @@ export function ModalOrdineAcquistoForm({
             // Altro fields (reused for pulitore description)
             descrizione: art.descrizione || '',
             item_type: art.item_type || 'altro', // Default to 'altro' if not specified
-          }))
-        : [{ 
+          });
+
+          // If it's a fustella with an associated pulitore, add the pulitore as a separate article
+          if (art.item_type === 'fustella' && art.hasPulitore && art.pulitore_associato_codice) {
+            const pulitoreArticle: ArticoloOrdineAcquisto = {
+              item_type: 'pulitore',
+              codice_pulitore: art.pulitore_associato_codice,
+              descrizione: `Pulitore per Fustella ${art.fustella_codice || ''}`,
+              quantita: 1, // Default quantity for pulitore
+              prezzo_unitario: 0, // Default price for pulitore
+              data_consegna_prevista: art.data_consegna_prevista,
+              stato: art.stato,
+              cliente: art.cliente,
+              lavoro: art.lavoro,
+              fustella_parent_index: articlesToUse.length - 1, // Index of the parent fustella
+            };
+            articlesToUse.push(pulitoreArticle);
+          }
+        });
+      } else {
+        articlesToUse.push({ 
             item_type: 'altro', // Default to 'altro' for new empty article
             quantita: undefined, 
-            prezzo_unitario: 0, 
+            prezzo_unitario: undefined, 
             data_consegna_prevista: defaultDateForNewArticle, 
             stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
-            cliente: '',
-            lavoro: '',
+            cliente: '', lavoro: '',
             codice_ctn: '', tipologia_cartone: '', formato: '', grammatura: '', numero_fogli: undefined, fsc: false, alimentare: false, rif_commessa_fsc: '',
-            fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '', pulitore_associato_codice: null, pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null, incollatura: false, incollatrice: '', tipo_incollatura: '',
-            codice_pulitore: '', fustella_parent_index: undefined,
-            descrizione: '',
-          }];
+            fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '', hasPulitore: false, pulitore_associato_codice: null, pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null, incollatura: false, incollatrice: '', tipo_incollatura: '',
+            codice_pulitore: '', fustella_parent_index: undefined, descrizione: '',
+          });
+      }
 
       const defaultVal = initialData ? {
         ...initialData,
@@ -324,7 +353,7 @@ export function ModalOrdineAcquistoForm({
   const [ctnGeneratorInitialized, setCtnGeneratorInitialized] = React.useState(false);
   const [fscCommessaGeneratorInitialized, setFscCommessaGeneratorInitialized] = React.useState(false);
   const [fustellaGeneratorInitialized, setFustellaGeneratorInitialized] = React.useState(false);
-  const [pulitoreGeneratorInitialized, setPulitoreGeneratorInitialized] = React.useRef(false); // Use useRef for pulitore generator
+  const [pulitoreGeneratorInitialized, setPulitoreGeneratorInitialized] = React.useState(false); // Changed to useState
 
   const isCancelled = watch('stato') === 'annullato';
   const isNewOrder = !initialData?.id;
@@ -341,20 +370,20 @@ export function ModalOrdineAcquistoForm({
 
     let newArticle: ArticoloOrdineAcquisto = { 
       item_type: 'altro', // Default type
-      quantita: 1, 
-      prezzo_unitario: 0, 
+      quantita: undefined, 
+      prezzo_unitario: undefined, 
       data_consegna_prevista: defaultDateForNewArticle,
       stato: 'in_attesa',
       cliente: '', lavoro: '',
       codice_ctn: '', tipologia_cartone: '', formato: '', grammatura: '', numero_fogli: undefined, fsc: false, alimentare: false, rif_commessa_fsc: '',
-      fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '', pulitore_associato_codice: null, pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null, incollatura: false, incollatrice: '', tipo_incollatura: '',
+      fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '', hasPulitore: false, pulitore_associato_codice: null, pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null, incollatura: false, incollatrice: '', tipo_incollatura: '',
       codice_pulitore: '', fustella_parent_index: undefined, descrizione: '',
     };
 
     setCtnGeneratorInitialized(false);
     setFscCommessaGeneratorInitialized(false);
     setFustellaGeneratorInitialized(false);
-    pulitoreGeneratorInitialized.current = false;
+    setPulitoreGeneratorInitialized(false); // Reset pulitore generator state
 
     const orderDateValue = watch('data_ordine');
     const orderYear = orderDateValue ? new Date(orderDateValue).getFullYear() : new Date().getFullYear();
@@ -379,9 +408,9 @@ export function ModalOrdineAcquistoForm({
     setCtnGeneratorInitialized(true);
     setFscCommessaGeneratorInitialized(true);
     setFustellaGeneratorInitialized(true);
-    pulitoreGeneratorInitialized.current = true;
+    setPulitoreGeneratorInitialized(true); // Set pulitore generator state to true
     console.log('resetArticlesAndGenerators: Completed.');
-  }, [remove, append, setValue, fornitori, watch, pulitoreGeneratorInitialized]);
+  }, [remove, append, setValue, fornitori, watch]);
 
 
   React.useEffect(() => {
@@ -390,7 +419,7 @@ export function ModalOrdineAcquistoForm({
       setCtnGeneratorInitialized(false);
       setFscCommessaGeneratorInitialized(false);
       setFustellaGeneratorInitialized(false);
-      pulitoreGeneratorInitialized.current = false;
+      setPulitoreGeneratorInitialized(false); // Reset pulitore generator state
       console.log('ModalOrdineAcquistoForm: Setting all generators initialized states to false.');
 
       const setupFormAndGenerators = async () => {
@@ -398,13 +427,15 @@ export function ModalOrdineAcquistoForm({
         try {
           const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
           
-          const articlesToUse = initialData?.articoli && initialData.articoli.length > 0 
-            ? initialData.articoli.map(art => ({ 
+          const articlesToUse: ArticoloOrdineAcquisto[] = [];
+          if (initialData?.articoli && initialData.articoli.length > 0) {
+            initialData.articoli.forEach(art => {
+              articlesToUse.push({
                 ...art, 
                 data_consegna_prevista: art.data_consegna_prevista || defaultDateForNewArticle, 
                 stato: (art.stato || 'in_attesa') as ArticoloOrdineAcquisto['stato'],
                 quantita: art.quantita || undefined,
-                prezzo_unitario: art.prezzo_unitario || 0,
+                prezzo_unitario: art.prezzo_unitario || undefined,
                 cliente: art.cliente || '',
                 lavoro: art.lavoro || '',
                 // Cartone fields
@@ -421,6 +452,7 @@ export function ModalOrdineAcquistoForm({
                 codice_fornitore_fustella: art.codice_fornitore_fustella || '',
                 fustellatrice: art.fustellatrice || '',
                 resa_fustella: art.resa_fustella || '',
+                hasPulitore: art.hasPulitore || false, // Initialize hasPulitore
                 pulitore_associato_codice: art.pulitore_associato_codice || null,
                 pinza_tagliata: art.pinza_tagliata || false,
                 tasselli_intercambiabili: art.tasselli_intercambiabili || false,
@@ -434,18 +466,38 @@ export function ModalOrdineAcquistoForm({
                 // Altro fields (reused for pulitore description)
                 descrizione: art.descrizione || '',
                 item_type: art.item_type || 'altro',
-              }))
-            : [{ 
+              });
+
+              // If it's a fustella with an associated pulitore, add the pulitore as a separate article
+              if (art.item_type === 'fustella' && art.hasPulitore && art.pulitore_associato_codice) {
+                const pulitoreArticle: ArticoloOrdineAcquisto = {
+                  item_type: 'pulitore',
+                  codice_pulitore: art.pulitore_associato_codice,
+                  descrizione: `Pulitore per Fustella ${art.fustella_codice || ''}`,
+                  quantita: 1, // Default quantity for pulitore
+                  prezzo_unitario: 0, // Default price for pulitore
+                  data_consegna_prevista: art.data_consegna_prevista,
+                  stato: art.stato,
+                  cliente: art.cliente,
+                  lavoro: art.lavoro,
+                  fustella_parent_index: articlesToUse.length - 1, // Index of the parent fustella
+                };
+                articlesToUse.push(pulitoreArticle);
+              }
+            });
+          } else {
+            articlesToUse.push({ 
                 item_type: 'altro',
                 quantita: undefined, 
-                prezzo_unitario: 0, 
+                prezzo_unitario: undefined, 
                 data_consegna_prevista: defaultDateForNewArticle, 
                 stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
                 cliente: '', lavoro: '',
                 codice_ctn: '', tipologia_cartone: '', formato: '', grammatura: '', numero_fogli: undefined, fsc: false, alimentare: false, rif_commessa_fsc: '',
-                fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '', pulitore_associato_codice: null, pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null, incollatura: false, incollatrice: '', tipo_incollatura: '',
+                fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '', hasPulitore: false, pulitore_associato_codice: null, pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null, incollatura: false, incollatrice: '', tipo_incollatura: '',
                 codice_pulitore: '', fustella_parent_index: undefined, descrizione: '',
-              }];
+              });
+          }
 
           let dataToReset: OrdineAcquisto;
 
@@ -495,74 +547,10 @@ export function ModalOrdineAcquistoForm({
           if (dataToReset.stato) setValue('stato', dataToReset.stato, { shouldValidate: true });
           setValue('numero_ordine', dataToReset.numero_ordine, { shouldValidate: true });
 
-          const currentSelectedFornitore = fornitori.find((f) => f.id === dataToReset.fornitore_id);
-          const currentIsCartoneFornitore = currentSelectedFornitore?.tipo_fornitore === 'Cartone';
-          const currentIsFustelleFornitore = currentSelectedFornitore?.tipo_fornitore === 'Fustelle';
-
-          if (dataToReset.articoli.length > 0) {
-            dataToReset.articoli.forEach((article, index) => {
-              if (currentIsCartoneFornitore) {
-                if (article.item_type === 'cartone') {
-                  if (!article.codice_ctn) {
-                    setValue(`articoli.${index}.codice_ctn`, generateNextCartoneCode(), { shouldValidate: true });
-                  }
-                  if (article.numero_fogli === undefined) {
-                    setValue(`articoli.${index}.numero_fogli`, 1, { shouldValidate: true });
-                  }
-                  if (article.fsc && !article.rif_commessa_fsc) {
-                    setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
-                  }
-                }
-              } else if (currentIsFustelleFornitore) {
-                if (article.item_type === 'fustella') {
-                  if (!article.fustella_codice) {
-                    setValue(`articoli.${index}.fustella_codice`, generateNextFustellaCode(), { shouldValidate: true });
-                  }
-                  if (article.quantita === undefined) {
-                    setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
-                  }
-                  // If a fustella article has an associated pulitore code, ensure the pulitore article is also present
-                  if (article.pulitore_associato_codice) {
-                    const pulitoreArticleIndex = dataToReset.articoli.findIndex(
-                      (a, i) => a.item_type === 'pulitore' && a.codice_pulitore === article.pulitore_associato_codice && a.fustella_parent_index === index
-                    );
-                    if (pulitoreArticleIndex === -1) {
-                      // Pulitore article is missing, add it
-                      const newPulitoreArticle: ArticoloOrdineAcquisto = {
-                        item_type: 'pulitore',
-                        codice_pulitore: article.pulitore_associato_codice,
-                        descrizione: `Pulitore per Fustella ${article.fustella_codice}`,
-                        quantita: 1, // Default quantity for pulitore
-                        prezzo_unitario: 0, // Default price for pulitore
-                        data_consegna_prevista: article.data_consegna_prevista,
-                        stato: article.stato,
-                        cliente: article.cliente,
-                        lavoro: article.lavoro,
-                        fustella_parent_index: index,
-                      };
-                      append(newPulitoreArticle); // Append to the end
-                    }
-                  }
-                } else if (article.item_type === 'pulitore') {
-                  if (!article.codice_pulitore) {
-                    setValue(`articoli.${index}.codice_pulitore`, generateNextPulitoreCode(), { shouldValidate: true });
-                  }
-                  if (article.quantita === undefined) {
-                    setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
-                  }
-                }
-              } else { // Other types of suppliers
-                if (article.quantita === undefined) {
-                  setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
-                }
-              }
-            });
-          }
-
           setCtnGeneratorInitialized(true);
           setFscCommessaGeneratorInitialized(true);
           setFustellaGeneratorInitialized(true);
-          pulitoreGeneratorInitialized.current = true;
+          setPulitoreGeneratorInitialized(true); // Set pulitore generator state to true
           console.log('ModalOrdineAcquistoForm: All generators initialized states set to true.');
         } catch (error) {
           console.error('ModalOrdineAcquistoForm: Error during setupFormAndGenerators:', error);
@@ -572,10 +560,10 @@ export function ModalOrdineAcquistoForm({
       };
       setupFormAndGenerators();
     }
-  }, [isOpen, initialData, reset, setValue, fornitori, resetArticlesAndGenerators, methods, append, pulitoreGeneratorInitialized]);
+  }, [isOpen, initialData, reset, setValue, fornitori, resetArticlesAndGenerators, methods]);
 
   React.useEffect(() => {
-    if (ctnGeneratorInitialized && fscCommessaGeneratorInitialized && fustellaGeneratorInitialized && pulitoreGeneratorInitialized.current) {
+    if (ctnGeneratorInitialized && fscCommessaGeneratorInitialized && fustellaGeneratorInitialized && pulitoreGeneratorInitialized) {
       fields.forEach((field, index) => {
         if (isCartoneFornitore) {
           if (field.item_type === 'cartone') {
@@ -617,6 +605,7 @@ export function ModalOrdineAcquistoForm({
             setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true });
             setValue(`articoli.${index}.fustellatrice`, '', { shouldValidate: true });
             setValue(`articoli.${index}.resa_fustella`, '', { shouldValidate: true });
+            setValue(`articoli.${index}.hasPulitore`, false, { shouldValidate: true }); // Reset hasPulitore
             setValue(`articoli.${index}.pulitore_associato_codice`, null, { shouldValidate: true });
             setValue(`articoli.${index}.pinza_tagliata`, false, { shouldValidate: true });
             setValue(`articoli.${index}.tasselli_intercambiabili`, false, { shouldValidate: true });
@@ -643,13 +632,24 @@ export function ModalOrdineAcquistoForm({
     console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
     console.log("ModalOrdineAcquistoForm: Current form errors at submission attempt:", errors);
     try {
-      // Filter out pulitore articles that are not linked to a fustella (e.g., if the parent fustella was removed)
+      // Filter out pulitore articles that are not linked to a fustella (e.g., if the parent fustella was removed or hasPulitore was unchecked)
       const finalArticles = data.articoli.filter((article: ArticoloOrdineAcquisto) => {
         if (article.item_type === 'pulitore' && article.fustella_parent_index !== undefined) {
           const parentFustella = data.articoli[article.fustella_parent_index];
-          return parentFustella && parentFustella.item_type === 'fustella' && parentFustella.pulitore_associato_codice === article.codice_pulitore;
+          return parentFustella && parentFustella.item_type === 'fustella' && parentFustella.hasPulitore && parentFustella.pulitore_associato_codice === article.codice_pulitore;
         }
         return true;
+      }).map((article: ArticoloOrdineAcquisto) => {
+        // Clean up hasPulitore and pulitore_associato_codice for non-fustella items
+        if (article.item_type !== 'fustella') {
+          const { hasPulitore, pulitore_associato_codice, ...rest } = article;
+          return rest;
+        }
+        // Ensure pulitore_associato_codice is null if hasPulitore is false for fustella
+        if (article.item_type === 'fustella' && !article.hasPulitore) {
+          return { ...article, pulitore_associato_codice: null };
+        }
+        return article;
       });
       
       await onSubmit({ ...data, articoli: finalArticles } as OrdineAcquisto);
@@ -662,8 +662,8 @@ export function ModalOrdineAcquistoForm({
   };
 
   const handleAddArticle = () => {
-    if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || !pulitoreGeneratorInitialized.current) {
-      toast.error("Generatore codici non pronto. Riprova.");
+    if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || !pulitoreGeneratorInitialized || isCancelled) {
+      toast.error("Generatore codici non pronto o ordine annullato. Riprova.");
       return;
     }
     
@@ -672,13 +672,13 @@ export function ModalOrdineAcquistoForm({
 
     let newArticle: ArticoloOrdineAcquisto = { 
       item_type: 'altro',
-      quantita: 1, 
-      prezzo_unitario: 0, 
+      quantita: undefined, 
+      prezzo_unitario: undefined, 
       data_consegna_prevista: firstArticleDate,
       stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
       cliente: '', lavoro: '',
       codice_ctn: '', tipologia_cartone: '', formato: '', grammatura: '', numero_fogli: undefined, fsc: false, alimentare: false, rif_commessa_fsc: '',
-      fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '', pulitore_associato_codice: null, pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null, incollatura: false, incollatrice: '', tipo_incollatura: '',
+      fustella_codice: '', codice_fornitore_fustella: '', fustellatrice: '', resa_fustella: '', hasPulitore: false, pulitore_associato_codice: null, pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null, incollatura: false, incollatrice: '', tipo_incollatura: '',
       codice_pulitore: '', fustella_parent_index: undefined, descrizione: '',
     };
     if (isCartoneFornitore) {
@@ -854,7 +854,7 @@ export function ModalOrdineAcquistoForm({
               type="button"
               variant="success"
               onClick={handleAddArticle}
-              disabled={isSubmitting || !ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || !pulitoreGeneratorInitialized.current || isCancelled}
+              disabled={isSubmitting || !ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || !pulitoreGeneratorInitialized || isCancelled}
               className="w-full sm:w-auto self-start gap-2"
             >
               <PlusCircle className="h-4 w-4" /> Aggiungi Articolo
