@@ -193,6 +193,14 @@ export function ModalOrdineAcquistoForm({
               console.log(`[superRefine] Adding issue: quantita missing or invalid for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001.', path: [`articoli`, index, `quantita`] });
             }
+            if (!articolo.cliente) { // NUOVO: Cliente obbligatorio per Fustelle
+              console.log(`[superRefine] Adding issue: cliente missing for article ${index}`);
+              ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il cliente è obbligatorio.', path: [`articoli`, index, `cliente`] });
+            }
+            if (!articolo.lavoro) { // NUOVO: Lavoro obbligatorio per Fustelle
+              console.log(`[superRefine] Adding issue: lavoro missing for article ${index}`);
+              ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il lavoro è obbligatorio.', path: [`articoli`, index, `lavoro`] });
+            }
             if (articolo.hasPulitore && !articolo.pulitore_codice_fustella) {
               console.log(`[superRefine] Adding issue: pulitore_codice_fustella missing when hasPulitore is true for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice pulitore è obbligatorio se il pulitore è presente.', path: [`articoli`, index, `pulitore_codice_fustella`] });
@@ -205,8 +213,8 @@ export function ModalOrdineAcquistoForm({
               console.log(`[superRefine] Adding issue: incollatrice or tipo_incollatura missing when incollatura is true for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Incollatrice e tipo incollatura sono obbligatori se l\'incollatura è presente.', path: [`articoli`, index, `incollatrice`] });
             }
-            // Campi non consentiti per Fustelle
-            if (articolo.codice_ctn || articolo.descrizione || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.cliente || articolo.lavoro || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc) {
+            // Campi non consentiti per Fustelle (aggiornato)
+            if (articolo.codice_ctn || articolo.descrizione || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc) {
               console.log(`[superRefine] Adding issue: non-fustelle fields present for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per i fornitori di fustelle.', path: [`articoli`, index, `codice_ctn`] });
             }
@@ -255,6 +263,8 @@ export function ModalOrdineAcquistoForm({
             incollatura: art.incollatura || false,
             incollatrice: art.incollatrice || '',
             tipo_incollatura: art.tipo_incollatura || '',
+            cliente: art.cliente || '', // Inizializza cliente
+            lavoro: art.lavoro || '', // Inizializza lavoro
           }))
         : [{ 
             quantita: undefined, 
@@ -279,6 +289,8 @@ export function ModalOrdineAcquistoForm({
             incollatura: false,
             incollatrice: '',
             tipo_incollatura: '',
+            cliente: '', // Inizializza cliente
+            lavoro: '', // Inizializza lavoro
           }];
 
       const defaultVal = initialData ? {
@@ -360,6 +372,8 @@ export function ModalOrdineAcquistoForm({
       incollatura: false,
       incollatrice: '',
       tipo_incollatura: '',
+      cliente: '', // Inizializza cliente
+      lavoro: '', // Inizializza lavoro
     };
     append(newArticle);
 
@@ -441,6 +455,8 @@ export function ModalOrdineAcquistoForm({
                 incollatura: art.incollatura || false,
                 incollatrice: art.incollatrice || '',
                 tipo_incollatura: art.tipo_incollatura || '',
+                cliente: art.cliente || '', // Inizializza cliente
+                lavoro: art.lavoro || '', // Inizializza lavoro
               }))
             : [{ 
                 quantita: undefined, 
@@ -465,6 +481,8 @@ export function ModalOrdineAcquistoForm({
                 incollatura: false,
                 incollatrice: '',
                 tipo_incollatura: '',
+                cliente: '', // Inizializza cliente
+                lavoro: '', // Inizializza lavoro
               }];
 
           let dataToReset: OrdineAcquisto;
@@ -611,6 +629,8 @@ export function ModalOrdineAcquistoForm({
           setValue(`articoli.${index}.incollatura`, false, { shouldValidate: true });
           setValue(`articoli.${index}.incollatrice`, '', { shouldValidate: true });
           setValue(`articoli.${index}.tipo_incollatura`, '', { shouldValidate: true });
+          setValue(`articoli.${index}.cliente`, '', { shouldValidate: true }); // Reset cliente
+          setValue(`articoli.${index}.lavoro`, '', { shouldValidate: true }); // Reset lavoro
         }
       });
     }
@@ -664,6 +684,8 @@ export function ModalOrdineAcquistoForm({
       incollatura: false,
       incollatrice: '',
       tipo_incollatura: '',
+      cliente: '', // Inizializza cliente
+      lavoro: '', // Inizializza lavoro
     };
     if (isCartoneFornitore) {
       newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };

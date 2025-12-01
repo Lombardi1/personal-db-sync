@@ -89,8 +89,6 @@ export function OrdineAcquistoArticoloFormRow({
   const currentFormato = currentArticle?.formato;
   const currentGrammatura = currentArticle?.grammatura;
   const currentNumeroFogli = currentArticle?.numero_fogli;
-  const currentCliente = currentArticle?.cliente;
-  const currentCodiceCtn = currentArticle?.codice_ctn;
   const currentFsc = currentArticle?.fsc;
   const currentAlimentare = currentArticle?.alimentare;
   const currentRifCommessaFsc = currentArticle?.rif_commessa_fsc;
@@ -109,9 +107,11 @@ export function OrdineAcquistoArticoloFormRow({
   const currentIncollatrice = currentArticle?.incollatrice;
   const currentTipoIncollatura = currentArticle?.tipo_incollatura;
 
-  // Campi Comuni
+  // Campi Comuni (anche per Fustelle)
   const currentQuantita = currentArticle?.quantita;
   const currentStatoArticolo = currentArticle?.stato;
+  const currentCliente = currentArticle?.cliente; // Ora comune
+  const currentLavoro = currentArticle?.lavoro; // Ora comune
 
   // State for controlled input values to retain formatting
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => 
@@ -591,6 +591,77 @@ export function OrdineAcquistoArticoloFormRow({
                     </span>
                   </div>
                   {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Utilizzo Fustella (Cliente e Lavoro) */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Utilizzo</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente *</Label>
+                  <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openClientCombobox}
+                        className={cn(
+                          "w-full justify-between text-sm",
+                          !currentCliente && "text-muted-foreground"
+                        )}
+                        disabled={isSubmitting || isOrderCancelled}
+                      >
+                        {currentCliente
+                          ? clienti.find((cliente) => cliente.nome === currentCliente)?.nome
+                          : "Seleziona cliente..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Cerca cliente..." />
+                        <CommandList>
+                          <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
+                          <CommandGroup>
+                            {clienti.map((cliente) => (
+                              <CommandItem
+                                key={cliente.id}
+                                value={cliente.nome}
+                                onSelect={() => {
+                                  setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
+                                  setOpenClientCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {cliente.nome}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro *</Label>
+                  <Input
+                    id={`articoli.${index}.lavoro`}
+                    {...register(`articoli.${index}.lavoro`)}
+                    placeholder="Es. LAV-2025-089"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
                 </div>
               </div>
             </div>
