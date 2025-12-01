@@ -430,7 +430,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       margin: { left: 10, right: 10 },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 2; 
+    y = (doc as any).lastAutoTable.finalY + 5; 
 
     // Seconda riga: Resa, Mezzo, Banca
     console.log(`[exportOrdineAcquistoPDF] Valore di fornitore?.banca prima di popolare la tabella: '${fornitore?.banca}'`); // LOG DI DEBUG
@@ -461,41 +461,48 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     
     // Filtra gli articoli annullati e ricalcola il subtotale
     const nonCancelledArticles = ordine.articoli.filter(article => article.stato !== 'annullato');
-    const subtotalNonCancelled = nonCancelledArticles.reduce((sum, item) => {
-      const qty = item.quantita || 0;
-      const price = item.prezzo_unitario || 0;
-      const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0; // Aggiungi prezzo pulitore
-      return sum + (qty * price) + pulitorePrice;
-    }, 0);
+    
+    const articlesBody: string[][] = [];
+    let subtotalNonCancelled = 0;
 
-    const articlesBody = nonCancelledArticles.map(article => {
-      let articoloColumnText = '';
-      let descrizioneColumnText = '';
+    nonCancelledArticles.forEach(article => {
       let umText = '';
       let quantitaFormatted = '';
+      let prezzoUnitarioFormatted = '';
+      let prezzoTotaleRiga = 0;
 
       if (isCartone) {
-        articoloColumnText = article.codice_ctn || '';
-        descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${formatGrammatura(article.grammatura || '')} F.TO ${formatFormato(article.formato || '')}\nNR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
-        if (article.fsc) descrizioneColumnText += `\n\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`;
-        if (article.alimentare) descrizioneColumnText += '\n\nMATERIALE IDONEO AL CONTATTO ALIMENTARE';
         umText = 'KG';
         quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      } else if (isFustelle) { // Logica per fornitori di Fustelle
-        articoloColumnText = article.fustella_codice || '';
+        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
+
+        let descrizioneColumnText = `CARTONE ${article.tipologia_cartone || ''} ${formatGrammatura(article.grammatura || '')} F.TO ${formatFormato(article.formato || '')}\nNR. FOGLI ${article.numero_fogli?.toLocaleString('it-IT') || ''}`;
+        if (article.fsc) descrizioneColumnText += `\n\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`;
+        if (article.alimentare) descrizioneColumnText += '\n\nMATERIALE IDONEO AL CONTATTO ALIMENTARE';
+
+        articlesBody.push([
+          article.codice_ctn || '',
+          descrizioneColumnText,
+          umText,
+          quantitaFormatted,
+          prezzoUnitarioFormatted,
+          prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          fornitore?.considera_iva ? '22%' : '-',
+          formatData(article.data_consegna_prevista || '')
+        ]);
+        subtotalNonCancelled += prezzoTotaleRiga;
+
+      } else if (isFustelle) {
+        // Fustella row
+        umText = 'PZ';
+        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
+
         let fustellaDescription = [];
         if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
         if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
-        
-        if (article.hasPulitore) {
-          fustellaDescription.push(`\nPulitore: Sì`); // Aggiunto \n qui
-          if (article.pulitore_codice_fustella) {
-            fustellaDescription.push(`Codice Pulitore: ${article.pulitore_codice_fustella}`);
-          }
-          if (article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
-            fustellaDescription.push(`Prezzo Pulitore: ${article.prezzo_pulitore.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`);
-          }
-        }
         if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
         if (article.tasselli_intercambiabili) {
           fustellaDescription.push(`Tasselli Intercambiabili: Sì`);
@@ -508,29 +515,53 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           if (article.incollatrice) fustellaDescription.push(`Incollatrice: ${article.incollatrice}`);
           if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
         }
-        descrizioneColumnText = fustellaDescription.join('\n');
-        umText = 'PZ';
-        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-      } else {
-        articoloColumnText = article.descrizione || '';
-        descrizioneColumnText = ''; 
-        umText = 'PZ'; // Default per altri tipi
-        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
-      
-      const prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-      const prezzoTotaleRiga = (((article.quantita || 0) * (article.prezzo_unitario || 0)) + (article.hasPulitore ? (article.prezzo_pulitore || 0) : 0)).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        articlesBody.push([
+          article.fustella_codice || '',
+          fustellaDescription.join('\n'), // Fustella description without pulitore
+          umText,
+          quantitaFormatted,
+          prezzoUnitarioFormatted,
+          prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), // Only fustella price
+          fornitore?.considera_iva ? '22%' : '-',
+          formatData(article.data_consegna_prevista || '')
+        ]);
+        subtotalNonCancelled += prezzoTotaleRiga;
 
-      return [
-        articoloColumnText, 
-        descrizioneColumnText, 
-        umText,
-        quantitaFormatted,
-        prezzoUnitarioFormatted,
-        prezzoTotaleRiga,
-        fornitore?.considera_iva ? '22%' : '-', 
-        formatData(article.data_consegna_prevista || '')
-      ];
+        // Pulitore row (if exists)
+        if (article.hasPulitore && article.pulitore_codice_fustella && article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
+          const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+          const pulitoreTotaleRiga = (article.prezzo_pulitore || 0);
+          articlesBody.push([
+            article.pulitore_codice_fustella,
+            `Pulitore per Fustella ${article.fustella_codice || ''}`, // Specific description for pulitore
+            'PZ', // UM for pulitore
+            '1', // Quantity for pulitore
+            pulitorePrezzoFormatted,
+            pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            fornitore?.considera_iva ? '22%' : '-',
+            formatData(article.data_consegna_prevista || '')
+          ]);
+          subtotalNonCancelled += pulitoreTotaleRiga;
+        }
+      } else { // Generic articles
+        umText = 'PZ';
+        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
+
+        articlesBody.push([
+          article.descrizione || '',
+          '', // No extra description for generic
+          umText,
+          quantitaFormatted,
+          prezzoUnitarioFormatted,
+          prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          fornitore?.considera_iva ? '22%' : '-',
+          formatData(article.data_consegna_prevista || '')
+        ]);
+        subtotalNonCancelled += prezzoTotaleRiga;
+      }
     });
 
     // Aggiungi una nota se ci sono articoli annullati
