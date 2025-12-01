@@ -1020,7 +1020,7 @@ export function OrdineAcquistoArticoloFormRow({
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
-                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}</p>
+                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>

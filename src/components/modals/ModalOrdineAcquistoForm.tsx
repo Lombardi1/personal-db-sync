@@ -277,33 +277,7 @@ export function ModalOrdineAcquistoForm({
             lavoro: art.lavoro || '', // Inizializza lavoro
             descrizione: art.descrizione || '', // Inizializza descrizione
           }))
-        : [{ 
-            quantita: undefined, 
-            numero_fogli: undefined, 
-            prezzo_unitario: 0, 
-            codice_ctn: '', 
-            data_consegna_prevista: defaultDateForNewArticle, 
-            stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
-            fsc: false,
-            alimentare: false,
-            rif_commessa_fsc: '',
-            // Fustelle fields
-            fustella_codice: '',
-            codice_fornitore_fustella: '',
-            fustellatrice: '',
-            resa_fustella: '',
-            hasPulitore: false,
-            pulitore_codice_fustella: '',
-            pinza_tagliata: false,
-            tasselli_intercambiabili: false,
-            nr_tasselli: null,
-            incollatura: false,
-            incollatrice: '',
-            tipo_incollatura: '',
-            cliente: '', // Inizializza cliente
-            lavoro: '', // Inizializza lavoro
-            descrizione: '', // Inizializza descrizione
-          }];
+        : []; // Inizialmente vuoto per i nuovi ordini, l'utente aggiungerà gli articoli
 
       const defaultVal = initialData ? {
         ...initialData,
@@ -408,8 +382,8 @@ export function ModalOrdineAcquistoForm({
       resetFustellaCodeGenerator(maxFustellaCode);
       const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
       resetPulitoreCodeGenerator(maxPulitoreCode);
-      // Non appendiamo automaticamente un articolo per i fornitori di fustelle,
-      // l'utente sceglierà se aggiungere una fustella o un pulitore.
+      // Per i fornitori di Fustelle, non aggiungiamo un articolo di default qui.
+      // L'utente userà i pulsanti "Aggiungi Fustella" o "Aggiungi Pulitore".
     } else { // Generic supplier
       append({ ...newArticleBase, quantita: 1 });
     }
