@@ -133,17 +133,23 @@ export function OrdineAcquistoArticoloFormRow({
     const gramm = parseGrammaturaForCalculation(currentGrammatura);
     const numeroFogli = currentNumeroFogli || 0;
 
+    console.log(`[Article ${index}] Calc Quantita: Formato=${currentFormato}, Gramm=${currentGrammatura}, Fogli=${numeroFogli}`);
+    console.log(`[Article ${index}] Parsed: formatDims=`, formatDims, `gramm=`, gramm);
+
     if (formatDims && gramm !== null && numeroFogli > 0 && formatDims.lengthM > 0 && formatDims.widthM > 0 && gramm > 0) {
       const areaM2PerSheet = formatDims.lengthM * formatDims.widthM;
       const weightPerSheetKg = (areaM2PerSheet * gramm) / 1000;
+      console.log(`[Article ${index}] Calculated weightPerSheetKg: ${weightPerSheetKg}, Total Kg: ${weightPerSheetKg * numeroFogli}`);
       return weightPerSheetKg * numeroFogli;
     }
+    console.log(`[Article ${index}] Calculated Quantita: 0 (conditions not met)`);
     return 0;
   }, [isCartoneFornitore, currentFormato, currentGrammatura, currentNumeroFogli]);
 
   // Update the 'quantita' field (which stores kg for cartone) whenever inputs change
   React.useEffect(() => {
     if (isCartoneFornitore) {
+      console.log(`[Article ${index}] Setting quantita (kg) to: ${calculatedQuantitaKg.toFixed(3)}`);
       setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true });
     }
   }, [calculatedQuantitaKg, index, setValue, isCartoneFornitore]);
@@ -151,8 +157,10 @@ export function OrdineAcquistoArticoloFormRow({
   // Gestione della generazione del rif_commessa_fsc quando FSC viene flaggato
   React.useEffect(() => {
     if (isCartoneFornitore && currentFsc && !currentRifCommessaFsc) {
+      console.log(`[Article ${index}] Generating new FSC commessa.`);
       setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
     } else if (isCartoneFornitore && !currentFsc && currentRifCommessaFsc) {
+      console.log(`[Article ${index}] Clearing FSC commessa.`);
       setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
     }
   }, [isCartoneFornitore, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
@@ -160,8 +168,10 @@ export function OrdineAcquistoArticoloFormRow({
   // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato
   React.useEffect(() => {
     if (isFustelleFornitore && currentHasPulitore && !currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Generating new Pulitore code.`);
       setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
     } else if (isFustelleFornitore && !currentHasPulitore && currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Clearing Pulitore code.`);
       setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
     }
   }, [isFustelleFornitore, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
@@ -169,8 +179,10 @@ export function OrdineAcquistoArticoloFormRow({
   // Gestione del nr_tasselli quando tasselli_intercambiabili viene flaggato
   React.useEffect(() => {
     if (isFustelleFornitore && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
+      console.log(`[Article ${index}] Setting nr_tasselli to 0.`);
       setValue(`articoli.${index}.nr_tasselli`, 0, { shouldValidate: true });
     } else if (isFustelleFornitore && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
+      console.log(`[Article ${index}] Clearing nr_tasselli.`);
       setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
     }
   }, [isFustelleFornitore, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);

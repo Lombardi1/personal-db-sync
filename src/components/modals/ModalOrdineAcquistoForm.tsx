@@ -123,75 +123,97 @@ export function ModalOrdineAcquistoForm({
         importo_totale: z.number().optional().nullable(),
         note: z.string().max(1000, 'Note troppo lunghe').optional().or(z.literal('')),
       }).superRefine((data, ctx) => {
+        console.log(`[superRefine] Validating order: ${data.numero_ordine}`);
         const selectedFornitore = fornitori.find(f => f.id === data.fornitore_id);
         const isCartoneFornitore = selectedFornitore?.tipo_fornitore === 'Cartone';
         const isFustelleFornitore = selectedFornitore?.tipo_fornitore === 'Fustelle';
 
         data.articoli.forEach((articolo, index) => {
+          console.log(`[superRefine] Article ${index}:`, articolo);
           if (isCartoneFornitore) {
             if (!articolo.tipologia_cartone) {
+              console.log(`[superRefine] Adding issue: tipologia_cartone missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La tipologia cartone è obbligatoria.', path: [`articoli`, index, `tipologia_cartone`] });
             }
             if (!articolo.formato) {
+              console.log(`[superRefine] Adding issue: formato missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il formato è obbligatorio.', path: [`articoli`, index, `formato`] });
             }
             if (!articolo.grammatura) {
+              console.log(`[superRefine] Adding issue: grammatura missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La grammatura è obbligatoria.', path: [`articoli`, index, `grammatura`] });
             }
             if (!articolo.numero_fogli || articolo.numero_fogli < 1) {
+              console.log(`[superRefine] Adding issue: numero_fogli missing or invalid for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il numero di fogli è obbligatorio e deve essere almeno 1.', path: [`articoli`, index, `numero_fogli`] });
             }
             if (articolo.numero_fogli && articolo.numero_fogli >= 1 && (articolo.quantita === undefined || articolo.quantita <= 0)) {
+              console.log(`[superRefine] Adding issue: quantita (kg) invalid for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità in kg calcolata deve essere positiva.', path: [`articoli`, index, `quantita`] });
             }
             if (!articolo.cliente) {
+              console.log(`[superRefine] Adding issue: cliente missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il cliente è obbligatorio.', path: [`articoli`, index, `cliente`] });
             }
             if (!articolo.lavoro) {
+              console.log(`[superRefine] Adding issue: lavoro missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il lavoro è obbligatorio.', path: [`articoli`, index, `lavoro`] });
             }
             // Campi non consentiti per Cartone
             if (articolo.descrizione || articolo.fustella_codice || articolo.codice_fornitore_fustella || articolo.fustellatrice || articolo.resa_fustella || articolo.hasPulitore || articolo.pulitore_codice_fustella || articolo.pinza_tagliata || articolo.tasselli_intercambiabili || articolo.nr_tasselli || articolo.incollatura || articolo.incollatrice || articolo.tipo_incollatura) {
+              console.log(`[superRefine] Adding issue: non-cartone fields present for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per i fornitori di cartone.', path: [`articoli`, index, `descrizione`] });
             }
           } else if (isFustelleFornitore) {
             if (!articolo.fustella_codice) {
+              console.log(`[superRefine] Adding issue: fustella_codice missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fustella è obbligatorio.', path: [`articoli`, index, `fustella_codice`] });
             }
             if (!articolo.codice_fornitore_fustella) {
+              console.log(`[superRefine] Adding issue: codice_fornitore_fustella missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fornitore fustella è obbligatorio.', path: [`articoli`, index, `codice_fornitore_fustella`] });
             }
             if (!articolo.fustellatrice) {
+              console.log(`[superRefine] Adding issue: fustellatrice missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La fustellatrice è obbligatoria.', path: [`articoli`, index, `fustellatrice`] });
             }
             if (!articolo.resa_fustella) {
+              console.log(`[superRefine] Adding issue: resa_fustella missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La resa fustella è obbligatoria.', path: [`articoli`, index, `resa_fustella`] });
             }
             if (!articolo.quantita || articolo.quantita < 0.001) {
+              console.log(`[superRefine] Adding issue: quantita missing or invalid for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001.', path: [`articoli`, index, `quantita`] });
             }
             if (articolo.hasPulitore && !articolo.pulitore_codice_fustella) {
+              console.log(`[superRefine] Adding issue: pulitore_codice_fustella missing when hasPulitore is true for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice pulitore è obbligatorio se il pulitore è presente.', path: [`articoli`, index, `pulitore_codice_fustella`] });
             }
             if (articolo.tasselli_intercambiabili && (articolo.nr_tasselli === undefined || articolo.nr_tasselli === null || articolo.nr_tasselli < 0)) {
+              console.log(`[superRefine] Adding issue: nr_tasselli missing or invalid when tasselli_intercambiabili is true for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il numero di tasselli è obbligatorio se i tasselli sono intercambiabili.', path: [`articoli`, index, `nr_tasselli`] });
             }
             if (articolo.incollatura && (!articolo.incollatrice || !articolo.tipo_incollatura)) {
+              console.log(`[superRefine] Adding issue: incollatrice or tipo_incollatura missing when incollatura is true for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Incollatrice e tipo incollatura sono obbligatori se l\'incollatura è presente.', path: [`articoli`, index, `incollatrice`] });
             }
             // Campi non consentiti per Fustelle
             if (articolo.codice_ctn || articolo.descrizione || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.cliente || articolo.lavoro || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc) {
+              console.log(`[superRefine] Adding issue: non-fustelle fields present for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per i fornitori di fustelle.', path: [`articoli`, index, `codice_ctn`] });
             }
           } else { // Fornitori di altro tipo (Inchiostro, Colla, Altro)
             if (!articolo.descrizione) {
+              console.log(`[superRefine] Adding issue: descrizione missing for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La descrizione è obbligatoria.', path: [`articoli`, index, `descrizione`] });
             }
             if (!articolo.quantita || articolo.quantita < 0.001) {
+              console.log(`[superRefine] Adding issue: quantita missing or invalid for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001.', path: [`articoli`, index, `quantita`] });
             }
             // Campi non consentiti per altri tipi di fornitori
             if (articolo.codice_ctn || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.cliente || articolo.lavoro || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc || articolo.fustella_codice || articolo.codice_fornitore_fustella || articolo.fustellatrice || articolo.resa_fustella || articolo.hasPulitore || articolo.pulitore_codice_fustella || articolo.pinza_tagliata || articolo.tasselli_intercambiabili || articolo.nr_tasselli || articolo.incollatura || articolo.incollatrice || articolo.tipo_incollatura) {
+              console.log(`[superRefine] Adding issue: specific fields for cartone/fustelle present for article ${index}`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per questo tipo di fornitore.', path: [`articoli`, index, `tipologia_cartone`] });
             }
           }
@@ -227,8 +249,8 @@ export function ModalOrdineAcquistoForm({
             tipo_incollatura: art.tipo_incollatura || '',
           }))
         : [{ 
-            quantita: undefined,
-            numero_fogli: undefined,
+            quantita: undefined, 
+            numero_fogli: undefined, 
             prezzo_unitario: 0, 
             codice_ctn: '', 
             data_consegna_prevista: defaultDateForNewArticle, 
@@ -590,11 +612,14 @@ export function ModalOrdineAcquistoForm({
   }, [totalAmount, setValue]);
 
   const handleFormSubmit = async (data: any) => {
+    console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
+    console.log("ModalOrdineAcquistoForm: Current form errors before onSubmit call:", errors);
     try {
       await onSubmit(data as OrdineAcquisto);
+      console.log("ModalOrdineAcquistoForm: onSubmit successful.");
       onClose();
     } catch (error) {
-      console.error("Errore durante il salvataggio dell'ordine d'acquisto:", error);
+      console.error("ModalOrdineAcquistoForm: Error during form submission:", error);
       toast.error("Errore durante il salvataggio dell'ordine d'acquisto.");
     }
   };
@@ -651,6 +676,9 @@ export function ModalOrdineAcquistoForm({
 
   const title = initialData?.id ? `Modifica Ordine d'Acquisto` : `Nuovo Ordine d'Acquisto`;
   const description = initialData?.id ? `Modifica i dettagli per l'ordine ${initialData.numero_ordine}.` : `Inserisci i dettagli per il nuovo ordine d'acquisto.`
+  
+  console.log("ModalOrdineAcquistoForm: Current form errors (at render):", errors); // Log errors at render
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
