@@ -60,7 +60,11 @@ const articoloSchema = z.object({
   formato: z.string().max(50, 'Formato troppo lungo').optional().or(z.literal('')),
   grammatura: z.string().max(50, 'Grammatura troppo lungo').optional().or(z.literal('')),
   numero_fogli: z.preprocess(
-    (val) => (val === '' ? null : Number(val)),
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
     z.number().min(1, 'Il numero di fogli deve essere almeno 1').optional().nullable()
   ),
   cliente: z.string().max(255, 'Cliente troppo lungo').optional().or(z.literal('')),
@@ -91,7 +95,11 @@ const articoloSchema = z.object({
 
   // Campi comuni
   quantita: z.preprocess(
-    (val) => (val === '' ? null : Number(String(val).replace(',', '.'))),
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = Number(String(val).replace(',', '.'));
+      return isNaN(num) ? null : num;
+    },
     z.number().min(0.001, 'La quantità deve essere almeno 0.001').optional().nullable()
   ),
   prezzo_unitario: z.preprocess(
