@@ -204,7 +204,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           }
           orderToProcess = {
               ...updatedOrderData,
-              fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
+              fornitore_nome: updatedOrderData.fornitore_nome || 'N/A',
               fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
               articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
           };
@@ -290,7 +290,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
         }
         orderToProcess = {
           ...updatedOrderData,
-          fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
+          fornitore_nome: updatedOrderData.fornitore_nome || 'N/A',
           fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
           articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
         };
@@ -497,7 +497,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                         </td>
                         <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
                           {row.isPulitoreRow ? (
-                            <div className="font-bold text-[9px] sm:text-[10px]">Pulitore: <span className="codice">{row.pulitore_codice_fustella}</span></div>
+                            <div className="font-bold text-[9px] sm:text-[10px]"><span className="codice">{row.pulitore_codice_fustella}</span></div>
                           ) : row.isCartoneFornitore ? (
                             <>
                               {row.codice_ctn && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.codice_ctn}</span></div>}
@@ -529,7 +529,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                           )}
                         </td>
                         <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[40px]">
-                          {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : (row.isPulitoreRow ? 'PZ' : '')} {/* Show Kg for cartone */}
+                          {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ''} {/* Show Kg for cartone, empty for pulitore */}
                         </td>
                         <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
                           {row.prezzo_unitario.toFixed(3)} {row.isCartoneFornitore ? '€/kg' : '€'}
