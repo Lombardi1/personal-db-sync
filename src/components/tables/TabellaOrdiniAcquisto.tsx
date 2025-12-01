@@ -380,10 +380,9 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
   return (
     <div className="w-full rounded-md border overflow-x-auto">
-      <div className="w-full"> {/* Rimosso min-w-max */}
+      <div className="w-full">
         <table id="tab-ordini-acquisto" className="w-full border-collapse text-xs table-auto">
-          <thead>
-            <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
+          <thead><tr>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[30px]"></th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Numero Ordine</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Data Ordine</th>
@@ -396,9 +395,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[70px]">Consegna Prevista</th>
               <th className="px-2 py-2 text-right text-[10px] sm:text-xs font-semibold min-w-[70px]">Importo Totale</th>
               <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[100px] max-w-[100px]">Note Ordine</th>
-              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[200px]">Azioni</th> {/* Modificato min-w */}
-            </tr>
-          </thead>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold min-w-[200px]">Azioni</th>
+            </tr></thead>
           <tbody>
             {groupedRows.map(({ order, articles, isExpanded }) => {
               const visibleArticles = isExpanded ? articles : [articles[0]];
