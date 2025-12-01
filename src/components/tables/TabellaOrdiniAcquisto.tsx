@@ -38,11 +38,12 @@ interface DisplayRow extends ArticoloOrdineAcquisto {
   orderStato: OrdineAcquisto['stato'];
   orderImportoTotale: number;
   orderNote: string;
-  isFirstArticleOfOrder: boolean;
-  isLastArticleOfOrder: boolean;
+  isFirstDisplayRowOfOrder: boolean; // Indica se è la prima riga di visualizzazione per l'ordine
+  isLastDisplayRowOfOrder: boolean; // Indica se è l'ultima riga di visualizzazione per l'ordine
   parentOrder: OrdineAcquisto;
   isCartoneFornitore: boolean;
-  isFustelleFornitore: boolean; // Aggiunto
+  isFustelleFornitore: boolean;
+  isPulitoreRow: boolean; // Nuovo flag per identificare la riga del pulitore
 }
 
 // Helper function for parsing format (e.g., "102 x 72 cm" -> 1.02, 0.72)
@@ -306,80 +307,132 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
     }
   };
 
-  const groupedRows = ordini.map(order => {
+  const groupedRows = ordini.flatMap(order => {
     const fornitore = fornitori.find(f => f.id === order.fornitore_id);
     const isCartoneFornitore = fornitore?.tipo_fornitore === 'Cartone';
-    const isFustelleFornitore = fornitore?.tipo_fornitore === 'Fustelle'; // Aggiunto
-    const isExpanded = expandedOrders.has(order.id!); 
+    const isFustelleFornitore = fornitore?.tipo_fornitore === 'Fustelle';
+    
+    const allDisplayRowsForOrder: DisplayRow[] = [];
 
-    const articles: DisplayRow[] = (order.articoli && order.articoli.length > 0)
-      ? order.articoli
-          .map((article, index) => {
-            return {
-              ...article,
-              orderId: order.id!,
-              orderNumeroOrdine: order.numero_ordine,
-              orderFornitoreNome: order.fornitore_nome!,
-              orderDataOrdine: order.data_ordine,
-              orderStato: order.stato,
-              orderImportoTotale: order.importo_totale || 0,
-              orderNote: order.note || '',
-              isFirstArticleOfOrder: index === 0,
-              isLastArticleOfOrder: index === order.articoli!.length - 1,
-              parentOrder: order,
-              isCartoneFornitore: isCartoneFornitore,
-              isFustelleFornitore: isFustelleFornitore, // Aggiunto
-              codice_ctn: article.codice_ctn || '',
-              descrizione: article.descrizione || '',
-              tipologia_cartone: article.tipologia_cartone || '',
-              formato: article.formato || '',
-              grammatura: article.grammatura || '',
-              peso_cartone_kg: article.peso_cartone_kg || 0, 
-              cliente: article.cliente || '',
-              lavoro: article.lavoro || '',
-              data_consegna_prevista: article.data_consegna_prevista || '',
-              stato: article.stato,
-              fsc: article.fsc, // Aggiunto
-              alimentare: article.alimentare, // Aggiunto
-            };
-          })
-          .sort((a, b) => {
-            const statusOrder = {
-              'in_attesa': 1,
-              'inviato': 2,
-              'confermato': 3,
-              'ricevuto': 4,
-              'annullato': 5,
-            };
+    if (!order.articoli || order.articoli.length === 0) {
+      allDisplayRowsForOrder.push({
+        quantita: 0, prezzo_unitario: 0, stato: 'in_attesa',
+        orderId: order.id!, orderNumeroOrdine: order.numero_ordine, orderFornitoreNome: order.fornitore_nome!,
+        orderDataOrdine: order.data_ordine,
+        orderStato: order.stato, orderImportoTotale: order.importo_totale || 0, orderNote: order.note || '',
+        isFirstDisplayRowOfOrder: true, isLastDisplayRowOfOrder: true, parentOrder: order,
+        isCartoneFornitore: isCartoneFornitore, isFustelleFornitore: isFustelleFornitore,
+        codice_ctn: '', descrizione: 'Nessun articolo', tipologia_cartone: '', formato: '', grammatura: '',
+        peso_cartone_kg: 0, cliente: '', lavoro: '', data_consegna_prevista: '',
+        numero_fogli: 0, fsc: false, alimentare: false, isPulitoreRow: false,
+      });
+    } else {
+      order.articoli
+        .sort((a, b) => {
+          const statusOrder = {
+            'in_attesa': 1, 'inviato': 2, 'confermato': 3, 'ricevuto': 4, 'annullato': 5,
+          };
+          const statusA = statusOrder[a.stato] || 99;
+          const statusB = statusOrder[b.stato] || 99;
+          if (statusA !== statusB) return statusA - statusB;
 
-            const statusA = statusOrder[a.stato] || 99;
-            const statusB = statusOrder[b.stato] || 99;
+          if (isCartoneFornitore) return (a.codice_ctn || '').localeCompare(b.codice_ctn || '');
+          return (a.descrizione || '').localeCompare(b.descrizione || '');
+        })
+        .forEach((article, index, arr) => {
+          const baseDisplayRow: Omit<DisplayRow, 'isFirstDisplayRowOfOrder' | 'isLastDisplayRowOfOrder' | 'isPulitoreRow'> = {
+            ...article,
+            orderId: order.id!,
+            orderNumeroOrdine: order.numero_ordine,
+            orderFornitoreNome: order.fornitore_nome!,
+            orderDataOrdine: order.data_ordine,
+            orderStato: order.stato,
+            orderImportoTotale: order.importo_totale || 0,
+            orderNote: order.note || '',
+            parentOrder: order,
+            isCartoneFornitore: isCartoneFornitore,
+            isFustelleFornitore: isFustelleFornitore,
+            codice_ctn: article.codice_ctn || '',
+            descrizione: article.descrizione || '',
+            tipologia_cartone: article.tipologia_cartone || '',
+            formato: article.formato || '',
+            grammatura: article.grammatura || '',
+            peso_cartone_kg: article.peso_cartone_kg || 0,
+            cliente: article.cliente || '',
+            lavoro: article.lavoro || '',
+            data_consegna_prevista: article.data_consegna_prevista || '',
+            stato: article.stato,
+            fsc: article.fsc || false,
+            alimentare: article.alimentare || false,
+            numero_fogli: article.numero_fogli,
+            fustella_codice: article.fustella_codice || '',
+            codice_fornitore_fustella: article.codice_fornitore_fustella || '',
+            fustellatrice: article.fustellatrice || '',
+            resa_fustella: article.resa_fustella || '',
+            hasPulitore: article.hasPulitore || false,
+            pulitore_codice_fustella: article.pulitore_codice_fustella || '',
+            prezzo_pulitore: article.prezzo_pulitore || undefined,
+            pinza_tagliata: article.pinza_tagliata || false,
+            tasselli_intercambiabili: article.tasselli_intercambiabili || false,
+            nr_tasselli: article.nr_tasselli || null,
+            incollatura: article.incollatura || false,
+            incollatrice: article.incollatrice || '',
+            tipo_incollatura: article.tipo_incollatura || '',
+          };
 
-            if (statusA !== statusB) {
-              return statusA - statusB;
-            }
+          // Add the main article row (fustella, cartone, or generic)
+          allDisplayRowsForOrder.push({
+            ...baseDisplayRow,
+            isFirstDisplayRowOfOrder: allDisplayRowsForOrder.length === 0,
+            isLastDisplayRowOfOrder: false,
+            isPulitoreRow: false,
+          });
 
-            if (a.isCartoneFornitore) {
-              return (a.codice_ctn || '').localeCompare(b.codice_ctn || '');
-            } else {
-              return (a.descrizione || '').localeCompare(b.descrizione || '');
-            }
-          })
-      : [{
-          quantita: 0, prezzo_unitario: 0, stato: 'in_attesa',
-          orderId: order.id!, orderNumeroOrdine: order.numero_ordine, orderFornitoreNome: order.fornitore_nome!,
-          orderDataOrdine: order.data_ordine,
-          orderStato: order.stato, orderImportoTotale: order.importo_totale || 0, orderNote: order.note || '',
-          isFirstArticleOfOrder: true, isLastArticleOfOrder: true, parentOrder: order,
-          isCartoneFornitore: isCartoneFornitore,
-          isFustelleFornitore: isFustelleFornitore, // Aggiunto
-          codice_ctn: '', descrizione: 'Nessun articolo', tipologia_cartone: '', formato: '', grammatura: '',
-          peso_cartone_kg: 0, cliente: '', lavoro: '', data_consegna_prevista: '',
-          numero_fogli: 0, // Default for numero_fogli
-          fsc: false, // Aggiunto
-          alimentare: false, // Aggiunto
-        }];
-    return { order, articles, isExpanded };
+          // If it's a fustella with a pulitore, add a separate row for the pulitore
+          if (isFustelleFornitore && article.fustella_codice && article.hasPulitore && article.pulitore_codice_fustella && article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
+            allDisplayRowsForOrder.push({
+              ...baseDisplayRow, // Inherit most order-level details
+              id: `pulitore-${article.id || Date.now()}`, // Unique ID for pulitore row
+              descrizione: `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`,
+              quantita: 1, // Pulitore quantity is always 1
+              prezzo_unitario: article.prezzo_pulitore,
+              codice_ctn: '', // Clear cartone specific fields
+              tipologia_cartone: '',
+              formato: '',
+              grammatura: '',
+              numero_fogli: undefined,
+              fsc: false,
+              alimentare: false,
+              rif_commessa_fsc: '',
+              fustella_codice: '', // Clear fustella specific fields
+              codice_fornitore_fustella: '',
+              fustellatrice: '',
+              resa_fustella: '',
+              hasPulitore: false, // This row *is* the pulitore, so it doesn't *have* a pulitore
+              pulitore_codice_fustella: article.pulitore_codice_fustella, // Keep its own code
+              prezzo_pulitore: undefined, // Clear this as it's the main price for this row
+              pinza_tagliata: false,
+              tasselli_intercambiabili: false,
+              nr_tasselli: null,
+              incollatura: false,
+              incollatrice: '',
+              tipo_incollatura: '',
+              cliente: article.cliente, // Inherit from fustella
+              lavoro: article.lavoro, // Inherit from fustella
+              isFirstDisplayRowOfOrder: false,
+              isLastDisplayRowOfOrder: false,
+              isPulitoreRow: true,
+            });
+          }
+        });
+    }
+
+    // Set isLastDisplayRowOfOrder for the very last display row of the order
+    if (allDisplayRowsForOrder.length > 0) {
+      allDisplayRowsForOrder[allDisplayRowsForOrder.length - 1].isLastDisplayRowOfOrder = true;
+    }
+
+    return { order, articles: allDisplayRowsForOrder, isExpanded: expandedOrders.has(order.id!) };
   });
 
   return (
@@ -405,168 +458,161 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           <tbody>{
             groupedRows.map(({ order, articles, isExpanded }) => {
               const visibleArticles = isExpanded ? articles : [articles[0]];
-              const rowSpanValue = visibleArticles.length;
+              const rowSpanValue = articles.length; // Total number of display rows for this order
 
               return (
                 <React.Fragment key={order.id}>
-                  {visibleArticles.map((row, idx) => (
-                    <tr key={`${row.orderId}-${row.id || idx}`} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)] transition-colors">
-                      {idx === 0 && (
-                        <>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap text-center min-w-[30px]">
-                            {articles.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => toggleOrderExpansion(order.id!)}
-                                className="h-7 w-7 sm:h-8 sm:w-8"
-                                title={isExpanded ? "Comprimi articoli" : "Espandi articoli"}
-                              >
-                                {isExpanded ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />}
-                              </Button>
-                            )}
-                          </td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">
-                            <span className="codice">{row.orderNumeroOrdine}</span>
-                          </td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">{formatData(row.orderDataOrdine)}</td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[80px]">{row.orderFornitoreNome}</td>
-                        </>
-                      )}
-                      <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
-                        <span className={`inline-block px-2 py-1 rounded-full text-[10px] font-semibold ${getStatoBadgeClass(row.stato)}`}>
-                          {getStatoText(row.stato)}
-                        </span>
-                      </td>
-                      <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
-                        {row.isCartoneFornitore ? (
+                  {visibleArticles.map((row, idx) => {
+                    const isFirstDisplayRowOfOrder = row.isFirstDisplayRowOfOrder;
+                    const currentRowTotal = (row.quantita || 0) * (row.prezzo_unitario || 0);
+
+                    return (
+                      <tr key={`${row.orderId}-${row.id || idx}`} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)] transition-colors">
+                        {isFirstDisplayRowOfOrder && ( // Only render these for the first display row of the order
                           <>
-                            {row.codice_ctn && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.codice_ctn}</span></div>}
-                            {row.tipologia_cartone && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Tipologia: {row.tipologia_cartone}</div>}
-                            {row.formato && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Formato: {formatFormato(row.formato)}</div>}
-                            {row.grammatura && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Grammatura: {formatGrammatura(row.grammatura)}</div>}
-                            {row.numero_fogli !== undefined && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>} {/* Display numero_fogli */}
-                            {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
-                            {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
-                            {(row.fsc || row.alimentare) && (
-                              <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
-                                {row.fsc && <span className="mr-2">FSC: Sì</span>}
-                                {row.alimentare && <span>Alimentare: Sì</span>}
-                              </div>
-                            )}
-                          </>
-                        ) : row.isFustelleFornitore ? ( // NUOVO BLOCCO PER FUSTELLE
-                          <>
-                            {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Nostro: <span className="codice">{row.fustella_codice}</span></div>}
-                            {row.codice_fornitore_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Codice Fornitore: {row.codice_fornitore_fustella}</div>}
-                            {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
-                            {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
-                            {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
-                            {row.hasPulitore && (
-                              <>
-                                {row.pulitore_codice_fustella && (
-                                  <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
-                                    Pulitore: <span className="codice">{row.pulitore_codice_fustella}</span>
-                                  </div>
-                                )}
-                                {row.prezzo_pulitore !== undefined && row.prezzo_pulitore !== null && (
-                                  <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
-                                    Prezzo Pulitore: {row.prezzo_pulitore.toFixed(2)} €
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione || 'N/A'}</div>
-                          </>
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[40px]">
-                        {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ''} {/* Show Kg for cartone */}
-                      </td>
-                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
-                        {row.prezzo_unitario.toFixed(3)} {row.isCartoneFornitore ? '€/kg' : '€'}
-                      </td>
-                      <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[60px]">
-                        {(row.quantita * row.prezzo_unitario).toFixed(2)} €
-                      </td>
-                      <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">
-                        {row.data_consegna_prevista ? <span className="font-bold">{formatData(row.data_consegna_prevista)}</span> : '-'}
-                      </td>
-                      {idx === 0 && (
-                        <>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[70px]">
-                            {row.orderImportoTotale.toFixed(2)} €
-                          </td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[100px] max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap">{row.orderNote || '-'}</td>
-                          <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[200px]">
-                            <div className="flex gap-1">
-                              <Button
-                                variant="default"
-                                size="icon"
-                                onClick={() => { onEdit(row.parentOrder); }}
-                                className="h-6 w-6 sm:h-7 sm:w-7 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-dark))]"
-                                title="Modifica Ordine"
-                                disabled={row.orderStato === 'annullato'}
-                              >
-                                <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </Button>
-                              <Button
-                                variant="default"
-                                size="icon"
-                                onClick={() => onDuplicateAndEdit(row.parentOrder)}
-                                className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-500 hover:bg-blue-600 text-white"
-                                title="Duplica e Modifica Ordine"
-                              >
-                                <CopyPlus className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => handlePreviewPdfAndUpdateStatus(row.parentOrder)} 
-                                className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                title="Visualizza Anteprima PDF" 
-                              >
-                                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => handleDirectPrint(row.parentOrder)} 
-                                className="h-6 w-6 sm:h-7 sm:w-7 bg-green-100 text-green-700 hover:bg-green-200"
-                                title="Scarica PDF Direttamente" 
-                              >
-                                <Printer className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </Button>
-                              {row.orderStato === 'annullato' ? (
+                            <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap text-center min-w-[30px]">
+                              {articles.length > 1 && (
                                 <Button
-                                  variant="destructive"
+                                  variant="ghost"
                                   size="icon"
-                                  onClick={() => handleActionClick(row.parentOrder, 'delete')}
-                                  className="h-6 w-6 sm:h-7 sm:w-7"
-                                  title="Elimina Definitivamente Ordine"
+                                  onClick={() => toggleOrderExpansion(order.id!)}
+                                  className="h-7 w-7 sm:h-8 sm:w-8"
+                                  title={isExpanded ? "Comprimi articoli" : "Espandi articoli"}
                                 >
-                                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="destructive"
-                                  size="icon"
-                                  onClick={() => handleActionClick(row.parentOrder, 'cancel')}
-                                  className="h-6 w-6 sm:h-7 sm:w-7 bg-red-100 text-red-700 hover:bg-red-200"
-                                  title="Annulla Ordine"
-                                >
-                                  <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  {isExpanded ? <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />}
                                 </Button>
                               )}
-                            </div>
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
+                            </td>
+                            <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">
+                              <span className="codice">{row.orderNumeroOrdine}</span>
+                            </td>
+                            <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">{formatData(row.orderDataOrdine)}</td>
+                            <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[80px]">{row.orderFornitoreNome}</td>
+                          </>
+                        )}
+                        <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
+                          <span className={`inline-block px-2 py-1 rounded-full text-[10px] font-semibold ${getStatoBadgeClass(row.stato)}`}>
+                            {getStatoText(row.stato)}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
+                          {row.isPulitoreRow ? (
+                            <div className="font-bold text-[9px] sm:text-[10px]"><span className="codice">{row.pulitore_codice_fustella}</span></div>
+                          ) : row.isCartoneFornitore ? (
+                            <>
+                              {row.codice_ctn && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.codice_ctn}</span></div>}
+                              {row.tipologia_cartone && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Tipologia: {row.tipologia_cartone}</div>}
+                              {row.formato && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Formato: {formatFormato(row.formato)}</div>}
+                              {row.grammatura && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Grammatura: {formatGrammatura(row.grammatura)}</div>}
+                              {row.numero_fogli !== undefined && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Fogli: {row.numero_fogli.toLocaleString('it-IT')}</div>} {/* Display numero_fogli */}
+                              {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
+                              {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                              {(row.fsc || row.alimentare) && (
+                                <div className="mb-1 text-[9px] sm:text-[10px] font-bold">
+                                  {row.fsc && <span className="mr-2">FSC: Sì</span>}
+                                  {row.alimentare && <span>Alimentare: Sì</span>}
+                                </div>
+                              )}
+                            </>
+                          ) : row.isFustelleFornitore ? ( // NUOVO BLOCCO PER FUSTELLE
+                            <>
+                              {row.fustella_codice && <div className="font-bold mb-1 text-[9px] sm:text-[10px]">Codice Nostro: <span className="codice">{row.fustella_codice}</span></div>}
+                              {row.codice_fornitore_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Codice Fornitore: {row.codice_fornitore_fustella}</div>}
+                              {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
+                              {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
+                              {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                            </>
+                          ) : (
+                            <>
+                              <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione || 'N/A'}</div>
+                            </>
+                          )}
+                        </td>
+                        <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[40px]">
+                          {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : (row.isPulitoreRow ? 'PZ' : '')} {/* Show Kg for cartone */}
+                        </td>
+                        <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
+                          {row.prezzo_unitario.toFixed(3)} {row.isCartoneFornitore ? '€/kg' : '€'}
+                        </td>
+                        <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[60px]">
+                          {currentRowTotal.toFixed(2)} €
+                        </td>
+                        <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[70px]">
+                          {row.data_consegna_prevista ? <span className="font-bold">{formatData(row.data_consegna_prevista)}</span> : '-'}
+                        </td>
+                        {isFirstDisplayRowOfOrder && ( // Only render these for the first display row of the order
+                          <>
+                            <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[70px]">
+                              {row.orderImportoTotale.toFixed(2)} €
+                            </td>
+                            <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[100px] max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap">{row.orderNote || '-'}</td>
+                            <td rowSpan={rowSpanValue} className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap min-w-[200px]">
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="default"
+                                  size="icon"
+                                  onClick={() => { onEdit(row.parentOrder); }}
+                                  className="h-6 w-6 sm:h-7 sm:w-7 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-dark))]"
+                                  title="Modifica Ordine"
+                                  disabled={row.orderStato === 'annullato'}
+                                >
+                                  <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="icon"
+                                  onClick={() => onDuplicateAndEdit(row.parentOrder)}
+                                  className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-500 hover:bg-blue-600 text-white"
+                                  title="Duplica e Modifica Ordine"
+                                >
+                                  <CopyPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handlePreviewPdfAndUpdateStatus(row.parentOrder)} 
+                                  className="h-6 w-6 sm:h-7 sm:w-7 bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                  title="Visualizza Anteprima PDF" 
+                                >
+                                  <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleDirectPrint(row.parentOrder)} 
+                                  className="h-6 w-6 sm:h-7 sm:w-7 bg-green-100 text-green-700 hover:bg-green-200"
+                                  title="Scarica PDF Direttamente" 
+                                >
+                                  <Printer className="h-3 w-3 sm:h-4 sm:w-4" />
+                                </Button>
+                                {row.orderStato === 'annullato' ? (
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => handleActionClick(row.parentOrder, 'delete')}
+                                    className="h-6 w-6 sm:h-7 sm:w-7"
+                                    title="Elimina Definitivamente Ordine"
+                                  >
+                                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => handleActionClick(row.parentOrder, 'cancel')}
+                                    className="h-6 w-6 sm:h-7 sm:w-7 bg-red-100 text-red-700 hover:bg-red-200"
+                                    title="Annulla Ordine"
+                                  >
+                                    <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </React.Fragment>
               );
             })}</tbody>
