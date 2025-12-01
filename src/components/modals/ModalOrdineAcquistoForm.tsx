@@ -231,7 +231,13 @@ export function ModalOrdineAcquistoForm({
       
       const articlesToUse: ArticoloOrdineAcquisto[] = [];
       if (initialData?.articoli && initialData.articoli.length > 0) {
-        initialData.articoli.filter(Boolean).forEach((art, originalIndex) => { // Filter out null/undefined articles
+        initialData.articoli.filter(Boolean).forEach((art, originalIndex) => {
+          // Add an explicit check for item_type here to skip malformed articles
+          if (!art || typeof art !== 'object' || !art.item_type) {
+            console.warn(`ModalOrdineAcquistoForm: Skipping malformed article at index ${originalIndex} in initialData.articoli:`, art);
+            return; // Skip this article if it's malformed
+          }
+
           const baseArticle: ArticoloOrdineAcquisto = {
             ...art, 
             data_consegna_prevista: art.data_consegna_prevista || defaultDateForNewArticle, 
@@ -421,7 +427,13 @@ export function ModalOrdineAcquistoForm({
           
           const articlesToUse: ArticoloOrdineAcquisto[] = [];
           if (initialData?.articoli && initialData.articoli.length > 0) {
-            initialData.articoli.filter(Boolean).forEach((art, originalIndex) => { // Filter out null/undefined articles
+            initialData.articoli.filter(Boolean).forEach((art, originalIndex) => {
+              // Add an explicit check for item_type here to skip malformed articles
+              if (!art || typeof art !== 'object' || !art.item_type) {
+                console.warn(`ModalOrdineAcquistoForm: Skipping malformed article at index ${originalIndex} in initialData.articoli:`, art);
+                return; // Skip this article if it's malformed
+              }
+
               const baseArticle: ArticoloOrdineAcquisto = {
                 ...art, 
                 data_consegna_prevista: art.data_consegna_prevista || defaultDateForNewArticle, 
@@ -623,8 +635,8 @@ export function ModalOrdineAcquistoForm({
     console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
     console.log("ModalOrdineAcquistoForm: Current form errors at submission attempt:", errors);
     try {
-      // Explicitly filter out any null/undefined articles before processing
-      const cleanedArticles = data.articoli.filter(Boolean);
+      // Explicitly filter out any null, undefined, or malformed articles before processing
+      const cleanedArticles = data.articoli.filter((article: any) => article && typeof article === 'object' && article.item_type);
 
       // Now process cleanedArticles
       const finalArticles = cleanedArticles.filter((article: ArticoloOrdineAcquisto) => {
@@ -712,7 +724,7 @@ export function ModalOrdineAcquistoForm({
             // Clean the articles array before passing to the actual submit handler
             const cleanedData = {
               ...data,
-              articoli: data.articoli.filter(Boolean), // Ensure no null/undefined articles
+              articoli: data.articoli.filter((article: any) => article && typeof article === 'object' && article.item_type), // More robust filter
             };
             handleFormSubmit(cleanedData);
           })} className="grid gap-4 py-4">
