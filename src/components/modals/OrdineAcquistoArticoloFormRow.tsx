@@ -85,8 +85,6 @@ export function OrdineAcquistoArticoloFormRow({
   
   console.log(`OrdineAcquistoArticoloFormRow[${index}]: currentArticle data:`, currentArticle);
 
-  const currentTipoArticolo = currentArticle?.tipo_articolo;
-
   // Campi Cartone
   const currentFormato = currentArticle?.formato;
   const currentGrammatura = currentArticle?.grammatura;
@@ -100,6 +98,8 @@ export function OrdineAcquistoArticoloFormRow({
   const currentCodiceFornitoreFustella = currentArticle?.codice_fornitore_fustella;
   const currentFustellatrice = currentArticle?.fustellatrice;
   const currentResaFustella = currentArticle?.resa_fustella;
+  const currentHasPulitore = currentArticle?.hasPulitore;
+  const currentPulitoreCodiceFustella = currentArticle?.pulitore_codice_fustella;
   const currentPinzaTagliata = currentArticle?.pinza_tagliata;
   const currentTasselliIntercambiabili = currentArticle?.tasselli_intercambiabili;
   const currentNrTasselli = currentArticle?.nr_tasselli;
@@ -107,15 +107,11 @@ export function OrdineAcquistoArticoloFormRow({
   const currentIncollatrice = currentArticle?.incollatrice;
   const currentTipoIncollatura = currentArticle?.tipo_incollatura;
 
-  // Campi Pulitore
-  const currentCodicePulitore = currentArticle?.codice_pulitore;
-
   // Campi Comuni (anche per Fustelle)
   const currentQuantita = currentArticle?.quantita;
   const currentStatoArticolo = currentArticle?.stato;
   const currentCliente = currentArticle?.cliente; // Ora comune
   const currentLavoro = currentArticle?.lavoro; // Ora comune
-  const currentDescrizione = currentArticle?.descrizione;
 
   // State for controlled input values to retain formatting
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => 
@@ -124,14 +120,14 @@ export function OrdineAcquistoArticoloFormRow({
       : ''
   );
   const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => 
-    currentArticle?.quantita !== undefined && currentArticle.quantita !== null
+    !isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null
       ? currentArticle.quantita.toFixed(3).replace('.', ',')
       : ''
   );
 
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura for Cartone
   const calculatedQuantitaKg = React.useMemo(() => {
-    if (currentTipoArticolo !== 'cartone') return 0;
+    if (!isCartoneFornitore) return 0;
 
     const formatDims = parseFormatoForCalculation(currentFormato);
     const gramm = parseGrammaturaForCalculation(currentGrammatura);
@@ -148,37 +144,48 @@ export function OrdineAcquistoArticoloFormRow({
     }
     console.log(`[Article ${index}] Calculated Quantita: 0 (conditions not met)`);
     return 0;
-  }, [currentTipoArticolo, currentFormato, currentGrammatura, currentNumeroFogli, index]);
+  }, [isCartoneFornitore, currentFormato, currentGrammatura, currentNumeroFogli]);
 
   // Update the 'quantita' field (which stores kg for cartone) whenever inputs change
   React.useEffect(() => {
-    if (currentTipoArticolo === 'cartone') {
+    if (isCartoneFornitore) {
       console.log(`[Article ${index}] Setting quantita (kg) to: ${calculatedQuantitaKg.toFixed(3)}`);
       setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true });
     }
-  }, [calculatedQuantitaKg, index, setValue, currentTipoArticolo]);
+  }, [calculatedQuantitaKg, index, setValue, isCartoneFornitore]);
 
   // Gestione della generazione del rif_commessa_fsc quando FSC viene flaggato
   React.useEffect(() => {
-    if (currentTipoArticolo === 'cartone' && currentFsc && !currentRifCommessaFsc) {
+    if (isCartoneFornitore && currentFsc && !currentRifCommessaFsc) {
       console.log(`[Article ${index}] Generating new FSC commessa.`);
       setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
-    } else if (currentTipoArticolo === 'cartone' && !currentFsc && currentRifCommessaFsc) {
+    } else if (isCartoneFornitore && !currentFsc && currentRifCommessaFsc) {
       console.log(`[Article ${index}] Clearing FSC commessa.`);
       setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
     }
-  }, [currentTipoArticolo, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
+  }, [isCartoneFornitore, currentFsc, currentRifCommessaFsc, index, setValue, orderYear]);
+
+  // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato
+  React.useEffect(() => {
+    if (isFustelleFornitore && currentHasPulitore && !currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Generating new Pulitore code.`);
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+    } else if (isFustelleFornitore && !currentHasPulitore && currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Clearing Pulitore code.`);
+      setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
+    }
+  }, [isFustelleFornitore, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
 
   // Gestione del nr_tasselli quando tasselli_intercambiabili viene flaggato
   React.useEffect(() => {
-    if (currentTipoArticolo === 'fustella' && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
+    if (isFustelleFornitore && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
       console.log(`[Article ${index}] Setting nr_tasselli to 0.`);
       setValue(`articoli.${index}.nr_tasselli`, 0, { shouldValidate: true });
-    } else if (currentTipoArticolo === 'fustella' && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
+    } else if (isFustelleFornitore && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
       console.log(`[Article ${index}] Clearing nr_tasselli.`);
       setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
     }
-  }, [currentTipoArticolo, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
+  }, [isFustelleFornitore, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
 
 
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0);
@@ -188,104 +195,7 @@ export function OrdineAcquistoArticoloFormRow({
   return (
     <div className="flex flex-col sm:flex-row gap-2 p-3 border rounded-md bg-muted/50 items-end">
       <div className="flex-1 grid grid-cols-1 gap-2 w-full">
-        {/* Tipo Articolo Selector */}
-        <div className="p-2 bg-gray-50 rounded-lg border">
-          <h5 className="text-sm font-semibold mb-2 text-gray-700">Tipo Articolo</h5>
-          <div>
-            <Label htmlFor={`articoli.${index}.tipo_articolo`} className="text-xs">Tipo Articolo *</Label>
-            <Select
-              onValueChange={(value: ArticoloOrdineAcquisto['tipo_articolo']) => setValue(`articoli.${index}.tipo_articolo`, value, { shouldValidate: true })}
-              value={currentTipoArticolo || 'altro'}
-              disabled={isSubmitting || isOrderCancelled}
-            >
-              <SelectTrigger className="w-full text-sm">
-                <SelectValue placeholder="Seleziona tipo articolo" />
-              </SelectTrigger>
-              <SelectContent>
-                {isCartoneFornitore && <SelectItem value="cartone">Cartone</SelectItem>}
-                {isFustelleFornitore && <SelectItem value="fustella">Fustella</SelectItem>}
-                {isFustelleFornitore && <SelectItem value="pulitore">Pulitore</SelectItem>}
-                {!isCartoneFornitore && !isFustelleFornitore && <SelectItem value="altro">Altro</SelectItem>}
-              </SelectContent>
-            </Select>
-            {errors.articoli?.[index]?.tipo_articolo && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.tipo_articolo?.message}</p>}
-          </div>
-        </div>
-
-        <Separator className="my-1" />
-
-        {/* Common fields for Cliente and Lavoro */}
-        <div className="p-2 bg-gray-50 rounded-lg border">
-          <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Utilizzo</h5>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente *</Label>
-              <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openClientCombobox}
-                    className={cn(
-                      "w-full justify-between text-sm",
-                      !currentCliente && "text-muted-foreground"
-                    )}
-                    disabled={isSubmitting || isOrderCancelled}
-                  >
-                    {currentCliente
-                      ? clients.find((cliente) => cliente.nome === currentCliente)?.nome
-                      : "Seleziona cliente..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                  <Command>
-                    <CommandInput placeholder="Cerca cliente..." />
-                    <CommandList>
-                      <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
-                      <CommandGroup>
-                        {clienti.map((cliente) => (
-                          <CommandItem
-                            key={cliente.id}
-                            value={cliente.nome}
-                            onSelect={() => {
-                              setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
-                              setOpenClientCombobox(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {cliente.nome}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
-            </div>
-            <div>
-              <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro *</Label>
-              <Input
-                id={`articoli.${index}.lavoro`}
-                {...register(`articoli.${index}.lavoro`)}
-                placeholder="Es. LAV-2025-089"
-                disabled={isSubmitting || isOrderCancelled}
-                className="text-sm"
-              />
-              {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
-            </div>
-          </div>
-        </div>
-
-        <Separator className="my-1" />
-
-        {currentTipoArticolo === 'cartone' && (
+        {isCartoneFornitore ? (
           <>
             {/* Section: Codice Identificativo Cartone */}
             <div className="p-2 bg-gray-50 rounded-lg border">
@@ -425,6 +335,77 @@ export function OrdineAcquistoArticoloFormRow({
 
             <Separator className="my-1" />
 
+            {/* Section: Dettagli Utilizzo Cartone */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Utilizzo</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente *</Label>
+                  <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openClientCombobox}
+                        className={cn(
+                          "w-full justify-between text-sm",
+                          !currentCliente && "text-muted-foreground"
+                        )}
+                        disabled={isSubmitting || isOrderCancelled}
+                      >
+                        {currentCliente
+                          ? clienti.find((cliente) => cliente.nome === currentCliente)?.nome
+                          : "Seleziona cliente..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Cerca cliente..." />
+                        <CommandList>
+                          <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
+                          <CommandGroup>
+                            {clienti.map((cliente) => (
+                              <CommandItem
+                                key={cliente.id}
+                                value={cliente.nome}
+                                onSelect={() => {
+                                  setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
+                                  setOpenClientCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {cliente.nome}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro *</Label>
+                  <Input
+                    id={`articoli.${index}.lavoro`}
+                    {...register(`articoli.${index}.lavoro`)}
+                    placeholder="Es. LAV-2025-089"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
             {/* Section: Certificazioni Cartone */}
             <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Certificazioni</h5>
@@ -487,9 +468,7 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
-        )}
-        
-        {currentTipoArticolo === 'fustella' && (
+        ) : isFustelleFornitore ? ( // NUOVA SEZIONE PER FUSTELLE
           <>
             {/* Section: Codice Identificativo Fustella */}
             <div className="p-2 bg-gray-50 rounded-lg border">
@@ -618,10 +597,106 @@ export function OrdineAcquistoArticoloFormRow({
 
             <Separator className="my-1" />
 
-            {/* Section: Dettagli Tasselli e Incollatura */}
+            {/* Section: Dettagli Utilizzo Fustella (Cliente e Lavoro) */}
             <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Tasselli e Incollatura</h5>
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Utilizzo</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente *</Label>
+                  <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openClientCombobox}
+                        className={cn(
+                          "w-full justify-between text-sm",
+                          !currentCliente && "text-muted-foreground"
+                        )}
+                        disabled={isSubmitting || isOrderCancelled}
+                      >
+                        {currentCliente
+                          ? clienti.find((cliente) => cliente.nome === currentCliente)?.nome
+                          : "Seleziona cliente..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Cerca cliente..." />
+                        <CommandList>
+                          <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
+                          <CommandGroup>
+                            {clienti.map((cliente) => (
+                              <CommandItem
+                                key={cliente.id}
+                                value={cliente.nome}
+                                onSelect={() => {
+                                  setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
+                                  setOpenClientCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {cliente.nome}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro *</Label>
+                  <Input
+                    id={`articoli.${index}.lavoro`}
+                    {...register(`articoli.${index}.lavoro`)}
+                    placeholder="Es. LAV-2025-089"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Pulitore e Tasselli */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Pulitore e Tasselli</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`articoli.${index}.hasPulitore`}
+                    {...register(`articoli.${index}.hasPulitore`)}
+                    checked={currentHasPulitore}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor={`articoli.${index}.hasPulitore`} className="text-xs">Ha Pulitore</Label>
+                  {errors.articoli?.[index]?.hasPulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
+                </div>
+                {currentHasPulitore && (
+                  <div>
+                    <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
+                    <Input
+                      id={`articoli.${index}.pulitore_codice_fustella`}
+                      {...register(`articoli.${index}.pulitore_codice_fustella`)}
+                      readOnly
+                      disabled={true}
+                      className="text-sm font-mono font-bold bg-gray-100"
+                    />
+                    {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
+                  </div>
+                )}
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -661,6 +736,15 @@ export function OrdineAcquistoArticoloFormRow({
                     {errors.articoli?.[index]?.nr_tasselli && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.nr_tasselli?.message}</p>}
                   </div>
                 )}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Incollatura */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Incollatura</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -720,136 +804,9 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
-        )}
-
-        {currentTipoArticolo === 'pulitore' && (
+        ) : (
           <>
-            {/* Section: Codice Identificativo Pulitore */}
-            <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo</h5>
-              <div>
-                <Label htmlFor={`articoli.${index}.codice_pulitore`} className="text-xs">Codice Pulitore *</Label>
-                <Input
-                  id={`articoli.${index}.codice_pulitore`}
-                  {...register(`articoli.${index}.codice_pulitore`)}
-                  readOnly
-                  disabled={true}
-                  className="text-sm font-mono font-bold bg-gray-100"
-                />
-                {errors.articoli?.[index]?.codice_pulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_pulitore?.message}</p>}
-              </div>
-            </div>
-
-            <Separator className="my-1" />
-
-            {/* Section: Dettagli Pulitore */}
-            <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Pulitore</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione *</Label>
-                  <Input
-                    id={`articoli.${index}.descrizione`}
-                    {...register(`articoli.${index}.descrizione`)}
-                    placeholder="Es. Pulitore per fustella FST-001"
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
-                  {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
-                  <Input
-                    id={`articoli.${index}.quantita`}
-                    type="text"
-                    value={displayQuantita}
-                    onChange={(e) => {
-                      const rawValue = e.target.value;
-                      setDisplayQuantita(rawValue);
-                      const numericValue = parseFloat(rawValue.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
-                      } else {
-                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
-                      } else {
-                        setDisplayQuantita('');
-                      }
-                    }}
-                    placeholder="Es. 1"
-                    min="0"
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
-                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
-                  <div className="relative">
-                    <Input
-                      id={`articoli.${index}.prezzo_unitario`}
-                      type="text"
-                      value={displayPrezzoUnitario}
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue);
-                        const numericValue = parseFloat(rawValue.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
-                        } else {
-                          setDisplayPrezzoUnitario('');
-                        }
-                      }}
-                      placeholder="Es. 50,00"
-                      min="0"
-                      disabled={isSubmitting || isOrderCancelled}
-                      className="text-sm pr-10"
-                    />
-                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
-                      €
-                    </span>
-                  </div>
-                  {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
-                </div>
-              </div>
-            </div>
-
-            <Separator className="my-1" />
-
-            {/* Section: Consegna Pulitore */}
-            <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
-              <div>
-                <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
-                <Input
-                  id={`articoli.${index}.data_consegna_prevista`}
-                  type="date"
-                  {...register(`articoli.${index}.data_consegna_prevista`)}
-                  disabled={isSubmitting || isOrderCancelled}
-                  className="text-sm"
-                />
-                {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
-              </div>
-            </div>
-          </>
-        )}
-
-        {currentTipoArticolo === 'altro' && (
-          <>
-            {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle/Non-Pulitore) */}
+            {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle) */}
             <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

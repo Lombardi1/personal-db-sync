@@ -57,7 +57,6 @@ export async function seedPurchaseOrders() {
         note: 'Ordine di cartoni per cliente Alpha',
         articoli: [
           {
-            tipo_articolo: 'cartone',
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Triplo',
             formato: '120 x 80 cm',
@@ -74,7 +73,6 @@ export async function seedPurchaseOrders() {
             rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
           },
           {
-            tipo_articolo: 'cartone',
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Microonda Bianco',
             formato: '70 x 100 cm',
@@ -104,22 +102,16 @@ export async function seedPurchaseOrders() {
         note: 'Rifornimento inchiostri CMYK',
         articoli: [
           {
-            tipo_articolo: 'altro',
             descrizione: 'Inchiostro Cyan 1kg',
             quantita: 5,
             prezzo_unitario: 25.00,
-            cliente: randomCliente.nome,
-            lavoro: 'LAV-2024-002',
             data_consegna_prevista: '2024-07-20',
             stato: 'in_attesa',
           },
           {
-            tipo_articolo: 'altro',
             descrizione: 'Inchiostro Magenta 1kg',
             quantita: 5,
             prezzo_unitario: 25.00,
-            cliente: randomCliente.nome,
-            lavoro: 'LAV-2024-002',
             data_consegna_prevista: '2024-07-20',
             stato: 'in_attesa',
           },
@@ -137,7 +129,6 @@ export async function seedPurchaseOrders() {
         note: 'Ordine urgente di cartoni speciali',
         articoli: [
           {
-            tipo_articolo: 'cartone',
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Cartone Speciale',
             formato: '80 x 120 cm',
@@ -167,7 +158,6 @@ export async function seedPurchaseOrders() {
         note: 'Ordine di cartoni in attesa di conferma',
         articoli: [
           {
-            tipo_articolo: 'cartone',
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Semplice',
             formato: '60 x 80 cm',
@@ -198,7 +188,6 @@ export async function seedPurchaseOrders() {
         note: 'Ordine con articolo annullato',
         articoli: [
           {
-            tipo_articolo: 'cartone',
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Doppio',
             formato: '100 x 140 cm',
@@ -215,7 +204,6 @@ export async function seedPurchaseOrders() {
             rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
           },
           {
-            tipo_articolo: 'cartone',
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Singolo',
             formato: '50 x 70 cm',
@@ -235,7 +223,7 @@ export async function seedPurchaseOrders() {
       });
     }
 
-    // NUOVO: Aggiungi un ordine di Fustelle e Pulitore
+    // NUOVO: Aggiungi un ordine di Fustelle
     if (fornitoreFustelle && randomCliente) {
       ordersToInsert.push({
         fornitore_id: fornitoreFustelle.id!,
@@ -243,10 +231,9 @@ export async function seedPurchaseOrders() {
         numero_ordine: `PO-2024-006`,
         stato: 'in_attesa',
         importo_totale: 0,
-        note: 'Ordine di nuove fustelle e pulitori per produzione',
+        note: 'Ordine di nuove fustelle per produzione',
         articoli: [
           {
-            tipo_articolo: 'fustella',
             fustella_codice: generateNextFustellaCode(),
             codice_fornitore_fustella: 'F-12345',
             fustellatrice: 'Bobst 102',
@@ -257,6 +244,8 @@ export async function seedPurchaseOrders() {
             lavoro: 'LAV-2024-F01',
             data_consegna_prevista: '2024-08-01',
             stato: 'in_attesa',
+            hasPulitore: true,
+            pulitore_codice_fustella: generateNextPulitoreCode(),
             pinza_tagliata: true,
             tasselli_intercambiabili: false,
             nr_tasselli: null,
@@ -265,18 +254,6 @@ export async function seedPurchaseOrders() {
             tipo_incollatura: null,
           },
           {
-            tipo_articolo: 'pulitore', // Articolo Pulitore separato
-            codice_pulitore: generateNextPulitoreCode(),
-            descrizione: 'Pulitore per fustella FST-001',
-            quantita: 1,
-            prezzo_unitario: 50.00,
-            cliente: randomCliente.nome,
-            lavoro: 'LAV-2024-F01',
-            data_consegna_prevista: '2024-08-01',
-            stato: 'in_attesa',
-          },
-          {
-            tipo_articolo: 'fustella',
             fustella_codice: generateNextFustellaCode(),
             codice_fornitore_fustella: 'F-67890',
             fustellatrice: 'Bobst 142',
@@ -287,6 +264,8 @@ export async function seedPurchaseOrders() {
             lavoro: 'LAV-2024-F02',
             data_consegna_prevista: '2024-08-05',
             stato: 'inviato',
+            hasPulitore: false,
+            pulitore_codice_fustella: null,
             pinza_tagliata: false,
             tasselli_intercambiabili: true,
             nr_tasselli: 4,
@@ -332,8 +311,6 @@ export async function seedPurchaseOrders() {
 
       if (fornitoreTipo === 'Cartone' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) { // Aggiunto 'inviato'
         for (const articolo of articoli) {
-          if (articolo.tipo_articolo !== 'cartone') continue; // Processa solo articoli di tipo 'cartone'
-
           const codiceCtn = articolo.codice_ctn; 
           if (!codiceCtn) {
             console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice CTN. Saltato.`);
@@ -387,48 +364,42 @@ export async function seedPurchaseOrders() {
           }
         } else if (fornitoreTipo === 'Fustelle' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) {
           for (const articolo of articoli) {
-            if (articolo.tipo_articolo === 'fustella') {
-              const fustellaCodice = articolo.fustella_codice;
-              if (!fustellaCodice) {
-                console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice Fustella. Saltato.`);
-                continue;
-              }
+            const fustellaCodice = articolo.fustella_codice;
+            if (!fustellaCodice) {
+              console.warn(`Articolo dell'ordine d'acquisto ${newOrdine.numero_ordine} senza codice Fustella. Saltato.`);
+              continue;
+            }
 
-              if (articolo.stato === 'annullato') {
-                console.log(`Articolo Fustella ${fustellaCodice} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
-                continue;
-              }
+            if (articolo.stato === 'annullato') {
+              console.log(`Articolo Fustella ${fustellaCodice} dell'ordine ${newOrdine.numero_ordine} è annullato, non inserito in magazzino.`);
+              continue;
+            }
 
-              const fustella: Fustella = {
-                codice: fustellaCodice,
-                fornitore: fornitoreFustelle!.nome,
-                codice_fornitore: articolo.codice_fornitore_fustella || null,
-                cliente: articolo.cliente || 'N/A',
-                lavoro: articolo.lavoro || 'N/A',
-                fustellatrice: articolo.fustellatrice || null,
-                resa: articolo.resa_fustella || null,
-                pulitore_codice: null, // Il pulitore è ora un articolo separato
-                pinza_tagliata: articolo.pinza_tagliata || false,
-                tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
-                nr_tasselli: articolo.nr_tasselli || null,
-                incollatura: articolo.incollatura || false,
-                incollatrice: articolo.incollatrice || null,
-                tipo_incollatura: articolo.tipo_incollatura || null,
-                disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
-                data_creazione: new Date().toISOString(),
-                ultima_modifica: new Date().toISOString(),
-                ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
-              };
+            const fustella: Fustella = {
+              codice: fustellaCodice,
+              fornitore: fornitoreFustelle!.nome,
+              codice_fornitore: articolo.codice_fornitore_fustella || null,
+              cliente: articolo.cliente || 'N/A',
+              lavoro: articolo.lavoro || 'N/A',
+              fustellatrice: articolo.fustellatrice || null,
+              resa: articolo.resa_fustella || null,
+              pulitore_codice: articolo.pulitore_codice_fustella || null,
+              pinza_tagliata: articolo.pinza_tagliata || false,
+              tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
+              nr_tasselli: articolo.nr_tasselli || null,
+              incollatura: articolo.incollatura || false,
+              incollatrice: articolo.incollatrice || null,
+              tipo_incollatura: articolo.tipo_incollatura || null,
+              disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+              data_creazione: new Date().toISOString(),
+              ultima_modifica: new Date().toISOString(),
+              ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
+            };
 
-              const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
-              if (fustellaError) {
-                console.error(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle:`, fustellaError);
-                notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
-              }
-            } else if (articolo.tipo_articolo === 'pulitore') {
-              // I pulitori non vengono inseriti nella tabella 'fustelle' o 'giacenza'
-              // Sono solo voci nell'ordine d'acquisto per la fatturazione
-              console.log(`Articolo Pulitore ${articolo.codice_pulitore} dell'ordine ${newOrdine.numero_ordine} processato come voce d'ordine.`);
+            const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
+            if (fustellaError) {
+              console.error(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle:`, fustellaError);
+              notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
             }
           }
         }
