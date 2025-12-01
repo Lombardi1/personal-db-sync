@@ -458,12 +458,12 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           <tbody>{
             groupedRows.map(({ order, articles, isExpanded }) => {
               const visibleArticles = isExpanded ? articles : [articles[0]];
-              const rowSpanValue = articles.length; // Total number of display rows for this order
+              const rowSpanValue = visibleArticles.length; // Calcola rowSpanValue in base agli articoli visibili
 
               return (
                 <React.Fragment key={order.id}>
                   {visibleArticles.map((row, idx) => {
-                    const isFirstDisplayRowOfOrder = row.isFirstDisplayRowOfOrder;
+                    const isFirstDisplayRowOfOrder = idx === 0; // Ora si basa sull'indice degli articoli visibili
                     const currentRowTotal = (row.quantita || 0) * (row.prezzo_unitario || 0);
 
                     return (
@@ -497,7 +497,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                         </td>
                         <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
                           {row.isPulitoreRow ? (
-                            <div className="font-bold text-[9px] sm:text-[10px]"><span className="codice">{row.pulitore_codice_fustella}</span></div>
+                            <div className="font-bold text-[9px] sm:text-[10px]">Pulitore: <span className="codice">{row.pulitore_codice_fustella}</span></div>
                           ) : row.isCartoneFornitore ? (
                             <>
                               {row.codice_ctn && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.codice_ctn}</span></div>}
