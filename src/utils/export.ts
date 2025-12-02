@@ -443,14 +443,8 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     // Seconda riga: Resa, Mezzo, Banca
     console.log(`[exportOrdineAcquistoPDF] Valore di fornitore?.banca prima di popolare la tabella: '${fornitore?.banca}'`); // LOG DI DEBUG
     
-    let resaValue = '';
-    if (fornitore?.tipo_fornitore === 'Fustelle' && ordine.articoli && ordine.articoli.length > 0) {
-      // Trova la resa del primo articolo di tipo fustella o pulitore
-      const firstFustellaOrPulitoreArticle = ordine.articoli.find(art => art.fustella_codice || art.pulitore_codice_fustella);
-      if (firstFustellaOrPulitoreArticle?.resa_fustella) {
-        resaValue = firstFustellaOrPulitoreArticle.resa_fustella;
-      }
-    }
+    // Imposta resaValue a stringa vuota per questa sezione
+    let resaValue = ''; 
 
     autoTable(doc, {
       startY: y,
@@ -525,19 +519,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           articoloColumnText = article.fustella_codice || '';
           let fustellaDescriptionParts = [];
           if (article.codice_fornitore_fustella) fustellaDescriptionParts.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
-          // Rimosse le seguenti righe come richiesto dall'utente:
-          // if (article.pinza_tagliata) fustellaDescriptionParts.push(`Pinza Tagliata: Sì`);
-          // if (article.tasselli_intercambiabili) {
-          //   fustellaDescriptionParts.push(`Tasselli Intercambiabili: Sì`);
-          //   if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
-          //     fustellaDescriptionParts.push(`Nr. Tasselli: ${article.nr_tasselli}`);
-          //   }
-          // }
-          // if (article.incollatura) {
-          //   fustellaDescriptionParts.push(`Incollatura: Sì`);
-          //   if (article.incollatrice) fustellaDescriptionParts.push(`Incollatrice: ${article.incollatrice}`);
-          //   if (article.tipo_incollatura) fustellaDescriptionParts.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
-          // }
+          if (article.resa_fustella) fustellaDescriptionParts.push(`Resa: ${article.resa_fustella}`); // RE-ADDED RESA HERE
           descrizioneColumnText = fustellaDescriptionParts.join('\n');
 
           // Push the main Fustella row
