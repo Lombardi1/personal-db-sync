@@ -59,7 +59,9 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
           </tr>
         </thead>
         <tbody id="ordini-body">
-          {ordini.map((ordine) => (
+          {ordini.map((ordine) => {
+            console.log(`[TabellaOrdini] Ordine ricevuto per riga ${ordine.codice}:`, JSON.stringify(ordine, null, 2)); // LOG DI DEBUG
+            return (
             <tr 
               key={ordine.codice} 
               className={`border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)] transition-colors ${ordine.confermato ? 'confirmed-row' : ''}`}
@@ -124,7 +126,7 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
                 </div>
               </td>
             </tr>
-          ))}
+          )})}
         </tbody>
       </table>
       </div>
