@@ -790,7 +790,7 @@ export function ModalOrdineAcquistoForm({
             <DialogDescription className="text-sm sm:text-base">
               Attendere il caricamento dei dati dell'ordine.
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <div className="flex items-center justify-center h-48">
             <p className="text-muted-foreground">Caricamento...</p>
           </div>
