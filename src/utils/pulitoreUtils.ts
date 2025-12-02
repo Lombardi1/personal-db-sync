@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-let lastGeneratedPulitoreCodeInSession = 0; // Stores the highest PU number seen/generated in the current session
+let lastGeneratedPulitoreCodeInSession = 0; // Stores the highest PLM number seen/generated in the current session
 
 /**
  * Fetches the maximum Pulitore code number from the database (fustelle table).
@@ -21,7 +21,7 @@ export async function fetchMaxPulitoreCodeFromDB(): Promise<number> {
 
   let maxCodeFromDB = 0;
   if (data && data.length > 0 && data[0].pulitore_codice) {
-    const num = parseInt(data[0].pulitore_codice.replace('PU-', ''));
+    const num = parseInt(data[0].pulitore_codice.replace('PUL-', '')); // Changed from 'PU-' to 'PUL-'
     maxCodeFromDB = num > maxCodeFromDB ? num : maxCodeFromDB;
   }
   return maxCodeFromDB;
@@ -30,11 +30,11 @@ export async function fetchMaxPulitoreCodeFromDB(): Promise<number> {
 /**
  * Generates the next unique Pulitore code for the current session.
  * This function is synchronous and relies on `lastGeneratedPulitoreCodeInSession` being correctly initialized.
- * @returns The next formatted PU code (e.g., 'PU-001').
+ * @returns The next formatted PUL code (e.g., 'PUL-001').
  */
 export function generateNextPulitoreCode(): string {
   lastGeneratedPulitoreCodeInSession++; // Increment for the next unique code
-  const formattedCode = `PU-${String(lastGeneratedPulitoreCodeInSession).padStart(3, '0')}`;
+  const formattedCode = `PUL-${String(lastGeneratedPulitoreCodeInSession).padStart(3, '0')}`; // Changed from 'PU-' to 'PUL-'
   console.log('🧹 Generato nuovo codice Pulitore (in-session):', formattedCode);
   return formattedCode;
 }
