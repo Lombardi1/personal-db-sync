@@ -26,7 +26,7 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
   const [codiceRiporto, setCodiceRiporto] = useState<string | null>(null);
 
   const copiaRiga = (cartone: Cartone) => {
-    const testo = `${cartone.codice}\t${cartone.fornitore}\t${cartone.ordine}\t${cartone.ddt || '-'}\t${cartone.tipologia}\t${formatFormato(cartone.formato)}\t${cartone.grammatura}\t${formatFogli(cartone.fogli)}\t${cartone.cliente}\t${cartone.lavoro}\t${cartone.magazzino || '-'}\t${formatPrezzo(cartone.prezzo)}\t${formatData(cartone.data_arrivo || '')}`;
+    const testo = `${cartone.codice}\t${cartone.fornitore}\t${cartone.ordine}\t${cartone.ddt || '-'}\t${cartone.tipologia}\t${formatFormato(cartone.formato)}\t${cartone.grammatura}\t${formatFogli(cartone.fogli)}\t${cartone.cliente}\t${cartone.lavoro}\t${cartone.magazzino}\t${formatPrezzo(cartone.prezzo)}\t${formatData(cartone.data_arrivo || '')}`;
     navigator.clipboard.writeText(testo).then(() => {
       notifications.showSuccess('✅ Riga copiata negli appunti');
     }).catch(() => {
@@ -71,7 +71,7 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
               <td className="px-2 py-1.5 text-[10px] sm:text-xs font-semibold whitespace-nowrap w-[80px]">{formatFogli(cartone.fogli)}</td>
               <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{cartone.cliente}</td>
               <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{cartone.lavoro}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.magazzino || '-'}</td>
+              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.magazzino}</td>
               <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{formatPrezzo(cartone.prezzo)}</td>
               <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">{formatData(cartone.data_arrivo || '')}</td>
               <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[150px]">

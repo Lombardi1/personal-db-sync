@@ -21,7 +21,6 @@ export function useCartoni() {
     try {
       const [giacenzaRes, ordiniRes, esauritiRes, storicoRes] = await Promise.all([
         supabase.from('giacenza').select('*'),
-        // Modificato: Seleziona tutte le colonne per la tabella 'ordini'
         supabase.from('ordini').select('*'),
         supabase.from('esauriti').select('*'),
         supabase.from('storico').select(`*, app_users(username)`).order('data', { ascending: false })
@@ -35,7 +34,7 @@ export function useCartoni() {
       }
 
       if (ordiniRes.data) {
-        setOrdini(ordiniRes.data as Cartone[]); 
+        setOrdini(ordiniRes.data);
         console.log('[useCartoni] Ordini data loaded:', ordiniRes.data.length, 'items');
       } else if (ordiniRes.error) {
         console.error('[useCartoni] Error loading ordini:', ordiniRes.error);
@@ -106,9 +105,7 @@ export function useCartoni() {
   }, []);
 
   const aggiungiOrdine = async (cartone: Cartone) => {
-    // Destruttura l'oggetto cartone per omettere i campi non presenti nella tabella 'ordini'
-    const { ddt, data_arrivo, magazzino, ...ordineToInsert } = cartone;
-    const { error } = await supabase.from('ordini').insert([ordineToInsert]);
+    const { error } = await supabase.from('ordini').insert([cartone]);
     if (!error) {
       const movimento: StoricoMovimento = {
         codice: cartone.codice,
@@ -137,49 +134,41 @@ export function useCartoni() {
     }
     console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, ordine);
 
-    const fogliFinali = fogliEffettivi;
+    const fogliFinali = fogliEffettivi; // fogliEffettivi è ora sempre un numero
     const magazzinoFinale = magazzino; 
     
-    const cartoneGiacenza: Cartone = {
+    const cartoneGiacenza: Cartone = { // Specificato il tipo Cartone
       ...ordine, 
-      ddt,
+      ddt, // Usato direttamente come string | null
       data_arrivo: dataArrivo, 
       fogli: fogliFinali, 
-      magazzino: magazzinoFinale,
+      magazzino: magazzinoFinale, // Usato direttamente come string | null
       fsc: ordine.fsc,
       alimentare: ordine.alimentare,
       rif_commessa_fsc: ordine.rif_commessa_fsc || null,
       data_consegna: ordine.data_consegna || null,
     };
-    delete cartoneGiacenza.confermato;
+    delete cartoneGiacenza.confermato; // 'confermato' è specifico della tabella 'ordini'
     
-    console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento/aggiornamento in 'giacenza':`, cartoneGiacenza);
+    console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza':`, cartoneGiacenza);
 
-    // Utilizzo di upsert per inserire o aggiornare il cartone in giacenza
-    console.log(`[useCartoni - spostaInGiacenza] Eseguo UPSERT in 'giacenza' per codice ${codice} con dati:`, cartoneGiacenza);
-    const { data: operationData, error: operationError } = await supabase
-      .from('giacenza')
-      .upsert([cartoneGiacenza], { onConflict: 'codice' }) // Specifica 'codice' come colonna di conflitto
-      .select()
-      .single();
-
-    if (operationError) {
-      console.error(`[useCartoni - spostaInGiacenza] Errore operazione (UPSERT) in 'giacenza' per codice ${codice}:`, operationError);
-      notifications.showError(`Errore salvataggio in giacenza: ${operationError.message}`);
-      return { error: operationError };
-    }
-    console.log(`[useCartoni - spostaInGiacenza] Operazione (UPSERT) in 'giacenza' riuscita per codice ${codice}. Dati risultanti:`, operationData);
-
-    // Elimina da 'ordini' solo dopo aver gestito l'inserimento/aggiornamento in 'giacenza'
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di eliminare da 'ordini' il codice: ${codice}`);
     const { error: deleteError } = await supabase.from('ordini').delete().eq('codice', codice);
     if (deleteError) {
       console.error(`[useCartoni - spostaInGiacenza] Errore eliminazione ordine da 'ordini':`, deleteError);
       notifications.showError(`Errore eliminazione ordine: ${deleteError.message}`);
-      // Non ritorniamo qui, l'operazione principale è già riuscita
-    } else {
-      console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}`);
+      return { error: deleteError };
     }
+    console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}`);
+
+    console.log(`[useCartoni - spostaInGiacenza] Tentativo di inserire in 'giacenza' il cartone:`, cartoneGiacenza);
+    const { error: insertError } = await supabase.from('giacenza').insert([cartoneGiacenza]);
+    if (insertError) {
+      console.error(`[useCartoni - spostaInGiacenza] Errore inserimento in 'giacenza':`, insertError);
+      notifications.showError(`Errore inserimento in giacenza: ${insertError.message}`);
+      return { error: insertError };
+    }
+    console.log(`[useCartoni - spostaInGiacenza] Inserimento in 'giacenza' riuscito per codice: ${codice}`);
 
     const movimento: StoricoMovimento = {
       codice,
@@ -202,18 +191,21 @@ export function useCartoni() {
       console.log(`[useCartoni - spostaInGiacenza] Registrazione storico riuscita per codice: ${codice}`);
     }
 
+    // Aggiorna lo stato dell'articolo nell'ordine d'acquisto a 'ricevuto'
     if (ordine.ordine && codice) { 
       console.log(`[useCartoni - spostaInGiacenza] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'ricevuto'`);
       const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordine.ordine, codice, 'ricevuto'); 
       if (updateArticleError) {
         console.error(`[useCartoni - spostaInGiacenza] Errore durante l'aggiornamento dello stato dell'articolo nell'OA:`, updateArticleError);
         notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}. Il cartone è stato comunque spostato in magazzino.`);
+        // NON ritornare qui, permetti all'operazione principale di completarsi
       } else {
         console.log(`[useCartoni - spostaInGiacenza] updateArticleStatusInOrder completato con successo: ${updateSuccess}`);
       }
     } else {
       console.warn(`[useCartoni - spostaInGiacenza] Impossibile chiamare updateArticleStatusInOrder: ordine.ordine o codice mancante. Ordine.ordine: '${ordine.ordine}', Codice: '${codice}'`);
       notifications.showInfo(`Impossibile aggiornare lo stato dell'articolo nell'ordine d'acquisto (dati mancanti). Il cartone è stato comunque spostato in magazzino.`);
+      // NON ritornare qui
     }
 
     console.log(`[useCartoni - spostaInGiacenza] Ricarico tutti i dati.`);
@@ -299,7 +291,6 @@ export function useCartoni() {
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
     };
-    console.log(`[useCartoni - riportaInGiacenza] Dati finali per inserimento in 'giacenza':`, cartonePerGiacenza);
 
     try {
       const { error: deleteError } = await supabase.from('esauriti').delete().eq('codice', codice);

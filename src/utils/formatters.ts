@@ -3,7 +3,7 @@ export function formatFormato(val: string | number): string {
   let s = String(val).trim();
   s = s.replace(/\s*cm$/i, '').trim();
   s = s.replace(/[×✕*]/g, 'x');
-  const m = s.match(/(\d+(?:[\.,]\d+)?)\s*[xX]\s*(\d+(?:[\.,]\d+)?)/) || s.match(/(\d+(?:[\.,]\d+)?)\s+(\d+(?:[\.,]\d+)?)/);
+  const m = s.match(/(\d+(?:[\.,]\d+)?)\s*[xX]\s*(\d+(?:[\.,]\d+)?)/i) || s.match(/(\d+(?:[\.,]\d+)?)\s+(\d+(?:[\.,]\d+)?)/);
   if (m) {
     const a = m[1].replace(',', '.').trim();
     const b = m[2].replace(',', '.').trim();
@@ -21,10 +21,7 @@ export function formatGrammatura(val: string | number): string {
   return s + ' g/m²';
 }
 
-export function formatFogli(val: number | null | undefined): string {
-  if (val === null || val === undefined) {
-    return '-'; // Restituisce un trattino o una stringa vuota se il valore non è definito
-  }
+export function formatFogli(val: number): string {
   return val.toLocaleString('it-IT', { maximumFractionDigits: 0 });
 }
 

@@ -72,15 +72,13 @@ export function useOrdiniAcquisto() {
             fogli: numFogli,
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
-            magazzino: '-', // Default value, will be updated on actual arrival
+            magazzino: '-',
             prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
             note: ordineAcquisto.note || '-',
             fsc: articolo.fsc,
             alimentare: articolo.alimentare,
             rif_commessa_fsc: articolo.rif_commessa_fsc,
-            ddt: null, // Default value
-            data_arrivo: null, // Default value
           };
 
           if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
@@ -91,19 +89,36 @@ export function useOrdiniAcquisto() {
               toast.error(`Errore inserimento in ordini: ${insertError.message}`);
             }
           } else if (articolo.stato === 'ricevuto') {
-            // Utilizzo di upsert per inserire o aggiornare il cartone in giacenza
-            // Non tentiamo più di leggere i campi esistenti per evitare il 406
-            const { data: operationData, error: operationError } = await supabase
+            const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
               .from('giacenza')
-              .upsert([cartoneBase], { onConflict: 'codice' }) // Specifica 'codice' come colonna di conflitto
-              .select()
+              .select('ddt, data_arrivo, magazzino')
+              .eq('codice', codiceCtn)
               .single();
 
-            if (operationError) {
-              console.error(`[syncArticleInventoryStatus] Errore operazione (UPSERT) in 'giacenza' per codice '${codiceCtn}':`, operationError);
-              toast.error(`Errore salvataggio in giacenza: ${operationError.message}`);
+            if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') {
+              console.error(`[syncArticleInventoryStatus] Errore recupero giacenza per cartone '${codiceCtn}':`, fetchGiacenzaError);
+              toast.error(`Errore recupero giacenza: ${fetchGiacenzaError.message}`);
+              continue;
+            }
+
+            const giacenzaDataToUpdate = {
+              ddt: existingGiacenza?.ddt || null,
+              data_arrivo: existingGiacenza?.data_arrivo || new Date().toISOString().split('T')[0],
+              magazzino: existingGiacenza?.magazzino || '-',
+            };
+
+            if (existingGiacenza) {
+              const { error: updateError } = await supabase.from('giacenza').update({ ...cartoneBase, ...giacenzaDataToUpdate }).eq('codice', codiceCtn);
+              if (updateError) {
+                console.error(`[syncArticleInventoryStatus] Errore aggiornamento in giacenza per cartone '${codiceCtn}':`, updateError);
+                toast.error(`Errore aggiornamento in giacenza: ${updateError.message}`);
+              }
             } else {
-              console.log(`[syncArticleInventoryStatus] Operazione (UPSERT) in 'giacenza' riuscita per codice '${codiceCtn}'. Dati risultanti:`, operationData);
+              const { error: insertError } = await supabase.from('giacenza').insert([{ ...cartoneBase, ...giacenzaDataToUpdate }]);
+              if (insertError) {
+                console.error(`[syncArticleInventoryStatus] Errore inserimento in giacenza per cartone '${codiceCtn}':`, insertError);
+                toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
+              }
             }
           }
         } else if (isFustelleFornitore) {
@@ -133,17 +148,30 @@ export function useOrdiniAcquisto() {
               ordine_acquisto_numero: ordineAcquisto.numero_ordine,
             };
 
-            const { data: operationData, error: operationError } = await supabase
+            const { data: existingFustella, error: fetchFustellaError } = await supabase
               .from('fustelle')
-              .upsert([fustellaBase], { onConflict: 'codice' })
-              .select()
+              .select('codice')
+              .eq('codice', fustellaCodice)
               .single();
 
-            if (operationError) {
-              console.error(`[syncArticleInventoryStatus] Errore operazione (UPSERT) in 'fustelle' per codice '${fustellaCodice}':`, operationError);
-              toast.error(`Errore salvataggio fustella: ${operationError.message}`);
+            if (fetchFustellaError && fetchFustellaError.code !== 'PGRST116') {
+              console.error(`[syncArticleInventoryStatus] Errore recupero fustella '${fustellaCodice}':`, fetchFustellaError);
+              toast.error(`Errore recupero fustella: ${fetchFustellaError.message}`);
+              continue;
+            }
+
+            if (existingFustella) {
+              const { error: updateError } = await supabase.from('fustelle').update(fustellaBase).eq('codice', fustellaCodice);
+              if (updateError) {
+                console.error(`[syncArticleInventoryStatus] Errore aggiornamento fustella '${fustellaCodice}':`, updateError);
+                toast.error(`Errore aggiornamento fustella: ${updateError.message}`);
+              }
             } else {
-              console.log(`[syncArticleInventoryStatus] Operazione (UPSERT) in 'fustelle' riuscita per codice '${fustellaCodice}'. Dati risultanti:`, operationData);
+              const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
+              if (insertError) {
+                console.error(`[syncArticleInventoryStatus] Errore inserimento fustella '${fustellaCodice}':`, insertError);
+                toast.error(`Errore inserimento fustella: ${insertError.message}`);
+              }
             }
           } 
           // Case 2: Article is a Standalone Pulitore (has pulitore_codice_fustella but NO fustella_codice)
