@@ -153,20 +153,27 @@ export function useCartoni() {
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento/aggiornamento in 'giacenza':`, cartoneGiacenza);
 
     // 1. Controlla se il cartone esiste già in giacenza
-    const { data: existingGiacenzaItems, error: fetchGiacenzaError } = await supabase
+    let existingGiacenzaItem = null;
+    const { data: existingItemData, error: fetchGiacenzaError } = await supabase
       .from('giacenza')
-      .select('*') // Modificato da 'codice' a '*'
+      .select('codice')
       .eq('codice', codice)
-      .limit(1); // Aggiunto limit(1)
+      .maybeSingle(); // Usiamo maybeSingle()
 
-    if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') { // PGRST116 = No rows found
+    if (fetchGiacenzaError) {
       console.error(`[useCartoni - spostaInGiacenza] Errore durante la verifica esistenza in giacenza per codice ${codice}:`, fetchGiacenzaError);
-      notifications.showError(`Errore verifica giacenza: ${fetchGiacenzaError.message}`);
-      // Non blocchiamo l'operazione qui, ma logghiamo l'errore.
-      // Potrebbe essere un problema di RLS che impedisce la SELECT ma non l'INSERT/UPDATE.
+      if (fetchGiacenzaError.code === '406') {
+        console.warn(`[useCartoni - spostaInGiacenza] ATTENZIONE: Errore 406 durante la verifica esistenza. Questo potrebbe indicare un problema di configurazione RLS o del server. Procedo con INSERT/UPDATE ma la verifica potrebbe essere inaffidabile.`);
+        // Non blocchiamo l'operazione qui, ma logghiamo l'errore.
+        // Potrebbe essere un problema di RLS che impedisce la SELECT ma non l'INSERT/UPDATE.
+      } else {
+        notifications.showError(`Errore verifica giacenza: ${fetchGiacenzaError.message}`);
+        return { error: fetchGiacenzaError };
+      }
+    } else if (existingItemData) {
+      existingGiacenzaItem = existingItemData;
     }
-    // Controlla se è stato trovato un elemento esistente
-    const existingGiacenzaItem = existingGiacenzaItems && existingGiacenzaItems.length > 0 ? existingGiacenzaItems[0] : null;
+    
     console.log(`[useCartoni - spostaInGiacenza] Risultato ricerca esistenza in giacenza per codice ${codice}:`, existingGiacenzaItem ? 'Trovato' : 'Non trovato');
 
 
