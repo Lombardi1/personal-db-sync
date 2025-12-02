@@ -268,7 +268,8 @@ export function ModalOrdineAcquistoForm({
         ? initialData.articoli.map(art => {
             let descriptionForPulitore = art.descrizione || '';
             // If it's a pulitore article (pulitore_codice_fustella exists, but not fustella_codice)
-            if (art.pulitore_codice_fustella && !art.fustella_codice) {
+            // AND the description is empty or the generic one, set it.
+            if (art.pulitore_codice_fustella && !art.fustella_codice && (!art.descrizione || art.descrizione === 'Pulitore per fustella')) {
                 descriptionForPulitore = art.codice_fornitore_fustella 
                     ? `Pulitore per Fustella ${art.codice_fornitore_fustella}` 
                     : `Pulitore per fustella`;
@@ -476,7 +477,8 @@ export function ModalOrdineAcquistoForm({
             ? initialData.articoli.map(art => {
                 let descriptionForPulitore = art.descrizione || '';
                 // If it's a pulitore article (pulitore_codice_fustella exists, but not fustella_codice)
-                if (art.pulitore_codice_fustella && !art.fustella_codice) {
+                // AND the description is empty or the generic one, set it.
+                if (art.pulitore_codice_fustella && !art.fustella_codice && (!art.descrizione || art.descrizione === 'Pulitore per fustella')) {
                     descriptionForPulitore = art.codice_fornitore_fustella 
                         ? `Pulitore per Fustella ${art.codice_fornitore_fustella}` 
                         : `Pulitore per fustella`;
