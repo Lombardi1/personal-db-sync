@@ -355,6 +355,10 @@ export function ModalOrdineAcquistoForm({
     existingDbCodes: string[],
     currentFormCodes: string[] // Codes from other articles in the current form
   ): string => {
+    console.log(`[findNextAvailableCodeLocally] Prefix: ${prefix}`);
+    console.log(`[findNextAvailableCodeLocally] Existing DB Codes:`, existingDbCodes);
+    console.log(`[findNextAvailableCodeLocally] Current Form Codes (from other articles):`, currentFormCodes);
+
     const allCodes = new Set<number>();
 
     // Add numbers from DB codes
@@ -373,28 +377,34 @@ export function ModalOrdineAcquistoForm({
       }
     });
 
+    console.log(`[findNextAvailableCodeLocally] All unique numbers collected:`, Array.from(allCodes).sort((a,b)=>a-b));
+
     let nextAvailableNum = 1;
     while (allCodes.has(nextAvailableNum)) {
       nextAvailableNum++;
     }
-    return `${prefix}-${String(nextAvailableNum).padStart(3, '0')}`;
+    const formattedCode = `${prefix}-${String(nextAvailableNum).padStart(3, '0')}`;
+    console.log(`[findNextAvailableCodeLocally] Next available code: ${formattedCode}`);
+    return formattedCode;
   }, []);
 
   // Helper function to generate next Fustella code in form session
   const getNextFustellaCodeInForm = React.useCallback(() => {
-    const currentFormFustellaCodes = fields
+    const currentFormFustellaCodes = watchedArticles
       .filter(art => art.fustella_codice && art.fustella_codice.trim() !== '')
       .map(art => art.fustella_codice!);
+    console.log(`[getNextFustellaCodeInForm] watchedArticles for Fustella:`, watchedArticles.map(a => a.fustella_codice));
     return findNextAvailableCodeLocally('FST', dbFustellaCodes, currentFormFustellaCodes);
-  }, [dbFustellaCodes, fields, findNextAvailableCodeLocally]); // Dipendenza da 'fields'
+  }, [dbFustellaCodes, watchedArticles, findNextAvailableCodeLocally]);
 
   // Helper function to generate next Pulitore code in form session
   const getNextPulitoreCodeInForm = React.useCallback(() => {
-    const currentFormPulitoreCodes = fields
+    const currentFormPulitoreCodes = watchedArticles
       .filter(art => art.pulitore_codice_fustella && art.pulitore_codice_fustella.trim() !== '')
       .map(art => art.pulitore_codice_fustella!);
+    console.log(`[getNextPulitoreCodeInForm] watchedArticles for Pulitore:`, watchedArticles.map(a => a.pulitore_codice_fustella));
     return findNextAvailableCodeLocally('PUL', dbPulitoreCodes, currentFormPulitoreCodes);
-  }, [dbPulitoreCodes, fields, findNextAvailableCodeLocally]); // Dipendenza da 'fields'
+  }, [dbPulitoreCodes, watchedArticles, findNextAvailableCodeLocally]);
 
   // This effect will handle setting up the form with async default values
   React.useEffect(() => {
@@ -404,6 +414,7 @@ export function ModalOrdineAcquistoForm({
     }
 
     const setupFormAndGenerators = async () => {
+      console.log('[setupFormAndGenerators] Starting setup...');
       try {
         const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
         
@@ -481,11 +492,11 @@ export function ModalOrdineAcquistoForm({
             ...initialData,
             articoli: articlesToUse as ArticoloOrdineAcquisto[],
           };
-          console.log('ModalOrdineAcquistoForm: Editing existing or duplicating order. dataToReset:', dataToReset);
+          console.log('[setupFormAndGenerators] Editing existing or duplicating order. dataToReset:', dataToReset);
         } else {
           const maxOrdineAcquistoNum = await fetchMaxOrdineAcquistoNumeroFromDB();
           const newDefaultNumeroOrdine = generateNextOrdineAcquistoNumero(maxOrdineAcquistoNum);
-          console.log(`ModalOrdineAcquistoForm: Generated new order number: ${newDefaultNumeroOrdine} (based on max ${maxOrdineAcquistoNum})`);
+          console.log(`[setupFormAndGenerators] Generated new order number: ${newDefaultNumeroOrdine} (based on max ${maxOrdineAcquistoNum})`);
 
           dataToReset = {
             fornitore_id: '',
@@ -496,28 +507,32 @@ export function ModalOrdineAcquistoForm({
             importo_totale: 0,
             note: '',
           } as OrdineAcquisto;
-          console.log('ModalOrdineAcquistoForm: Creating new order from scratch. dataToReset:', dataToReset);
+          console.log('[setupFormAndGenerators] Creating new order from scratch. dataToReset:', dataToReset);
         }
-        console.log('ModalOrdineAcquistoForm: Data prepared for reset:', dataToReset);
+        console.log('[setupFormAndGenerators] Data prepared for reset:', dataToReset);
 
         // Initialize Cartone code generator
         const maxCodeFromDB = await fetchMaxCartoneCodeFromDB();
         resetCartoneCodeGenerator(maxCodeFromDB);
+        console.log(`[setupFormAndGenerators] Cartone generator reset with max DB code: ${maxCodeFromDB}`);
 
         // Initialize FSC Commessa generator
         const orderYear = new Date(dataToReset.data_ordine).getFullYear();
         const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
         resetFscCommessaGenerator(maxFscCommessa, orderYear);
+        console.log(`[setupFormAndGenerators] FSC Commessa generator reset with max DB code: ${maxFscCommessa} for year ${orderYear}`);
         
         // Fetch all existing Fustella and Pulitore codes from DB
         const allFustellaCodesFromDB = await fetchAllFustellaCodes();
         const allPulitoreCodesFromDB = await fetchAllPulitoreCodes();
         setDbFustellaCodes(allFustellaCodesFromDB);
         setDbPulitoreCodes(allPulitoreCodesFromDB);
+        console.log(`[setupFormAndGenerators] Fetched all DB Fustella codes:`, allFustellaCodesFromDB);
+        console.log(`[setupFormAndGenerators] Fetched all DB Pulitore codes:`, allPulitoreCodesFromDB);
 
         reset(dataToReset);
-        console.log('ModalOrdineAcquistoForm: Form reset with data:', dataToReset);
-        console.log('ModalOrdineAcquistoForm: Form values after reset:', methods.getValues());
+        console.log('[setupFormAndGenerators] Form reset with data:', dataToReset);
+        console.log('[setupFormAndGenerators] Form values after reset:', methods.getValues());
 
         if (dataToReset.fornitore_id) setValue('fornitore_id', dataToReset.fornitore_id, { shouldValidate: true });
         if (dataToReset.stato) setValue('stato', dataToReset.stato, { shouldValidate: true });
@@ -532,12 +547,14 @@ export function ModalOrdineAcquistoForm({
             if (currentIsCartoneFornitore) {
               if (!article.codice_ctn) {
                 setValue(`articoli.${index}.codice_ctn`, generateNextCartoneCode(), { shouldValidate: true });
+                console.log(`[setupFormAndGenerators] Generated new CTN for article ${index}: ${methods.getValues(`articoli.${index}.codice_ctn`)}`);
               }
               if (article.numero_fogli === undefined) {
                 setValue(`articoli.${index}.numero_fogli`, 1, { shouldValidate: true });
               }
               if (article.fsc && !article.rif_commessa_fsc) {
                 setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
+                console.log(`[setupFormAndGenerators] Generated new FSC Commessa for article ${index}: ${methods.getValues(`articoli.${index}.rif_commessa_fsc`)}`);
               }
             } else if (currentIsFustelleFornitore) {
               let currentArticleType: 'fustella' | 'pulitore' | 'generico' = 'generico';
@@ -551,16 +568,21 @@ export function ModalOrdineAcquistoForm({
                 if (!article.fustella_codice) {
                   const nextFustellaCode = getNextFustellaCodeInForm();
                   setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
+                  console.log(`[setupFormAndGenerators] Generated new Fustella code for article ${index}: ${nextFustellaCode}`);
                 }
                 if (article.quantita === undefined) {
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                 }
                 if (article.hasPulitore && !article.pulitore_codice_fustella) {
-                  setValue(`articoli.${index}.pulitore_codice_fustella`, getNextPulitoreCodeInForm(), { shouldValidate: true });
+                  const nextPulitoreCode = getNextPulitoreCodeInForm();
+                  setValue(`articoli.${index}.pulitore_codice_fustella`, nextPulitoreCode, { shouldValidate: true });
+                  console.log(`[setupFormAndGenerators] Generated new Pulitore code for article ${index} (associated with Fustella): ${nextPulitoreCode}`);
                 }
               } else if (currentArticleType === 'pulitore') {
                 if (!article.pulitore_codice_fustella) {
-                  setValue(`articoli.${index}.pulitore_codice_fustella`, getNextPulitoreCodeInForm(), { shouldValidate: true });
+                  const nextPulitoreCode = getNextPulitoreCodeInForm();
+                  setValue(`articoli.${index}.pulitore_codice_fustella`, nextPulitoreCode, { shouldValidate: true });
+                  console.log(`[setupFormAndGenerators] Generated new Pulitore code for article ${index} (standalone): ${nextPulitoreCode}`);
                 }
                 if (article.quantita === undefined) {
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
@@ -612,24 +634,30 @@ export function ModalOrdineAcquistoForm({
   };
 
   const resetArticlesAndGenerators = React.useCallback(async (newFornitoreId: string) => {
+    console.log('[resetArticlesAndGenerators] Resetting for new fornitore selection...');
     setCtnGeneratorInitialized(false);
     setFscCommessaGeneratorInitialized(false);
     setFustellaGeneratorInitialized(false);
 
     const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
-    const orderYear = new Date(watch('data_ordine')).getFullYear();
+    const orderDate = watch('data_ordine');
+    const orderYear = new Date(orderDate).getFullYear();
 
     const maxCodeFromDB = await fetchMaxCartoneCodeFromDB();
     resetCartoneCodeGenerator(maxCodeFromDB);
+    console.log(`[resetArticlesAndGenerators] Cartone generator reset with max DB code: ${maxCodeFromDB}`);
 
     const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
     resetFscCommessaGenerator(maxFscCommessa, orderYear);
+    console.log(`[resetArticlesAndGenerators] FSC Commessa generator reset with max DB code: ${maxFscCommessa} for year ${orderYear}`);
 
     // Re-fetch all existing Fustella and Pulitore codes from DB
     const allFustellaCodesFromDB = await fetchAllFustellaCodes();
     const allPulitoreCodesFromDB = await fetchAllPulitoreCodes();
     setDbFustellaCodes(allFustellaCodesFromDB);
     setDbPulitoreCodes(allPulitoreCodesFromDB);
+    console.log(`[resetArticlesAndGenerators] Fetched all DB Fustella codes:`, allFustellaCodesFromDB);
+    console.log(`[resetArticlesAndGenerators] Fetched all DB Pulitore codes:`, allPulitoreCodesFromDB);
 
     const newSelectedFornitore = fornitori.find((f) => f.id === newFornitoreId);
     const newIsCartoneFornitore = newSelectedFornitore?.tipo_fornitore === 'Cartone';
@@ -664,9 +692,11 @@ export function ModalOrdineAcquistoForm({
 
     if (newIsCartoneFornitore) {
       newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };
+      console.log(`[resetArticlesAndGenerators] Generated new CTN for first article: ${newArticle.codice_ctn}`);
     } else if (newIsFustelleFornitore) {
       const nextFustellaCode = getNextFustellaCodeInForm();
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 };
+      console.log(`[resetArticlesAndGenerators] Generated new Fustella code for first article: ${nextFustellaCode}`);
     } else {
       newArticle = { ...newArticle, quantita: 1 };
     }
@@ -675,15 +705,18 @@ export function ModalOrdineAcquistoForm({
     setCtnGeneratorInitialized(true);
     setFscCommessaGeneratorInitialized(true);
     setFustellaGeneratorInitialized(true);
+    console.log('[resetArticlesAndGenerators] Generators re-initialized and first article set.');
   }, [fornitori, setValue, watch, getNextFustellaCodeInForm, getNextPulitoreCodeInForm, findNextAvailableCodeLocally, dbFustellaCodes, dbPulitoreCodes]);
 
   const handleAddArticle = async () => {
+    console.log('[handleAddArticle] Adding new article...');
     if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized) {
       toast.error("Generatore codici non pronto. Riprova.");
+      console.warn('[handleAddArticle] Generators not initialized.');
       return;
     }
     
-    const firstArticleDate = fields[0]?.data_consegna_prevista || new Date().toISOString().split('T')[0]; // Usa fields[0] per la data
+    const firstArticleDate = watchedArticles[0]?.data_consegna_prevista || new Date().toISOString().split('T')[0];
     const orderDate = watch('data_ordine');
     const orderYear = new Date(orderDate).getFullYear();
 
@@ -716,22 +749,26 @@ export function ModalOrdineAcquistoForm({
     };
     if (isCartoneFornitore) {
       newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };
-      if (fields[0]?.fsc) { // Usa fields[0] per copiare lo stato FSC
+      console.log(`[handleAddArticle] Generated new CTN for new article: ${newArticle.codice_ctn}`);
+      if (watchedArticles[0]?.fsc) {
         newArticle.fsc = true;
         newArticle.rif_commessa_fsc = generateNextFscCommessa(orderYear);
+        console.log(`[handleAddArticle] Generated new FSC Commessa for new article: ${newArticle.rif_commessa_fsc}`);
       }
     } else if (isFustelleFornitore) {
       const nextFustellaCode = getNextFustellaCodeInForm();
-      console.log(`[handleAddArticle] Generating Fustella code: ${nextFustellaCode}`);
+      console.log(`[handleAddArticle] Generated Fustella code for new article: ${nextFustellaCode}`);
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 }; // Default quantity to 1
-      if (fields[0]?.hasPulitore) { // Usa fields[0] per copiare lo stato hasPulitore
+      if (watchedArticles[0]?.hasPulitore) { 
         newArticle.hasPulitore = true;
         newArticle.pulitore_codice_fustella = getNextPulitoreCodeInForm();
+        console.log(`[handleAddArticle] Generated Pulitore code for new article (associated with Fustella): ${newArticle.pulitore_codice_fustella}`);
       }
     } else {
       newArticle = { ...newArticle, quantita: 1 };
     }
     append(newArticle);
+    console.log('[handleAddArticle] New article appended.');
   };
 
   React.useEffect(() => {
@@ -753,7 +790,7 @@ export function ModalOrdineAcquistoForm({
             <DialogDescription className="text-sm sm:text-base">
               Attendere il caricamento dei dati dell'ordine.
             </DialogDescription>
-          </DialogHeader>
+          </DialogDescription>
           <div className="flex items-center justify-center h-48">
             <p className="text-muted-foreground">Caricamento...</p>
           </div>
