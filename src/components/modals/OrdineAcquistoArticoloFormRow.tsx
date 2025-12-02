@@ -342,9 +342,9 @@ export function OrdineAcquistoArticoloFormRow({
                 <SelectValue placeholder="Seleziona tipo articolo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="generico">Generico (es. Inchiostro, Colla)</SelectItem>
                 <SelectItem value="fustella">Fustella</SelectItem>
                 <SelectItem value="pulitore">Pulitore</SelectItem>
+                <SelectItem value="generico">Generico</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -896,7 +896,7 @@ export function OrdineAcquistoArticoloFormRow({
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.pinza_tagliata`} className="text-xs">Pinza Tagliata</Label>
-                  {errors.articoli?.[index]?.pinza_tagliata && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
+                  {errors.articoli?.[index]?.pinza_tagliata && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
