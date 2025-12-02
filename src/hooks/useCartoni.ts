@@ -291,6 +291,7 @@ export function useCartoni() {
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
     };
+    console.log(`[useCartoni - riportaInGiacenza] Dati finali per inserimento in 'giacenza':`, cartonePerGiacenza);
 
     try {
       const { error: deleteError } = await supabase.from('esauriti').delete().eq('codice', codice);
