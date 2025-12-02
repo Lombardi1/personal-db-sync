@@ -17,6 +17,7 @@ export interface Cartone {
   note?: string;
   fsc?: boolean; // Nuovo campo
   alimentare?: boolean; // Nuovo campo
+  rif_commessa_fsc?: string | null; // NUOVO CAMPO: Riferimento commessa FSC per cartoni
 }
 
 export interface StoricoMovimento {
