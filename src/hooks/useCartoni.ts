@@ -23,7 +23,8 @@ export function useCartoni() {
         // Seleziona esplicitamente le colonne per la tabella 'giacenza'
         supabase.from('giacenza').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc'),
         // Seleziona esplicitamente le colonne per la tabella 'ordini'
-        supabase.from('ordini').select('codice, fornitore, ordine, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_consegna, confermato, note, fsc, alimentare, rif_commessa_fsc'),
+        // AGGIUNTO: ddt e data_arrivo
+        supabase.from('ordini').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_consegna, data_arrivo, confermato, note, fsc, alimentare, rif_commessa_fsc'),
         // Seleziona esplicitamente le colonne per la tabella 'esauriti'
         supabase.from('esauriti').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc'),
         supabase.from('storico').select(`*, app_users(username)`).order('data', { ascending: false })
@@ -115,6 +116,8 @@ export function useCartoni() {
 
   const aggiungiOrdine = async (cartone: Cartone) => {
     // Crea un nuovo oggetto Cartone con solo i campi pertinenti per la tabella 'ordini'
+    // NOTA: ddt e data_arrivo non sono inclusi qui, perché sono dettagli di arrivo effettivo,
+    // non di ordine in arrivo.
     const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
       codice: cartone.codice,
       fornitore: cartone.fornitore,
@@ -408,7 +411,8 @@ export function useCartoni() {
     }
 
     // Creazione esplicita dell'oggetto Cartone per la tabella 'ordini'
-    const ordinePerOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
+    // ORA INCLUDIAMO DDT, DATA_ARRIVO E MAGAZZINO
+    const ordinePerOrdini: Cartone = {
       codice: cartone.codice,
       fornitore: cartone.fornitore,
       ordine: cartone.ordine,
@@ -426,7 +430,10 @@ export function useCartoni() {
       // Campi specifici per ordini
       data_consegna: cartone.data_consegna || new Date().toISOString().split('T')[0], // Usa data_consegna esistente o odierna
       confermato: true, // Imposta a true quando riportato in ordini
-      magazzino: cartone.magazzino || '-', // Assicurati che magazzino abbia un valore non nullo
+      // MANTIENI DDT, DATA_ARRIVO E MAGAZZINO DALLA GIACENZA
+      ddt: cartone.ddt,
+      data_arrivo: cartone.data_arrivo,
+      magazzino: cartone.magazzino,
     };
     console.log('[useCartoni - riportaInOrdini] Inserting into ordini:', JSON.stringify(ordinePerOrdini, null, 2));
 
@@ -567,7 +574,8 @@ export function useCartoni() {
     }
 
     // Crea un oggetto con solo i campi che possono essere aggiornati nella tabella 'ordini'
-    const datiPerAggiornamento: Partial<Omit<Cartone, 'ddt' | 'data_arrivo'>> = {
+    // ORA INCLUDIAMO DDT, DATA_ARRIVO E MAGAZZINO
+    const datiPerAggiornamento: Partial<Cartone> = {
       codice: dati.codice,
       fornitore: dati.fornitore,
       ordine: dati.ordine,
@@ -577,7 +585,7 @@ export function useCartoni() {
       fogli: dati.fogli,
       cliente: dati.cliente,
       lavoro: dati.lavoro,
-      magazzino: dati.magazzino || '-', // Assicurati che magazzino abbia un valore non nullo
+      magazzino: dati.magazzino, // Mantiene il magazzino originale
       prezzo: dati.prezzo,
       data_consegna: dati.data_consegna,
       confermato: dati.confermato,
@@ -585,6 +593,8 @@ export function useCartoni() {
       fsc: dati.fsc,
       alimentare: dati.alimentare,
       rif_commessa_fsc: dati.rif_commessa_fsc,
+      ddt: dati.ddt, // Mantiene il DDT originale
+      data_arrivo: dati.data_arrivo, // Mantiene la data_arrivo originale
     };
     console.log('[useCartoni - modificaOrdine] Updating ordini with:', JSON.stringify(datiPerAggiornamento, null, 2));
 
