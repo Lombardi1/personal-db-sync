@@ -84,7 +84,12 @@ const articoloSchema = z.object({
   hasPulitore: z.boolean().optional(),
   pulitore_codice_fustella: z.string().max(255, 'Codice Pulitore troppo lungo').optional().or(z.literal('')),
   prezzo_pulitore: z.preprocess( // Nuovo campo
-    (val) => (val === '' ? null : Number(String(val).replace(',', '.'))),
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null; // Aggiunto gestione undefined/null
+      const cleanedValue = String(val).replace(',', '.');
+      const num = Number(cleanedValue);
+      return isNaN(num) ? null : num; // Ritorna null se non è un numero valido
+    },
     z.number().min(0, 'Il prezzo pulitore non può essere negativo').optional().nullable()
   ),
   pinza_tagliata: z.boolean().optional(),
