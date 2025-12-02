@@ -95,6 +95,11 @@ export interface ArticoloOrdineAcquisto {
   incollatura?: boolean;
   incollatrice?: string;
   tipo_incollatura?: string;
+
+  // NUOVI CAMPI PER DETTAGLI DI ARRIVO (per articoli di tipo Cartone)
+  ddt?: string | null; // Numero DDT effettivo all'arrivo
+  data_arrivo?: string | null; // Data di arrivo effettiva
+  magazzino?: string | null; // Ubicazione in magazzino
 }
 
 export interface OrdineAcquisto {
