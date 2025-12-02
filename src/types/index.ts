@@ -11,7 +11,7 @@ export interface Cartone {
   lavoro: string;
   magazzino: string | null; // Modificato per accettare null
   prezzo: number;
-  data_arrivo?: string;
+  data_arrivo: string | null; // Modificato da string? a string | null
   data_consegna?: string;
   confermato?: boolean;
   note?: string;

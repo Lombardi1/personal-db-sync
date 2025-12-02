@@ -1,11 +1,20 @@
--- Aggiungi la colonna 'ddt' alla tabella 'ordini'
-ALTER TABLE public.ordini
-ADD COLUMN ddt text NULL;
+-- Aggiungi la colonna 'ddt' alla tabella 'ordini' se non esiste
+DO $$ BEGIN
+    ALTER TABLE public.ordini ADD COLUMN ddt text NULL;
+EXCEPTION
+    WHEN duplicate_column THEN RAISE NOTICE 'column ddt already exists in public.ordini.';
+END $$;
 
--- Aggiungi la colonna 'data_arrivo' alla tabella 'ordini'
-ALTER TABLE public.ordini
-ADD COLUMN data_arrivo date NULL;
+-- Aggiungi la colonna 'data_arrivo' alla tabella 'ordini' se non esiste
+DO $$ BEGIN
+    ALTER TABLE public.ordini ADD COLUMN data_arrivo date NULL;
+EXCEPTION
+    WHEN duplicate_column THEN RAISE NOTICE 'column data_arrivo already exists in public.ordini.';
+END $$;
 
--- Puoi anche aggiungere un indice se prevedi molte ricerche su queste colonne
--- CREATE INDEX idx_ordini_ddt ON public.ordini (ddt);
--- CREATE INDEX idx_ordini_data_arrivo ON public.ordini (data_arrivo);
+-- Aggiungi la colonna 'magazzino' alla tabella 'ordini' se non esiste
+DO $$ BEGIN
+    ALTER TABLE public.ordini ADD COLUMN magazzino text NULL;
+EXCEPTION
+    WHEN duplicate_column THEN RAISE NOTICE 'column magazzino already exists in public.ordini.';
+END $$;
