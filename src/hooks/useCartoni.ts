@@ -164,26 +164,31 @@ export function useCartoni() {
       notifications.showError(`Errore verifica giacenza: ${fetchGiacenzaError.message}`);
       return { error: fetchGiacenzaError };
     }
+    console.log(`[useCartoni - spostaInGiacenza] Risultato ricerca esistenza in giacenza per codice ${codice}:`, existingGiacenzaItem ? 'Trovato' : 'Non trovato');
+
 
     let operationError = null;
+    let operationData = null; // To store the result of insert/update
     if (existingGiacenzaItem) {
       // Se esiste, aggiorna
-      console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} trovato in giacenza. Eseguo UPDATE.`);
-      const { error } = await supabase.from('giacenza').update(cartoneGiacenza).eq('codice', codice);
+      console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} trovato in giacenza. Eseguo UPDATE con dati:`, cartoneGiacenza);
+      const { data, error } = await supabase.from('giacenza').update(cartoneGiacenza).eq('codice', codice).select().single(); // Added .select().single() to get the updated row
       operationError = error;
+      operationData = data;
     } else {
       // Se non esiste, inserisci
-      console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} NON trovato in giacenza. Eseguo INSERT.`);
-      const { error } = await supabase.from('giacenza').insert([cartoneGiacenza]);
+      console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} NON trovato in giacenza. Eseguo INSERT con dati:`, cartoneGiacenza);
+      const { data, error } = await supabase.from('giacenza').insert([cartoneGiacenza]).select().single(); // Added .select().single() to get the inserted row
       operationError = error;
+      operationData = data;
     }
 
     if (operationError) {
-      console.error(`[useCartoni - spostaInGiacenza] Errore operazione (INSERT/UPDATE) in 'giacenza':`, operationError);
+      console.error(`[useCartoni - spostaInGiacenza] Errore operazione (INSERT/UPDATE) in 'giacenza' per codice ${codice}:`, operationError);
       notifications.showError(`Errore salvataggio in giacenza: ${operationError.message}`);
       return { error: operationError };
     }
-    console.log(`[useCartoni - spostaInGiacenza] Operazione (INSERT/UPDATE) in 'giacenza' riuscita per codice: ${codice}`);
+    console.log(`[useCartoni - spostaInGiacenza] Operazione (INSERT/UPDATE) in 'giacenza' riuscita per codice ${codice}. Dati risultanti:`, operationData);
 
     // Elimina da 'ordini' solo dopo aver gestito l'inserimento/aggiornamento in 'giacenza'
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di eliminare da 'ordini' il codice: ${codice}`);
