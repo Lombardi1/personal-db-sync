@@ -29,7 +29,7 @@ export function formatPrezzo(val: number): string {
   if (typeof val !== 'number' || isNaN(val)) return '';
   // Use Intl.NumberFormat for better localization and flexible decimal handling
   return new Intl.NumberFormat('it-IT', {
-    minimumFractionDigits: 2, // Always show at least two decimal places
+    minimumFractionDigits: 3, // Always show at least three decimal places
     maximumFractionDigits: 3, // Allow up to three decimal places
   }).format(val) + ' €/kg';
 }
