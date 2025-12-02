@@ -475,7 +475,6 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
     const isFustelle = fornitore?.tipo_fornitore === 'Fustelle'; // Nuovo flag per Fustelle
     const IVA_RATE = 0.22; // 22% IVA
 
-    // Rimosso 'Resa' dalla head degli articoli
     const articlesHead = [['Articolo', 'Descrizione', 'UM', 'Quantità', 'Prezzo', 'Prezzo\ntotale', 'Iva', 'Data\ncons.']];
     
     // Filtra gli articoli annullati e ricalcola il subtotale
@@ -517,7 +516,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
       } else if (isFustelle) {
         umText = 'PZ';
-        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); // Quantità intera
+        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimali
         prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimali
         prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
 
@@ -527,7 +526,19 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           let fustellaDescriptionParts = [];
           if (article.codice_fornitore_fustella) fustellaDescriptionParts.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
           if (article.resa_fustella) fustellaDescriptionParts.push(`Resa: ${article.resa_fustella}`);
-          
+          // Rimosse le seguenti righe come richiesto dall'utente:
+          // if (article.pinza_tagliata) fustellaDescriptionParts.push(`Pinza Tagliata: Sì`);
+          // if (article.tasselli_intercambiabili) {
+          //   fustellaDescriptionParts.push(`Tasselli Intercambiabili: Sì`);
+          //   if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
+          //     fustellaDescriptionParts.push(`Nr. Tasselli: ${article.nr_tasselli}`);
+          //   }
+          // }
+          // if (article.incollatura) {
+          //   fustellaDescriptionParts.push(`Incollatura: Sì`);
+          //   if (article.incollatrice) fustellaDescriptionParts.push(`Incollatrice: ${article.incollatrice}`);
+          //   if (article.tipo_incollatura) fustellaDescriptionParts.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
+          // }
           descrizioneColumnText = fustellaDescriptionParts.join('\n');
 
           // Push the main Fustella row
@@ -551,7 +562,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
               article.pulitore_codice_fustella,
               article.descrizione || `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Use article.descrizione if available, otherwise construct
               'PZ',
-              '1', // Quantity for pulitore (fixed to 1)
+              '1,000', // Quantity for pulitore (fixed to 1.000)
               pulitorePrezzoFormatted,
               pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
               fornitore?.considera_iva ? '22%' : '-',
@@ -568,7 +579,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
             articoloColumnText,
             descrizioneColumnText,
             'PZ',
-            quantitaFormatted, // Should be 1 for pulitore
+            quantitaFormatted, // Should be 1,000 for pulitore
             prezzoUnitarioFormatted,
             prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
             fornitore?.considera_iva ? '22%' : '-',
@@ -635,7 +646,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.3 }, 
       columnStyles: {
         0: { cellWidth: 15 }, 
-        1: { cellWidth: 80 + 10 }, // Aumentato la larghezza della descrizione per compensare la rimozione di 'Resa'
+        1: { cellWidth: 80 }, 
         2: { cellWidth: 10 }, 
         3: { cellWidth: 22, halign: 'right' }, 
         4: { cellWidth: 15, halign: 'right' }, 
