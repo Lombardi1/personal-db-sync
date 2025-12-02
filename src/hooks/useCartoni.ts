@@ -134,30 +134,20 @@ export function useCartoni() {
     }
     console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, JSON.stringify(ordine, null, 2));
 
-    const fogliFinali = fogliEffettivi; // fogliEffettivi è ora sempre un numero
+    // Destruttura per escludere 'id' e 'created_at' dall'oggetto 'ordine' originale
+    // Questi campi sono gestiti automaticamente da Supabase e non dovrebbero essere inclusi nell'INSERT/UPDATE
+    const { id, created_at, ...ordineWithoutIdAndCreatedAt } = ordine;
+
+    const fogliFinali = fogliEffettivi;
     const magazzinoFinale = magazzino; 
     
     // Creazione esplicita dell'oggetto Cartone per giacenza
     const cartoneGiacenza: Cartone = {
-      codice: ordine.codice,
-      fornitore: ordine.fornitore,
-      ordine: ordine.ordine,
-      tipologia: ordine.tipologia,
-      formato: ordine.formato,
-      grammatura: ordine.grammatura,
+      ...ordineWithoutIdAndCreatedAt, // Usa l'oggetto destrutturato
       fogli: fogliFinali,
-      cliente: ordine.cliente,
-      lavoro: ordine.lavoro,
-      prezzo: ordine.prezzo,
-      data_consegna: ordine.data_consegna || null,
-      note: ordine.note || '-',
-      fsc: ordine.fsc,
-      alimentare: ordine.alimentare,
-      rif_commessa_fsc: ordine.rif_commessa_fsc || null,
-      // Campi specifici per giacenza, sovrascritti o aggiunti
-      ddt: ddt, // Usato direttamente come string | null
+      magazzino: magazzinoFinale,
+      ddt: ddt,
       data_arrivo: dataArrivo,
-      magazzino: magazzinoFinale, // Usato direttamente come string | null
     };
     
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
@@ -201,21 +191,18 @@ export function useCartoni() {
       console.log(`[useCartoni - spostaInGiacenza] Registrazione storico riuscita per codice: ${codice}`);
     }
 
-    // Aggiorna lo stato dell'articolo nell'ordine d'acquisto a 'ricevuto'
     if (ordine.ordine && codice) { 
       console.log(`[useCartoni - spostaInGiacenza] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'ricevuto'`);
       const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordine.ordine, codice, 'ricevuto'); 
       if (updateArticleError) {
         console.error(`[useCartoni - spostaInGiacenza] Errore durante l'aggiornamento dello stato dell'articolo nell'OA:`, updateArticleError);
         notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}. Il cartone è stato comunque spostato in magazzino.`);
-        // NON ritornare qui, permetti all'operazione principale di completarsi
       } else {
         console.log(`[useCartoni - spostaInGiacenza] updateArticleStatusInOrder completato con successo: ${updateSuccess}`);
       }
     } else {
       console.warn(`[useCartoni - spostaInGiacenza] Impossibile chiamare updateArticleStatusInOrder: ordine.ordine o codice mancante. Ordine.ordine: '${ordine.ordine}', Codice: '${codice}'`);
       notifications.showInfo(`Impossibile aggiornare lo stato dell'articolo nell'ordine d'acquisto (dati mancanti). Il cartone è stato comunque spostato in magazzino.`);
-      // NON ritornare qui
     }
 
     console.log(`[useCartoni - spostaInGiacenza] Ricarico tutti i dati.`);
@@ -427,7 +414,6 @@ export function useCartoni() {
         newArticleStatus = 'confermato';
         console.log(`[useCartoni - confermaOrdine] Impostato newArticleStatus a 'confermato' per articolo ${codice}.`);
       } else {
-        // Logic for unconfirming an article
         const { data: purchaseOrder, error: fetchOAError } = await supabase
           .from('ordini_acquisto')
           .select('stato, articoli')
@@ -436,23 +422,21 @@ export function useCartoni() {
 
         if (fetchOAError || !purchaseOrder || !purchaseOrder.articoli) {
           console.error(`[useCartoni - confermaOrdine] Errore recupero ordine d'acquisto per stato articolo:`, fetchOAError);
-          newArticleStatus = 'inviato'; // Fallback
+          newArticleStatus = 'inviato';
         } else {
           const articles = purchaseOrder.articoli as ArticoloOrdineAcquisto[];
           const currentArticleInOA = articles.find(art => art.codice_ctn === codice);
           
           if (currentArticleInOA && currentArticleInOA.stato === 'confermato') {
-            // If the article was confirmed and is now being unconfirmed, revert its status
-            // based on the main purchase order status.
             if (purchaseOrder.stato === 'inviato') {
                 newArticleStatus = 'inviato';
             } else if (purchaseOrder.stato === 'in_attesa') {
                 newArticleStatus = 'in_attesa';
             } else {
-                newArticleStatus = 'inviato'; // Default if main order status is unexpected
+                newArticleStatus = 'inviato';
             }
           } else {
-            newArticleStatus = currentArticleInOA?.stato || 'in_attesa'; // Keep its current status or default
+            newArticleStatus = currentArticleInOA?.stato || 'in_attesa';
           }
         }
         console.log(`[useCartoni - confermaOrdine] Impostato newArticleStatus a '${newArticleStatus}' per articolo ${codice} (unconfirm).`);
