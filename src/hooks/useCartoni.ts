@@ -106,7 +106,9 @@ export function useCartoni() {
   }, []);
 
   const aggiungiOrdine = async (cartone: Cartone) => {
-    const { error } = await supabase.from('ordini').insert([cartone]);
+    // Destruttura l'oggetto cartone per omettere i campi non presenti nella tabella 'ordini'
+    const { ddt, data_arrivo, magazzino, ...ordineToInsert } = cartone;
+    const { error } = await supabase.from('ordini').insert([ordineToInsert]);
     if (!error) {
       const movimento: StoricoMovimento = {
         codice: cartone.codice,
