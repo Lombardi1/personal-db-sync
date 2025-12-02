@@ -221,12 +221,12 @@ export function ModalOrdineAcquistoForm({
                 // La descrizione NON è richiesta per le fustelle (anche se hanno un pulitore integrato)
 
             } else if (hasPulitoreCode) {
-                // This is a standalone Pulitore article (pulitore_codice_fustella is present, but fustella_codice is not)
+                // This is a Standalone Pulitore article (pulitore_codice_fustella is present, but fustella_codice is not)
                 console.log(`[superRefine] Article ${index}: Identified as Standalone Pulitore article.`);
-                // La descrizione NON è richiesta per il pulitore autonomo
-                // if (!hasDescrizione) {
-                //     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La descrizione è obbligatoria per il pulitore.', path: [`articoli`, index, `descrizione`] });
-                // }
+                // NEW: Require codice_fornitore_fustella for standalone pulitore
+                if (!articolo.codice_fornitore_fustella || articolo.codice_fornitore_fustella.trim() === '') {
+                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fornitore della fustella associata è obbligatorio per il pulitore autonomo.', path: [`articoli`, index, `codice_fornitore_fustella`] });
+                }
                 if (!articolo.quantita || articolo.quantita < 0.001) {
                     console.log(`[superRefine] Adding issue: quantita missing or invalid for pulitore article ${index}`);
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001 per il pulitore.', path: [`articoli`, index, `quantita`] });
@@ -619,29 +619,42 @@ export function ModalOrdineAcquistoForm({
                   setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
                 }
               } else if (currentIsFustelleFornitore) {
-                if (!article.fustella_codice && !article.pulitore_codice_fustella) {
-                  const nextFustellaCode = await findNextAvailableFustellaCode();
-                  console.log(`[setupFormAndGenerators] Setting Fustella code for article ${index}: ${nextFustellaCode}`);
-                  setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
-                  setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
-                } else if (article.fustella_codice && !article.pulitore_codice_fustella) {
+                // Determine articleType for existing articles to correctly apply logic
+                let currentArticleType: 'fustella' | 'pulitore' | 'generico' = 'generico';
+                if (article.fustella_codice) {
+                  currentArticleType = 'fustella';
+                } else if (article.pulitore_codice_fustella && !article.fustella_codice) {
+                  currentArticleType = 'pulitore';
+                }
+
+                if (currentArticleType === 'fustella') {
+                  if (!article.fustella_codice) { // Should not happen if currentArticleType is 'fustella'
+                    const nextFustellaCode = await findNextAvailableFustellaCode();
+                    setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
+                  }
                   if (article.quantita === undefined) {
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                   }
                   if (article.hasPulitore && !article.pulitore_codice_fustella) {
                     setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
                   }
-                } else if (article.pulitore_codice_fustella && !article.fustella_codice) {
+                } else if (currentArticleType === 'pulitore') {
+                  if (!article.pulitore_codice_fustella) { // Should not happen if currentArticleType is 'pulitore'
+                    setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+                  }
                   if (article.quantita === undefined) {
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                   }
-                  // La descrizione non è più obbligatoria per i pulitori autonomi
-                  // if (!article.descrizione) {
-                  //   const pulitoreDescription = article.codice_fornitore_fustella 
-                  //     ? `Pulitore per Fustella ${article.codice_fornitore_fustella}` 
-                  //     : `Pulitore per fustella`;
-                  //   setValue(`articoli.${index}.descrizione`, pulitoreDescription, { shouldValidate: true });
-                  // }
+                  if (!article.descrizione) {
+                    const pulitoreDescription = article.codice_fornitore_fustella 
+                      ? `Pulitore per Fustella ${article.codice_fornitore_fustella}` 
+                      : `Pulitore per fustella`;
+                    setValue(`articoli.${index}.descrizione`, pulitoreDescription, { shouldValidate: true });
+                  }
+                } else { // Generic Fustelle article
+                  if (article.quantita === undefined) {
+                    setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
+                  }
                 }
               } else {
                 if (article.quantita === undefined) {
