@@ -51,11 +51,6 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       if (field === 'hasPulitore') {
         if (value) {
           // Se 'hasPulitore' viene spuntato, genera un nuovo codice pulitore
-          // Questo deve essere gestito in un useEffect o con un'altra logica asincrona
-          // per evitare di bloccare il render. Per ora, lo gestiamo in un modo che non blocca.
-          // La generazione effettiva avverrà al submit o in un effetto separato.
-          // Per la UI, possiamo mostrare un placeholder o generare un codice temporaneo.
-          // Per semplicità, lo generiamo qui e lo impostiamo.
           generateNextPulitoreCode().then(code => {
             setFormData(current => ({ ...current, pulitore_codice: code }));
           });

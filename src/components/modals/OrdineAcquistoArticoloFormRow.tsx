@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { generateNextFscCommessa } from '@/utils/fscUtils';
-import { generateNextPulitoreCode, fetchMaxPulitoreCodeFromDB, resetPulitoreCodeGenerator } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
+import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
 import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la funzione di generazione del codice fustella
 import { supabase } from '@/lib/supabase'; // Importa supabase per la ricerca
 
@@ -175,13 +175,17 @@ export function OrdineAcquistoArticoloFormRow({
 
   // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato (per Fustella)
   React.useEffect(() => {
-    if (isFustelleFornitore && articleType === 'fustella' && currentHasPulitore && !currentPulitoreCodiceFustella) {
-      console.log(`[Article ${index}] Generating new Pulitore code for Fustella.`);
-      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
-    } else if (isFustelleFornitore && articleType === 'fustella' && !currentHasPulitore && currentPulitoreCodiceFustella) {
-      console.log(`[Article ${index}] Clearing Pulitore code for Fustella.`);
-      setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
-    }
+    const updatePulitoreCode = async () => {
+      if (isFustelleFornitore && articleType === 'fustella' && currentHasPulitore && !currentPulitoreCodiceFustella) {
+        console.log(`[Article ${index}] Generating new Pulitore code for Fustella.`);
+        const code = await generateNextPulitoreCode();
+        setValue(`articoli.${index}.pulitore_codice_fustella`, code, { shouldValidate: true });
+      } else if (isFustelleFornitore && articleType === 'fustella' && !currentHasPulitore && currentPulitoreCodiceFustella) {
+        console.log(`[Article ${index}] Clearing Pulitore code for Fustella.`);
+        setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
+      }
+    };
+    updatePulitoreCode();
   }, [isFustelleFornitore, articleType, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
 
   // Gestione del nr_tasselli quando tasselli_intercambiabili viene flaggato
@@ -302,7 +306,7 @@ export function OrdineAcquistoArticoloFormRow({
         setValue(`articoli.${index}.fustella_codice`, code, { shouldValidate: true });
       }
     } else if (newType === 'pulitore') {
-      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+      setValue(`articoli.${index}.pulitore_codice_fustella`, await generateNextPulitoreCode(), { shouldValidate: true });
       // Set description immediately for new pulitore article to a generic one
       setValue(`articoli.${index}.descrizione`, 'Pulitore per fustella', { shouldValidate: true }); // Explicitly set generic description
       setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Quantità fissa per pulitore
@@ -784,7 +788,7 @@ export function OrdineAcquistoArticoloFormRow({
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.hasPulitore`} className="text-xs">Ha Pulitore</Label>
-                  {errors.articoli?.[index]?.hasPulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
+                  {errors.articoli?.[index]?.hasPulitore && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
                 </div>
                 {currentHasPulitore && (
                   <>

@@ -41,15 +41,6 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     tipo_incollatura: fustella.tipo_incollatura || '',
   });
 
-  // Non è più necessario inizializzare il generatore qui, la generazione è on-demand
-  // useEffect(() => {
-  //   const initializePulitoreCodeGenerator = async () => {
-  //     const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-  //     resetPulitoreCodeGenerator(maxPulitoreCode);
-  //   };
-  //   initializePulitoreCodeGenerator();
-  // }, []);
-
   const handleChange = async (field: keyof typeof formData, value: any) => { // Reso async
     setFormData(prev => {
       const newState = { ...prev, [field]: value };
@@ -331,31 +322,15 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
           <Button
             type="button"
             onClick={async () => { // Modificato per essere async
-              await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
-
-              setFormData(prev => ({
-                ...prev,
-                // codice: nextFustellaCode, // Già aggiornato da generateAndSetFustellaCode
-                fornitore: '',
-                codice_fornitore: '',
-                cliente: '',
-                lavoro: '',
-                fustellatrice: '',
-                resa: '',
-                hasPulitore: false,
-                pulitore_codice: '',
-                pinza_tagliata: false,
-                tasselli_intercambiabili: false,
-                nr_tasselli: null,
-                incollatura: false,
-                incollatrice: '',
-                tipo_incollatura: '',
-              }));
+              // Non è più necessario generare un nuovo codice FST qui, il form viene chiuso e riaperto
+              // o il codice FST è già impostato per la modifica.
+              // Se si vuole resettare il form per un nuovo inserimento, la logica è in CaricoFustellaTab.
+              onClose(); // Chiude il modale
             }}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
           >
-            <i className="fas fa-eraser mr-1 sm:mr-2"></i>
-            Pulisci Form
+            <i className="fas fa-times mr-1 sm:mr-2"></i>
+            Annulla
           </Button>
         </div>
       </DialogContent>
