@@ -359,7 +359,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
             Pulisci Form
           </Button>
         </div>
-      </form>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
