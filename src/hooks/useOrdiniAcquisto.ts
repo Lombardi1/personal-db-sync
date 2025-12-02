@@ -157,9 +157,9 @@ export function useOrdiniAcquisto() {
             }
           } 
           // Case 2: Article is a Standalone Pulitore (has pulitore_codice_fustella but NO fustella_codice)
-          else if (articolo.pulitore_codice_fustella && articolo.codice_fornitore_fustella) {
-            const pulitoreCodice = articolo.pulitore_codice_fustella;
-            const targetFustellaCodiceFornitore = articolo.codice_fornitore_fustella;
+          else if (article.pulitore_codice_fustella && article.codice_fornitore_fustella) {
+            const pulitoreCodice = article.pulitore_codice_fustella;
+            const targetFustellaCodiceFornitore = article.codice_fornitore_fustella;
 
             // Find the existing fustella to update its pulitore_codice
             const { data: existingFustella, error: fetchFustellaError } = await supabase
@@ -577,11 +577,54 @@ export function useOrdiniAcquisto() {
       const previousOrdiniAcquisto = ordiniAcquisto;
       setOrdiniAcquisto(prev => prev.filter(order => order.id !== id));
 
+      // Fetch the full order to get its articles
+      const { data: orderToDelete, error: fetchOrderError } = await supabase
+        .from('ordini_acquisto')
+        .select('articoli, fornitore_id') // Need fornitore_id to determine type
+        .eq('id', id)
+        .single();
+
+      if (fetchOrderError || !orderToDelete) {
+        console.error(`Error fetching order ${numeroOrdine} for permanent deletion:`, fetchOrderError);
+        toast.error(`Errore nel recupero dell'ordine per eliminazione: ${fetchOrderError?.message || 'Ordine non trovato'}`);
+        setOrdiniAcquisto(previousOrdiniAcquisto); // ROLLBACK
+        return { success: false, error: fetchOrderError };
+      }
+
+      // Determine if the supplier is a Fustelle supplier
+      const { data: fornitoreData, error: fornitoreError } = await supabase
+        .from('fornitori')
+        .select('tipo_fornitore')
+        .eq('id', orderToDelete.fornitore_id)
+        .single();
+
+      const isFustelleFornitore = fornitoreData?.tipo_fornitore === 'Fustelle';
+
+      // Handle clearing pulitore_codice for standalone pulitore articles
+      if (isFustelleFornitore && orderToDelete.articoli) {
+        for (const article of orderToDelete.articoli as ArticoloOrdineAcquisto[]) {
+          // If it's a standalone pulitore (has pulitore_codice_fustella but no fustella_codice)
+          if (article.pulitore_codice_fustella && !article.fustella_codice && article.codice_fornitore_fustella) {
+            console.log(`[deleteOrdineAcquistoPermanently] Clearing pulitore_codice for fustella with codice_fornitore: ${article.codice_fornitore_fustella}`);
+            const { error: updateFustellaError } = await supabase
+              .from('fustelle')
+              .update({ pulitore_codice: null, ultima_modifica: new Date().toISOString() })
+              .eq('codice_fornitore', article.codice_fornitore_fustella); // Update by codice_fornitore
+
+            if (updateFustellaError) {
+              console.error(`Error clearing pulitore_codice for fustella (codice_fornitore: ${article.codice_fornitore_fustella}):`, updateFustellaError);
+              // Don't block deletion, just log the error
+            }
+          }
+        }
+      }
+
+      // Delete related entries from other tables
       await supabase.from('ordini').delete().eq('ordine', numeroOrdine);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
-      // NUOVO: Elimina le fustelle associate a questo ordine d'acquisto
-      await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', numeroOrdine);
-      
+      await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', numeroOrdine); // Deletes fustelle created by this order
+
+      // Finally, delete the purchase order itself
       const { error } = await supabase
         .from('ordini_acquisto')
         .delete()
