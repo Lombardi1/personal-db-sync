@@ -190,7 +190,7 @@ export function ModalOrdineAcquistoForm({
 
             if (hasFustellaCode) {
                 // This is a Fustella article (potentially with an integrated pulitore)
-                console.log(`[superRefine] Article ${index}: Fustella article (has non-empty fustella_codice).`);
+                console.log(`[superRefine] Article ${index}: Identified as Fustella article.`);
                 if (!articolo.codice_fornitore_fustella) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fornitore fustella è obbligatorio.', path: [`articoli`, index, `codice_fornitore_fustella`] });
                 }
@@ -670,7 +670,7 @@ export function ModalOrdineAcquistoForm({
 
   const handleFormSubmit = async (data: any) => {
     console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
-    console.log("ModalOrdineAcquistoForm: Current form errors at submission attempt:", errors);
+    // console.log("ModalOrdineAcquistoForm: Current form errors at submission attempt:", errors); // Rimosso per evitare stringify di errors
     try {
       await onSubmit(data as OrdineAcquisto);
       console.log("ModalOrdineAcquistoForm: onSubmit successful.");
@@ -929,7 +929,14 @@ export function ModalOrdineAcquistoForm({
             {Object.keys(errors).length > 0 && (
               <div className="text-destructive text-sm mt-4 p-2 border border-destructive rounded-md">
                 <p className="font-bold mb-1">Errori di validazione:</p>
-                <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(errors, null, 2)}</pre>
+                <pre className="whitespace-pre-wrap text-xs">
+                  {JSON.stringify(errors, (key, value) => {
+                    if (key === 'ref' && typeof value === 'object' && value !== null) {
+                      return undefined; // Rimuove riferimenti circolari a elementi HTML
+                    }
+                    return value;
+                  }, 2)}
+                </pre>
               </div>
             )}
             <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
