@@ -345,15 +345,39 @@ export function ModalOrdineAcquistoForm({
     return sum;
   }, 0);
 
-  // Helper function to generate next Fustella code (always from DB)
-  const getNextFustellaCode = React.useCallback(async () => {
-    return await findNextAvailableFustellaCode();
-  }, []);
+  // Helper function to generate next Fustella code, considering both DB and in-form articles
+  const getNextUniqueFustellaCodeInForm = React.useCallback(async () => {
+    const nextAvailableFromDB = await findNextAvailableFustellaCode(); // e.g., 'FST-005'
+    const numFromDB = parseInt(nextAvailableFromDB.replace('FST-', '')); // e.g., 5
 
-  // Helper function to generate next Pulitore code (always from DB)
-  const getNextPulitoreCode = React.useCallback(async () => {
-    return await findNextAvailablePulitoreCode();
-  }, []);
+    const inFormFustellaNums = watchedArticles
+      .map(article => article.fustella_codice)
+      .filter(Boolean)
+      .map(code => parseInt(code!.replace('FST-', '')))
+      .filter(num => !isNaN(num));
+
+    const maxNumInForm = inFormFustellaNums.length > 0 ? Math.max(...inFormFustellaNums) : 0;
+
+    const nextUniqueNum = Math.max(numFromDB, maxNumInForm + 1);
+    return `FST-${String(nextUniqueNum).padStart(3, '0')}`;
+  }, [watchedArticles]);
+
+  // Helper function to generate next Pulitore code, considering both DB and in-form articles
+  const getNextUniquePulitoreCodeInForm = React.useCallback(async () => {
+    const nextAvailableFromDB = await findNextAvailablePulitoreCode(); // e.g., 'PUL-003'
+    const numFromDB = parseInt(nextAvailableFromDB.replace('PUL-', '')); // e.g., 3
+
+    const inFormPulitoreNums = watchedArticles
+      .map(article => article.pulitore_codice_fustella)
+      .filter(Boolean)
+      .map(code => parseInt(code!.replace('PUL-', '')))
+      .filter(num => !isNaN(num));
+
+    const maxNumInForm = inFormPulitoreNums.length > 0 ? Math.max(...inFormPulitoreNums) : 0;
+
+    const nextUniqueNum = Math.max(numFromDB, maxNumInForm + 1);
+    return `PUL-${String(nextUniqueNum).padStart(3, '0')}`;
+  }, [watchedArticles]);
 
   // This effect will handle setting up the form with async default values
   React.useEffect(() => {
@@ -502,18 +526,18 @@ export function ModalOrdineAcquistoForm({
 
               if (currentArticleType === 'fustella') {
                 if (!article.fustella_codice) {
-                  const nextFustellaCode = await getNextFustellaCode();
+                  const nextFustellaCode = await getNextUniqueFustellaCodeInForm();
                   setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
                 }
                 if (article.quantita === undefined) {
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                 }
                 if (article.hasPulitore && !article.pulitore_codice_fustella) {
-                  setValue(`articoli.${index}.pulitore_codice_fustella`, await getNextPulitoreCode(), { shouldValidate: true });
+                  setValue(`articoli.${index}.pulitore_codice_fustella`, await getNextUniquePulitoreCodeInForm(), { shouldValidate: true });
                 }
               } else if (currentArticleType === 'pulitore') {
                 if (!article.pulitore_codice_fustella) {
-                  setValue(`articoli.${index}.pulitore_codice_fustella`, await getNextPulitoreCode(), { shouldValidate: true });
+                  setValue(`articoli.${index}.pulitore_codice_fustella`, await getNextUniquePulitoreCodeInForm(), { shouldValidate: true });
                 }
                 if (article.quantita === undefined) {
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
@@ -550,7 +574,7 @@ export function ModalOrdineAcquistoForm({
     };
 
     setupFormAndGenerators();
-  }, [isOpen, initialData, reset, setValue, fornitori, onClose, getNextFustellaCode, getNextPulitoreCode]);
+  }, [isOpen, initialData, reset, setValue, fornitori, onClose, getNextUniqueFustellaCodeInForm, getNextUniquePulitoreCodeInForm]);
 
   const handleFormSubmit = async (data: any) => {
     console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
@@ -612,7 +636,7 @@ export function ModalOrdineAcquistoForm({
     if (newIsCartoneFornitore) {
       newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };
     } else if (newIsFustelleFornitore) {
-      const nextFustellaCode = await getNextFustellaCode();
+      const nextFustellaCode = await getNextUniqueFustellaCodeInForm();
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 };
     } else {
       newArticle = { ...newArticle, quantita: 1 };
@@ -622,7 +646,7 @@ export function ModalOrdineAcquistoForm({
     setCtnGeneratorInitialized(true);
     setFscCommessaGeneratorInitialized(true);
     setFustellaGeneratorInitialized(true);
-  }, [fornitori, setValue, watch, getNextFustellaCode, getNextPulitoreCode]);
+  }, [fornitori, setValue, watch, getNextUniqueFustellaCodeInForm, getNextUniquePulitoreCodeInForm]);
 
   const handleAddArticle = async () => {
     if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized) {
@@ -668,12 +692,12 @@ export function ModalOrdineAcquistoForm({
         newArticle.rif_commessa_fsc = generateNextFscCommessa(orderYear);
       }
     } else if (isFustelleFornitore) {
-      const nextFustellaCode = await getNextFustellaCode();
+      const nextFustellaCode = await getNextUniqueFustellaCodeInForm();
       console.log(`[handleAddArticle] Generating Fustella code: ${nextFustellaCode}`);
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 }; // Default quantity to 1
       if (watchedArticles[0]?.hasPulitore) { 
         newArticle.hasPulitore = true;
-        newArticle.pulitore_codice_fustella = await getNextPulitoreCode();
+        newArticle.pulitore_codice_fustella = await getNextUniquePulitoreCodeInForm();
       }
     } else {
       newArticle = { ...newArticle, quantita: 1 };
