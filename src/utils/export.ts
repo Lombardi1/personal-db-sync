@@ -424,16 +424,16 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [infoHeaders],
       body: [infoData],
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
+      styles: { fontSize: 7, cellPadding: 2, fontStyle: 'bold', textColor: [0, 0, 0], overflow: 'hidden' }, // Reduced font size, added overflow: 'hidden'
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
-      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0], fontStyle: 'bold' }, // Modificato: Aggiunto fontStyle: 'bold'
-      columnStyles: { // Aggiunto per distribuire equamente la larghezza
-        0: { cellWidth: (pageWidth - 20) / 6 },
-        1: { cellWidth: (pageWidth - 20) / 6 },
-        2: { cellWidth: (pageWidth - 20) / 6 },
-        3: { cellWidth: (pageWidth - 20) / 6 },
-        4: { cellWidth: (pageWidth - 20) / 6 },
-        5: { cellWidth: (pageWidth - 20) / 6 },
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0], fontStyle: 'bold' },
+      columnStyles: { 
+        0: { cellWidth: (pageWidth - 20) * 0.15 }, // Numero
+        1: { cellWidth: (pageWidth - 20) * 0.15 }, // Data
+        2: { cellWidth: (pageWidth - 20) * 0.15 }, // Cod. fornitore
+        3: { cellWidth: (pageWidth - 20) * 0.15 }, // P.IVA
+        4: { cellWidth: (pageWidth - 20) * 0.25 }, // Condizione di pagamento (wider)
+        5: { cellWidth: (pageWidth - 20) * 0.15 }, // Pag.
       },
       margin: { left: 10, right: 10 },
     });
@@ -457,9 +457,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       head: [['Resa', 'Mezzo', 'Banca']],
       body: [[resaValue, '', fornitore?.banca || '']], // Popola il campo Banca qui
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold', textColor: [0, 0, 0], overflow: 'ellipsize' }, // Modificato fontStyle e overflow
+      styles: { fontSize: 7, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold', textColor: [0, 0, 0], overflow: 'ellipsize' }, // Reduced font size to 7
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
-      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0], fontStyle: 'bold' }, // Modificato: Aggiunto fontStyle: 'bold'
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0], fontStyle: 'bold' },
       columnStyles: { // Aggiunto per distribuire equamente la larghezza
         0: { cellWidth: (pageWidth - 20) / 3 },
         1: { cellWidth: (pageWidth - 20) / 3 },
@@ -541,7 +541,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
               'PZ', // UM for pulitore
               '1,000', // Quantity for pulitore (fixed to 1.000)
               pulitorePrezzoFormatted,
-              pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), // Totale riga pulitore
+              pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }), // Totale riga pulitore
               fornitore?.considera_iva ? '22%' : '-',
               formatData(article.data_consegna_prevista || '')
             ]);
@@ -570,7 +570,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           umText,
           quantitaFormatted,
           prezzoUnitarioFormatted,
-          prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), // Totale riga
+          prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }), // Totale riga
           fornitore?.considera_iva ? '22%' : '-',
           formatData(article.data_consegna_prevista || '')
         ]);
