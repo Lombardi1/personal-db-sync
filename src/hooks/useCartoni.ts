@@ -40,6 +40,9 @@ export function useCartoni() {
       if (ordiniRes.data) {
         setOrdini(ordiniRes.data);
         console.log('[useCartoni - loadData] Ordini data loaded:', ordiniRes.data.length, 'items. Sample:', ordiniRes.data.slice(0, 2));
+        ordiniRes.data.forEach(item => {
+          console.log(`  - Ordine ${item.codice}: DDT='${item.ddt}', DataArrivo='${item.data_arrivo}', Magazzino='${item.magazzino}', Fogli=${item.fogli}`);
+        });
       } else if (ordiniRes.error) {
         console.error('[useCartoni - loadData] Error loading ordini:', ordiniRes.error);
       }
