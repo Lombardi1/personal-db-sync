@@ -41,7 +41,7 @@ import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCode
 import { fetchMaxOrdineAcquistoNumeroFromDB, generateNextOrdineAcquistoNumero } from '@/utils/ordineAcquistoUtils';
 import { fetchMaxFscCommessaFromDB, generateNextFscCommessa, resetFscCommessaGenerator } from '@/utils/fscUtils';
 import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils';
-import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils';
+import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione aggiornata
 
 interface ModalOrdineAcquistoFormProps {
   isOpen: boolean;
@@ -459,8 +459,7 @@ export function ModalOrdineAcquistoForm({
       setValue(`articoli.0.fustella_codice`, nextFustellaCode, { shouldValidate: true });
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true });
 
-      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-      resetPulitoreCodeGenerator(maxPulitoreCode);
+      // No need to reset pulitore generator, it finds next available
     } else {
       resetCartoneCodeGenerator(0);
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true });
@@ -469,7 +468,7 @@ export function ModalOrdineAcquistoForm({
     setCtnGeneratorInitialized(true);
     setFscCommessaGeneratorInitialized(true);
     setFustellaGeneratorInitialized(true);
-    setPulitoreGeneratorInitialized(true);
+    setPulitoreGeneratorInitialized(true); // Mark as initialized even if not used directly
     console.log('resetArticlesAndGenerators: Completed.');
   }, [remove, append, setValue, fornitori, watch]);
 
@@ -540,7 +539,6 @@ export function ModalOrdineAcquistoForm({
                 rif_commessa_fsc: '',
                 // Fustelle fields
                 fustella_codice: '',
-                codice_fornitore_fustella: '',
                 fustellatrice: '',
                 resa_fustella: '',
                 hasPulitore: false,
@@ -591,8 +589,7 @@ export function ModalOrdineAcquistoForm({
           const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
           resetFscCommessaGenerator(maxFscCommessa, orderYear);
 
-          const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-          resetPulitoreCodeGenerator(maxPulitoreCode);
+          // No need to reset pulitore generator, it finds next available
           
           reset(dataToReset);
           console.log('ModalOrdineAcquistoForm: Form reset with data:', dataToReset);
@@ -636,11 +633,11 @@ export function ModalOrdineAcquistoForm({
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                   }
                   if (article.hasPulitore && !article.pulitore_codice_fustella) {
-                    setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+                    setValue(`articoli.${index}.pulitore_codice_fustella`, await generateNextPulitoreCode(), { shouldValidate: true });
                   }
                 } else if (currentArticleType === 'pulitore') {
                   if (!article.pulitore_codice_fustella) { // Should not happen if currentArticleType is 'pulitore'
-                    setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+                    setValue(`articoli.${index}.pulitore_codice_fustella`, await generateNextPulitoreCode(), { shouldValidate: true });
                   }
                   if (article.quantita === undefined) {
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
@@ -744,7 +741,7 @@ export function ModalOrdineAcquistoForm({
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 };
       if (watchedArticles[0]?.hasPulitore) { 
         newArticle.hasPulitore = true;
-        newArticle.pulitore_codice_fustella = generateNextPulitoreCode();
+        newArticle.pulitore_codice_fustella = await generateNextPulitoreCode();
       }
     } else {
       newArticle = { ...newArticle, quantita: 1 };

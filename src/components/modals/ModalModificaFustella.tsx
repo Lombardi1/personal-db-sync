@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
+import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione aggiornata
 
 interface ModalModificaFustellaProps {
   fustella: Fustella;
@@ -41,23 +41,25 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     tipo_incollatura: fustella.tipo_incollatura || '',
   });
 
-  useEffect(() => {
-    // Inizializza il generatore di codici pulitore all'apertura del modale
-    const initializePulitoreCodeGenerator = async () => {
-      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-      resetPulitoreCodeGenerator(maxPulitoreCode);
-    };
-    initializePulitoreCodeGenerator();
-  }, []);
+  // Non è più necessario inizializzare il generatore qui, la generazione è on-demand
+  // useEffect(() => {
+  //   const initializePulitoreCodeGenerator = async () => {
+  //     const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+  //     resetPulitoreCodeGenerator(maxPulitoreCode);
+  //   };
+  //   initializePulitoreCodeGenerator();
+  // }, []);
 
-  const handleChange = (field: keyof typeof formData, value: any) => {
+  const handleChange = async (field: keyof typeof formData, value: any) => { // Reso async
     setFormData(prev => {
       const newState = { ...prev, [field]: value };
       if (field === 'hasPulitore') {
         if (value) {
           // Se 'hasPulitore' viene spuntato e il codice non esiste, genera un nuovo codice
           if (!newState.pulitore_codice) {
-            newState.pulitore_codice = generateNextPulitoreCode();
+            generateNextPulitoreCode().then(code => {
+              setFormData(current => ({ ...current, pulitore_codice: code }));
+            });
           }
         } else {
           // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
@@ -330,9 +332,6 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
             type="button"
             onClick={async () => { // Modificato per essere async
               await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
-
-              const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-              resetPulitoreCodeGenerator(maxPulitoreCode);
 
               setFormData(prev => ({
                 ...prev,
