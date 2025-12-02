@@ -187,11 +187,10 @@ export function ModalOrdineAcquistoForm({
             console.log(`[superRefine] Article ${index}: Entering Fustelle validation.`);
             const hasFustellaCode = articolo.fustella_codice && articolo.fustella_codice.trim() !== '';
             const hasPulitoreCode = articolo.pulitore_codice_fustella && articolo.pulitore_codice_fustella.trim() !== '';
-            const hasDescrizione = articolo.descrizione && articolo.descrizione.trim() !== '';
 
             if (hasFustellaCode) {
                 // This is a Fustella article (potentially with an integrated pulitore)
-                console.log(`[superRefine] Article ${index}: Fustella article (has non-empty fustella_codice).`);
+                console.log(`[superRefine] Article ${index}: Identified as Fustella article.`);
                 if (!articolo.codice_fornitore_fustella) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fornitore fustella è obbligatorio.', path: [`articoli`, index, `codice_fornitore_fustella`] });
                 }
@@ -220,37 +219,43 @@ export function ModalOrdineAcquistoForm({
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Incollatrice e tipo incollatura sono obbligatori se l\'incollatura è presente.', path: [`articoli`, index, `incollatrice`] });
                 }
                 // La descrizione NON è richiesta per le fustelle (anche se hanno un pulitore integrato)
-                // if (!hasDescrizione) { /* Nessun errore */ }
+                // No issue to add here if description is missing.
 
-            } 
-            // Case 2: It's a standalone Pulitore article (has pulitore_codice_fustella but NO fustella_codice)
-            else if (hasPulitoreCode && (!hasFustellaCode)) {
-              console.log(`[superRefine] Article ${index}: Standalone Pulitore article (has non-empty pulitore_codice_fustella, NO non-empty fustella_codice).`);
-              if (!hasDescrizione) {
-                console.log(`[superRefine] Adding issue: descrizione missing for standalone pulitore.`);
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La descrizione è obbligatoria per il pulitore.', path: [`articoli`, index, `descrizione`] });
-              }
-              if (!articolo.quantita || articolo.quantita < 0.001) {
-                console.log(`[superRefine] Adding issue: quantita missing or invalid for pulitore article ${index}`);
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001 per il pulitore.', path: [`articoli`, index, `quantita`] });
-              }
-              if (articolo.prezzo_unitario === undefined || articolo.prezzo_unitario === null || articolo.prezzo_unitario < 0) {
-                console.log(`[superRefine] Adding issue: prezzo_unitario missing or invalid for pulitore article ${index}`);
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il prezzo unitario è obbligatorio per il pulitore.', path: [`articoli`, index, `prezzo_unitario`] });
-              }
-            }
-            // Case 3: Neither fustella_codice nor pulitore_codice_fustella are present (generic for Fustelle supplier)
-            else { // if ((!hasFustellaCode) && (!hasPulitoreCode))
-                console.log(`[superRefine] Article ${index}: Generic Fustelle article (NO non-empty fustella_codice, NO non-empty pulitore_codice_fustella).`);
-                if (!hasDescrizione) {
-                    console.log(`[superRefine] Article ${index}: Adding issue: descrizione missing for generic article.`);
+            } else if (hasPulitoreCode) {
+                // This is a standalone Pulitore article (pulitore_codice_fustella is present, but fustella_codice is not)
+                console.log(`[superRefine] Article ${index}: Identified as Standalone Pulitore article.`);
+                // Rimosso: if (!hasDescrizione) {
+                //     console.log(`[superRefine] Adding issue: descrizione missing for standalone pulitore.`);
+                //     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La descrizione è obbligatoria per il pulitore.', path: [`articoli`, index, `descrizione`] });
+                // }
+                if (!articolo.quantita || articolo.quantita < 0.001) {
+                    console.log(`[superRefine] Adding issue: quantita missing or invalid for pulitore article ${index}`);
+                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001 per il pulitore.', path: [`articoli`, index, `quantita`] });
+                }
+                if (articolo.prezzo_unitario === undefined || articolo.prezzo_unitario === null || articolo.prezzo_unitario < 0) {
+                    console.log(`[superRefine] Adding issue: prezzo_unitario missing or invalid for pulitore article ${index}`);
+                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il prezzo unitario è obbligatorio per il pulitore.', path: [`articoli`, index, `prezzo_unitario`] });
+                }
+                // Ensure fustella-specific fields are NOT present for standalone pulitore
+                if (articolo.fustella_codice || articolo.fustellatrice || articolo.resa_fustella || articolo.pinza_tagliata || articolo.tasselli_intercambiabili || articolo.nr_tasselli || articolo.incollatura || articolo.incollatrice || articolo.tipo_incollatura) {
+                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per un pulitore autonomo.', path: [`articoli`, index, `fustella_codice`] });
+                }
+
+            } else {
+                // This is a Generic Fustelle supplier article (neither fustella_codice nor pulitore_codice_fustella are present)
+                console.log(`[superRefine] Article ${index}: Identified as Generic Fustelle article.`);
+                if (!articolo.descrizione || articolo.descrizione.trim() === '') {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La descrizione è obbligatoria per articoli generici.', path: [`articoli`, index, `descrizione`] });
                 }
                 if (!articolo.quantita || articolo.quantita < 0.001) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001.', path: [`articoli`, index, `quantita`] });
                 }
+                // Ensure fustella/pulitore-specific fields are NOT present for generic
+                if (articolo.fustella_codice || articolo.pulitore_codice_fustella || articolo.fustellatrice || articolo.resa_fustella || articolo.hasPulitore || articolo.prezzo_pulitore || articolo.pinza_tagliata || articolo.tasselli_intercambiabili || articolo.nr_tasselli || articolo.incollatura || articolo.incollatrice || articolo.tipo_incollatura) {
+                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per articoli generici.', path: [`articoli`, index, `fustella_codice`] });
+                }
             }
-            // Campi non consentiti per Fustelle (aggiornato)
+            // Common validation for Fustelle supplier articles (e.g., no cartone fields)
             if (articolo.codice_ctn || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc) {
               console.log(`[superRefine] Article ${index}: Adding issue: non-fustelle fields present.`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per i fornitori di fustelle.', path: [`articoli`, index, `tipologia_cartone`] });
