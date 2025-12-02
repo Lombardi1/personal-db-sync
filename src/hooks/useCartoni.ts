@@ -112,7 +112,7 @@ export function useCartoni() {
 
   const aggiungiOrdine = async (cartone: Cartone) => {
     // Crea un nuovo oggetto Cartone con solo i campi pertinenti per la tabella 'ordini'
-    const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo' | 'magazzino'> = {
+    const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
       codice: cartone.codice,
       fornitore: cartone.fornitore,
       ordine: cartone.ordine,
@@ -122,6 +122,7 @@ export function useCartoni() {
       fogli: cartone.fogli,
       cliente: cartone.cliente,
       lavoro: cartone.lavoro,
+      magazzino: cartone.magazzino || '-', // Assicurati che magazzino abbia un valore non nullo
       prezzo: cartone.prezzo,
       data_consegna: cartone.data_consegna,
       confermato: cartone.confermato,
@@ -404,7 +405,7 @@ export function useCartoni() {
     }
 
     // Creazione esplicita dell'oggetto Cartone per la tabella 'ordini'
-    const ordinePerOrdini: Omit<Cartone, 'ddt' | 'data_arrivo' | 'magazzino'> = {
+    const ordinePerOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
       codice: cartone.codice,
       fornitore: cartone.fornitore,
       ordine: cartone.ordine,
@@ -422,6 +423,7 @@ export function useCartoni() {
       // Campi specifici per ordini
       data_consegna: cartone.data_consegna || new Date().toISOString().split('T')[0], // Usa data_consegna esistente o odierna
       confermato: true, // Imposta a true quando riportato in ordini
+      magazzino: cartone.magazzino || '-', // Assicurati che magazzino abbia un valore non nullo
     };
     console.log('[useCartoni - riportaInOrdini] Inserting into ordini:', JSON.stringify(ordinePerOrdini, null, 2));
 
@@ -562,7 +564,7 @@ export function useCartoni() {
     }
 
     // Crea un oggetto con solo i campi che possono essere aggiornati nella tabella 'ordini'
-    const datiPerAggiornamento: Partial<Omit<Cartone, 'ddt' | 'data_arrivo' | 'magazzino'>> = {
+    const datiPerAggiornamento: Partial<Omit<Cartone, 'ddt' | 'data_arrivo'>> = {
       codice: dati.codice,
       fornitore: dati.fornitore,
       ordine: dati.ordine,
@@ -572,6 +574,7 @@ export function useCartoni() {
       fogli: dati.fogli,
       cliente: dati.cliente,
       lavoro: dati.lavoro,
+      magazzino: dati.magazzino || '-', // Assicurati che magazzino abbia un valore non nullo
       prezzo: dati.prezzo,
       data_consegna: dati.data_consegna,
       confermato: dati.confermato,

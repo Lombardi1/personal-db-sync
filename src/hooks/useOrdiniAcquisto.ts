@@ -58,7 +58,7 @@ export function useOrdiniAcquisto() {
           }
 
           // Costruisci l'oggetto Cartone con i campi specifici per la tabella 'ordini'
-          const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo' | 'magazzino'> = {
+          const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
             codice: codiceCtn,
             fornitore: fornitoreNome,
             ordine: ordineAcquisto.numero_ordine,
@@ -68,6 +68,7 @@ export function useOrdiniAcquisto() {
             fogli: numFogli,
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
+            magazzino: '-', // Valore di default per la tabella 'ordini'
             prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
             note: ordineAcquisto.note || '-',
