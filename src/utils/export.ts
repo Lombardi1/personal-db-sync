@@ -510,8 +510,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
       } else if (isFustelle) {
         umText = 'PZ';
-        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimali
-        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimali
+        // Quantità e prezzi senza decimali per Fustelle/Pulitore
+        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); 
+        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); 
         prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
 
         // Case 1: Article is a Fustella (has fustella_codice)
@@ -529,7 +530,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
             umText,
             quantitaFormatted,
             prezzoUnitarioFormatted,
-            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Senza decimali
             fornitore?.considera_iva ? '22%' : '-',
             formatData(article.data_consegna_prevista || '')
           ]);
@@ -537,15 +538,15 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
           // If this Fustella has an associated Pulitore, push a separate row for it
           if (article.hasPulitore && article.pulitore_codice_fustella && article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
-            const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+            const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); // Senza decimali
             const pulitoreTotaleRiga = (article.prezzo_pulitore || 0);
             articlesBody.push([
               article.pulitore_codice_fustella,
               article.descrizione || `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Use article.descrizione if available, otherwise construct
               'PZ',
-              '1,000', // Quantity for pulitore (fixed to 1.000)
+              '1', // Quantity for pulitore (fixed to 1)
               pulitorePrezzoFormatted,
-              pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+              pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Senza decimali
               fornitore?.considera_iva ? '22%' : '-',
               formatData(article.data_consegna_prevista || '')
             ]);
@@ -560,9 +561,9 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
             articoloColumnText,
             descrizioneColumnText,
             'PZ',
-            quantitaFormatted, // Should be 1,000 for pulitore
+            quantitaFormatted, // Should be 1 for pulitore
             prezzoUnitarioFormatted,
-            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Senza decimali
             fornitore?.considera_iva ? '22%' : '-',
             formatData(article.data_consegna_prevista || '')
           ]);
@@ -578,7 +579,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
             umText,
             quantitaFormatted,
             prezzoUnitarioFormatted,
-            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Senza decimali
             fornitore?.considera_iva ? '22%' : '-',
             formatData(article.data_consegna_prevista || '')
           ]);
