@@ -29,6 +29,8 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
       return;
     }
 
+    console.log(`[ModalConfermaMagazzino] Dati inviati a onConferma: codice=${codice}, ddt='${ddt}', dataArrivo='${dataArrivo}', fogliEffettivi=${fogliNum}, magazzino='${magazzino}'`);
+
     onClose();
     
     const { error } = await onConferma(

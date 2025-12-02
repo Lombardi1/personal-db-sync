@@ -132,7 +132,7 @@ export function useCartoni() {
       notifications.showError('Ordine non trovato');
       return { error: new Error('Ordine non trovato') };
     }
-    console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, ordine);
+    console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, JSON.stringify(ordine, null, 2));
 
     const fogliFinali = fogliEffettivi; // fogliEffettivi è ora sempre un numero
     const magazzinoFinale = magazzino; 
@@ -150,7 +150,7 @@ export function useCartoni() {
     };
     delete cartoneGiacenza.confermato; // 'confermato' è specifico della tabella 'ordini'
     
-    console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza':`, cartoneGiacenza);
+    console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
 
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di eliminare da 'ordini' il codice: ${codice}`);
     const { error: deleteError } = await supabase.from('ordini').delete().eq('codice', codice);
@@ -161,7 +161,7 @@ export function useCartoni() {
     }
     console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}`);
 
-    console.log(`[useCartoni - spostaInGiacenza] Tentativo di inserire in 'giacenza' il cartone:`, cartoneGiacenza);
+    console.log(`[useCartoni - spostaInGiacenza] Tentativo di inserire in 'giacenza' il cartone:`, JSON.stringify(cartoneGiacenza, null, 2));
     const { error: insertError } = await supabase.from('giacenza').insert([cartoneGiacenza]);
     if (insertError) {
       console.error(`[useCartoni - spostaInGiacenza] Errore inserimento in 'giacenza':`, insertError);
