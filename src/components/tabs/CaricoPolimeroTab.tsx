@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as notifications from '@/utils/notifications';
-import { generateNextPolimeroCode, resetPolimeroCodeGenerator, fetchMaxPolimeroCodeFromDB } from '@/utils/polimeroUtils';
+import { findNextAvailablePolimeroCode } from '@/utils/polimeroUtils'; // Updated import
 import { supabase } from '@/lib/supabase'; // Importa supabase
 
 interface CaricoPolimeroTabProps {
@@ -28,9 +28,8 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
 
   useEffect(() => {
     const initializeAndGenerateCode = async () => {
-      const maxCode = await fetchMaxPolimeroCodeFromDB();
-      resetPolimeroCodeGenerator(maxCode);
-      setFormData(prev => ({ ...prev, codice: generateNextPolimeroCode() }));
+      const nextCode = await findNextAvailablePolimeroCode();
+      setFormData(prev => ({ ...prev, codice: nextCode }));
     };
     initializeAndGenerateCode();
   }, []);
@@ -131,8 +130,9 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
     if (!error) {
       notifications.showSuccess(`✅ Polimero '${formData.codice}' registrato con successo!`);
 
+      const nextCode = await findNextAvailablePolimeroCode(); // Generate next code
       setFormData({
-        codice: generateNextPolimeroCode(), // Genera un nuovo codice per il prossimo inserimento
+        codice: nextCode, // Genera un nuovo codice per il prossimo inserimento
         nr_fustella: '',
         codice_fornitore: '',
         cliente: '',
@@ -289,9 +289,10 @@ export function CaricoPolimeroTab({ aggiungiPolimero }: CaricoPolimeroTabProps) 
           </Button>
           <Button
             type="button"
-            onClick={() => {
+            onClick={async () => {
+              const nextCode = await findNextAvailablePolimeroCode();
               setFormData({
-                codice: generateNextPolimeroCode(),
+                codice: nextCode,
                 nr_fustella: '',
                 codice_fornitore: '',
                 cliente: '',
