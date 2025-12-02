@@ -209,9 +209,6 @@ export function ModalOrdineAcquistoForm({
                 if (!articolo.lavoro) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il lavoro è obbligatorio.', path: [`articoli`, index, `lavoro`] });
                 }
-                // Rimosso: if (articolo.hasPulitore && (!hasPulitoreCode || articolo.prezzo_pulitore === undefined || articolo.prezzo_pulitore === null)) {
-                //   ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice e il prezzo del pulitore sono obbligatori se il pulitore è presente.', path: [`articoli`, index, `pulitore_codice_fustella`] });
-                // }
                 if (articolo.tasselli_intercambiabili && (articolo.nr_tasselli === undefined || articolo.nr_tasselli === null || articolo.nr_tasselli < 0)) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il numero di tasselli è obbligatorio se i tasselli sono intercambiabili.', path: [`articoli`, index, `nr_tasselli`] });
                 }
@@ -223,10 +220,9 @@ export function ModalOrdineAcquistoForm({
             } else if (hasPulitoreCode) {
                 // This is a Standalone Pulitore article (pulitore_codice_fustella is present, but fustella_codice is not)
                 console.log(`[superRefine] Article ${index}: Identified as Standalone Pulitore article.`);
-                // NEW: Require codice_fornitore_fustella for standalone pulitore
-                if (!articolo.codice_fornitore_fustella || articolo.codice_fornitore_fustella.trim() === '') {
-                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fornitore della fustella associata è obbligatorio per il pulitore autonomo.', path: [`articoli`, index, `codice_fornitore_fustella`] });
-                }
+                // Rimosso: if (!articolo.codice_fornitore_fustella || articolo.codice_fornitore_fustella.trim() === '') {
+                //     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fornitore della fustella associata è obbligatorio per il pulitore autonomo.', path: [`articoli`, index, `codice_fornitore_fustella`] });
+                // }
                 if (!articolo.quantita || articolo.quantita < 0.001) {
                     console.log(`[superRefine] Adding issue: quantita missing or invalid for pulitore article ${index}`);
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La quantità è obbligatoria e deve essere almeno 0.001 per il pulitore.', path: [`articoli`, index, `quantita`] });
@@ -940,19 +936,7 @@ export function ModalOrdineAcquistoForm({
                 {errors.note && <p className="text-destructive text-xs mt-1">{errors.note.message}</p>}
               </div>
             </div>
-            {Object.keys(errors).length > 0 && (
-              <div className="text-destructive text-sm mt-4 p-2 border border-destructive rounded-md">
-                <p className="font-bold mb-1">Errori di validazione:</p>
-                <pre className="whitespace-pre-wrap text-xs">
-                  {JSON.stringify(errors, (key, value) => {
-                    if (key === 'ref' && typeof value === 'object' && value !== null) {
-                      return undefined; // Rimuove riferimenti circolari a elementi HTML
-                    }
-                    return value;
-                  }, 2)}
-                </pre>
-              </div>
-            )}
+            {/* Rimosso: Blocco di visualizzazione degli errori di validazione */}
             <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto text-sm">
                 Annulla
