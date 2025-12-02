@@ -83,16 +83,20 @@ export function useOrdiniAcquisto() {
 
           if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
             const isConfirmedForOrdiniTable = articolo.stato === 'confermato';
-            const { error: insertError } = await supabase.from('ordini').insert([{ ...cartoneBase, confermato: isConfirmedForOrdiniTable }]);
+            const dataToInsertIntoOrdini = { ...cartoneBase, confermato: isConfirmedForOrdiniTable };
+            console.log(`[syncArticleInventoryStatus] Tentativo di inserire in 'ordini':`, JSON.stringify(dataToInsertIntoOrdini, null, 2));
+            const { error: insertError } = await supabase.from('ordini').insert([dataToInsertIntoOrdini]);
             if (insertError) {
               console.error(`[syncArticleInventoryStatus] Errore inserimento in ordini per cartone '${codiceCtn}':`, insertError);
               toast.error(`Errore inserimento in ordini: ${insertError.message}`);
+            } else {
+              console.log(`[syncArticleInventoryStatus] Inserimento in 'ordini' riuscito per cartone '${codiceCtn}'.`);
             }
           } else if (articolo.stato === 'ricevuto') {
             // MODIFICA QUI: Seleziona solo i campi necessari per evitare 406
             const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
               .from('giacenza')
-              .select('codice, ddt, data_arrivo, magazzino, rif_commessa_fsc') // Explicitly select relevant fields
+              .select('codice') // Minimal select to check existence
               .eq('codice', codiceCtn)
               .single();
 
@@ -104,23 +108,30 @@ export function useOrdiniAcquisto() {
 
             // Use existing values if available, otherwise default
             const giacenzaDataToUpdate = {
-              ddt: existingGiacenza?.ddt || null,
+              ddt: existingGiacenza?.ddt || null, // These will be null if existingGiacenza is null or only 'codice' was selected
               data_arrivo: existingGiacenza?.data_arrivo || new Date().toISOString().split('T')[0],
               magazzino: existingGiacenza?.magazzino || '-',
               rif_commessa_fsc: existingGiacenza?.rif_commessa_fsc || null, // Include rif_commessa_fsc
             };
 
+            const dataToInsertIntoGiacenza = { ...cartoneBase, ...giacenzaDataToUpdate };
+            console.log(`[syncArticleInventoryStatus] Tentativo di inserire/aggiornare in 'giacenza':`, JSON.stringify(dataToInsertIntoGiacenza, null, 2));
+
             if (existingGiacenza) {
-              const { error: updateError } = await supabase.from('giacenza').update({ ...cartoneBase, ...giacenzaDataToUpdate }).eq('codice', codiceCtn);
+              const { error: updateError } = await supabase.from('giacenza').update(dataToInsertIntoGiacenza).eq('codice', codiceCtn);
               if (updateError) {
                 console.error(`[syncArticleInventoryStatus] Errore aggiornamento in giacenza per cartone '${codiceCtn}':`, updateError);
                 toast.error(`Errore aggiornamento in giacenza: ${updateError.message}`);
+              } else {
+                console.log(`[syncArticleInventoryStatus] Aggiornamento in 'giacenza' riuscito per cartone '${codiceCtn}'.`);
               }
             } else {
-              const { error: insertError } = await supabase.from('giacenza').insert([{ ...cartoneBase, ...giacenzaDataToUpdate }]);
+              const { error: insertError } = await supabase.from('giacenza').insert([dataToInsertIntoGiacenza]);
               if (insertError) {
                 console.error(`[syncArticleInventoryStatus] Errore inserimento in giacenza per cartone '${codiceCtn}':`, insertError);
                 toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
+              } else {
+                console.log(`[syncArticleInventoryStatus] Inserimento in 'giacenza' riuscito per cartone '${codiceCtn}'.`);
               }
             }
           }
@@ -168,12 +179,16 @@ export function useOrdiniAcquisto() {
               if (updateError) {
                 console.error(`[syncArticleInventoryStatus] Errore aggiornamento fustella '${fustellaCodice}':`, updateError);
                 toast.error(`Errore aggiornamento fustella: ${updateError.message}`);
+              } else {
+                console.log(`[syncArticleInventoryStatus] Aggiornamento fustella in 'fustelle' riuscito per codice '${fustellaCodice}'.`);
               }
             } else {
               const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
               if (insertError) {
                 console.error(`[syncArticleInventoryStatus] Errore inserimento fustella '${fustellaCodice}':`, insertError);
                 toast.error(`Errore inserimento fustella: ${insertError.message}`);
+              } else {
+                console.log(`[syncArticleInventoryStatus] Inserimento fustella in 'fustelle' riuscito per codice '${fustellaCodice}'.`);
               }
             }
           } 
