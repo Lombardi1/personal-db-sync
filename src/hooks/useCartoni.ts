@@ -419,7 +419,7 @@ export function useCartoni() {
       tipologia: cartone.tipologia,
       formato: cartone.formato,
       grammatura: cartone.grammatura,
-      fogli: cartone.fogli,
+      fogli: cartone.fogli, // Questo è il valore aggiornato dei fogli dalla giacenza
       cliente: cartone.cliente,
       lavoro: cartone.lavoro,
       prezzo: cartone.prezzo,
@@ -435,7 +435,7 @@ export function useCartoni() {
       data_arrivo: cartone.data_arrivo,
       magazzino: cartone.magazzino,
     };
-    console.log('[useCartoni - riportaInOrdini] Inserting into ordini:', JSON.stringify(ordinePerOrdini, null, 2));
+    console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini:', JSON.stringify(ordinePerOrdini, null, 2)); // LOG DI DEBUG
 
     await supabase.from('giacenza').delete().eq('codice', codice);
     await supabase.from('ordini').insert([ordinePerOrdini]);

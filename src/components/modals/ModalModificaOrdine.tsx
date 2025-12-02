@@ -19,10 +19,12 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
     fogli: ordine.fogli.toString(),
     cliente: ordine.cliente,
     lavoro: ordine.lavoro,
-    magazzino: ordine.magazzino,
-    prezzo: ordine.prezzo !== undefined && ordine.prezzo !== null ? ordine.prezzo.toFixed(3).replace('.', ',') : '', // Modificato: usa toFixed(3) e replace per il valore iniziale, o stringa vuota
+    magazzino: ordine.magazzino || '', // Assicurati che sia una stringa vuota se null
+    prezzo: ordine.prezzo !== undefined && ordine.prezzo !== null ? ordine.prezzo.toFixed(3).replace('.', ',') : '',
     data_consegna: ordine.data_consegna,
-    note: ordine.note || ''
+    note: ordine.note || '',
+    ddt: ordine.ddt || '', // NUOVO CAMPO
+    data_arrivo: ordine.data_arrivo || '', // NUOVO CAMPO
   });
 
   const handleChange = (field: string, value: any) => {
@@ -52,10 +54,12 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
       fogli: parseInt(formData.fogli),
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
-      magazzino: formData.magazzino.trim(),
+      magazzino: formData.magazzino.trim() || null, // Invia null se vuoto
       prezzo: parseFloat(formData.prezzo.replace(',', '.')), // Parse after comma replacement
       data_consegna: formData.data_consegna,
-      note: formData.note.trim() || '-'
+      note: formData.note.trim() || '-',
+      ddt: formData.ddt.trim() || null, // NUOVO: Invia null se vuoto
+      data_arrivo: formData.data_arrivo.trim() || null, // NUOVO: Invia null se vuoto
     };
 
     await onModifica(ordine.codice, datiAggiornati);
@@ -212,7 +216,7 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
 
             <div>
               <label className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
-                <i className="fas fa-calendar mr-1"></i> Data Consegna
+                <i className="fas fa-calendar mr-1"></i> Data Consegna Prevista
               </label>
               <input
                 type="date"
@@ -220,6 +224,32 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
                 onChange={(e) => handleChange('data_consegna', e.target.value)}
                 className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
                 required
+              />
+            </div>
+
+            {/* NUOVI CAMPI: DDT e Data Arrivo */}
+            <div>
+              <label className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+                <i className="fas fa-file-invoice mr-1"></i> DDT
+              </label>
+              <input
+                type="text"
+                value={formData.ddt}
+                onChange={(e) => handleChange('ddt', e.target.value)}
+                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
+                placeholder="es. 12345"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+                <i className="fas fa-calendar-alt mr-1"></i> Data Arrivo Effettivo
+              </label>
+              <input
+                type="date"
+                value={formData.data_arrivo}
+                onChange={(e) => handleChange('data_arrivo', e.target.value)}
+                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
               />
             </div>
 
