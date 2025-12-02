@@ -502,6 +502,18 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         if (article.fsc) descrizioneColumnText += `\n\nPROD.CERT.FSC MIX CREDIT BV-COC-334465\nRIF. COMMESSA ${article.rif_commessa_fsc || 'N/A'}`;
         if (article.alimentare) descrizioneColumnText += '\n\nMATERIALE IDONEO AL CONTATTO ALIMENTARE';
 
+        articlesBody.push([
+          articoloColumnText,
+          descrizioneColumnText,
+          umText,
+          quantitaFormatted,
+          prezzoUnitarioFormatted,
+          prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+          fornitore?.considera_iva ? '22%' : '-',
+          formatData(article.data_consegna_prevista || '')
+        ]);
+        subtotalNonCancelled += prezzoTotaleRiga;
+
       } else if (isFustelle) {
         umText = 'PZ';
         quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimali
@@ -514,18 +526,19 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           let fustellaDescriptionParts = [];
           if (article.codice_fornitore_fustella) fustellaDescriptionParts.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
           if (article.resa_fustella) fustellaDescriptionParts.push(`Resa: ${article.resa_fustella}`);
-          if (article.pinza_tagliata) fustellaDescriptionParts.push(`Pinza Tagliata: Sì`);
-          if (article.tasselli_intercambiabili) {
-            fustellaDescriptionParts.push(`Tasselli Intercambiabili: Sì`);
-            if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
-              fustellaDescriptionParts.push(`Nr. Tasselli: ${article.nr_tasselli}`);
-            }
-          }
-          if (article.incollatura) {
-            fustellaDescriptionParts.push(`Incollatura: Sì`);
-            if (article.incollatrice) fustellaDescriptionParts.push(`Incollatrice: ${article.incollatrice}`);
-            if (article.tipo_incollatura) fustellaDescriptionParts.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
-          }
+          // Rimosse le seguenti righe come richiesto dall'utente:
+          // if (article.pinza_tagliata) fustellaDescriptionParts.push(`Pinza Tagliata: Sì`);
+          // if (article.tasselli_intercambiabili) {
+          //   fustellaDescriptionParts.push(`Tasselli Intercambiabili: Sì`);
+          //   if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
+          //     fustellaDescriptionParts.push(`Nr. Tasselli: ${article.nr_tasselli}`);
+          //   }
+          // }
+          // if (article.incollatura) {
+          //   fustellaDescriptionParts.push(`Incollatura: Sì`);
+          //   if (article.incollatrice) fustellaDescriptionParts.push(`Incollatrice: ${article.incollatrice}`);
+          //   if (article.tipo_incollatura) fustellaDescriptionParts.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
+          // }
           descrizioneColumnText = fustellaDescriptionParts.join('\n');
 
           // Push the main Fustella row
@@ -598,16 +611,19 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
         articoloColumnText = ''; // Empty for generic
         descrizioneColumnText = article.descrizione || '';
-      }
 
-      // Add the main article row (cartone, fustella, or generic)
-      // This is done only if it's not an associated pulitore that was already added as a separate row
-      // The previous condition was incorrect, it prevented the main fustella row from being added.
-      // Now, the main fustella row is added in the 'if (article.fustella_codice)' block,
-      // and the standalone pulitore is added in its own 'else if' block.
-      // Generic articles are added in the final 'else' block.
-      // This outer push is now redundant and incorrect for Fustelle, so it's removed.
-      // The logic for adding rows is now fully contained within the `if (isCartone)`, `else if (isFustelle)`, `else` blocks.
+        articlesBody.push([
+          articoloColumnText,
+          descrizioneColumnText,
+          umText,
+          quantitaFormatted,
+          prezzoUnitarioFormatted,
+          prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }),
+          fornitore?.considera_iva ? '22%' : '-',
+          formatData(article.data_consegna_prevista || '')
+        ]);
+        subtotalNonCancelled += prezzoTotaleRiga;
+      }
     });
 
     // Aggiungi una nota se ci sono articoli annullati
