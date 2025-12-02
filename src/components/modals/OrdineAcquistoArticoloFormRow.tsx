@@ -313,8 +313,9 @@ export function OrdineAcquistoArticoloFormRow({
     setNrFustellaLookup(''); // Clear lookup field
 
     if (newType === 'fustella') {
-      if (isNewOrder && !currentFustellaCodice) {
+      if (isNewOrder || !currentFustellaCodice) { // Generate if new order or if no code exists
         const code = await findNextAvailableFustellaCode(); // Await the code generation
+        console.log(`[Article ${index}] handleArticleTypeChange: Generated Fustella code: ${code}`);
         setValue(`articoli.${index}.fustella_codice`, code, { shouldValidate: true });
       }
     } else if (newType === 'pulitore') {

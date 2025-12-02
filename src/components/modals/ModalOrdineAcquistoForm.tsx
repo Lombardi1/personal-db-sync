@@ -190,7 +190,7 @@ export function ModalOrdineAcquistoForm({
 
             if (hasFustellaCode) {
                 // This is a Fustella article (potentially with an integrated pulitore)
-                console.log(`[superRefine] Article ${index}: Identified as Fustella article.`);
+                console.log(`[superRefine] Article ${index}: Fustella article (has non-empty fustella_codice).`);
                 if (!articolo.codice_fornitore_fustella) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fornitore fustella è obbligatorio.', path: [`articoli`, index, `codice_fornitore_fustella`] });
                 }
@@ -455,6 +455,7 @@ export function ModalOrdineAcquistoForm({
       resetFscCommessaGenerator(maxFscCommessa, orderYear);
     } else if (newIsFustelleFornitore) {
       const nextFustellaCode = await findNextAvailableFustellaCode();
+      console.log(`[resetArticlesAndGenerators] Generating Fustella code: ${nextFustellaCode}`);
       setValue(`articoli.0.fustella_codice`, nextFustellaCode, { shouldValidate: true });
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true });
 
@@ -620,6 +621,7 @@ export function ModalOrdineAcquistoForm({
               } else if (currentIsFustelleFornitore) {
                 if (!article.fustella_codice && !article.pulitore_codice_fustella) {
                   const nextFustellaCode = await findNextAvailableFustellaCode();
+                  console.log(`[setupFormAndGenerators] Setting Fustella code for article ${index}: ${nextFustellaCode}`);
                   setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                 } else if (article.fustella_codice && !article.pulitore_codice_fustella) {
@@ -725,6 +727,7 @@ export function ModalOrdineAcquistoForm({
       }
     } else if (isFustelleFornitore) {
       const nextFustellaCode = await findNextAvailableFustellaCode();
+      console.log(`[handleAddArticle] Generating Fustella code: ${nextFustellaCode}`);
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 };
       if (watchedArticles[0]?.hasPulitore) { 
         newArticle.hasPulitore = true;
