@@ -6,7 +6,7 @@ import { useOrdiniAcquisto } from '@/hooks/useOrdiniAcquisto';
 import { useAuth } from '@/hooks/useAuth';
 
 export function useCartoni() {
-  const [giacenza, setGiacenza] = useState<Cartone[]>(([]);
+  const [giacenza, setGiacenza] = useState<Cartone[]>([]);
   const [ordini, setOrdini] = useState<Cartone[]>([]);
   const [esauriti, setEsauriti] = useState<Cartone[]>([]);
   const [storico, setStorico] = useState<StoricoMovimento[]>([]);
