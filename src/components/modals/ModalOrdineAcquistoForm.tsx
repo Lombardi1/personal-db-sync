@@ -147,7 +147,7 @@ export function ModalOrdineAcquistoForm({
         console.log(`[superRefine] Fornitore Type: ${selectedFornitore?.tipo_fornitore}, isCartoneFornitore: ${isCartoneFornitore}, isFustelleFornitore: ${isFustelleFornitore}`);
 
         data.articoli.forEach((articolo, index) => {
-          // console.log(`[superRefine] Article ${index} data:`, JSON.stringify(articolo, null, 2)); // Rimosso per prevenire l'errore di struttura circolare
+          // console.log(`[superRefine] Article ${index} data:`, articolo); // Rimosso JSON.stringify
           if (isCartoneFornitore) {
             console.log(`[superRefine] Article ${index}: Entering Cartone validation.`);
             if (!articolo.tipologia_cartone) {
@@ -190,7 +190,7 @@ export function ModalOrdineAcquistoForm({
 
             if (hasFustellaCode) {
                 // This is a Fustella article (potentially with an integrated pulitore)
-                console.log(`[superRefine] Article ${index}: Identified as Fustella article.`);
+                console.log(`[superRefine] Article ${index}: Fustella article (has non-empty fustella_codice).`);
                 if (!articolo.codice_fornitore_fustella) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice fornitore fustella è obbligatorio.', path: [`articoli`, index, `codice_fornitore_fustella`] });
                 }
@@ -219,13 +219,12 @@ export function ModalOrdineAcquistoForm({
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Incollatrice e tipo incollatura sono obbligatori se l\'incollatura è presente.', path: [`articoli`, index, `incollatrice`] });
                 }
                 // La descrizione NON è richiesta per le fustelle (anche se hanno un pulitore integrato)
-                // No issue to add here if description is missing.
 
             } else if (hasPulitoreCode) {
                 // This is a standalone Pulitore article (pulitore_codice_fustella is present, but fustella_codice is not)
                 console.log(`[superRefine] Article ${index}: Identified as Standalone Pulitore article.`);
-                // Rimosso: if (!hasDescrizione) {
-                //     console.log(`[superRefine] Adding issue: descrizione missing for standalone pulitore.`);
+                // La descrizione NON è richiesta per il pulitore autonomo
+                // if (!hasDescrizione) {
                 //     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La descrizione è obbligatoria per il pulitore.', path: [`articoli`, index, `descrizione`] });
                 // }
                 if (!articolo.quantita || articolo.quantita < 0.001) {
@@ -634,12 +633,13 @@ export function ModalOrdineAcquistoForm({
                   if (article.quantita === undefined) {
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                   }
-                  if (!article.descrizione) {
-                    const pulitoreDescription = article.codice_fornitore_fustella 
-                      ? `Pulitore per Fustella ${article.codice_fornitore_fustella}` 
-                      : `Pulitore per fustella`;
-                    setValue(`articoli.${index}.descrizione`, pulitoreDescription, { shouldValidate: true });
-                  }
+                  // La descrizione non è più obbligatoria per i pulitori autonomi
+                  // if (!article.descrizione) {
+                  //   const pulitoreDescription = article.codice_fornitore_fustella 
+                  //     ? `Pulitore per Fustella ${article.codice_fornitore_fustella}` 
+                  //     : `Pulitore per fustella`;
+                  //   setValue(`articoli.${index}.descrizione`, pulitoreDescription, { shouldValidate: true });
+                  // }
                 }
               } else {
                 if (article.quantita === undefined) {
