@@ -21,8 +21,8 @@ export function useCartoni() {
     try {
       const [giacenzaRes, ordiniRes, esauritiRes, storicoRes] = await Promise.all([
         supabase.from('giacenza').select('*'),
-        // Modificato: Seleziona solo la colonna 'codice' per la tabella 'ordini' per test
-        supabase.from('ordini').select('codice'),
+        // Modificato: Seleziona tutte le colonne per la tabella 'ordini'
+        supabase.from('ordini').select('*'),
         supabase.from('esauriti').select('*'),
         supabase.from('storico').select(`*, app_users(username)`).order('data', { ascending: false })
       ]);
@@ -35,10 +35,8 @@ export function useCartoni() {
       }
 
       if (ordiniRes.data) {
-        // Se la query funziona, ordiniRes.data conterrà solo oggetti con la proprietà 'codice'
-        // Potrebbe essere necessario adattare il tipo se il componente che usa 'ordini' si aspetta più campi
         setOrdini(ordiniRes.data as Cartone[]); 
-        console.log('[useCartoni] Ordini data loaded:', ordiniRes.data.length, 'items (solo codice)');
+        console.log('[useCartoni] Ordini data loaded:', ordiniRes.data.length, 'items');
       } else if (ordiniRes.error) {
         console.error('[useCartoni] Error loading ordini:', ordiniRes.error);
       }
