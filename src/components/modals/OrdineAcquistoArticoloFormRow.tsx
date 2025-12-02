@@ -1034,6 +1034,7 @@ export function OrdineAcquistoArticoloFormRow({
                     id={`articoli.${index}.codice_fornitore_fustella`}
                     {...register(`articoli.${index}.codice_fornitore_fustella`)}
                     placeholder="Popolato da ricerca o manuale" // Aggiunto placeholder
+                    readOnly // Reso di sola lettura
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
