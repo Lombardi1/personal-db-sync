@@ -3,10 +3,12 @@ import { supabase } from '@/lib/supabase';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone, Fustella } from '@/types';
 import { toast } from 'sonner';
 import { generateNextCartoneCode } from '@/utils/cartoneUtils';
+import { useCartoni } from './useCartoni'; // Importa useCartoni per refetchCartoniData
 
 export function useOrdiniAcquisto() {
   const [ordiniAcquisto, setOrdiniAcquisto] = useState<OrdineAcquisto[]>([]);
   const [loading, setLoading] = useState(true);
+  const { refetchCartoniData } = useCartoni(); // Ottieni la funzione per ricaricare i dati dei cartoni
 
   // 1. Define syncArticleInventoryStatus first, as it's a helper for others and has no internal dependencies on other useCallback functions in this file.
   const syncArticleInventoryStatus = useCallback(async (ordineAcquisto: OrdineAcquisto) => {
@@ -188,7 +190,9 @@ export function useOrdiniAcquisto() {
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
       }
     }
-  }, []);
+    // Chiamiamo refetchCartoniData qui per assicurarci che i dati del magazzino siano aggiornati
+    await refetchCartoniData();
+  }, [refetchCartoniData]); // Aggiungi refetchCartoniData alle dipendenze
 
   const loadOrdiniAcquisto = useCallback(async () => {
     setLoading(true);
@@ -253,7 +257,6 @@ export function useOrdiniAcquisto() {
     }
   }, []);
 
-  // NUOVA FUNZIONE: updateArticleInPurchaseOrder
   const updateArticleInPurchaseOrder = useCallback(async (
     orderNumeroOrdine: string,
     articleIdentifier: string,
@@ -278,7 +281,6 @@ export function useOrdiniAcquisto() {
     let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
     let articleFound = false;
     updatedArticles = updatedArticles.map(art => {
-      // Identifica l'articolo tramite codice_ctn, fustella_codice, pulitore_codice_fustella o descrizione
       const isMatch = (art.codice_ctn && art.codice_ctn === articleIdentifier) ||
                       (art.fustella_codice && art.fustella_codice === articleIdentifier) ||
                       (art.pulitore_codice_fustella && art.pulitore_codice_fustella === articleIdentifier) ||
@@ -349,107 +351,6 @@ export function useOrdiniAcquisto() {
 
     if (fornitoreError || !fornitoreData) {
       console.error(`[useOrdiniAcquisto - updateArticleInPurchaseOrder] Errore recupero dettagli fornitore per OA: ${updatedOrdine.numero_ordine}`, fornitoreError);
-      toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
-      return { success: false, error: fornitoreError };
-    }
-
-    const orderWithFornitoreInfo: OrdineAcquisto = {
-      ...updatedOrdine,
-      fornitore_nome: fornitoreData.nome || 'N/A',
-      fornitore_tipo: fornitoreData.tipo_fornitore || 'N/A',
-      articoli: (updatedOrdine.articoli || []) as ArticoloOrdineAcquisto[],
-    };
-    await syncArticleInventoryStatus(orderWithFornitoreInfo);
-
-    await loadOrdiniAcquisto();
-    return { success: true, data: updatedOrdine };
-  }, [loadOrdiniAcquisto, syncArticleInventoryStatus, ordiniAcquisto]);
-
-  // Rinomino updateArticleStatusInOrder a updateArticleStatusInOrderLegacy per evitare conflitti
-  const updateArticleStatusInOrderLegacy = useCallback(async (orderNumeroOrdine: string, articleIdentifier: string, newArticleStatus: ArticoloOrdineAcquisto['stato']) => {
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrderLegacy] Inizio per OA: '${orderNumeroOrdine}', Articolo: '${articleIdentifier}', Nuovo stato: '${newArticleStatus}'`);
-
-    const { data: ordineAcquistoToUpdate, error: fetchError } = await supabase
-      .from('ordini_acquisto')
-      .select(`*`)
-      .eq('numero_ordine', orderNumeroOrdine.trim())
-      .single();
-
-    if (fetchError || !ordineAcquistoToUpdate) {
-      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrderLegacy] Errore recupero ordine d'acquisto '${orderNumeroOrdine.trim()}':`, fetchError);
-      toast.error(`Errore recupero ordine d'acquisto per aggiornamento articolo: ${fetchError?.message || 'Ordine non trovato o errore sconosciuto.'}`);
-      return { success: false, error: fetchError };
-    }
-    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrderLegacy] Ordine d'acquisto trovato:`, ordineAcquistoToUpdate);
-
-    let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
-    let articleFound = false;
-    updatedArticles = updatedArticles.map(art => {
-      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.fustella_codice && art.fustella_codice === articleIdentifier) || (art.pulitore_codice_fustella && art.pulitore_codice_fustella === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
-        articleFound = true;
-        return { ...art, stato: newArticleStatus };
-      }
-      return art;
-    });
-
-    if (!articleFound) {
-      toast.error(`Articolo '${articleIdentifier}' non trovato nell'ordine ${orderNumeroOrdine}.`);
-      return { success: false, error: new Error('Article not found') };
-    }
-
-    const newImportoTotale = updatedArticles.reduce((sum, item) => {
-      if (item.stato !== 'annullato') {
-        const qty = item.quantita || 0;
-        const price = item.prezzo_unitario || 0;
-        const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0;
-        return sum + (qty * price) + pulitorePrice;
-      }
-      return sum;
-    }, 0);
-
-    const previousOrdiniAcquisto = ordiniAcquisto;
-    setOrdiniAcquisto(prev => prev.map(order => {
-      if (order.numero_ordine === orderNumeroOrdine) {
-        return { ...order, articoli: updatedArticles, importo_totale: newImportoTotale };
-      }
-      return order;
-    }));
-
-    const { data: updatedOrdine, error: updateError } = await supabase
-      .from('ordini_acquisto')
-      .update({ articoli: updatedArticles as any, importo_totale: newImportoTotale, updated_at: new Date().toISOString() })
-      .eq('numero_ordine', orderNumeroOrdine)
-      .select(`*`)
-      .single();
-
-    if (updateError) {
-      toast.error(`Errore aggiornamento stato articolo: ${updateError.message}`);
-      setOrdiniAcquisto(previousOrdiniAcquisto);
-      return { success: false, error: updateError };
-    }
-
-    const allArticlesCancelled = updatedArticles.every(art => art.stato === 'annullato');
-    if (allArticlesCancelled && updatedOrdine.stato !== 'annullato') {
-        const { error: mainStatusUpdateError } = await supabase
-            .from('ordini_acquisto')
-            .update({ stato: 'annullato', updated_at: new Date().toISOString() })
-            .eq('id', updatedOrdine.id);
-
-        if (mainStatusUpdateError) {
-            toast.error(`Errore aggiornamento stato principale ordine: ${mainStatusUpdateError.message}`);
-        } else {
-            updatedOrdine.stato = 'annullato';
-        }
-    }
-
-    const { data: fornitoreData, error: fornitoreError } = await supabase
-      .from('fornitori')
-      .select('nome, tipo_fornitore')
-      .eq('id', updatedOrdine.fornitore_id)
-      .single();
-
-    if (fornitoreError || !fornitoreData) {
-      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrderLegacy] Errore recupero dettagli fornitore per OA: ${updatedOrdine.numero_ordine}`, fornitoreError);
       toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
       return { success: false, error: fornitoreError };
     }
@@ -738,8 +639,8 @@ export function useOrdiniAcquisto() {
     loading,
     addOrdineAcquisto,
     updateOrdineAcquisto,
-    updateOrdineAcquistoStatus, // Questo è il legacy, da sostituire con updateArticleInPurchaseOrder
-    updateArticleInPurchaseOrder, // La nuova funzione
+    updateOrdineAcquistoStatus, 
+    updateArticleInPurchaseOrder, 
     cancelOrdineAcquisto,
     deleteOrdineAcquistoPermanently,
     loadOrdiniAcquisto,
