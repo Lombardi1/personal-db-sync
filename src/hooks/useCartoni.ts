@@ -152,59 +152,20 @@ export function useCartoni() {
     
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento/aggiornamento in 'giacenza':`, cartoneGiacenza);
 
-    // 1. Controlla se il cartone esiste già in giacenza
-    let existingGiacenzaItem = null;
-    try {
-      const { data: existingItemData, error: fetchGiacenzaError } = await supabase
-        .from('giacenza')
-        .select('codice') // Seleziona solo 'codice' per la verifica
-        .eq('codice', codice)
-        .maybeSingle(); // Usiamo maybeSingle()
-
-      if (fetchGiacenzaError) {
-        if (fetchGiacenzaError.code === '406') {
-          console.warn(`[useCartoni - spostaInGiacenza] ATTENZIONE: Errore 406 durante la verifica esistenza per codice ${codice}. Questo potrebbe indicare un problema di configurazione RLS o del server. Dettagli errore:`, fetchGiacenzaError);
-          // Non blocchiamo l'operazione qui, ma logghiamo l'errore.
-          // Procediamo con la logica successiva, che tenterà un INSERT/UPDATE.
-        } else if (fetchGiacenzaError.code !== 'PGRST116') { // PGRST116 = No rows found, which is expected
-          console.error(`[useCartoni - spostaInGiacenza] Errore durante la verifica esistenza in giacenza per codice ${codice}:`, fetchGiacenzaError);
-          notifications.showError(`Errore verifica giacenza: ${fetchGiacenzaError.message}`);
-          return { error: fetchGiacenzaError };
-        }
-      } else if (existingItemData) {
-        existingGiacenzaItem = existingItemData;
-      }
-    } catch (e: any) {
-      console.error(`[useCartoni - spostaInGiacenza] Eccezione catturata durante la verifica esistenza per codice ${codice}:`, e);
-      notifications.showError(`Errore inatteso durante la verifica giacenza: ${e.message}`);
-      return { error: e };
-    }
-    
-    console.log(`[useCartoni - spostaInGiacenza] Risultato ricerca esistenza in giacenza per codice ${codice}:`, existingGiacenzaItem ? 'Trovato' : 'Non trovato');
-
-
-    let operationError = null;
-    let operationData = null; // Per memorizzare il risultato di insert/update
-    if (existingGiacenzaItem) {
-      // Se esiste, aggiorna
-      console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} trovato in giacenza. Eseguo UPDATE con dati:`, cartoneGiacenza);
-      const { data, error } = await supabase.from('giacenza').update(cartoneGiacenza).eq('codice', codice).select().single();
-      operationError = error;
-      operationData = data;
-    } else {
-      // Se non esiste, inserisci
-      console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} NON trovato in giacenza. Eseguo INSERT con dati:`, cartoneGiacenza);
-      const { data, error } = await supabase.from('giacenza').insert([cartoneGiacenza]).select().single();
-      operationError = error;
-      operationData = data;
-    }
+    // Utilizzo di upsert per inserire o aggiornare il cartone in giacenza
+    console.log(`[useCartoni - spostaInGiacenza] Eseguo UPSERT in 'giacenza' per codice ${codice} con dati:`, cartoneGiacenza);
+    const { data: operationData, error: operationError } = await supabase
+      .from('giacenza')
+      .upsert([cartoneGiacenza], { onConflict: 'codice' }) // Specifica 'codice' come colonna di conflitto
+      .select()
+      .single();
 
     if (operationError) {
-      console.error(`[useCartoni - spostaInGiacenza] Errore operazione (INSERT/UPDATE) in 'giacenza' per codice ${codice}:`, operationError);
+      console.error(`[useCartoni - spostaInGiacenza] Errore operazione (UPSERT) in 'giacenza' per codice ${codice}:`, operationError);
       notifications.showError(`Errore salvataggio in giacenza: ${operationError.message}`);
       return { error: operationError };
     }
-    console.log(`[useCartoni - spostaInGiacenza] Operazione (INSERT/UPDATE) in 'giacenza' riuscita per codice ${codice}. Dati risultanti:`, operationData);
+    console.log(`[useCartoni - spostaInGiacenza] Operazione (UPSERT) in 'giacenza' riuscita per codice ${codice}. Dati risultanti:`, operationData);
 
     // Elimina da 'ordini' solo dopo aver gestito l'inserimento/aggiornamento in 'giacenza'
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di eliminare da 'ordini' il codice: ${codice}`);
