@@ -512,7 +512,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         umText = 'PZ';
         // Quantità e prezzi senza decimali per Fustelle/Pulitore
         quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); 
-        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); 
+        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €'; 
         prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
 
         // Case 1: Article is a Fustella (has fustella_codice)
@@ -530,7 +530,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
             umText,
             quantitaFormatted,
             prezzoUnitarioFormatted,
-            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Senza decimali
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €', // Senza decimali
             fornitore?.considera_iva ? '22%' : '-',
             formatData(article.data_consegna_prevista || '')
           ]);
@@ -538,7 +538,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
           // If this Fustella has an associated Pulitore, push a separate row for it
           if (article.hasPulitore && article.pulitore_codice_fustella && article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
-            const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); // Senza decimali
+            const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €'; // Senza decimali
             const pulitoreTotaleRiga = (article.prezzo_pulitore || 0);
             articlesBody.push([
               article.pulitore_codice_fustella,
@@ -546,7 +546,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
               'PZ',
               '1', // Quantity for pulitore (fixed to 1)
               pulitorePrezzoFormatted,
-              pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Senza decimali
+              pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €', // Senza decimali
               fornitore?.considera_iva ? '22%' : '-',
               formatData(article.data_consegna_prevista || '')
             ]);
@@ -563,7 +563,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
             'PZ',
             quantitaFormatted, // Should be 1 for pulitore
             prezzoUnitarioFormatted,
-            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Senza decimali
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €', // Senza decimali
             fornitore?.considera_iva ? '22%' : '-',
             formatData(article.data_consegna_prevista || '')
           ]);
@@ -579,7 +579,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
             umText,
             quantitaFormatted,
             prezzoUnitarioFormatted,
-            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Senza decimali
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €', // Senza decimali
             fornitore?.considera_iva ? '22%' : '-',
             formatData(article.data_consegna_prevista || '')
           ]);
