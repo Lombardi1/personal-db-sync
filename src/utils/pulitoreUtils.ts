@@ -1,50 +1,49 @@
 import { supabase } from '@/lib/supabase';
 
-let lastGeneratedPulitoreCodeInSession = 0; // Stores the highest PU number seen/generated in the current session
-
 /**
- * Fetches the maximum Pulitore code number from the database (fustelle table).
- * @returns The highest Pulitore number found, or 0 if none.
+ * Trova il prossimo codice Pulitore disponibile, riempiendo eventuali lacune.
+ * @returns Il prossimo codice PU disponibile (es. 'PU-001', 'PU-002' se 001 è stato eliminato).
  */
-export async function fetchMaxPulitoreCodeFromDB(): Promise<number> {
+export async function findNextAvailablePulitoreCode(): Promise<string> {
   const { data, error } = await supabase
     .from('fustelle')
     .select('pulitore_codice')
-    .not('pulitore_codice', 'is', null) // Only consider rows where pulitore_codice is not null
-    .order('pulitore_codice', { ascending: false })
-    .limit(1);
+    .not('pulitore_codice', 'is', null) // Considera solo le righe dove pulitore_codice non è null
+    .order('pulitore_codice', { ascending: true }); // Ordina in modo crescente per trovare le lacune
 
   if (error) {
-    console.error('Error fetching max pulitore code:', error);
-    return 0;
+    console.error('Error fetching pulitore codes for gap-filling:', error);
+    return 'PU-001'; // Fallback
   }
 
-  let maxCodeFromDB = 0;
-  if (data && data.length > 0 && data[0].pulitore_codice) {
-    const num = parseInt(data[0].pulitore_codice.replace('PU-', ''));
-    maxCodeFromDB = num > maxCodeFromDB ? num : maxCodeFromDB;
+  const existingNumbers: number[] = [];
+  if (data && data.length > 0) {
+    data.forEach(fustella => {
+      if (fustella.pulitore_codice) { // Assicurati che il codice non sia null
+        const num = parseInt(fustella.pulitore_codice.replace('PU-', ''));
+        if (!isNaN(num)) {
+          existingNumbers.push(num);
+        }
+      }
+    });
   }
-  return maxCodeFromDB;
-}
 
-/**
- * Generates the next unique Pulitore code for the current session.
- * This function is synchronous and relies on `lastGeneratedPulitoreCodeInSession` being correctly initialized.
- * @returns The next formatted PU code (e.g., 'PU-001').
- */
-export function generateNextPulitoreCode(): string {
-  lastGeneratedPulitoreCodeInSession++; // Increment for the next unique code
-  const formattedCode = `PU-${String(lastGeneratedPulitoreCodeInSession).padStart(3, '0')}`;
-  console.log('🧹 Generato nuovo codice Pulitore (in-session):', formattedCode);
+  existingNumbers.sort((a, b) => a - b);
+
+  let nextAvailableNum = 1;
+  for (const num of existingNumbers) {
+    if (num === nextAvailableNum) {
+      nextAvailableNum++;
+    } else if (num > nextAvailableNum) {
+      // Trovata una lacuna
+      break;
+    }
+  }
+
+  const formattedCode = `PU-${String(nextAvailableNum).padStart(3, '0')}`;
+  console.log('🧹 Trovato prossimo codice Pulitore disponibile:', formattedCode);
   return formattedCode;
 }
 
-/**
- * Resets the in-session Pulitore code generator.
- * Should be called when starting a new form or when the data is reloaded.
- * @param initialMaxCode Optional: Initialize the counter with a specific max code (e.g., from DB).
- */
-export function resetPulitoreCodeGenerator(initialMaxCode: number = 0) {
-  lastGeneratedPulitoreCodeInSession = initialMaxCode;
-  console.log('🧹 Reset del generatore di codici Pulitore. Iniziato da:', initialMaxCode);
-}
+// Le funzioni generateNextPulitoreCode e resetPulitoreCodeGenerator non sono più necessarie
+// e vengono rimosse in favore di findNextAvailablePulitoreCode.

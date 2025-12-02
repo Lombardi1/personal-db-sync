@@ -14,7 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
+import { findNextAvailablePulitoreCode } from '@/utils/pulitoreUtils'; // Importa la nuova funzione
+import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la funzione di generazione del codice fustella
 
 interface ModalModificaFustellaProps {
   fustella: Fustella;
@@ -42,12 +43,8 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
   });
 
   useEffect(() => {
-    // Inizializza il generatore di codici pulitore all'apertura del modale
-    const initializePulitoreCodeGenerator = async () => {
-      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-      resetPulitoreCodeGenerator(maxPulitoreCode);
-    };
-    initializePulitoreCodeGenerator();
+    // Non è più necessario inizializzare il generatore di codici pulitore qui,
+    // findNextAvailablePulitoreCode lo fa al momento della chiamata.
   }, []);
 
   const handleChange = (field: keyof typeof formData, value: any) => {
@@ -57,7 +54,9 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
         if (value) {
           // Se 'hasPulitore' viene spuntato e il codice non esiste, genera un nuovo codice
           if (!newState.pulitore_codice) {
-            newState.pulitore_codice = generateNextPulitoreCode();
+            findNextAvailablePulitoreCode().then(code => {
+              setFormData(current => ({ ...current, pulitore_codice: code }));
+            });
           }
         } else {
           // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
@@ -235,8 +234,8 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                   id="pulitore_codice"
                   type="text"
                   value={formData.pulitore_codice}
-                  readOnly // Modificato da disabled
-                  className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold" // Rimosso bg-gray-100
+                  readOnly
+                  className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold"
                 />
               </div>
             )}
@@ -328,15 +327,22 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
           </Button>
           <Button
             type="button"
-            onClick={async () => { // Modificato per essere async
-              await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
+            onClick={async () => {
+              await findNextAvailableFustellaCode().then(code => {
+                setFormData(prev => ({ ...prev, codice: code }));
+              });
 
-              const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-              resetPulitoreCodeGenerator(maxPulitoreCode);
+              // Genera un nuovo codice pulitore se 'hasPulitore' è true
+              if (formData.hasPulitore) {
+                await findNextAvailablePulitoreCode().then(code => {
+                  setFormData(prev => ({ ...prev, pulitore_codice: code }));
+                });
+              } else {
+                setFormData(prev => ({ ...prev, pulitore_codice: '' }));
+              }
 
               setFormData(prev => ({
                 ...prev,
-                // codice: nextFustellaCode, // Già aggiornato da generateAndSetFustellaCode
                 fornitore: '',
                 codice_fornitore: '',
                 cliente: '',
@@ -344,7 +350,6 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                 fustellatrice: '',
                 resa: '',
                 hasPulitore: false,
-                pulitore_codice: '',
                 pinza_tagliata: false,
                 tasselli_intercambiabili: false,
                 nr_tasselli: null,

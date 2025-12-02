@@ -1,10 +1,10 @@
 import { supabase } from '@/lib/supabase';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Fornitore, Cliente, Cartone, Fustella } from '@/types';
-import * as notifications from './notifications'; // Aggiornato a percorso relativo
+import * as notifications from './notifications';
 import { generateNextCartoneCode } from './cartoneUtils';
-import { generateNextFscCommessa, resetFscCommessaGenerator } from './fscUtils'; // Importa le utilità FSC
-import { findNextAvailableFustellaCode } from './fustellaUtils'; // Importa la nuova funzione
-import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from './pulitoreUtils'; // Importa le utilità Pulitore
+import { generateNextFscCommessa, resetFscCommessaGenerator } from './fscUtils';
+import { findNextAvailableFustellaCode } from './fustellaUtils';
+import { findNextAvailablePulitoreCode } from './pulitoreUtils'; // Importa la nuova funzione
 
 export async function seedPurchaseOrders() {
   notifications.showInfo('Generazione ordini d\'acquisto di test in corso...');
@@ -28,22 +28,22 @@ export async function seedPurchaseOrders() {
 
     const fornitoreCartone = fornitori.find(f => f.tipo_fornitore === 'Cartone');
     const fornitoreInchiostro = fornitori.find(f => f.tipo_fornitore === 'Inchiostro');
-    const fornitoreFustelle = fornitori.find(f => f.tipo_fornitore === 'Fustelle'); // NUOVO: Fornitore Fustelle
+    const fornitoreFustelle = fornitori.find(f => f.tipo_fornitore === 'Fustelle');
     const randomCliente = clienti[Math.floor(Math.random() * clienti.length)];
 
     // Pulisci le tabelle prima di inserire i dati di test
-    await supabase.from('ordini').delete().neq('codice', 'NON_ESISTENTE'); // Elimina tutti
-    await supabase.from('giacenza').delete().neq('codice', 'NON_ESISTENTE'); // Elimina tutti
-    await supabase.from('esauriti').delete().neq('codice', 'NON_ESISTENTE'); // Elimina tutti
-    await supabase.from('storico').delete().neq('codice', 'NON_ESISTENTE'); // Pulisci anche lo storico
-    await supabase.from('ordini_acquisto').delete().neq('numero_ordine', 'NON_ESISTENTE'); // Elimina tutti
-    await supabase.from('fustelle').delete().neq('codice', 'NON_ESISTENTE'); // NUOVO: Pulisci anche le fustelle
-    await supabase.from('polimeri').delete().neq('codice', 'NON_ESISTENTE'); // NUOVO: Pulisci anche i polimeri
+    await supabase.from('ordini').delete().neq('codice', 'NON_ESISTENTE');
+    await supabase.from('giacenza').delete().neq('codice', 'NON_ESISTENTE');
+    await supabase.from('esauriti').delete().neq('codice', 'NON_ESISTENTE');
+    await supabase.from('storico').delete().neq('codice', 'NON_ESISTENTE');
+    await supabase.from('ordini_acquisto').delete().neq('numero_ordine', 'NON_ESISTENTE');
+    await supabase.from('fustelle').delete().neq('codice', 'NON_ESISTENTE');
+    await supabase.from('polimeri').delete().neq('codice', 'NON_ESISTENTE');
 
     // Inizializza i generatori di codici per i dati di test
-    resetFscCommessaGenerator(31, 2024); // Inizia da 31 per generare 32/24
+    resetFscCommessaGenerator(31, 2024);
     // Non è più necessario resettare un contatore globale per findNextAvailableFustellaCode
-    resetPulitoreCodeGenerator(0); // Inizializza generatore Pulitore
+    // Non è più necessario resettare il generatore di codici pulitore qui, findNextAvailablePulitoreCode lo fa al momento della chiamata.
     
     const ordersToInsert: (Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo'> & { articoli: ArticoloOrdineAcquisto[] })[] = [];
 
@@ -67,10 +67,10 @@ export async function seedPurchaseOrders() {
             lavoro: 'LAV-2024-001',
             data_consegna_prevista: '2024-07-15',
             stato: 'confermato',
-            numero_fogli: 1000, // Aggiunto numero_fogli
-            fsc: true, // Aggiunto
-            alimentare: false, // Aggiunto
-            rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
+            numero_fogli: 1000,
+            fsc: true,
+            alimentare: false,
+            rif_commessa_fsc: generateNextFscCommessa(2024),
           },
           {
             codice_ctn: generateNextCartoneCode(),
@@ -83,10 +83,10 @@ export async function seedPurchaseOrders() {
             lavoro: 'LAV-2024-002',
             data_consegna_prevista: '2024-07-18',
             stato: 'confermato',
-            numero_fogli: 2500, // Aggiunto numero_fogli
-            fsc: false, // Aggiunto
-            alimentare: true, // Aggiunto
-            rif_commessa_fsc: '', // Non FSC, quindi vuoto
+            numero_fogli: 2500,
+            fsc: false,
+            alimentare: true,
+            rif_commessa_fsc: '',
           },
         ],
       });
@@ -139,10 +139,10 @@ export async function seedPurchaseOrders() {
             lavoro: 'LAV-2024-003',
             data_consegna_prevista: '2024-07-01',
             stato: 'ricevuto',
-            numero_fogli: 500, // Aggiunto numero_fogli
-            fsc: true, // Aggiunto
-            alimentare: true, // Aggiunto
-            rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
+            numero_fogli: 500,
+            fsc: true,
+            alimentare: true,
+            rif_commessa_fsc: generateNextFscCommessa(2024),
           },
         ],
       });
@@ -168,10 +168,10 @@ export async function seedPurchaseOrders() {
             lavoro: 'LAV-2024-004',
             data_consegna_prevista: '2024-07-25',
             stato: 'in_attesa',
-            numero_fogli: 1200, // Aggiunto numero_fogli
-            fsc: false, // Aggiunto
-            alimentare: false, // Aggiunto
-            rif_commessa_fsc: '', // Non FSC, quindi vuoto
+            numero_fogli: 1200,
+            fsc: false,
+            alimentare: false,
+            rif_commessa_fsc: '',
           },
         ],
       });
@@ -199,9 +199,9 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-07-28',
             stato: 'inviato',
             numero_fogli: 800,
-            fsc: true, // Aggiunto
-            alimentare: false, // Aggiunto
-            rif_commessa_fsc: generateNextFscCommessa(2024), // Genera rif_commessa_fsc
+            fsc: true,
+            alimentare: false,
+            rif_commessa_fsc: generateNextFscCommessa(2024),
           },
           {
             codice_ctn: generateNextCartoneCode(),
@@ -215,9 +215,9 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-07-28',
             stato: 'annullato', // Questo articolo è annullato
             numero_fogli: 300,
-            fsc: false, // Aggiunto
-            alimentare: false, // Aggiunto
-            rif_commessa_fsc: '', // Non FSC, quindi vuoto
+            fsc: false,
+            alimentare: false,
+            rif_commessa_fsc: '',
           },
         ],
       });
@@ -234,19 +234,19 @@ export async function seedPurchaseOrders() {
         note: 'Ordine di nuove fustelle per produzione',
         articoli: [
           {
-            fustella_codice: await findNextAvailableFustellaCode(), // Usa la nuova funzione
+            fustella_codice: await findNextAvailableFustellaCode(),
             codice_fornitore_fustella: 'F-12345',
             fustellatrice: 'Bobst 102',
             resa_fustella: '1/1',
-            quantita: 1, // Quantità per fustella
+            quantita: 1,
             prezzo_unitario: 250.00,
             cliente: randomCliente.nome,
             lavoro: 'LAV-2024-F01',
             data_consegna_prevista: '2024-08-01',
             stato: 'in_attesa',
             hasPulitore: true,
-            pulitore_codice_fustella: generateNextPulitoreCode(),
-            prezzo_pulitore: 50.00, // Prezzo del pulitore
+            pulitore_codice_fustella: await findNextAvailablePulitoreCode(), // Usa la nuova funzione
+            prezzo_pulitore: 50.00,
             pinza_tagliata: true,
             tasselli_intercambiabili: false,
             nr_tasselli: null,
@@ -255,7 +255,7 @@ export async function seedPurchaseOrders() {
             tipo_incollatura: null,
           },
           {
-            fustella_codice: await findNextAvailableFustellaCode(), // Usa la nuova funzione
+            fustella_codice: await findNextAvailableFustellaCode(),
             codice_fornitore_fustella: 'F-67890',
             fustellatrice: 'Bobst 142',
             resa_fustella: '1/2',
@@ -267,7 +267,7 @@ export async function seedPurchaseOrders() {
             stato: 'inviato',
             hasPulitore: false,
             pulitore_codice_fustella: null,
-            prezzo_pulitore: undefined, // Nessun pulitore, quindi nessun prezzo
+            prezzo_pulitore: undefined,
             pinza_tagliata: false,
             tasselli_intercambiabili: true,
             nr_tasselli: 4,
@@ -286,7 +286,7 @@ export async function seedPurchaseOrders() {
         if (item.stato !== 'annullato') {
           const qty = item.quantita || 0;
           const price = item.prezzo_unitario || 0;
-          const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0; // Aggiungi prezzo pulitore
+          const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0;
           return sum + (qty * price) + pulitorePrice;
         }
         return sum;
@@ -312,7 +312,7 @@ export async function seedPurchaseOrders() {
 
       const fornitoreTipo = newOrdine.fornitori?.tipo_fornitore;
 
-      if (fornitoreTipo === 'Cartone' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) { // Aggiunto 'inviato'
+      if (fornitoreTipo === 'Cartone' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) {
         for (const articolo of articoli) {
           const codiceCtn = articolo.codice_ctn; 
           if (!codiceCtn) {
@@ -333,16 +333,16 @@ export async function seedPurchaseOrders() {
             tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
             formato: articolo.formato || 'N/A',
             grammatura: articolo.grammatura || 'N/A',
-            fogli: articolo.numero_fogli || 0, // Usa numero_fogli
+            fogli: articolo.numero_fogli || 0,
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
             magazzino: '-',
             prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
             note: ordineData.note || '-',
-            fsc: articolo.fsc, // Aggiunto
-            alimentare: articolo.alimentare, // Aggiunto
-            rif_commessa_fsc: articolo.rif_commessa_fsc, // Aggiunto
+            fsc: articolo.fsc,
+            alimentare: articolo.alimentare,
+            rif_commessa_fsc: articolo.rif_commessa_fsc,
           };
           
           // Inserisci in 'ordini' solo se lo stato dell'articolo non è 'ricevuto'
@@ -356,9 +356,9 @@ export async function seedPurchaseOrders() {
             // Se lo stato è 'ricevuto', inserisci direttamente in 'giacenza'
             const { error: giacenzaError } = await supabase.from('giacenza').insert([{
               ...cartone,
-              ddt: 'SEED-DDT', // Valore di esempio per DDT
-              data_arrivo: new Date().toISOString().split('T')[0], // Data di arrivo odierna
-              magazzino: 'SEED-MAG', // Valore di esempio per magazzino
+              ddt: 'SEED-DDT',
+              data_arrivo: new Date().toISOString().split('T')[0],
+              magazzino: 'SEED-MAG',
             }]);
             if (giacenzaError) {
               console.error(`Errore aggiunta cartone ${codiceCtn} a giacenza:`, giacenzaError);
@@ -396,10 +396,10 @@ export async function seedPurchaseOrders() {
                 incollatura: articolo.incollatura || false,
                 incollatrice: articolo.incollatrice || null,
                 tipo_incollatura: articolo.tipo_incollatura || null,
-                disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
+                disponibile: articolo.stato === 'ricevuto',
                 data_creazione: new Date().toISOString(),
                 ultima_modifica: new Date().toISOString(),
-                ordine_acquisto_numero: newOrdine.numero_ordine, // Collega all'ordine d'acquisto
+                ordine_acquisto_numero: newOrdine.numero_ordine,
               };
 
               const { error: fustellaError } = await supabase.from('fustelle').insert([fustella]);
@@ -408,10 +408,6 @@ export async function seedPurchaseOrders() {
                 notifications.showError(`Errore aggiunta fustella ${fustellaCodice} a magazzino fustelle.`);
               }
             }
-            // Non gestiamo l'inserimento diretto dei pulitori come entità separate in 'fustelle' qui,
-            // perché il pulitore_codice è già un campo della fustella.
-            // Se un pulitore è un articolo a sé stante (non legato a una fustella specifica),
-            // dovrebbe essere gestito come un articolo 'generico' con descrizione.
           }
         }
       }
