@@ -134,10 +134,6 @@ export function ModalOrdineAcquistoForm({
   const [fscCommessaGeneratorInitialized, setFscCommessaGeneratorInitialized] = React.useState(false);
   const [fustellaGeneratorInitialized, setFustellaGeneratorInitialized] = React.useState(false);
 
-  // New state for in-form Fustella/Pulitore code generation
-  const [lastGeneratedFustellaNumInForm, setLastGeneratedFustellaNumInForm] = React.useState(0);
-  const [lastGeneratedPulitoreNumInForm, setLastGeneratedPulitoreNumInForm] = React.useState(0);
-
   const methods = useForm<OrdineAcquisto>({
     resolver: zodResolver(
       z.object({
@@ -349,24 +345,14 @@ export function ModalOrdineAcquistoForm({
     return sum;
   }, 0);
 
-  // Helper function to generate next Fustella code in form session
-  const getNextFustellaCodeInForm = React.useCallback(() => {
-    let newNum;
-    setLastGeneratedFustellaNumInForm(prev => {
-      newNum = prev + 1;
-      return newNum;
-    });
-    return `FST-${String(newNum).padStart(3, '0')}`;
+  // Helper function to generate next Fustella code (always from DB)
+  const getNextFustellaCode = React.useCallback(async () => {
+    return await findNextAvailableFustellaCode();
   }, []);
 
-  // Helper function to generate next Pulitore code in form session
-  const getNextPulitoreCodeInForm = React.useCallback(() => {
-    let newNum;
-    setLastGeneratedPulitoreNumInForm(prev => {
-      newNum = prev + 1;
-      return newNum;
-    });
-    return `PUL-${String(newNum).padStart(3, '0')}`;
+  // Helper function to generate next Pulitore code (always from DB)
+  const getNextPulitoreCode = React.useCallback(async () => {
+    return await findNextAvailablePulitoreCode();
   }, []);
 
   // This effect will handle setting up the form with async default values
@@ -482,12 +468,6 @@ export function ModalOrdineAcquistoForm({
         const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
         resetFscCommessaGenerator(maxFscCommessa, orderYear);
         
-        // Initialize Fustella and Pulitore code generators for in-form session
-        const maxFustellaCodeFromDB = await findNextAvailableFustellaCode(); // Returns 'FST-XXX'
-        const maxPulitoreCodeFromDB = await findNextAvailablePulitoreCode(); // Returns 'PUL-XXX'
-        setLastGeneratedFustellaNumInForm(parseInt(maxFustellaCodeFromDB.replace('FST-', '')) - 1);
-        setLastGeneratedPulitoreNumInForm(parseInt(maxPulitoreCodeFromDB.replace('PUL-', '')) - 1);
-
         reset(dataToReset);
         console.log('ModalOrdineAcquistoForm: Form reset with data:', dataToReset);
         console.log('ModalOrdineAcquistoForm: Form values after reset:', methods.getValues());
@@ -522,18 +502,18 @@ export function ModalOrdineAcquistoForm({
 
               if (currentArticleType === 'fustella') {
                 if (!article.fustella_codice) {
-                  const nextFustellaCode = getNextFustellaCodeInForm();
+                  const nextFustellaCode = await getNextFustellaCode();
                   setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
                 }
                 if (article.quantita === undefined) {
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                 }
                 if (article.hasPulitore && !article.pulitore_codice_fustella) {
-                  setValue(`articoli.${index}.pulitore_codice_fustella`, getNextPulitoreCodeInForm(), { shouldValidate: true });
+                  setValue(`articoli.${index}.pulitore_codice_fustella`, await getNextPulitoreCode(), { shouldValidate: true });
                 }
               } else if (currentArticleType === 'pulitore') {
                 if (!article.pulitore_codice_fustella) {
-                  setValue(`articoli.${index}.pulitore_codice_fustella`, getNextPulitoreCodeInForm(), { shouldValidate: true });
+                  setValue(`articoli.${index}.pulitore_codice_fustella`, await getNextPulitoreCode(), { shouldValidate: true });
                 }
                 if (article.quantita === undefined) {
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
@@ -570,7 +550,7 @@ export function ModalOrdineAcquistoForm({
     };
 
     setupFormAndGenerators();
-  }, [isOpen, initialData, reset, setValue, fornitori, onClose, getNextFustellaCodeInForm, getNextPulitoreCodeInForm]);
+  }, [isOpen, initialData, reset, setValue, fornitori, onClose, getNextFustellaCode, getNextPulitoreCode]);
 
   const handleFormSubmit = async (data: any) => {
     console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
@@ -597,12 +577,6 @@ export function ModalOrdineAcquistoForm({
 
     const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
     resetFscCommessaGenerator(maxFscCommessa, orderYear);
-
-    // Re-initialize Fustella and Pulitore generators for in-form session
-    const maxFustellaCodeFromDB = await findNextAvailableFustellaCode();
-    const maxPulitoreCodeFromDB = await findNextAvailablePulitoreCode();
-    setLastGeneratedFustellaNumInForm(parseInt(maxFustellaCodeFromDB.replace('FST-', '')) - 1);
-    setLastGeneratedPulitoreNumInForm(parseInt(maxPulitoreCodeFromDB.replace('PUL-', '')) - 1);
 
     const newSelectedFornitore = fornitori.find((f) => f.id === newFornitoreId);
     const newIsCartoneFornitore = newSelectedFornitore?.tipo_fornitore === 'Cartone';
@@ -638,7 +612,7 @@ export function ModalOrdineAcquistoForm({
     if (newIsCartoneFornitore) {
       newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };
     } else if (newIsFustelleFornitore) {
-      const nextFustellaCode = getNextFustellaCodeInForm();
+      const nextFustellaCode = await getNextFustellaCode();
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 };
     } else {
       newArticle = { ...newArticle, quantita: 1 };
@@ -648,7 +622,7 @@ export function ModalOrdineAcquistoForm({
     setCtnGeneratorInitialized(true);
     setFscCommessaGeneratorInitialized(true);
     setFustellaGeneratorInitialized(true);
-  }, [fornitori, setValue, watch, getNextFustellaCodeInForm, getNextPulitoreCodeInForm]);
+  }, [fornitori, setValue, watch, getNextFustellaCode, getNextPulitoreCode]);
 
   const handleAddArticle = async () => {
     if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized) {
@@ -694,12 +668,12 @@ export function ModalOrdineAcquistoForm({
         newArticle.rif_commessa_fsc = generateNextFscCommessa(orderYear);
       }
     } else if (isFustelleFornitore) {
-      const nextFustellaCode = getNextFustellaCodeInForm();
+      const nextFustellaCode = await getNextFustellaCode();
       console.log(`[handleAddArticle] Generating Fustella code: ${nextFustellaCode}`);
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 }; // Default quantity to 1
       if (watchedArticles[0]?.hasPulitore) { 
         newArticle.hasPulitore = true;
-        newArticle.pulitore_codice_fustella = getNextPulitoreCodeInForm();
+        newArticle.pulitore_codice_fustella = await getNextPulitoreCode();
       }
     } else {
       newArticle = { ...newArticle, quantita: 1 };
