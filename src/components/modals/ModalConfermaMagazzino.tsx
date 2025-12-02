@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Cartone } from '@/types';
 import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
+import { parseInputNumber, formatOutputNumber } from '@/lib/utils'; // Importa le nuove utilità
 
 interface ModalConfermaMagazzinoProps {
   codice: string;
@@ -12,19 +13,19 @@ interface ModalConfermaMagazzinoProps {
 export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: ModalConfermaMagazzinoProps) {
   const [ddt, setDdt] = useState('');
   const [dataArrivo, setDataArrivo] = useState('');
-  const [fogliEffettivi, setFogliEffettivi] = useState<string>(String(ordine.fogli));
+  const [fogliEffettiviInput, setFogliEffettiviInput] = useState<string>(formatOutputNumber(ordine.fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 })); // Usa formatOutputNumber
   const [magazzino, setMagazzino] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!ddt || !dataArrivo || !fogliEffettivi || !magazzino) {
+    if (!ddt || !dataArrivo || !fogliEffettiviInput || !magazzino) {
       notifications.showError('⚠️ Compila tutti i campi obbligatori.');
       return;
     }
 
-    const fogliNum = parseInt(fogliEffettivi);
-    if (isNaN(fogliNum) || fogliNum <= 0) {
+    const fogliNum = parseInputNumber(fogliEffettiviInput); // Usa parseInputNumber
+    if (fogliNum === undefined || fogliNum <= 0) {
       notifications.showError('⚠️ Inserisci un numero di fogli valido.');
       return;
     }
@@ -44,7 +45,7 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
       const diff = fogliNum - ordine.fogli;
       const message = diff === 0 
         ? `✅ Ordine ${codice} spostato in magazzino`
-        : `✅ Ordine ${codice} spostato in magazzino (${diff > 0 ? '+' : ''}${diff} fogli rispetto all'ordine})`;
+        : `✅ Ordine ${codice} spostato in magazzino (${diff > 0 ? '+' : ''}${diff} fogli rispetto all'ordine)`;
       notifications.showSuccess(message);
     } else {
       notifications.showError('Errore durante lo spostamento in magazzino');
@@ -123,22 +124,25 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
                 <i className="fas fa-layer-group mr-1"></i> Fogli Effettivi Arrivati *
               </label>
               <input
-                type="number"
-                value={fogliEffettivi}
-                onChange={(e) => setFogliEffettivi(e.target.value)}
+                type="text" // Cambiato a text per input flessibile
+                value={fogliEffettiviInput}
+                onChange={(e) => setFogliEffettiviInput(e.target.value)}
+                onBlur={(e) => {
+                  const num = parseInputNumber(e.target.value);
+                  setFogliEffettiviInput(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+                }}
                 className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10 text-sm"
                 placeholder={`es. ${ordine.fogli}`}
-                min="1"
                 required
               />
-              {parseInt(fogliEffettivi) !== ordine.fogli && fogliEffettivi && (
+              {parseInputNumber(fogliEffettiviInput) !== ordine.fogli && fogliEffettiviInput && (
                 <div className={`text-xs sm:text-sm mt-1 sm:mt-2 font-medium ${
-                  parseInt(fogliEffettivi) > ordine.fogli 
+                  (parseInputNumber(fogliEffettiviInput) || 0) > ordine.fogli 
                     ? 'text-[hsl(var(--success))]' 
                     : 'text-[hsl(var(--warning))]'
                 }`}>
-                  <i className={`fas fa-${parseInt(fogliEffettivi) > ordine.fogli ? 'arrow-up' : 'arrow-down'} mr-1`}></i>
-                  Differenza: {parseInt(fogliEffettivi) - ordine.fogli > 0 ? '+' : ''}{parseInt(fogliEffettivi) - ordine.fogli} fogli
+                  <i className={`fas fa-${(parseInputNumber(fogliEffettiviInput) || 0) > ordine.fogli ? 'arrow-up' : 'arrow-down'} mr-1`}></i>
+                  Differenza: {(parseInputNumber(fogliEffettiviInput) || 0) - ordine.fogli > 0 ? '+' : ''}{(parseInputNumber(fogliEffettiviInput) || 0) - ordine.fogli} fogli
                 </div>
               )}
             </div>

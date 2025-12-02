@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Cartone } from '@/types';
 import * as notifications from '@/utils/notifications';
-import { formatFormato, formatFogli } from '@/utils/formatters'; // Importa formatFogli
+import { formatFormato, formatFogli } from '@/utils/formatters';
+import { parseInputNumber, formatOutputNumber } from '@/lib/utils'; // Importa le nuove utilità
 
 interface ModalScaricoProps {
   codice: string;
@@ -11,17 +12,17 @@ interface ModalScaricoProps {
 }
 
 export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScaricoProps) {
-  const [quantita, setQuantita] = useState('');
+  const [quantitaInput, setQuantitaInput] = useState(''); // Stato per l'input testuale
   const [ricavoFoglio, setRicavoFoglio] = useState('1');
   const [note, setNote] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const qta = parseInt(quantita);
-    const ricavo = parseInt(ricavoFoglio);
-    
-    if (!qta || qta < 1) {
+    const qta = parseInputNumber(quantitaInput); // Usa parseInputNumber
+    const ricavo = parseInt(ricavoFoglio); // Ricavo è sempre intero
+
+    if (qta === undefined || qta < 1) {
       notifications.showError('⚠️ Inserisci una quantità valida.');
       return;
     }
@@ -50,10 +51,10 @@ export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScari
   };
 
   // Calcola i fogli effettivi per la visualizzazione dinamica
-  const currentQuantita = parseInt(quantita);
+  const currentQuantitaParsed = parseInputNumber(quantitaInput);
   const currentRicavo = parseInt(ricavoFoglio);
-  const fogliEffettiviDisplay = (!isNaN(currentQuantita) && !isNaN(currentRicavo) && currentRicavo > 0) 
-    ? Math.floor(currentQuantita / currentRicavo) 
+  const fogliEffettiviDisplay = (!isNaN(currentQuantitaParsed || 0) && !isNaN(currentRicavo) && currentRicavo > 0) 
+    ? Math.floor((currentQuantitaParsed || 0) / currentRicavo) 
     : 0;
   const differenceDisplay = fogliEffettiviDisplay > cartone.fogli ? fogliEffettiviDisplay - cartone.fogli : 0;
 
@@ -110,12 +111,15 @@ export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScari
                 <i className="fas fa-sort-numeric-up mr-1"></i> Quantità da scaricare *
               </label>
               <input
-                type="number"
-                value={quantita}
-                onChange={(e) => setQuantita(e.target.value)}
+                type="text" // Cambiato a text per input flessibile
+                value={quantitaInput}
+                onChange={(e) => setQuantitaInput(e.target.value)}
+                onBlur={(e) => {
+                  const num = parseInputNumber(e.target.value);
+                  setQuantitaInput(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+                }}
                 className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10 text-sm"
                 placeholder="es. 1000"
-                min="1"
                 required
               />
             </div>
@@ -138,7 +142,7 @@ export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScari
               </select>
             </div>
 
-            {quantita && parseInt(quantita) > 0 && (() => {
+            {quantitaInput && parseInputNumber(quantitaInput) && parseInputNumber(quantitaInput)! > 0 && (() => {
               return (
                 <div className="space-y-2">
                   <div className="p-3 bg-[hsl(199,100%,97%)] rounded-lg border-l-4 border-[hsl(var(--primary))]">
@@ -149,7 +153,7 @@ export function ModalScarico({ codice, cartone, onClose, onScarico }: ModalScari
                       </span>
                     </div>
                     <div className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                      ({quantita} ÷ {ricavoFoglio} = {fogliEffettiviDisplay})
+                      ({quantitaInput} ÷ {ricavoFoglio} = {fogliEffettiviDisplay})
                     </div>
                   </div>
                   {fogliEffettiviDisplay > 0 && fogliEffettiviDisplay <= cartone.fogli && (
