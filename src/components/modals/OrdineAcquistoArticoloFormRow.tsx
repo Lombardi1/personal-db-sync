@@ -210,15 +210,21 @@ export function OrdineAcquistoArticoloFormRow({
 
   // Effect to set default description for pulitore when articleType is 'pulitore'
   React.useEffect(() => {
-    if (isFustelleFornitore) {
-      if (articleType === 'pulitore' && !currentDescrizione) {
-        setValue(`articoli.${index}.descrizione`, `Pulitore per fustella`, { shouldValidate: true });
-      } else if (articleType !== 'pulitore' && currentDescrizione === `Pulitore per fustella` && !currentArticle?.id) {
-        // Clear description if it was auto-set and type changes, only for new articles
-        setValue(`articoli.${index}.descrizione`, '', { shouldValidate: true });
+    if (isFustelleFornitore && articleType === 'pulitore') {
+      const newDescription = currentCodiceFornitoreFustella 
+        ? `Pulitore per Fustella ${currentCodiceFornitoreFustella}` 
+        : `Pulitore per fustella`; // Fallback if no specific code
+      
+      // Only update if the current description is empty or the default "Pulitore per fustella"
+      // to avoid overwriting user-entered descriptions.
+      if (!currentDescrizione || currentDescrizione === `Pulitore per fustella` || currentDescrizione !== newDescription) {
+        setValue(`articoli.${index}.descrizione`, newDescription, { shouldValidate: true });
       }
+    } else if (isFustelleFornitore && articleType !== 'pulitore' && currentDescrizione === `Pulitore per fustella` && !currentArticle?.id) {
+      // Clear description if it was auto-set and type changes, only for new articles
+      setValue(`articoli.${index}.descrizione`, '', { shouldValidate: true });
     }
-  }, [articleType, isFustelleFornitore, currentDescrizione, index, setValue, currentArticle?.id]);
+  }, [articleType, isFustelleFornitore, currentDescrizione, currentCodiceFornitoreFustella, index, setValue, currentArticle?.id]);
 
 
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0) + (currentArticle?.hasPulitore ? (currentArticle?.prezzo_pulitore || 0) : 0); // Aggiornato calcolo totale
@@ -263,7 +269,11 @@ export function OrdineAcquistoArticoloFormRow({
       }
     } else if (newType === 'pulitore') {
       setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
-      setValue(`articoli.${index}.descrizione`, `Pulitore per fustella`, { shouldValidate: true }); // Descrizione predefinita
+      // Set initial description based on currentCodiceFornitoreFustella if available, otherwise generic
+      const initialPulitoreDescription = currentCodiceFornitoreFustella 
+        ? `Pulitore per Fustella ${currentCodiceFornitoreFustella}` 
+        : `Pulitore per fustella`;
+      setValue(`articoli.${index}.descrizione`, initialPulitoreDescription, { shouldValidate: true });
       setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Quantità fissa per pulitore
     }
   };
