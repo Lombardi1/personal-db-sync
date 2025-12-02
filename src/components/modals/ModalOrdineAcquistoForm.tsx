@@ -40,7 +40,7 @@ import { OrdineAcquistoArticoloFormRow } from './OrdineAcquistoArticoloFormRow';
 import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCodeFromDB } from '@/utils/cartoneUtils';
 import { fetchMaxOrdineAcquistoNumeroFromDB, generateNextOrdineAcquistoNumero } from '@/utils/ordineAcquistoUtils';
 import { fetchMaxFscCommessaFromDB, generateNextFscCommessa, resetFscCommessaGenerator } from '@/utils/fscUtils';
-import { generateNextFustellaCode, resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils'; // Importa utilità Fustella
+import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la nuova funzione
 import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa utilità Pulitore
 
 interface ModalOrdineAcquistoFormProps {
@@ -417,9 +417,8 @@ export function ModalOrdineAcquistoForm({
       const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
       resetFscCommessaGenerator(maxFscCommessa, orderYear);
     } else if (newIsFustelleFornitore) { // Nuova logica per Fustelle
-      const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-      resetFustellaCodeGenerator(maxFustellaCode);
-      setValue(`articoli.0.fustella_codice`, generateNextFustellaCode(), { shouldValidate: true });
+      const nextFustellaCode = await findNextAvailableFustellaCode(); // Usa la nuova funzione
+      setValue(`articoli.0.fustella_codice`, nextFustellaCode, { shouldValidate: true });
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true }); // Quantità di default per fustelle
 
       const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
@@ -429,8 +428,8 @@ export function ModalOrdineAcquistoForm({
       resetCartoneCodeGenerator(0);
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true });
       resetFscCommessaGenerator(0, orderYear);
-      resetFustellaCodeGenerator(0);
-      resetPulitoreCodeGenerator(0);
+      // Non è necessario resettare i generatori Fustella/Pulitore qui,
+      // perché findNextAvailableFustellaCode e generateNextPulitoreCode sono stateless.
     }
     setCtnGeneratorInitialized(true);
     setFscCommessaGeneratorInitialized(true);
@@ -544,9 +543,8 @@ export function ModalOrdineAcquistoForm({
           const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
           resetFscCommessaGenerator(maxFscCommessa, orderYear);
 
-          const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-          resetFustellaCodeGenerator(maxFustellaCode);
-
+          // Usa la nuova funzione per le fustelle
+          // Non è necessario resettare un contatore globale per findNextAvailableFustellaCode
           const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
           resetPulitoreCodeGenerator(maxPulitoreCode);
           
@@ -563,7 +561,7 @@ export function ModalOrdineAcquistoForm({
           const currentIsFustelleFornitore = currentSelectedFornitore?.tipo_fornitore === 'Fustelle';
 
           if (dataToReset.articoli.length > 0) {
-            dataToReset.articoli.forEach((article, index) => {
+            for (const [index, article] of dataToReset.articoli.entries()) {
               if (currentIsCartoneFornitore) {
                 if (!article.codice_ctn) {
                   setValue(`articoli.${index}.codice_ctn`, generateNextCartoneCode(), { shouldValidate: true });
@@ -575,18 +573,18 @@ export function ModalOrdineAcquistoForm({
                   setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
                 }
               } else if (currentIsFustelleFornitore) {
-                if (!article.fustella_codice && !article.pulitore_codice_fustella) { // Se non è né fustella né pulitore
-                  // Default to fustella if no specific type is set
-                  setValue(`articoli.${index}.fustella_codice`, generateNextFustellaCode(), { shouldValidate: true });
+                if (!article.fustella_codice && !article.pulitore_codice_fustella) {
+                  const nextFustellaCode = await findNextAvailableFustellaCode(); // Usa la nuova funzione
+                  setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
-                } else if (article.fustella_codice && !article.pulitore_codice_fustella) { // È una fustella
+                } else if (article.fustella_codice && !article.pulitore_codice_fustella) {
                   if (article.quantita === undefined) {
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                   }
                   if (article.hasPulitore && !article.pulitore_codice_fustella) {
                     setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
                   }
-                } else if (article.pulitore_codice_fustella && !article.fustella_codice) { // È un pulitore
+                } else if (article.pulitore_codice_fustella && !article.fustella_codice) {
                   if (article.quantita === undefined) {
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                   }
@@ -594,12 +592,12 @@ export function ModalOrdineAcquistoForm({
                     setValue(`articoli.${index}.descrizione`, `Pulitore per fustella`, { shouldValidate: true });
                   }
                 }
-              } else { // Other types of suppliers
+              } else {
                 if (article.quantita === undefined) {
                   setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                 }
               }
-            });
+            }
           }
 
           setCtnGeneratorInitialized(true);
@@ -619,7 +617,7 @@ export function ModalOrdineAcquistoForm({
 
   React.useEffect(() => {
     if (ctnGeneratorInitialized && fscCommessaGeneratorInitialized && fustellaGeneratorInitialized && pulitoreGeneratorInitialized) {
-      fields.forEach((field, index) => {
+      fields.forEach(async (field, index) => { // Aggiunto async qui
         if (isCartoneFornitore) {
           if (field.numero_fogli === undefined) {
             setValue(`articoli.${index}.numero_fogli`, 1, { shouldValidate: true });
@@ -700,7 +698,7 @@ export function ModalOrdineAcquistoForm({
     }
   };
 
-  const handleAddArticle = () => {
+  const handleAddArticle = async () => { // Aggiunto async qui
     if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || !pulitoreGeneratorInitialized) {
       toast.error("Generatore codici non pronto. Riprova.");
       return;
@@ -743,7 +741,8 @@ export function ModalOrdineAcquistoForm({
       }
     } else if (isFustelleFornitore) { // Nuova logica per Fustelle
       // Default to fustella type when adding new article for Fustelle supplier
-      newArticle = { ...newArticle, fustella_codice: generateNextFustellaCode(), quantita: 1 };
+      const nextFustellaCode = await findNextAvailableFustellaCode(); // Usa la nuova funzione
+      newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 };
       if (watchedArticles[0]?.hasPulitore) {
         newArticle.hasPulitore = true;
         newArticle.pulitore_codice_fustella = generateNextPulitoreCode();
@@ -846,11 +845,11 @@ export function ModalOrdineAcquistoForm({
                               <CommandItem
                                 key={fornitore.id}
                                 value={fornitore.nome}
-                                onSelect={(currentValue) => {
+                                onSelect={async (currentValue) => { // Aggiunto async qui
                                   const newFornitoreId = fornitori.find(f => f.nome === currentValue)?.id || '';
                                   setValue('fornitore_id', newFornitoreId, { shouldValidate: true });
                                   setOpenCombobox(false);
-                                  resetArticlesAndGenerators(newFornitoreId);
+                                  await resetArticlesAndGenerators(newFornitoreId); // Aggiunto await
                                 }}
                               >
                                 <Check

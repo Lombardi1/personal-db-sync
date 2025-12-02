@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
-import * as z from 'zod';
+import *s z from 'zod';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,6 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { generateNextFscCommessa } from '@/utils/fscUtils';
 import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
-import { generateNextFustellaCode } from '@/utils/fustellaUtils'; // Importa la funzione di generazione della fustella
 
 interface OrdineAcquistoArticoloFormRowProps {
   index: number;
@@ -241,7 +240,10 @@ export function OrdineAcquistoArticoloFormRow({
     setDisplayPrezzoPulitore('');
 
     if (newType === 'fustella') {
-      setValue(`articoli.${index}.fustella_codice`, generateNextFustellaCode(), { shouldValidate: true });
+      // La generazione del codice FST è ora gestita dal componente padre (ModalOrdineAcquistoForm)
+      // quando si aggiunge un nuovo articolo. Qui, se si cambia tipo, si resetta solo.
+      // Se si sta modificando un articolo esistente, il codice FST sarà già presente.
+      // Per un nuovo articolo, il codice FST sarà impostato dal padre.
     } else if (newType === 'pulitore') {
       setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
       setValue(`articoli.${index}.descrizione`, `Pulitore per fustella`, { shouldValidate: true }); // Descrizione predefinita

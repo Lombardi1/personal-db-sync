@@ -3,8 +3,8 @@ import { OrdineAcquisto, ArticoloOrdineAcquisto, Fornitore, Cliente, Cartone, Fu
 import * as notifications from './notifications'; // Aggiornato a percorso relativo
 import { generateNextCartoneCode } from './cartoneUtils';
 import { generateNextFscCommessa, resetFscCommessaGenerator } from './fscUtils'; // Importa le utilità FSC
-import { generateNextFustellaCode, resetFustellaCodeGenerator } from './fustellaUtils'; // Importa le utilità Fustella
-import { generateNextPulitoreCode, resetPulitoreCodeGenerator } from './pulitoreUtils'; // Importa le utilità Pulitore
+import { findNextAvailableFustellaCode } from './fustellaUtils'; // Importa la nuova funzione
+import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from './pulitoreUtils'; // Importa le utilità Pulitore
 
 export async function seedPurchaseOrders() {
   notifications.showInfo('Generazione ordini d\'acquisto di test in corso...');
@@ -42,7 +42,7 @@ export async function seedPurchaseOrders() {
 
     // Inizializza i generatori di codici per i dati di test
     resetFscCommessaGenerator(31, 2024); // Inizia da 31 per generare 32/24
-    resetFustellaCodeGenerator(0); // Inizializza generatore Fustella
+    // Non è più necessario resettare un contatore globale per findNextAvailableFustellaCode
     resetPulitoreCodeGenerator(0); // Inizializza generatore Pulitore
     
     const ordersToInsert: (Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo'> & { articoli: ArticoloOrdineAcquisto[] })[] = [];
@@ -234,7 +234,7 @@ export async function seedPurchaseOrders() {
         note: 'Ordine di nuove fustelle per produzione',
         articoli: [
           {
-            fustella_codice: generateNextFustellaCode(),
+            fustella_codice: await findNextAvailableFustellaCode(), // Usa la nuova funzione
             codice_fornitore_fustella: 'F-12345',
             fustellatrice: 'Bobst 102',
             resa_fustella: '1/1',
@@ -255,7 +255,7 @@ export async function seedPurchaseOrders() {
             tipo_incollatura: null,
           },
           {
-            fustella_codice: generateNextFustellaCode(),
+            fustella_codice: await findNextAvailableFustellaCode(), // Usa la nuova funzione
             codice_fornitore_fustella: 'F-67890',
             fustellatrice: 'Bobst 142',
             resa_fustella: '1/2',

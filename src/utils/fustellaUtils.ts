@@ -1,49 +1,46 @@
 import { supabase } from '@/lib/supabase';
 
-let lastGeneratedFustellaCodeInSession = 0; // Stores the highest FST number seen/generated in the current session
-
 /**
- * Fetches the maximum Fustella number from the database (fustelle table).
- * @returns The highest Fustella number found, or 0 if none.
+ * Trova il prossimo codice Fustella disponibile, riempiendo eventuali lacune.
+ * @returns Il prossimo codice FST disponibile (es. 'FST-001', 'FST-002' se 001 è stato eliminato).
  */
-export async function fetchMaxFustellaCodeFromDB(): Promise<number> {
+export async function findNextAvailableFustellaCode(): Promise<string> {
   const { data, error } = await supabase
     .from('fustelle')
     .select('codice')
-    .order('codice', { ascending: false })
-    .limit(1);
+    .order('codice', { ascending: true }); // Ordina in modo crescente per trovare le lacune
 
   if (error) {
-    console.error('Error fetching max fustella code:', error);
-    return 0;
+    console.error('Error fetching fustella codes for gap-filling:', error);
+    return 'FST-001'; // Fallback
   }
 
-  let maxCodeFromDB = 0;
-  if (data && data.length > 0 && data[0].codice) {
-    const num = parseInt(data[0].codice.replace('FST-', ''));
-    maxCodeFromDB = num > maxCodeFromDB ? num : maxCodeFromDB;
+  const existingNumbers: number[] = [];
+  if (data && data.length > 0) {
+    data.forEach(fustella => {
+      const num = parseInt(fustella.codice.replace('FST-', ''));
+      if (!isNaN(num)) {
+        existingNumbers.push(num);
+      }
+    });
   }
-  return maxCodeFromDB;
-}
 
-/**
- * Generates the next unique Fustella code for the current session.
- * This function is synchronous and relies on `lastGeneratedFustellaCodeInSession` being correctly initialized.
- * @returns The next formatted FST code (e.g., 'FST-001').
- */
-export function generateNextFustellaCode(): string {
-  lastGeneratedFustellaCodeInSession++; // Increment for the next unique code
-  const formattedCode = `FST-${String(lastGeneratedFustellaCodeInSession).padStart(3, '0')}`;
-  console.log('✂️ Generato nuovo codice Fustella (in-session):', formattedCode);
+  existingNumbers.sort((a, b) => a - b);
+
+  let nextAvailableNum = 1;
+  for (const num of existingNumbers) {
+    if (num === nextAvailableNum) {
+      nextAvailableNum++;
+    } else if (num > nextAvailableNum) {
+      // Trovata una lacuna
+      break;
+    }
+  }
+
+  const formattedCode = `FST-${String(nextAvailableNum).padStart(3, '0')}`;
+  console.log('✂️ Trovato prossimo codice Fustella disponibile:', formattedCode);
   return formattedCode;
 }
 
-/**
- * Resets the in-session Fustella code generator.
- * Should be called when starting a new form or when the data is reloaded.
- * @param initialMaxCode Optional: Initialize the counter with a specific max code (e.g., from DB).
- */
-export function resetFustellaCodeGenerator(initialMaxCode: number = 0) {
-  lastGeneratedFustellaCodeInSession = initialMaxCode;
-  console.log('✂️ Reset del generatore di codici Fustella. Iniziato da:', initialMaxCode);
-}
+// Le funzioni generateNextFustellaCode e resetFustellaCodeGenerator non sono più necessarie
+// e vengono rimosse in favore di findNextAvailableFustellaCode.

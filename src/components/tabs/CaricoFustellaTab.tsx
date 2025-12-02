@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as notifications from '@/utils/notifications';
-import { generateNextFustellaCode, resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils';
+import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la nuova funzione
 import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 interface CaricoFustellaTabProps {
@@ -15,7 +15,7 @@ interface CaricoFustellaTabProps {
 
 export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) {
   const [formData, setFormData] = useState({
-    codice: 'FST-001',
+    codice: 'FST-001', // Valore iniziale di fallback
     disponibile: true,
     fornitore: '',
     codice_fornitore: '',
@@ -33,17 +33,19 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     tipo_incollatura: '',
   });
 
-  useEffect(() => {
-    const initializeAndGenerateCodes = async () => {
-      const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-      resetFustellaCodeGenerator(maxFustellaCode);
-      setFormData(prev => ({ ...prev, codice: generateNextFustellaCode() }));
+  const generateAndSetFustellaCode = async () => {
+    const nextFustellaCode = await findNextAvailableFustellaCode();
+    setFormData(prev => ({ ...prev, codice: nextFustellaCode }));
+  };
 
+  useEffect(() => {
+    const initializeCodes = async () => {
+      await generateAndSetFustellaCode(); // Genera il primo codice FST
+      
       const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
       resetPulitoreCodeGenerator(maxPulitoreCode);
-      // Non generiamo il codice del pulitore qui, ma solo quando 'hasPulitore' è spuntato
     };
-    initializeAndGenerateCodes();
+    initializeCodes();
   }, []);
 
   const handleChange = (field: keyof typeof formData, value: any) => {
@@ -95,17 +97,15 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     if (!error) {
       notifications.showSuccess(`✅ Fustella '${formData.codice}' registrata con successo!`);
       
-      // Re-inizializza i generatori e resetta il form
-      const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-      resetFustellaCodeGenerator(maxFustellaCode);
-      const nextFustellaCode = generateNextFustellaCode();
+      // Genera il prossimo codice FST disponibile e resetta il resto del form
+      await generateAndSetFustellaCode();
 
       const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
       resetPulitoreCodeGenerator(maxPulitoreCode);
 
-      setFormData({
-        codice: nextFustellaCode,
-        disponibile: true,
+      setFormData(prev => ({
+        ...prev,
+        // codice: nextFustellaCode, // Già aggiornato da generateAndSetFustellaCode
         fornitore: '',
         codice_fornitore: '',
         cliente: '',
@@ -120,7 +120,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
         incollatura: false,
         incollatrice: '',
         tipo_incollatura: '',
-      });
+      }));
     } else {
       notifications.showError('Errore durante il salvataggio della fustella');
     }
@@ -349,16 +349,14 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
           <Button
             type="button"
             onClick={async () => { // Modificato per essere async
-              const maxFustellaCode = await fetchMaxFustellaCodeFromDB();
-              resetFustellaCodeGenerator(maxFustellaCode);
-              const nextFustellaCode = generateNextFustellaCode();
+              await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
 
               const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
               resetPulitoreCodeGenerator(maxPulitoreCode);
 
-              setFormData({
-                codice: nextFustellaCode,
-                disponibile: true,
+              setFormData(prev => ({
+                ...prev,
+                // codice: nextFustellaCode, // Già aggiornato da generateAndSetFustellaCode
                 fornitore: '',
                 codice_fornitore: '',
                 cliente: '',
@@ -373,7 +371,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
                 incollatura: false,
                 incollatrice: '',
                 tipo_incollatura: '',
-              });
+              }));
             }}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
           >
