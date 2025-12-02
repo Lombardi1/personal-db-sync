@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Cliente } from '@/types';
 import { formatFormato, formatGrammatura } from '@/utils/formatters';
-import { cn, parseUserNumber, formatUserNumber } from '@/lib/utils'; // Importa le nuove utilità
+import { cn, parseInputNumber, formatOutputNumber } from '@/lib/utils'; // Importa le nuove utilità
 import {
   Command,
   CommandEmpty,
@@ -134,42 +134,43 @@ export function OrdineAcquistoArticoloFormRow({
   const [nrFustellaLookup, setNrFustellaLookup] = React.useState('');
 
   // Local states for number inputs to handle comma/dot display and free typing
-  const [displayNumeroFogli, setDisplayNumeroFogli] = React.useState<string>(() => formatUserNumber(currentArticle?.numero_fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-  const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => formatUserNumber(currentArticle?.quantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+  const [displayNumeroFogli, setDisplayNumeroFogli] = React.useState<string>(() => formatOutputNumber(currentArticle?.numero_fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => formatOutputNumber(currentArticle?.quantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => {
     const val = currentArticle?.prezzo_unitario;
     if (val === undefined || val === null) return '';
+    // Determine precision based on fornitore type
     if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
-      return formatUserNumber(val, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+      return formatOutputNumber(val, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Cartone/Generic
     } else if (isFustelleFornitore && articleType === 'fustella') {
-      return formatUserNumber(val, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return formatOutputNumber(val, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella
     }
-    return formatUserNumber(val);
+    return formatOutputNumber(val); // Fallback
   });
-  const [displayPrezzoPulitore, setDisplayPrezzoPulitore] = React.useState<string>(() => formatUserNumber(currentArticle?.prezzo_pulitore, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-  const [displayNrTasselli, setDisplayNrTasselli] = React.useState<string>(() => formatUserNumber(currentArticle?.nr_tasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  const [displayPrezzoPulitore, setDisplayPrezzoPulitore] = React.useState<string>(() => formatOutputNumber(currentArticle?.prezzo_pulitore, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const [displayNrTasselli, setDisplayNrTasselli] = React.useState<string>(() => formatOutputNumber(currentArticle?.nr_tasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
 
 
   // Update local states when currentArticle changes from outside (e.g., initialData, reset)
   React.useEffect(() => {
-    setDisplayNumeroFogli(formatUserNumber(currentArticle?.numero_fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-    setDisplayQuantita(formatUserNumber(currentArticle?.quantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+    setDisplayNumeroFogli(formatOutputNumber(currentArticle?.numero_fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+    setDisplayQuantita(formatOutputNumber(currentArticle?.quantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
     
     const puVal = currentArticle?.prezzo_unitario;
     if (puVal !== undefined && puVal !== null) {
       if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
-        setDisplayPrezzoUnitario(formatUserNumber(puVal, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+        setDisplayPrezzoUnitario(formatOutputNumber(puVal, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
       } else if (isFustelleFornitore && articleType === 'fustella') {
-        setDisplayPrezzoUnitario(formatUserNumber(puVal, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        setDisplayPrezzoUnitario(formatOutputNumber(puVal, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       } else {
-        setDisplayPrezzoUnitario(formatUserNumber(puVal));
+        setDisplayPrezzoUnitario(formatOutputNumber(puVal));
       }
     } else {
       setDisplayPrezzoUnitario('');
     }
 
-    setDisplayPrezzoPulitore(formatUserNumber(currentArticle?.prezzo_pulitore, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    setDisplayNrTasselli(formatUserNumber(currentArticle?.nr_tasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+    setDisplayPrezzoPulitore(formatOutputNumber(currentArticle?.prezzo_pulitore, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setDisplayNrTasselli(formatOutputNumber(currentArticle?.nr_tasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
   }, [currentArticle?.numero_fogli, currentArticle?.quantita, currentArticle?.prezzo_unitario, currentArticle?.prezzo_pulitore, currentArticle?.nr_tasselli, isCartoneFornitore, isFustelleFornitore, articleType]);
 
 
@@ -199,7 +200,7 @@ export function OrdineAcquistoArticoloFormRow({
     if (isCartoneFornitore) {
       const newQuantita = parseFloat(calculatedQuantitaKg.toFixed(3));
       setValue(`articoli.${index}.quantita`, newQuantita, { shouldValidate: true });
-      setDisplayQuantita(formatUserNumber(newQuantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+      setDisplayQuantita(formatOutputNumber(newQuantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
     }
   }, [calculatedQuantitaKg, index, setValue, isCartoneFornitore]);
 
@@ -234,7 +235,7 @@ export function OrdineAcquistoArticoloFormRow({
     if (isFustelleFornitore && articleType === 'fustella' && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
       console.log(`[Article ${index}] Setting nr_tasselli to 0.`);
       setValue(`articoli.${index}.nr_tasselli`, 0, { shouldValidate: true });
-      setDisplayNrTasselli(formatUserNumber(0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+      setDisplayNrTasselli(formatOutputNumber(0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
     } else if (isFustelleFornitore && articleType === 'fustella' && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
       console.log(`[Article ${index}] Clearing nr_tasselli.`);
       setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
@@ -331,8 +332,8 @@ export function OrdineAcquistoArticoloFormRow({
     setValue(`articoli.${index}.tipo_incollatura`, '', { shouldValidate: true });
     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Default quantity
     setValue(`articoli.${index}.prezzo_unitario`, 0, { shouldValidate: true }); // Default prezzo unitario
-    setDisplayPrezzoUnitario(formatUserNumber(0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })); // Reset display state
-    setDisplayPrezzoPulitore(formatUserNumber(0, { minimumFractionDigits: 2, maximumFractionDigits: 2 })); // Reset display state
+    setDisplayPrezzoUnitario(formatOutputNumber(0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })); // Reset display state
+    setDisplayPrezzoPulitore(formatOutputNumber(0, { minimumFractionDigits: 2, maximumFractionDigits: 2 })); // Reset display state
     setDisplayNumeroFogli('');
     setDisplayQuantita('');
     setDisplayNrTasselli('');
@@ -454,13 +455,13 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.numero_fogli`} className="text-xs">Fogli *</Label>
                   <Input
                     id={`articoli.${index}.numero_fogli`}
-                    type="text" // Changed to text
+                    type="text"
                     value={displayNumeroFogli}
                     onChange={(e) => setDisplayNumeroFogli(e.target.value)}
                     onBlur={(e) => {
-                      const num = parseUserNumber(e.target.value);
+                      const num = parseInputNumber(e.target.value);
                       setValue(`articoli.${index}.numero_fogli`, num, { shouldValidate: true });
-                      setDisplayNumeroFogli(formatUserNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+                      setDisplayNumeroFogli(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
                     }}
                     placeholder="0"
                     disabled={isSubmitting || isOrderCancelled}
@@ -488,9 +489,9 @@ export function OrdineAcquistoArticoloFormRow({
                       value={displayPrezzoUnitario}
                       onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
                       onBlur={(e) => {
-                        const numericValue = parseUserNumber(e.target.value);
+                        const numericValue = parseInputNumber(e.target.value);
                         if (numericValue !== undefined) {
-                          const formattedValue = formatUserNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+                          const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
                           setDisplayPrezzoUnitario(formattedValue);
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
@@ -498,7 +499,7 @@ export function OrdineAcquistoArticoloFormRow({
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
-                      placeholder="Es. 0.870"
+                      placeholder="Es. 0,870"
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -707,14 +708,12 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.quantita`}
                     type="text" // Changed to text
-                    value={formatUserNumber(currentQuantita, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    onChange={(e) => {
-                      const num = parseUserNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                    }}
+                    value={displayQuantita}
+                    onChange={(e) => setDisplayQuantita(e.target.value)}
                     onBlur={(e) => {
-                      const num = parseUserNumber(e.target.value);
+                      const num = parseInputNumber(e.target.value);
                       setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                      setDisplayQuantita(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
                     }}
                     placeholder="Es. 1"
                     disabled={isSubmitting || isOrderCancelled}
@@ -731,9 +730,9 @@ export function OrdineAcquistoArticoloFormRow({
                       value={displayPrezzoUnitario}
                       onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
                       onBlur={(e) => {
-                        const numericValue = parseUserNumber(e.target.value);
+                        const numericValue = parseInputNumber(e.target.value);
                         if (numericValue !== undefined) {
-                          const formattedValue = formatUserNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella price
+                          const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella price
                           setDisplayPrezzoUnitario(formattedValue);
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
@@ -741,7 +740,7 @@ export function OrdineAcquistoArticoloFormRow({
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
-                      placeholder="Es. 150.00" // Changed placeholder to dot
+                      placeholder="Es. 150,00" // Changed placeholder to comma
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -865,16 +864,17 @@ export function OrdineAcquistoArticoloFormRow({
                           value={displayPrezzoPulitore}
                           onChange={(e) => setDisplayPrezzoPulitore(e.target.value)}
                           onBlur={(e) => {
-                            const numericValue = parseUserNumber(e.target.value);
+                            const numericValue = parseInputNumber(e.target.value);
                             if (numericValue !== undefined) {
-                              const formattedValue = formatUserNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
+                              const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
                               setDisplayPrezzoPulitore(formattedValue);
                               setValue(`articoli.${index}.prezzo_pulitore`, numericValue, { shouldValidate: true });
                             } else {
+                              setDisplayPrezzoPulitore('');
                               setValue(`articoli.${index}.prezzo_pulitore`, undefined, { shouldValidate: true });
                             }
                           }}
-                          placeholder="Es. 50.00" // Changed placeholder to dot
+                          placeholder="Es. 50,00" // Changed placeholder to comma
                           min="0"
                           disabled={isSubmitting || isOrderCancelled}
                           className="text-sm pr-10"
@@ -920,9 +920,9 @@ export function OrdineAcquistoArticoloFormRow({
                       value={displayNrTasselli}
                       onChange={(e) => setDisplayNrTasselli(e.target.value)}
                       onBlur={(e) => {
-                        const num = parseUserNumber(e.target.value);
+                        const num = parseInputNumber(e.target.value);
                         setValue(`articoli.${index}.nr_tasselli`, num, { shouldValidate: true });
-                        setDisplayNrTasselli(formatUserNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+                        setDisplayNrTasselli(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
                       }}
                       placeholder="0"
                       disabled={isSubmitting || isOrderCancelled}
@@ -1051,14 +1051,12 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.quantita`}
                     type="text" // Changed to text
-                    value={formatUserNumber(currentQuantita, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    onChange={(e) => {
-                      const num = parseUserNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                    }}
+                    value={displayQuantita}
+                    onChange={(e) => setDisplayQuantita(e.target.value)}
                     onBlur={(e) => {
-                      const num = parseUserNumber(e.target.value);
+                      const num = parseInputNumber(e.target.value);
                       setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                      setDisplayQuantita(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
                     }}
                     placeholder="Es. 1"
                     disabled={isSubmitting || isOrderCancelled}
@@ -1075,9 +1073,9 @@ export function OrdineAcquistoArticoloFormRow({
                       value={displayPrezzoUnitario}
                       onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
                       onBlur={(e) => {
-                        const numericValue = parseUserNumber(e.target.value);
+                        const numericValue = parseInputNumber(e.target.value);
                         if (numericValue !== undefined) {
-                          const formattedValue = formatUserNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
+                          const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
                           setDisplayPrezzoUnitario(formattedValue);
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
@@ -1085,7 +1083,7 @@ export function OrdineAcquistoArticoloFormRow({
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
-                      placeholder="Es. 50.00" // Changed placeholder to dot
+                      placeholder="Es. 50,00" // Changed placeholder to comma
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -1194,16 +1192,14 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.quantita`}
                     type="text" // Changed to text
-                    value={formatUserNumber(currentQuantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                    onChange={(e) => {
-                      const num = parseUserNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                    }}
+                    value={displayQuantita}
+                    onChange={(e) => setDisplayQuantita(e.target.value)}
                     onBlur={(e) => {
-                      const num = parseUserNumber(e.target.value);
+                      const num = parseInputNumber(e.target.value);
                       setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                      setDisplayQuantita(formatOutputNumber(num, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
                     }}
-                    placeholder="Es. 0.870" // Changed to dot for placeholder
+                    placeholder="Es. 0,870" // Changed to comma for placeholder
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -1218,16 +1214,17 @@ export function OrdineAcquistoArticoloFormRow({
                       value={displayPrezzoUnitario}
                       onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
                       onBlur={(e) => {
-                        const numericValue = parseUserNumber(e.target.value);
+                        const numericValue = parseInputNumber(e.target.value);
                         if (numericValue !== undefined) {
-                          const formattedValue = formatUserNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Generic price
+                          const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Generic price
                           setDisplayPrezzoUnitario(formattedValue);
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
+                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
-                      placeholder="Es. 0.870" // Changed placeholder to dot
+                      placeholder="Es. 0,870" // Changed placeholder to comma
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -1282,7 +1279,7 @@ export function OrdineAcquistoArticoloFormRow({
       </div>
       <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
         <span className="text-sm font-semibold whitespace-nowrap">
-          Totale: {formatUserNumber(itemTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          Totale: {formatOutputNumber(itemTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
         </span>
         <Button
           type="button"
