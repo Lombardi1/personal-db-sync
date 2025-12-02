@@ -105,7 +105,29 @@ export function useCartoni() {
   }, []);
 
   const aggiungiOrdine = async (cartone: Cartone) => {
-    const { error } = await supabase.from('ordini').insert([cartone]);
+    // Crea un nuovo oggetto Cartone con solo i campi pertinenti per la tabella 'ordini'
+    const cartoneForOrdini: Cartone = {
+      codice: cartone.codice,
+      fornitore: cartone.fornitore,
+      ordine: cartone.ordine,
+      tipologia: cartone.tipologia,
+      formato: cartone.formato,
+      grammatura: cartone.grammatura,
+      fogli: cartone.fogli,
+      cliente: cartone.cliente,
+      lavoro: cartone.lavoro,
+      magazzino: cartone.magazzino,
+      prezzo: cartone.prezzo,
+      data_consegna: cartone.data_consegna,
+      confermato: cartone.confermato,
+      note: cartone.note,
+      fsc: cartone.fsc,
+      alimentare: cartone.alimentare,
+      rif_commessa_fsc: cartone.rif_commessa_fsc || null,
+      // Escludi ddt e data_arrivo che non sono presenti nella tabella 'ordini'
+    };
+
+    const { error } = await supabase.from('ordini').insert([cartoneForOrdini]);
     if (!error) {
       const movimento: StoricoMovimento = {
         codice: cartone.codice,
@@ -157,8 +179,8 @@ export function useCartoni() {
       ddt: ddt,
       data_arrivo: dataArrivo,
       magazzino: magazzinoFinale,
-      // Escludiamo 'data_consegna' e 'confermato' che sono specifici della tabella 'ordini'
-      // Escludiamo 'id' e 'created_at' che sono auto-generati
+      data_consegna: ordine.data_consegna, // Manteniamo data_consegna se presente nell'ordine originale
+      confermato: ordine.confermato, // Manteniamo confermato se presente nell'ordine originale
     };
     
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
@@ -272,7 +294,8 @@ export function useCartoni() {
         rif_commessa_fsc: cartone.rif_commessa_fsc || null,
         ddt: cartone.ddt,
         data_arrivo: cartone.data_arrivo,
-        // Escludiamo data_consegna e confermato
+        data_consegna: cartone.data_consegna,
+        confermato: cartone.confermato,
       };
       const { error: insertEsauritiError } = await supabase.from('esauriti').insert([cartoneEsaurito]);
       if (insertEsauritiError) {
@@ -313,10 +336,10 @@ export function useCartoni() {
       note: cartoneEsaurito.note,
       ddt: null, // DDT è null quando riportato da esauriti
       data_arrivo: new Date().toISOString().split('T')[0], // Data di arrivo odierna
+      data_consegna: cartoneEsaurito.data_consegna || null,
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
-      // Escludiamo data_consegna e confermato
     };
 
     try {

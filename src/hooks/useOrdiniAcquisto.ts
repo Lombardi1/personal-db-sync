@@ -57,8 +57,8 @@ export function useOrdiniAcquisto() {
             continue;
           }
 
-          // Costruisci l'oggetto Cartone con tutti i campi necessari per la tabella 'ordini'
-          const dataToInsertIntoOrdini: Cartone = {
+          // Costruisci l'oggetto Cartone con i campi specifici per la tabella 'ordini'
+          const cartoneForOrdini: Cartone = {
             codice: codiceCtn,
             fornitore: fornitoreNome,
             ordine: ordineAcquisto.numero_ordine,
@@ -75,14 +75,13 @@ export function useOrdiniAcquisto() {
             fsc: articolo.fsc,
             alimentare: articolo.alimentare,
             rif_commessa_fsc: articolo.rif_commessa_fsc || null,
-            ddt: null, // DDT è null per ordini in arrivo
-            data_arrivo: undefined, // data_arrivo non è presente nella tabella 'ordini'
             confermato: articolo.stato === 'confermato', // Imposta confermato in base allo stato dell'articolo
+            // Escludi ddt e data_arrivo che non sono presenti nella tabella 'ordini'
           };
 
           if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
-            console.log(`[syncArticleInventoryStatus] Inserting into 'ordini':`, JSON.stringify(dataToInsertIntoOrdini, null, 2)); // NEW LOG
-            const { error: insertError } = await supabase.from('ordini').insert([dataToInsertIntoOrdini]);
+            console.log(`[syncArticleInventoryStatus] Inserting into 'ordini':`, JSON.stringify(cartoneForOrdini, null, 2)); // NEW LOG
+            const { error: insertError } = await supabase.from('ordini').insert([cartoneForOrdini]);
             if (insertError) {
               console.error(`[syncArticleInventoryStatus] Errore inserimento in ordini per cartone '${codiceCtn}':`, insertError);
               toast.error(`Errore inserimento in ordini: ${insertError.message}`);
