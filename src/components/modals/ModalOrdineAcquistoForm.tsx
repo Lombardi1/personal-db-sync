@@ -847,7 +847,7 @@ export function ModalOrdineAcquistoForm({
                       disabled={true}
                       placeholder="Generato automaticamente"
                     />
-                    {errors.numero_ordine && <p className="text-destructive text-xs mt-1">{errors.articoli?.[index]?.numero_ordine?.message}</p>}
+                    {errors.numero_ordine && <p className="text-destructive text-xs mt-1">{errors.numero_ordine?.message}</p>}
                   </div>
                 </div>
               </div>
@@ -886,15 +886,17 @@ export function ModalOrdineAcquistoForm({
                               <CommandItem
                                 key={fornitore.id}
                                 value={fornitore.nome}
-                                onSelect={(currentValue) => { // Made synchronous
+                                onSelect={(currentValue) => {
                                   const newFornitoreId = fornitori.find(f => f.nome === currentValue)?.id || '';
-                                  setValue('fornitore_id', newFornitoreId, { shouldValidate: true });
-                                  setOpenCombobox(false); // Close the popover immediately
-
-                                  // Defer the heavy async operation to allow UI to update
-                                  setTimeout(async () => {
-                                    await resetArticlesAndGenerators(newFornitoreId);
-                                  }, 0);
+                                  // Defer setting the value and closing the popover
+                                  setTimeout(() => {
+                                    setValue('fornitore_id', newFornitoreId, { shouldValidate: true });
+                                    setOpenCombobox(false); // Close the popover after value is set
+                                    // Defer the heavy async operation to allow UI to update
+                                    setTimeout(async () => {
+                                      await resetArticlesAndGenerators(newFornitoreId);
+                                    }, 0);
+                                  }, 0); // Small deferral
                                 }}
                               >
                                 <Check
