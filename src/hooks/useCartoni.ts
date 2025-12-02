@@ -412,6 +412,7 @@ export function useCartoni() {
       notifications.showError('Cartone non trovato');
       return { error: new Error('Cartone non trovato') };
     }
+    console.log(`[useCartoni - riportaInOrdini] Cartone trovato in giacenza per codice ${codice}:`, JSON.stringify(cartone, null, 2));
 
     // Creazione esplicita dell'oggetto Cartone per la tabella 'ordini'
     // ORA INCLUDIAMO DDT, DATA_ARRIVO E MAGAZZINO
@@ -438,7 +439,7 @@ export function useCartoni() {
       data_arrivo: cartone.data_arrivo,
       magazzino: cartone.magazzino,
     };
-    console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini:', JSON.stringify(ordinePerOrdini, null, 2)); // LOG DI DEBUG
+    console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini (PRIMA DELL\'INSERT):', JSON.stringify(ordinePerOrdini, null, 2)); // LOG DI DEBUG
 
     await supabase.from('giacenza').delete().eq('codice', codice);
     await supabase.from('ordini').insert([ordinePerOrdini]);
