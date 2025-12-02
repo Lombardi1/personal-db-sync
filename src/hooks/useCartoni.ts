@@ -172,6 +172,8 @@ export function useCartoni() {
       return { error: new Error('Ordine non trovato') };
     }
     console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, JSON.stringify(ordine, null, 2));
+    console.log(`[useCartoni - spostaInGiacenza] Stato attuale dell'array 'ordini' prima della cancellazione:`, JSON.stringify(ordini.map(o => o.codice), null, 2));
+
 
     const fogliFinali = fogliEffettivi;
     const magazzinoFinale = magazzino; 
@@ -443,9 +445,18 @@ export function useCartoni() {
     };
     console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini (PRIMA DELL\'INSERT):', JSON.stringify(ordinePerOrdini, null, 2)); // LOG DI DEBUG
 
-    // Prima di inserire, assicuriamoci che non ci sia un record esistente in 'ordini' con lo stesso codice.
-    // Questo dovrebbe essere già gestito dal flusso, ma un controllo esplicito o un upsert può aiutare.
-    // Per ora, ci affidiamo al fatto che 'spostaInGiacenza' lo abbia eliminato da 'ordini'.
+    // NUOVO: Elimina qualsiasi record esistente in 'ordini' per questo codice prima di inserire
+    console.log(`[useCartoni - riportaInOrdini] Tentativo di eliminare da 'ordini' eventuali record precedenti per codice: ${codice}`);
+    const { error: deleteExistingError, count: deletedExistingCount } = await supabase.from('ordini').delete().eq('codice', codice);
+    if (deleteExistingError) {
+      console.error(`[useCartoni - riportaInOrdini] Errore durante l'eliminazione di record esistenti da 'ordini':`, deleteExistingError);
+      notifications.showError(`Errore durante la pulizia dei record precedenti in ordini: ${deleteExistingError.message}`);
+      return { error: deleteExistingError };
+    }
+    console.log(`[useCartoni - riportaInOrdini] Eliminati ${deletedExistingCount} record esistenti da 'ordini' per codice: ${codice}`);
+
+
+    await supabase.from('giacenza').delete().eq('codice', codice);
     const { error: insertError, data: insertedData } = await supabase.from('ordini').insert([ordinePerOrdini]).select();
     if (insertError) {
       console.error('[useCartoni - riportaInOrdini] Errore inserimento in ordini:', insertError);
