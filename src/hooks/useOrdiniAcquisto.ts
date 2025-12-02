@@ -58,7 +58,7 @@ export function useOrdiniAcquisto() {
           }
 
           // Costruisci l'oggetto Cartone con i campi specifici per la tabella 'ordini'
-          const cartoneForOrdini: Cartone = {
+          const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo' | 'magazzino'> = {
             codice: codiceCtn,
             fornitore: fornitoreNome,
             ordine: ordineAcquisto.numero_ordine,
@@ -68,7 +68,6 @@ export function useOrdiniAcquisto() {
             fogli: numFogli,
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
-            magazzino: '-', // Default per ordini in arrivo
             prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
             note: ordineAcquisto.note || '-',
@@ -76,7 +75,6 @@ export function useOrdiniAcquisto() {
             alimentare: articolo.alimentare,
             rif_commessa_fsc: articolo.rif_commessa_fsc || null,
             confermato: articolo.stato === 'confermato', // Imposta confermato in base allo stato dell'articolo
-            // Escludi ddt e data_arrivo che non sono presenti nella tabella 'ordini'
           };
 
           if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
@@ -109,7 +107,7 @@ export function useOrdiniAcquisto() {
             };
 
             // Costruisci l'oggetto Cartone per la tabella 'giacenza'
-            const dataToInsertIntoGiacenza: Cartone = {
+            const dataToInsertIntoGiacenza: Omit<Cartone, 'confermato' | 'data_consegna'> = {
               codice: codiceCtn,
               fornitore: fornitoreNome,
               ordine: ordineAcquisto.numero_ordine,
@@ -120,7 +118,6 @@ export function useOrdiniAcquisto() {
               cliente: articolo.cliente || 'N/A',
               lavoro: articolo.lavoro || 'N/A',
               prezzo: articolo.prezzo_unitario,
-              data_consegna: articolo.data_consegna_prevista,
               note: ordineAcquisto.note || '-',
               fsc: articolo.fsc,
               alimentare: articolo.alimentare,
