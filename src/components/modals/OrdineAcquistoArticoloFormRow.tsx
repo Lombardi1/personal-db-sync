@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Cliente } from '@/types';
 import { formatFormato, formatGrammatura } from '@/utils/formatters';
-import { cn } from '@/lib/utils';
+import { cn, parseItalianNumber, formatItalianNumber } from '@/lib/utils'; // Importa le nuove utilità
 import {
   Command,
   CommandEmpty,
@@ -139,16 +139,16 @@ export function OrdineAcquistoArticoloFormRow({
     if (val === undefined || val === null) return '';
     // Determine precision based on fornitore type
     if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
-      return val.toFixed(3).replace('.', ','); // 3 decimals for Cartone/Generic
+      return formatItalianNumber(val, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Cartone/Generic
     } else if (isFustelleFornitore && articleType === 'fustella') {
-      return val.toFixed(2).replace('.', ','); // 2 decimals for Fustella
+      return formatItalianNumber(val, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella
     }
-    return String(val).replace('.', ','); // Fallback
+    return formatItalianNumber(val); // Fallback
   });
 
   const [displayPrezzoPulitore, setDisplayPrezzoPulitore] = React.useState<string>(() => {
     const val = currentArticle?.prezzo_pulitore;
-    return (val !== undefined && val !== null) ? val.toFixed(2).replace('.', ',') : ''; // 2 decimals for Pulitore
+    return formatItalianNumber(val, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore
   });
 
   // Update local states when currentArticle changes from outside (e.g., initialData, reset)
@@ -156,18 +156,18 @@ export function OrdineAcquistoArticoloFormRow({
     const puVal = currentArticle?.prezzo_unitario;
     if (puVal !== undefined && puVal !== null) {
       if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
-        setDisplayPrezzoUnitario(puVal.toFixed(3).replace('.', ','));
+        setDisplayPrezzoUnitario(formatItalianNumber(puVal, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
       } else if (isFustelleFornitore && articleType === 'fustella') {
-        setDisplayPrezzoUnitario(puVal.toFixed(2).replace('.', ','));
+        setDisplayPrezzoUnitario(formatItalianNumber(puVal, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       } else {
-        setDisplayPrezzoUnitario(String(puVal).replace('.', ','));
+        setDisplayPrezzoUnitario(formatItalianNumber(puVal));
       }
     } else {
       setDisplayPrezzoUnitario('');
     }
 
     const ppVal = currentArticle?.prezzo_pulitore;
-    setDisplayPrezzoPulitore((ppVal !== undefined && ppVal !== null) ? ppVal.toFixed(2).replace('.', ',') : '');
+    setDisplayPrezzoPulitore(formatItalianNumber(ppVal, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   }, [currentArticle?.prezzo_unitario, currentArticle?.prezzo_pulitore, isCartoneFornitore, isFustelleFornitore, articleType]);
 
 
@@ -333,8 +333,8 @@ export function OrdineAcquistoArticoloFormRow({
     setValue(`articoli.${index}.tipo_incollatura`, '', { shouldValidate: true });
     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Default quantity
     setValue(`articoli.${index}.prezzo_unitario`, 0, { shouldValidate: true }); // Default prezzo unitario
-    setDisplayPrezzoUnitario('0,000'); // Reset display state
-    setDisplayPrezzoPulitore(''); // Reset display state
+    setDisplayPrezzoUnitario(formatItalianNumber(0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })); // Reset display state
+    setDisplayPrezzoPulitore(formatItalianNumber(0, { minimumFractionDigits: 2, maximumFractionDigits: 2 })); // Reset display state
     setNrFustellaLookup(''); // Clear lookup field
 
     if (newType === 'fustella') {
@@ -453,10 +453,17 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.numero_fogli`} className="text-xs">Fogli *</Label>
                   <Input
                     id={`articoli.${index}.numero_fogli`}
-                    type="number"
-                    {...register(`articoli.${index}.numero_fogli`, { valueAsNumber: true })}
+                    type="text" // Changed to text
+                    value={formatItalianNumber(currentNumeroFogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    onChange={(e) => {
+                      const num = parseItalianNumber(e.target.value);
+                      setValue(`articoli.${index}.numero_fogli`, num, { shouldValidate: true });
+                    }}
+                    onBlur={(e) => {
+                      const num = parseItalianNumber(e.target.value);
+                      setValue(`articoli.${index}.numero_fogli`, num, { shouldValidate: true });
+                    }}
                     placeholder="0"
-                    min="1"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -466,7 +473,7 @@ export function OrdineAcquistoArticoloFormRow({
                 <div className="col-span-1">
                   <Label className="text-xs">Quantità (kg)</Label>
                   <Input
-                    value={calculatedQuantitaKg.toFixed(3)}
+                    value={formatItalianNumber(calculatedQuantitaKg, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     readOnly
                     disabled={true}
                     className="text-sm font-bold bg-gray-100"
@@ -483,17 +490,17 @@ export function OrdineAcquistoArticoloFormRow({
                       onChange={(e) => {
                         const rawValue = e.target.value;
                         setDisplayPrezzoUnitario(rawValue); // Update local state immediately
-                        const numericValue = parseFloat(rawValue.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
+                        const numericValue = parseItalianNumber(rawValue);
+                        if (numericValue !== undefined) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
                       onBlur={(e) => {
-                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          const formattedValue = numericValue.toFixed(3).replace('.', ',');
+                        const numericValue = parseItalianNumber(e.target.value);
+                        if (numericValue !== undefined) {
+                          const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
                           setDisplayPrezzoUnitario(formattedValue); // Format on blur
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true }); // Store the actual numeric value
                         } else {
@@ -709,11 +716,17 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
                     id={`articoli.${index}.quantita`}
-                    type="number" // Changed to number
-                    step="1" // Added step for integer quantity
-                    {...register(`articoli.${index}.quantita`, { valueAsNumber: true })}
+                    type="text" // Changed to text
+                    value={formatItalianNumber(currentQuantita, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    onChange={(e) => {
+                      const num = parseItalianNumber(e.target.value);
+                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                    }}
+                    onBlur={(e) => {
+                      const num = parseItalianNumber(e.target.value);
+                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                    }}
                     placeholder="Es. 1"
-                    min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -729,17 +742,17 @@ export function OrdineAcquistoArticoloFormRow({
                       onChange={(e) => {
                         const rawValue = e.target.value;
                         setDisplayPrezzoUnitario(rawValue); // Update local state immediately
-                        const numericValue = parseFloat(rawValue.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
+                        const numericValue = parseItalianNumber(rawValue);
+                        if (numericValue !== undefined) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
                       onBlur={(e) => {
-                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          const formattedValue = numericValue.toFixed(2).replace('.', ','); // 2 decimals for Fustella price
+                        const numericValue = parseItalianNumber(e.target.value);
+                        if (numericValue !== undefined) {
+                          const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella price
                           setDisplayPrezzoUnitario(formattedValue); // Format on blur
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
@@ -848,7 +861,7 @@ export function OrdineAcquistoArticoloFormRow({
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.hasPulitore`} className="text-xs">Ha Pulitore</Label>
-                  {errors.articoli?.[index]?.hasPulitore && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
+                  {errors.articoli?.[index]?.hasPulitore && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.hasPulitore?.message}</p>}
                 </div>
                 {currentHasPulitore && (
                   <>
@@ -872,17 +885,17 @@ export function OrdineAcquistoArticoloFormRow({
                           onChange={(e) => {
                             const rawValue = e.target.value;
                             setDisplayPrezzoPulitore(rawValue); // Update local state immediately
-                            const numericValue = parseFloat(rawValue.replace(',', '.'));
-                            if (!isNaN(numericValue)) {
+                            const numericValue = parseItalianNumber(rawValue);
+                            if (numericValue !== undefined) {
                               setValue(`articoli.${index}.prezzo_pulitore`, numericValue, { shouldValidate: true });
                             } else {
                               setValue(`articoli.${index}.prezzo_pulitore`, undefined, { shouldValidate: true });
                             }
                           }}
                           onBlur={(e) => {
-                            const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                            if (!isNaN(numericValue)) {
-                              const formattedValue = numericValue.toFixed(2).replace('.', ','); // 2 decimals for Pulitore price
+                            const numericValue = parseItalianNumber(e.target.value);
+                            if (numericValue !== undefined) {
+                              const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
                               setDisplayPrezzoPulitore(formattedValue); // Format on blur
                               setValue(`articoli.${index}.prezzo_pulitore`, numericValue, { shouldValidate: true });
                             } else {
@@ -913,7 +926,7 @@ export function OrdineAcquistoArticoloFormRow({
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.pinza_tagliata`} className="text-xs">Pinza Tagliata</Label>
-                  {errors.articoli?.[index]?.pinza_tagliata && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
+                  {errors.articoli?.[index]?.pinza_tagliata && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
@@ -932,10 +945,17 @@ export function OrdineAcquistoArticoloFormRow({
                     <Label htmlFor={`articoli.${index}.nr_tasselli`} className="text-xs">Nr. Tasselli *</Label>
                     <Input
                       id={`articoli.${index}.nr_tasselli`}
-                      type="number"
-                      {...register(`articoli.${index}.nr_tasselli`, { valueAsNumber: true })}
+                      type="text" // Changed to text
+                      value={formatItalianNumber(currentNrTasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      onChange={(e) => {
+                        const num = parseItalianNumber(e.target.value);
+                        setValue(`articoli.${index}.nr_tasselli`, num, { shouldValidate: true });
+                      }}
+                      onBlur={(e) => {
+                        const num = parseItalianNumber(e.target.value);
+                        setValue(`articoli.${index}.nr_tasselli`, num, { shouldValidate: true });
+                      }}
                       placeholder="0"
-                      min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm"
                     />
@@ -1010,6 +1030,188 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
+        ) : isFustelleFornitore && articleType === 'pulitore' ? ( // NUOVA SEZIONE PER PULITORE AUTONOMO
+          <>
+            {/* Section: Codice Identificativo Pulitore */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo Pulitore</h5>
+              <div>
+                <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
+                <Input
+                  id={`articoli.${index}.pulitore_codice_fustella`}
+                  {...register(`articoli.${index}.pulitore_codice_fustella`)}
+                  readOnly
+                  className="text-sm font-mono font-bold"
+                />
+                {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor={`articoli.${index}.codice_fornitore_fustella`} className="text-xs">Codice Fustella Associata (Fornitore) *</Label>
+                <Input
+                  id={`articoli.${index}.codice_fornitore_fustella`}
+                  {...register(`articoli.${index}.codice_fornitore_fustella`)}
+                  value={nrFustellaLookup}
+                  onChange={(e) => setNrFustellaLookup(e.target.value)}
+                  placeholder="Cerca per codice FST-XXX o FOR-XXX"
+                  disabled={isSubmitting || isOrderCancelled}
+                  className="text-sm"
+                />
+                {errors.articoli?.[index]?.codice_fornitore_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Dettagli Articolo Pulitore */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione *</Label>
+                  <Input
+                    id={`articoli.${index}.descrizione`}
+                    {...register(`articoli.${index}.descrizione`)}
+                    placeholder="Descrizione pulitore"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
+                  <Input
+                    id={`articoli.${index}.quantita`}
+                    type="text" // Changed to text
+                    value={formatItalianNumber(currentQuantita, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    onChange={(e) => {
+                      const num = parseItalianNumber(e.target.value);
+                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                    }}
+                    onBlur={(e) => {
+                      const num = parseItalianNumber(e.target.value);
+                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                    }}
+                    placeholder="Es. 1"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
+                  <div className="relative">
+                    <Input
+                      id={`articoli.${index}.prezzo_unitario`}
+                      type="text" // Changed to text
+                      value={displayPrezzoUnitario} // Use local state for display
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
+                        const numericValue = parseItalianNumber(rawValue);
+                        if (numericValue !== undefined) {
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
+                        } else {
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numericValue = parseItalianNumber(e.target.value);
+                        if (numericValue !== undefined) {
+                          const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
+                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
+                        } else {
+                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      placeholder="Es. 50,00" // Changed placeholder to comma
+                      min="0"
+                      disabled={isSubmitting || isOrderCancelled}
+                      className="text-sm pr-10"
+                    />
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
+                      €
+                    </span>
+                  </div>
+                  {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente</Label>
+                  <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openClientCombobox}
+                        className={cn(
+                          "w-full justify-between text-sm",
+                          !currentCliente && "text-muted-foreground"
+                        )}
+                        disabled={isSubmitting || isOrderCancelled}
+                      >
+                        {currentCliente
+                          ? clienti.find((cliente) => cliente.nome === currentCliente)?.nome
+                          : "Seleziona cliente..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Cerca cliente..." />
+                        <CommandList>
+                          <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
+                          <CommandGroup>
+                            {clienti.map((cliente) => (
+                              <CommandItem
+                                key={cliente.id}
+                                value={cliente.nome}
+                                onSelect={() => {
+                                  setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
+                                  setOpenClientCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {cliente.nome}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro</Label>
+                  <Input
+                    id={`articoli.${index}.lavoro`}
+                    {...register(`articoli.${index}.lavoro`)}
+                    placeholder="Es. LAV-2025-089"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
+                  <Input
+                    id={`articoli.${index}.data_consegna_prevista`}
+                    type="date"
+                    {...register(`articoli.${index}.data_consegna_prevista`)}
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
+                </div>
+              </div>
+            </div>
+          </>
         ) : ( // Fornitori di altro tipo (Inchiostro, Colla, Altro)
           <>
             {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle) */}
@@ -1031,11 +1233,17 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
                     id={`articoli.${index}.quantita`}
-                    type="number" // Changed to number
-                    step="0.001" // Allow decimals for generic quantity
-                    {...register(`articoli.${index}.quantita`, { valueAsNumber: true })}
+                    type="text" // Changed to text
+                    value={formatItalianNumber(currentQuantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                    onChange={(e) => {
+                      const num = parseItalianNumber(e.target.value);
+                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                    }}
+                    onBlur={(e) => {
+                      const num = parseItalianNumber(e.target.value);
+                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                    }}
                     placeholder="Es. 0,870" // Changed to comma for placeholder
-                    min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -1051,17 +1259,17 @@ export function OrdineAcquistoArticoloFormRow({
                       onChange={(e) => {
                         const rawValue = e.target.value;
                         setDisplayPrezzoUnitario(rawValue); // Update local state immediately
-                        const numericValue = parseFloat(rawValue.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
+                        const numericValue = parseItalianNumber(rawValue);
+                        if (numericValue !== undefined) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
                       onBlur={(e) => {
-                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          const formattedValue = numericValue.toFixed(3).replace('.', ','); // 3 decimals for Generic price
+                        const numericValue = parseItalianNumber(e.target.value);
+                        if (numericValue !== undefined) {
+                          const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Generic price
                           setDisplayPrezzoUnitario(formattedValue); // Format on blur
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
@@ -1124,7 +1332,7 @@ export function OrdineAcquistoArticoloFormRow({
       </div>
       <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
         <span className="text-sm font-semibold whitespace-nowrap">
-          Totale: {itemTotal.toFixed(2)} €
+          Totale: {formatItalianNumber(itemTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
         </span>
         <Button
           type="button"
