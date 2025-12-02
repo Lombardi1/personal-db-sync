@@ -158,7 +158,7 @@ export function OrdineAcquistoArticoloFormRow({
       if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
         setDisplayPrezzoUnitario(puVal.toFixed(3).replace('.', ','));
       } else if (isFustelleFornitore && articleType === 'fustella') {
-        setDisplayPrezzoUnitario(puVal.toFixed(2).replace('.', ',');
+        setDisplayPrezzoUnitario(puVal.toFixed(2).replace('.', ','));
       } else {
         setDisplayPrezzoUnitario(String(puVal).replace('.', ','));
       }
@@ -446,7 +446,7 @@ export function OrdineAcquistoArticoloFormRow({
                       setValue(`articoli.${index}.grammatura`, formattedValue, { shouldValidate: true });
                     }}
                   />
-                  {errors.articoli?.[index]?.grammatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.grammatura?.message}</p>}
+                  {errors.articoli?.[index]?.grammatura && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.grammatura?.message}</pP>}
                 </div>
 
                 <div>
