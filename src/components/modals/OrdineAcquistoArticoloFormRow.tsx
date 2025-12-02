@@ -208,24 +208,8 @@ export function OrdineAcquistoArticoloFormRow({
     }
   }, [isFustelleFornitore, articleType, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
 
-  // Effect to set default description for pulitore when articleType is 'pulitore'
-  React.useEffect(() => {
-    if (isFustelleFornitore && articleType === 'pulitore') {
-      const newDescription = currentCodiceFornitoreFustella 
-        ? `Pulitore per Fustella ${currentCodiceFornitoreFustella}` 
-        : `Pulitore per fustella`; // Fallback if no specific code
-      
-      // Only update if the current description is empty or the default "Pulitore per fustella"
-      // to avoid overwriting user-entered descriptions.
-      if (!currentDescrizione || currentDescrizione === `Pulitore per fustella` || currentDescrizione !== newDescription) {
-        setValue(`articoli.${index}.descrizione`, newDescription, { shouldValidate: true });
-      }
-    } else if (isFustelleFornitore && articleType !== 'pulitore' && currentDescrizione === `Pulitore per fustella` && !currentArticle?.id) {
-      // Clear description if it was auto-set and type changes, only for new articles
-      setValue(`articoli.${index}.descrizione`, '', { shouldValidate: true });
-    }
-  }, [articleType, isFustelleFornitore, currentDescrizione, currentCodiceFornitoreFustella, index, setValue, currentArticle?.id]);
-
+  // Rimosso: Effect to set default description for pulitore when articleType is 'pulitore'
+  // La descrizione viene ora gestita direttamente nel campo input e in handleArticleTypeChange
 
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0) + (currentArticle?.hasPulitore ? (currentArticle?.prezzo_pulitore || 0) : 0); // Aggiornato calcolo totale
 
@@ -269,11 +253,11 @@ export function OrdineAcquistoArticoloFormRow({
       }
     } else if (newType === 'pulitore') {
       setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
-      // Set initial description based on currentCodiceFornitoreFustella if available, otherwise generic
-      const initialPulitoreDescription = currentCodiceFornitoreFustella 
+      // Set description immediately for new pulitore article
+      const newPulitoreDescription = currentCodiceFornitoreFustella 
         ? `Pulitore per Fustella ${currentCodiceFornitoreFustella}` 
         : `Pulitore per fustella`;
-      setValue(`articoli.${index}.descrizione`, initialPulitoreDescription, { shouldValidate: true });
+      setValue(`articoli.${index}.descrizione`, newPulitoreDescription, { shouldValidate: true }); // Explicitly set description
       setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Quantità fissa per pulitore
     }
   };
@@ -972,9 +956,10 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.descrizione`}
                     {...register(`articoli.${index}.descrizione`)}
-                    placeholder="Descrizione articolo"
+                    value={currentCodiceFornitoreFustella ? `Pulitore per Fustella ${currentCodiceFornitoreFustella}` : `Pulitore per fustella`}
+                    readOnly // Make it read-only
                     disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
+                    className="text-sm font-bold bg-gray-100" // Style as read-only
                   />
                   {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
                 </div>
