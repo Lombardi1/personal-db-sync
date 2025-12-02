@@ -89,9 +89,10 @@ export function useOrdiniAcquisto() {
               toast.error(`Errore inserimento in ordini: ${insertError.message}`);
             }
           } else if (articolo.stato === 'ricevuto') {
+            // MODIFICA QUI: Seleziona solo i campi necessari per evitare 406
             const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
               .from('giacenza')
-              .select('*') // Modificato da 'ddt, data_arrivo, magazzino' a '*'
+              .select('codice, ddt, data_arrivo, magazzino, rif_commessa_fsc') // Explicitly select relevant fields
               .eq('codice', codiceCtn)
               .single();
 
@@ -101,10 +102,12 @@ export function useOrdiniAcquisto() {
               continue;
             }
 
+            // Use existing values if available, otherwise default
             const giacenzaDataToUpdate = {
               ddt: existingGiacenza?.ddt || null,
               data_arrivo: existingGiacenza?.data_arrivo || new Date().toISOString().split('T')[0],
               magazzino: existingGiacenza?.magazzino || '-',
+              rif_commessa_fsc: existingGiacenza?.rif_commessa_fsc || null, // Include rif_commessa_fsc
             };
 
             if (existingGiacenza) {
