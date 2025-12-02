@@ -154,24 +154,30 @@ export function useCartoni() {
 
     // 1. Controlla se il cartone esiste già in giacenza
     let existingGiacenzaItem = null;
-    const { data: existingItemData, error: fetchGiacenzaError } = await supabase
-      .from('giacenza')
-      .select('codice')
-      .eq('codice', codice)
-      .maybeSingle(); // Usiamo maybeSingle()
+    try {
+      const { data: existingItemData, error: fetchGiacenzaError } = await supabase
+        .from('giacenza')
+        .select('codice') // Seleziona solo 'codice' per la verifica
+        .eq('codice', codice)
+        .maybeSingle(); // Usiamo maybeSingle()
 
-    if (fetchGiacenzaError) {
-      console.error(`[useCartoni - spostaInGiacenza] Errore durante la verifica esistenza in giacenza per codice ${codice}:`, fetchGiacenzaError);
-      if (fetchGiacenzaError.code === '406') {
-        console.warn(`[useCartoni - spostaInGiacenza] ATTENZIONE: Errore 406 durante la verifica esistenza. Questo potrebbe indicare un problema di configurazione RLS o del server. Procedo con INSERT/UPDATE ma la verifica potrebbe essere inaffidabile.`);
-        // Non blocchiamo l'operazione qui, ma logghiamo l'errore.
-        // Potrebbe essere un problema di RLS che impedisce la SELECT ma non l'INSERT/UPDATE.
-      } else {
-        notifications.showError(`Errore verifica giacenza: ${fetchGiacenzaError.message}`);
-        return { error: fetchGiacenzaError };
+      if (fetchGiacenzaError) {
+        if (fetchGiacenzaError.code === '406') {
+          console.warn(`[useCartoni - spostaInGiacenza] ATTENZIONE: Errore 406 durante la verifica esistenza per codice ${codice}. Questo potrebbe indicare un problema di configurazione RLS o del server. Dettagli errore:`, fetchGiacenzaError);
+          // Non blocchiamo l'operazione qui, ma logghiamo l'errore.
+          // Procediamo con la logica successiva, che tenterà un INSERT/UPDATE.
+        } else if (fetchGiacenzaError.code !== 'PGRST116') { // PGRST116 = No rows found, which is expected
+          console.error(`[useCartoni - spostaInGiacenza] Errore durante la verifica esistenza in giacenza per codice ${codice}:`, fetchGiacenzaError);
+          notifications.showError(`Errore verifica giacenza: ${fetchGiacenzaError.message}`);
+          return { error: fetchGiacenzaError };
+        }
+      } else if (existingItemData) {
+        existingGiacenzaItem = existingItemData;
       }
-    } else if (existingItemData) {
-      existingGiacenzaItem = existingItemData;
+    } catch (e: any) {
+      console.error(`[useCartoni - spostaInGiacenza] Eccezione catturata durante la verifica esistenza per codice ${codice}:`, e);
+      notifications.showError(`Errore inatteso durante la verifica giacenza: ${e.message}`);
+      return { error: e };
     }
     
     console.log(`[useCartoni - spostaInGiacenza] Risultato ricerca esistenza in giacenza per codice ${codice}:`, existingGiacenzaItem ? 'Trovato' : 'Non trovato');
