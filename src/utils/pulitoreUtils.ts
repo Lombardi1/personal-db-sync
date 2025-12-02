@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 /**
  * Finds the next available Pulitore code, filling in any gaps.
- * @returns The next available PU code (e.g., 'PU-001', 'PU-002' if 001 is deleted).
+ * @returns The next available PUL code (e.g., 'PUL-001', 'PUL-002' if 001 is deleted).
  */
 export async function findNextAvailablePulitoreCode(): Promise<string> {
   console.log('🧹 [findNextAvailablePulitoreCode] Starting code generation...');
@@ -14,14 +14,15 @@ export async function findNextAvailablePulitoreCode(): Promise<string> {
 
   if (error) {
     console.error('🧹 [findNextAvailablePulitoreCode] Error fetching pulitore codes for gap-filling:', error);
-    return 'PU-001'; // Fallback
+    return 'PUL-001'; // Fallback with new prefix
   }
 
   const existingNumbers: number[] = [];
   if (data && data.length > 0) {
     data.forEach(fustella => {
       if (fustella.pulitore_codice) { // Ensure pulitore_codice is not null
-        const num = parseInt(fustella.pulitore_codice.replace('PU-', ''));
+        // Parse both old 'PU-' and new 'PUL-' prefixes
+        const num = parseInt(fustella.pulitore_codice.replace(/PUL-|PU-/g, ''));
         if (!isNaN(num)) {
           existingNumbers.push(num);
         }
@@ -44,7 +45,7 @@ export async function findNextAvailablePulitoreCode(): Promise<string> {
     }
   }
 
-  const formattedCode = `PU-${String(nextAvailableNum).padStart(3, '0')}`;
+  const formattedCode = `PUL-${String(nextAvailableNum).padStart(3, '0')}`; // Use new prefix
   console.log('🧹 [findNextAvailablePulitoreCode] Next available Pulitore code:', formattedCode);
   return formattedCode;
 }
