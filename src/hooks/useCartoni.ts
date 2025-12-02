@@ -21,7 +21,8 @@ export function useCartoni() {
     try {
       const [giacenzaRes, ordiniRes, esauritiRes, storicoRes] = await Promise.all([
         supabase.from('giacenza').select('*'),
-        supabase.from('ordini').select('*'),
+        // Modificato: Elenco esplicito delle colonne per la tabella 'ordini'
+        supabase.from('ordini').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, data_consegna, confermato, note, fsc, alimentare, rif_commessa_fsc'),
         supabase.from('esauriti').select('*'),
         supabase.from('storico').select(`*, app_users(username)`).order('data', { ascending: false })
       ]);
