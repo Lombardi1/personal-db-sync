@@ -888,15 +888,12 @@ export function ModalOrdineAcquistoForm({
                                 value={fornitore.nome}
                                 onSelect={(currentValue) => {
                                   const newFornitoreId = fornitori.find(f => f.nome === currentValue)?.id || '';
-                                  // Defer setting the value and closing the popover
-                                  setTimeout(() => {
-                                    setValue('fornitore_id', newFornitoreId, { shouldValidate: true });
-                                    setOpenCombobox(false); // Close the popover after value is set
-                                    // Defer the heavy async operation to allow UI to update
-                                    setTimeout(async () => {
-                                      await resetArticlesAndGenerators(newFornitoreId);
-                                    }, 0);
-                                  }, 0); // Small deferral
+                                  // Set the value immediately
+                                  setValue('fornitore_id', newFornitoreId, { shouldValidate: true });
+                                  // Close the combobox immediately after selection
+                                  setOpenCombobox(false);
+                                  // Then, trigger the heavy async operation
+                                  resetArticlesAndGenerators(newFornitoreId);
                                 }}
                               >
                                 <Check
