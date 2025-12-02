@@ -209,9 +209,9 @@ export function ModalOrdineAcquistoForm({
                 if (!articolo.lavoro) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il lavoro è obbligatorio.', path: [`articoli`, index, `lavoro`] });
                 }
-                if (articolo.hasPulitore && (!hasPulitoreCode || articolo.prezzo_pulitore === undefined || articolo.prezzo_pulitore === null)) {
-                    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice e il prezzo del pulitore sono obbligatori se il pulitore è presente.', path: [`articoli`, index, `pulitore_codice_fustella`] });
-                }
+                // Rimosso: if (articolo.hasPulitore && (!hasPulitoreCode || articolo.prezzo_pulitore === undefined || articolo.prezzo_pulitore === null)) {
+                //   ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il codice e il prezzo del pulitore sono obbligatori se il pulitore è presente.', path: [`articoli`, index, `pulitore_codice_fustella`] });
+                // }
                 if (articolo.tasselli_intercambiabili && (articolo.nr_tasselli === undefined || articolo.nr_tasselli === null || articolo.nr_tasselli < 0)) {
                     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Il numero di tasselli è obbligatorio se i tasselli sono intercambiabili.', path: [`articoli`, index, `nr_tasselli`] });
                 }
@@ -380,7 +380,7 @@ export function ModalOrdineAcquistoForm({
     if (item.stato !== 'annullato') {
       const qty = item.quantita || 0;
       const price = item.prezzo_unitario || 0;
-      const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0;
+      const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0; // Aggiungi prezzo pulitore
       return sum + (qty * price) + pulitorePrice;
     }
     return sum;
