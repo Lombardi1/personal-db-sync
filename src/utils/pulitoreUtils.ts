@@ -49,3 +49,21 @@ export async function findNextAvailablePulitoreCode(): Promise<string> {
   console.log('🧹 [findNextAvailablePulitoreCode] Next available Pulitore code:', formattedCode);
   return formattedCode;
 }
+
+/**
+ * Fetches all existing Pulitore codes from the database.
+ * @returns An array of all existing Pulitore codes.
+ */
+export async function fetchAllPulitoreCodes(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('fustelle')
+    .select('pulitore_codice')
+    .not('pulitore_codice', 'is', null); // Only select non-null pulitore codes
+
+  if (error) {
+    console.error('Error fetching all pulitore codes:', error);
+    return [];
+  }
+
+  return data ? data.map(fustella => fustella.pulitore_codice!) : [];
+}
