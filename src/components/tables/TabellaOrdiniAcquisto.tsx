@@ -24,7 +24,7 @@ interface TabellaOrdiniAcquistoProps {
   onPermanentDelete: (id: string, numeroOrdine: string) => void;
   onDuplicateAndEdit: (ordine: OrdineAcquisto) => void;
   fornitori: Fornitore[];
-  clienti: Cliente[];
+  clienti: Cliente[]; // La prop si chiama 'clienti'
   aziendaInfo: AziendaInfo | null; // Nuova prop
   updateOrdineAcquistoStatus: (id: string, newStatus: OrdineAcquisto['stato']) => Promise<{ success: boolean; error?: any }>;
   updateArticleStatusInOrder: (orderNumeroOrdine: string, articleIdentifier: string, newArticleStatus: ArticoloOrdineAcquisto['stato']) => Promise<{ success: boolean; error?: any }>;
@@ -171,7 +171,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
     try {
       // 1. Fetch the latest version of the order from Supabase immediately
-      let orderToProcess = await fetchOrderAndFornitore(ordine.id!); // Changed to let
+      let orderToProcess = await fetchOrderAndFornitore(ordine.id!);
 
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
@@ -229,7 +229,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // 5. Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Generando anteprima PDF per ordine: ${orderToProcess.numero_ordine} con stato finale: ${orderToProcess.stato}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clients, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, true, newWindow); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -246,7 +246,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
     notifications.showInfo('Aggiornamento stato ordine in corso. Il PDF verrà scaricato automaticamente.');
 
     try {
-      let orderToProcess = await fetchOrderAndFornitore(ordine.id!); // Changed to let
+      let orderToProcess = await fetchOrderAndFornitore(ordine.id!);
 
       let updatedArticles = [...orderToProcess.articoli];
       let newMainOrderStatus = orderToProcess.stato;
@@ -292,7 +292,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
       // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clients, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       
 
     } catch (error: any) {
