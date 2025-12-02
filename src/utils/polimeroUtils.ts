@@ -1,49 +1,43 @@
 import { supabase } from '@/lib/supabase';
 
-let lastGeneratedPolimeroCodeInSession = 0; // Stores the highest PLM number seen/generated in the current session
-
 /**
- * Fetches the maximum Polimero number from the database (polimeri table).
- * @returns The highest Polimero number found, or 0 if none.
+ * Finds the next available Polimero code, filling in any gaps.
+ * @returns The next available PLM code (e.g., 'PLM-001', 'PLM-002' if 001 is deleted).
  */
-export async function fetchMaxPolimeroCodeFromDB(): Promise<number> {
+export async function findNextAvailablePolimeroCode(): Promise<string> {
   const { data, error } = await supabase
     .from('polimeri')
     .select('codice')
-    .order('codice', { ascending: false })
-    .limit(1);
+    .order('codice', { ascending: true }); // Order ascending to find gaps
 
   if (error) {
-    console.error('Error fetching max polimero code:', error);
-    return 0;
+    console.error('Error fetching polimero codes for gap-filling:', error);
+    return 'PLM-001'; // Fallback
   }
 
-  let maxCodeFromDB = 0;
-  if (data && data.length > 0 && data[0].codice) {
-    const num = parseInt(data[0].codice.replace('PLM-', ''));
-    maxCodeFromDB = num > maxCodeFromDB ? num : maxCodeFromDB;
+  const existingNumbers: number[] = [];
+  if (data && data.length > 0) {
+    data.forEach(polimero => {
+      const num = parseInt(polimero.codice.replace('PLM-', ''));
+      if (!isNaN(num)) {
+        existingNumbers.push(num);
+      }
+    });
   }
-  return maxCodeFromDB;
-}
 
-/**
- * Generates the next unique Polimero code for the current session.
- * This function is synchronous and relies on `lastGeneratedPolimeroCodeInSession` being correctly initialized.
- * @returns The next formatted PLM code (e.g., 'PLM-001').
- */
-export function generateNextPolimeroCode(): string {
-  lastGeneratedPolimeroCodeInSession++; // Increment for the next unique code
-  const formattedCode = `PLM-${String(lastGeneratedPolimeroCodeInSession).padStart(3, '0')}`;
-  console.log('🧪 Generato nuovo codice Polimero (in-session):', formattedCode);
+  existingNumbers.sort((a, b) => a - b);
+
+  let nextAvailableNum = 1;
+  for (const num of existingNumbers) {
+    if (num === nextAvailableNum) {
+      nextAvailableNum++;
+    } else if (num > nextAvailableNum) {
+      // Found a gap
+      break;
+    }
+  }
+
+  const formattedCode = `PLM-${String(nextAvailableNum).padStart(3, '0')}`;
+  console.log('🧪 Trovato prossimo codice Polimero disponibile:', formattedCode);
   return formattedCode;
-}
-
-/**
- * Resets the in-session Polimero code generator.
- * Should be called when starting a new form or when the data is reloaded.
- * @param initialMaxCode Optional: Initialize the counter with a specific max code (e.g., from DB).
- */
-export function resetPolimeroCodeGenerator(initialMaxCode: number = 0) {
-  lastGeneratedPolimeroCodeInSession = initialMaxCode;
-  console.log('🧪 Reset del generatore di codici Polimero. Iniziato da:', initialMaxCode);
 }

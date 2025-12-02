@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Fustella } from '@/types'; // Rimosso: StoricoMovimentoFustella
+import { Fustella } from '@/types';
 import * as notifications from '@/utils/notifications';
 import { useAuth } from '@/hooks/useAuth';
-import { resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils';
-import { resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
+// Rimosso: import { resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils';
+// Rimosso: import { resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 export function useFustelle() {
   const [fustelle, setFustelle] = useState<Fustella[]>([]);

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
+import { findNextAvailablePulitoreCode } from '@/utils/pulitoreUtils'; // Importa la nuova funzione
 
 interface ModalModificaFustellaProps {
   fustella: Fustella;
@@ -41,15 +41,6 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     tipo_incollatura: fustella.tipo_incollatura || '',
   });
 
-  useEffect(() => {
-    // Inizializza il generatore di codici pulitore all'apertura del modale
-    const initializePulitoreCodeGenerator = async () => {
-      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-      resetPulitoreCodeGenerator(maxPulitoreCode);
-    };
-    initializePulitoreCodeGenerator();
-  }, []);
-
   const handleChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => {
       const newState = { ...prev, [field]: value };
@@ -57,7 +48,9 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
         if (value) {
           // Se 'hasPulitore' viene spuntato e il codice non esiste, genera un nuovo codice
           if (!newState.pulitore_codice) {
-            newState.pulitore_codice = generateNextPulitoreCode();
+            findNextAvailablePulitoreCode().then(code => {
+              setFormData(current => ({ ...current, pulitore_codice: code }));
+            });
           }
         } else {
           // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
@@ -329,10 +322,14 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
           <Button
             type="button"
             onClick={async () => { // Modificato per essere async
-              await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
+              // Genera il prossimo codice FST disponibile
+              // await generateAndSetFustellaCode(); // This function is not defined in this component, it's in CaricoFustellaTab
 
-              const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
-              resetPulitoreCodeGenerator(maxPulitoreCode);
+              // Generate a new pulitore code if hasPulitore is true
+              let newPulitoreCode = '';
+              if (formData.hasPulitore) {
+                newPulitoreCode = await findNextAvailablePulitoreCode();
+              }
 
               setFormData(prev => ({
                 ...prev,
@@ -344,7 +341,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                 fustellatrice: '',
                 resa: '',
                 hasPulitore: false,
-                pulitore_codice: '',
+                pulitore_codice: newPulitoreCode, // Set the new code if hasPulitore was true
                 pinza_tagliata: false,
                 tasselli_intercambiabili: false,
                 nr_tasselli: null,

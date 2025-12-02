@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Polimero } from '@/types'; // Rimosso: StoricoMovimentoPolimero
 import * as notifications from '@/utils/notifications';
 import { useAuth } from '@/hooks/useAuth';
-import { resetPolimeroCodeGenerator, fetchMaxPolimeroCodeFromDB } from '@/utils/polimeroUtils';
+import { findNextAvailablePolimeroCode } from '@/utils/polimeroUtils'; // Updated import
 
 export function usePolimeri() {
   const [polimeri, setPolimeri] = useState<Polimero[]>([]);

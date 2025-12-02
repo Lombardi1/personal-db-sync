@@ -4,7 +4,7 @@ import * as notifications from './notifications'; // Aggiornato a percorso relat
 import { generateNextCartoneCode } from './cartoneUtils';
 import { generateNextFscCommessa, resetFscCommessaGenerator } from './fscUtils'; // Importa le utilità FSC
 import { findNextAvailableFustellaCode } from './fustellaUtils'; // Importa la nuova funzione
-import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from './pulitoreUtils'; // Importa le utilità Pulitore
+import { findNextAvailablePulitoreCode } from './pulitoreUtils'; // Importa le utilità Pulitore
 
 export async function seedPurchaseOrders() {
   notifications.showInfo('Generazione ordini d\'acquisto di test in corso...');
@@ -43,7 +43,7 @@ export async function seedPurchaseOrders() {
     // Inizializza i generatori di codici per i dati di test
     resetFscCommessaGenerator(31, 2024); // Inizia da 31 per generare 32/24
     // Non è più necessario resettare un contatore globale per findNextAvailableFustellaCode
-    resetPulitoreCodeGenerator(0); // Inizializza generatore Pulitore
+    // Non è più necessario resettare un contatore globale per findNextAvailablePulitoreCode
     
     const ordersToInsert: (Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo'> & { articoli: ArticoloOrdineAcquisto[] })[] = [];
 
@@ -245,7 +245,7 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-08-01',
             stato: 'in_attesa',
             hasPulitore: true,
-            pulitore_codice_fustella: generateNextPulitoreCode(),
+            pulitore_codice_fustella: await findNextAvailablePulitoreCode(),
             prezzo_pulitore: 50.00, // Prezzo del pulitore
             pinza_tagliata: true,
             tasselli_intercambiabili: false,
