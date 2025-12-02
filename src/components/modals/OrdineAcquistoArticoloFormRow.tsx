@@ -141,11 +141,7 @@ export function OrdineAcquistoArticoloFormRow({
       ? currentArticle.prezzo_pulitore.toFixed(3).replace('.', ',')
       : ''
   );
-  const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => 
-    !isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null
-      ? currentArticle.quantita.toFixed(3).replace('.', ',')
-      : ''
-  );
+  // Rimosso: const [displayQuantita, setDisplayQuantita] = React.useState<string>(...); // Rimosso per Fustelle/Pulitore
 
   // State for Fustella lookup for standalone pulitore
   const [nrFustellaLookup, setNrFustellaLookup] = React.useState('');
@@ -308,7 +304,7 @@ export function OrdineAcquistoArticoloFormRow({
     setValue(`articoli.${index}.incollatura`, false, { shouldValidate: true });
     setValue(`articoli.${index}.incollatrice`, '', { shouldValidate: true });
     setValue(`articoli.${index}.tipo_incollatura`, '', { shouldValidate: true });
-    setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Default quantity
+    setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Default quantity to 1 for Fustelle/Pulitore
     setValue(`articoli.${index}.prezzo_unitario`, 0, { shouldValidate: true }); // Default prezzo unitario
     setDisplayPrezzoUnitario('0,000');
     setDisplayPrezzoPulitore('');
@@ -683,28 +679,11 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
                     id={`articoli.${index}.quantita`}
-                    type="text"
-                    value={displayQuantita}
-                    onChange={(e) => {
-                      const rawValue = e.target.value;
-                      setDisplayQuantita(rawValue);
-                      const numericValue = parseFloat(rawValue.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
-                      } else {
-                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                      if (!isNaN(numericValue)) {
-                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
-                      } else {
-                        setDisplayQuantita('');
-                      }
-                    }}
-                    placeholder="Es. 1"
-                    min="0"
+                    type="number" // Changed to number
+                    {...register(`articoli.${index}.quantita`, { valueAsNumber: true })}
+                    placeholder="1"
+                    min="1"
+                    step="1" // Added step="1"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -1061,6 +1040,7 @@ export function OrdineAcquistoArticoloFormRow({
                     {...register(`articoli.${index}.quantita`, { valueAsNumber: true })}
                     placeholder="1"
                     min="1"
+                    step="1" // Added step="1"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -1145,10 +1125,9 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.quantita`}
                     type="text"
-                    value={displayQuantita}
+                    value={currentArticle?.quantita !== undefined && currentArticle.quantita !== null ? currentArticle.quantita.toFixed(3).replace('.', ',') : ''}
                     onChange={(e) => {
                       const rawValue = e.target.value;
-                      setDisplayQuantita(rawValue);
                       const numericValue = parseFloat(rawValue.replace(',', '.'));
                       if (!isNaN(numericValue)) {
                         setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
@@ -1159,9 +1138,9 @@ export function OrdineAcquistoArticoloFormRow({
                     onBlur={(e) => {
                       const numericValue = parseFloat(e.target.value.replace(',', '.'));
                       if (!isNaN(numericValue)) {
-                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
+                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
                       } else {
-                        setDisplayQuantita('');
+                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
                       }
                     }}
                     placeholder="Es. 0,870"
