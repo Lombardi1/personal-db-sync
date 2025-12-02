@@ -122,7 +122,7 @@ export function useCartoni() {
     return { error };
   };
 
-  const spostaInGiacenza = async (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number, magazzino?: string) => {
+  const spostaInGiacenza = async (codice: string, ddt: string | null, dataArrivo: string, fogliEffettivi: number, magazzino: string | null) => {
     console.log(`[useCartoni - spostaInGiacenza] Inizio operazione per codice: ${codice}`);
     console.log(`[useCartoni - spostaInGiacenza] Parametri ricevuti: ddt='${ddt}', dataArrivo='${dataArrivo}', fogliEffettivi=${fogliEffettivi}, magazzino='${magazzino}'`);
 
@@ -134,19 +134,19 @@ export function useCartoni() {
     }
     console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, ordine);
 
-    const fogliFinali = fogliEffettivi !== undefined ? fogliEffettivi : ordine.fogli;
+    const fogliFinali = fogliEffettivi; // fogliEffettivi è ora sempre un numero
     const magazzinoFinale = magazzino; 
     
-    const cartoneGiacenza = { 
+    const cartoneGiacenza: Cartone = { // Specificato il tipo Cartone
       ...ordine, 
-      ddt, 
+      ddt, // Usato direttamente come string | null
       data_arrivo: dataArrivo, 
       fogli: fogliFinali, 
-      magazzino: magazzinoFinale,
+      magazzino: magazzinoFinale, // Usato direttamente come string | null
       fsc: ordine.fsc,
       alimentare: ordine.alimentare,
-      rif_commessa_fsc: ordine.rif_commessa_fsc || null, // Ensure it's null if empty/undefined
-      data_consegna: ordine.data_consegna || null, // Ensure it's null if empty/undefined
+      rif_commessa_fsc: ordine.rif_commessa_fsc || null,
+      data_consegna: ordine.data_consegna || null,
     };
     delete cartoneGiacenza.confermato; // 'confermato' è specifico della tabella 'ordini'
     
@@ -271,7 +271,7 @@ export function useCartoni() {
       return { error: new Error('Cartone non trovato negli esauriti.') };
     }
 
-    const cartonePerGiacenza: Omit<Cartone, 'id' | 'created_at' | 'confermato'> = {
+    const cartonePerGiacenza: Cartone = { // Specificato il tipo Cartone
       codice: cartoneEsaurito.codice,
       fornitore: cartoneEsaurito.fornitore,
       ordine: cartoneEsaurito.ordine,
@@ -281,15 +281,15 @@ export function useCartoni() {
       fogli: cartoneEsaurito.fogli > 0 ? cartoneEsaurito.fogli : 1,
       cliente: cartoneEsaurito.cliente,
       lavoro: cartoneEsaurito.lavoro,
-      magazzino: cartoneEsaurito.magazzino,
+      magazzino: cartoneEsaurito.magazzino, // Mantenuto il magazzino esistente
       prezzo: cartoneEsaurito.prezzo,
       note: cartoneEsaurito.note,
-      ddt: null,
-      data_arrivo: null,
-      data_consegna: new Date().toISOString().split('T')[0],
+      ddt: null, // DDT è null quando riportato da esauriti
+      data_arrivo: new Date().toISOString().split('T')[0], // Data di arrivo odierna
+      data_consegna: cartoneEsaurito.data_consegna || null,
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
-      rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null, // Ensure it's null if empty/undefined
+      rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
     };
 
     try {
@@ -349,9 +349,9 @@ export function useCartoni() {
       return { error: new Error('Cartone non trovato') };
     }
 
-    const ordine = { ...cartone };
-    delete ordine.ddt;
-    delete ordine.data_arrivo;
+    const ordine: Cartone = { ...cartone };
+    ordine.ddt = null; // DDT è null quando riportato in ordini
+    ordine.data_arrivo = undefined; // data_arrivo non esiste in ordini
     
     ordine.confermato = true; 
     if (!ordine.data_consegna) {

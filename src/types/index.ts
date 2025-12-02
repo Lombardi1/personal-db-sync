@@ -2,14 +2,14 @@ export interface Cartone {
   codice: string;
   fornitore: string;
   ordine: string;
-  ddt?: string;
+  ddt: string | null; // Modificato per accettare null
   tipologia: string;
   formato: string;
   grammatura: string;
   fogli: number;
   cliente: string;
   lavoro: string;
-  magazzino: string;
+  magazzino: string | null; // Modificato per accettare null
   prezzo: number;
   data_arrivo?: string;
   data_consegna?: string;

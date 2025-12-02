@@ -6,7 +6,7 @@ interface ModalConfermaMagazzinoProps {
   codice: string;
   ordine: Cartone;
   onClose: () => void;
-  onConferma: (codice: string, ddt: string, dataArrivo: string, fogliEffettivi?: number, magazzino?: string) => Promise<{ error: any }>;
+  onConferma: (codice: string, ddt: string | null, dataArrivo: string, fogliEffettivi: number, magazzino: string | null) => Promise<{ error: any }>;
 }
 
 export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: ModalConfermaMagazzinoProps) {
@@ -31,7 +31,13 @@ export function ModalConfermaMagazzino({ codice, ordine, onClose, onConferma }: 
 
     onClose();
     
-    const { error } = await onConferma(codice, ddt, dataArrivo, fogliNum, magazzino.trim());
+    const { error } = await onConferma(
+      codice, 
+      ddt.trim() || null, // Passa null se la stringa è vuota
+      dataArrivo, 
+      fogliNum, 
+      magazzino.trim() || null // Passa null se la stringa è vuota
+    );
     if (!error) {
       const diff = fogliNum - ordine.fogli;
       const message = diff === 0 
