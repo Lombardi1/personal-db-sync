@@ -42,22 +42,5 @@ export async function findNextAvailableFustellaCode(): Promise<string> {
   return formattedCode;
 }
 
-/**
- * Fetches all existing Fustella codes from the database.
- * @returns An array of all existing Fustella codes.
- */
-export async function fetchAllFustellaCodes(): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('fustelle')
-    .select('codice');
-
-  if (error) {
-    console.error('Error fetching all fustella codes:', error);
-    return [];
-  }
-
-  return data ? data.map(fustella => fustella.codice) : [];
-}
-
 // Le funzioni generateNextFustellaCode e resetFustellaCodeGenerator non sono più necessarie
 // e vengono rimosse in favore di findNextAvailableFustellaCode.
