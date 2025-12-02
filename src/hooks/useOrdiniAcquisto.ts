@@ -3,12 +3,10 @@ import { supabase } from '@/lib/supabase';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone, Fustella } from '@/types';
 import { toast } from 'sonner';
 import { generateNextCartoneCode } from '@/utils/cartoneUtils';
-import { useCartoni } from './useCartoni'; // Importa useCartoni per refetchCartoniData
 
 export function useOrdiniAcquisto() {
   const [ordiniAcquisto, setOrdiniAcquisto] = useState<OrdineAcquisto[]>([]);
   const [loading, setLoading] = useState(true);
-  const { refetchCartoniData } = useCartoni(); // Ottieni la funzione per ricaricare i dati dei cartoni
 
   // 1. Define syncArticleInventoryStatus first, as it's a helper for others and has no internal dependencies on other useCallback functions in this file.
   const syncArticleInventoryStatus = useCallback(async (ordineAcquisto: OrdineAcquisto) => {
@@ -41,7 +39,6 @@ export function useOrdiniAcquisto() {
     // Step 2: Delete all articles of this order from 'ordini', 'giacenza', and 'fustelle'
     await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
     await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine);
-    await supabase.from('esauriti').delete().eq('ordine', ordineAcquisto.numero_ordine); // Aggiunto per pulire anche esauriti
     await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
 
     // Step 3: Re-insert/update based on the current state of ordineAcquisto.articoli
@@ -66,8 +63,11 @@ export function useOrdiniAcquisto() {
             continue;
           }
 
-          // Costruisci l'oggetto Cartone con i campi specifici per la tabella 'ordini' o 'giacenza'
-          const cartoneBase: Omit<Cartone, 'confermato' | 'data_consegna'> = {
+          // Find if this specific cartone had an existing entry in giacenza before deletion
+          const previousGiacenzaState = existingGiacenzaEntries?.find(e => e.codice === codiceCtn);
+
+          // Costruisci l'oggetto Cartone con i campi specifici per la tabella 'ordini'
+          const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
             codice: codiceCtn,
             fornitore: fornitoreNome,
             ordine: ordineAcquisto.numero_ordine,
@@ -77,20 +77,19 @@ export function useOrdiniAcquisto() {
             fogli: numFogli,
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
+            magazzino: '-', // Valore di default per la tabella 'ordini'
             prezzo: articolo.prezzo_unitario,
+            data_consegna: articolo.data_consegna_prevista,
             note: ordineAcquisto.note || '-',
             fsc: articolo.fsc,
             alimentare: articolo.alimentare,
             rif_commessa_fsc: articolo.rif_commessa_fsc || null,
-            // Campi di arrivo, ora presi da ArticoloOrdineAcquisto
-            ddt: articolo.ddt || null,
-            data_arrivo: articolo.data_arrivo || null,
-            magazzino: articolo.magazzino || null,
+            confermato: articolo.stato === 'confermato', // Imposta confermato in base allo stato dell'articolo
           };
 
           if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
-            console.log(`[syncArticleInventoryStatus] Inserting into 'ordini':`, JSON.stringify(cartoneBase, null, 2));
-            const { error: insertError } = await supabase.from('ordini').insert([{ ...cartoneBase, data_consegna: articolo.data_consegna_prevista, confermato: articolo.stato === 'confermato' }]);
+            console.log(`[syncArticleInventoryStatus] Inserting into 'ordini':`, JSON.stringify(cartoneForOrdini, null, 2)); // NEW LOG
+            const { error: insertError } = await supabase.from('ordini').insert([cartoneForOrdini]);
             if (insertError) {
               console.error(`[syncArticleInventoryStatus] Errore inserimento in ordini per cartone '${codiceCtn}':`, insertError);
               toast.error(`Errore inserimento in ordini: ${insertError.message}`);
@@ -98,32 +97,43 @@ export function useOrdiniAcquisto() {
               console.log(`[syncArticleInventoryStatus] Inserimento in 'ordini' riuscito per cartone '${codiceCtn}'.`);
             }
           } else if (articolo.stato === 'ricevuto') {
-            if (numFogli > 0) {
-              console.log(`[syncArticleInventoryStatus] Inserting into 'giacenza':`, JSON.stringify(cartoneBase, null, 2));
-              const { error: insertError } = await supabase.from('giacenza').insert([cartoneBase]);
-              if (insertError) {
-                console.error(`[syncArticleInventoryStatus] Errore inserimento in giacenza per cartone '${codiceCtn}':`, insertError);
-                toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
-              } else {
-                console.log(`[syncArticleInventoryStatus] Inserimento in 'giacenza' riuscito per cartone '${codiceCtn}'.`);
-              }
+            // Costruisci l'oggetto Cartone per la tabella 'giacenza'
+            const dataToInsertIntoGiacenza: Omit<Cartone, 'confermato' | 'data_consegna'> = {
+              codice: codiceCtn,
+              fornitore: fornitoreNome,
+              ordine: ordineAcquisto.numero_ordine,
+              tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
+              formato: articolo.formato || 'N/A',
+              grammatura: articolo.grammatura || 'N/A',
+              fogli: previousGiacenzaState?.fogli || numFogli, // Preserve manual fogli if exists, else use OA
+              cliente: articolo.cliente || 'N/A',
+              lavoro: articolo.lavoro || 'N/A',
+              prezzo: articolo.prezzo_unitario,
+              note: ordineAcquisto.note || '-',
+              fsc: articolo.fsc,
+              alimentare: articolo.alimentare,
+              rif_commessa_fsc: articolo.rif_commessa_fsc || null,
+              ddt: previousGiacenzaState?.ddt || null, // Preserve manual DDT
+              data_arrivo: previousGiacenzaState?.data_arrivo || new Date().toISOString().split('T')[0], // Preserve manual data_arrivo
+              magazzino: previousGiacenzaState?.magazzino || '-', // Preserve manual magazzino
+            };
+
+            const { error: insertError } = await supabase.from('giacenza').insert([dataToInsertIntoGiacenza]);
+            if (insertError) {
+              console.error(`[syncArticleInventoryStatus] Errore inserimento in giacenza per cartone '${codiceCtn}':`, insertError);
+              toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
             } else {
-              // Se lo stato è 'ricevuto' ma i fogli sono 0, va in esauriti
-              console.log(`[syncArticleInventoryStatus] Inserting into 'esauriti' (fogli 0):`, JSON.stringify(cartoneBase, null, 2));
-              const { error: insertError } = await supabase.from('esauriti').insert([{ ...cartoneBase, fogli: 0 }]);
-              if (insertError) {
-                console.error(`[syncArticleInventoryStatus] Errore inserimento in esauriti per cartone '${codiceCtn}':`, insertError);
-                toast.error(`Errore inserimento in esauriti: ${insertError.message}`);
-              } else {
-                console.log(`[syncArticleInventoryStatus] Inserimento in 'esauriti' riuscito per cartone '${codiceCtn}'.`);
-              }
+              console.log(`[syncArticleInventoryStatus] Inserimento in 'giacenza' riuscito per cartone '${codiceCtn}'.`);
             }
           }
         } else if (isFustelleFornitore) {
           console.log(`[syncArticleInventoryStatus] Articolo per fornitore Fustelle. fustella_codice: '${articolo.fustella_codice}', pulitore_codice_fustella: '${articolo.pulitore_codice_fustella}', codice_fornitore_fustella: '${articolo.codice_fornitore_fustella}'`);
 
-          if (articolo.fustella_codice) { // Se è una fustella
+          // Case 1: Article is a Fustella (has fustella_codice)
+          if (articolo.fustella_codice) {
             const fustellaCodice = articolo.fustella_codice;
+            const previousFustellaState = existingFustelleEntries?.find(e => e.codice === fustellaCodice);
+
             const fustellaBase: Fustella = {
               codice: fustellaCodice,
               fornitore: fornitoreNome,
@@ -132,7 +142,7 @@ export function useOrdiniAcquisto() {
               lavoro: articolo.lavoro || 'N/A',
               fustellatrice: articolo.fustellatrice || null,
               resa: articolo.resa_fustella || null,
-              pulitore_codice: articolo.pulitore_codice_fustella || null,
+              pulitore_codice: previousFustellaState?.pulitore_codice || (articolo.hasPulitore ? articolo.pulitore_codice_fustella || null : null), // Preserve manual pulitore_codice
               pinza_tagliata: articolo.pinza_tagliata || false,
               tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
               nr_tasselli: articolo.nr_tasselli || null,
@@ -140,7 +150,7 @@ export function useOrdiniAcquisto() {
               incollatrice: articolo.incollatrice || null,
               tipo_incollatura: articolo.tipo_incollatura || null,
               disponibile: articolo.stato === 'ricevuto',
-              data_creazione: new Date().toISOString(),
+              data_creazione: previousFustellaState?.data_creazione || new Date().toISOString(),
               ultima_modifica: new Date().toISOString(),
               ordine_acquisto_numero: ordineAcquisto.numero_ordine,
             };
@@ -150,7 +160,9 @@ export function useOrdiniAcquisto() {
               console.error(`[syncArticleInventoryStatus] Errore inserimento fustella '${fustellaCodice}':`, insertError);
               toast.error(`Errore inserimento fustella: ${insertError.message}`);
             }
-          } else if (articolo.pulitore_codice_fustella && articolo.codice_fornitore_fustella) {
+          } 
+          // Case 2: Article is a Standalone Pulitore (has pulitore_codice_fustella but NO fustella_codice)
+          else if (articolo.pulitore_codice_fustella && articolo.codice_fornitore_fustella) {
             console.log(`[syncArticleInventoryStatus] Identificato come Pulitore Autonomo. Pulitore Codice: '${articolo.pulitore_codice_fustella}', Target Fustella Codice Fornitore: '${articolo.codice_fornitore_fustella}'`);
             const pulitoreCodice = articolo.pulitore_codice_fustella;
             const targetFustellaCodiceFornitore = articolo.codice_fornitore_fustella;
@@ -163,6 +175,7 @@ export function useOrdiniAcquisto() {
 
             if (existingFustellaForPulitore) {
               console.log(`[syncArticleInventoryStatus] Trovata fustella esistente per pulitore: ${existingFustellaForPulitore.codice}. Aggiornamento pulitore_codice.`);
+              // Only update if the pulitore_codice is different or null
               if (existingFustellaForPulitore.pulitore_codice !== pulitoreCodice) {
                 const { error: updateError } = await supabase
                   .from('fustelle')
@@ -190,9 +203,7 @@ export function useOrdiniAcquisto() {
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
       }
     }
-    // Chiamiamo refetchCartoniData qui per assicurarci che i dati del magazzino siano aggiornati
-    await refetchCartoniData();
-  }, [refetchCartoniData]); // Aggiungi refetchCartoniData alle dipendenze
+  }, []);
 
   const loadOrdiniAcquisto = useCallback(async () => {
     setLoading(true);
@@ -257,13 +268,8 @@ export function useOrdiniAcquisto() {
     }
   }, []);
 
-  const updateArticleInPurchaseOrder = useCallback(async (
-    orderNumeroOrdine: string,
-    articleIdentifier: string,
-    newArticleStatus: ArticoloOrdineAcquisto['stato'],
-    partialArticleData: Partial<ArticoloOrdineAcquisto> = {}
-  ) => {
-    console.log(`[useOrdiniAcquisto - updateArticleInPurchaseOrder] Inizio per OA: '${orderNumeroOrdine}', Articolo: '${articleIdentifier}', Nuovo stato: '${newArticleStatus}', Dati parziali:`, partialArticleData);
+  const updateArticleStatusInOrder = useCallback(async (orderNumeroOrdine: string, articleIdentifier: string, newArticleStatus: ArticoloOrdineAcquisto['stato']) => {
+    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Inizio per OA: '${orderNumeroOrdine}', Articolo: '${articleIdentifier}', Nuovo stato: '${newArticleStatus}'`);
 
     const { data: ordineAcquistoToUpdate, error: fetchError } = await supabase
       .from('ordini_acquisto')
@@ -272,23 +278,18 @@ export function useOrdiniAcquisto() {
       .single();
 
     if (fetchError || !ordineAcquistoToUpdate) {
-      console.error(`[useOrdiniAcquisto - updateArticleInPurchaseOrder] Errore recupero ordine d'acquisto '${orderNumeroOrdine.trim()}':`, fetchError);
+      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore recupero ordine d'acquisto '${orderNumeroOrdine.trim()}':`, fetchError);
       toast.error(`Errore recupero ordine d'acquisto per aggiornamento articolo: ${fetchError?.message || 'Ordine non trovato o errore sconosciuto.'}`);
       return { success: false, error: fetchError };
     }
-    console.log(`[useOrdiniAcquisto - updateArticleInPurchaseOrder] Ordine d'acquisto trovato:`, ordineAcquistoToUpdate);
+    console.log(`[useOrdiniAcquisto - updateArticleStatusInOrder] Ordine d'acquisto trovato:`, ordineAcquistoToUpdate);
 
     let updatedArticles = (ordineAcquistoToUpdate.articoli || []) as ArticoloOrdineAcquisto[];
     let articleFound = false;
     updatedArticles = updatedArticles.map(art => {
-      const isMatch = (art.codice_ctn && art.codice_ctn === articleIdentifier) ||
-                      (art.fustella_codice && art.fustella_codice === articleIdentifier) ||
-                      (art.pulitore_codice_fustella && art.pulitore_codice_fustella === articleIdentifier) ||
-                      (art.descrizione && art.descrizione === articleIdentifier);
-
-      if (isMatch) {
+      if ((art.codice_ctn && art.codice_ctn === articleIdentifier) || (art.fustella_codice && art.fustella_codice === articleIdentifier) || (art.pulitore_codice_fustella && art.pulitore_codice_fustella === articleIdentifier) || (art.descrizione && art.descrizione === articleIdentifier)) {
         articleFound = true;
-        return { ...art, ...partialArticleData, stato: newArticleStatus };
+        return { ...art, stato: newArticleStatus };
       }
       return art;
     });
@@ -350,7 +351,7 @@ export function useOrdiniAcquisto() {
       .single();
 
     if (fornitoreError || !fornitoreData) {
-      console.error(`[useOrdiniAcquisto - updateArticleInPurchaseOrder] Errore recupero dettagli fornitore per OA: ${updatedOrdine.numero_ordine}`, fornitoreError);
+      console.error(`[useOrdiniAcquisto - updateArticleStatusInOrder] Errore recupero dettagli fornitore per OA: ${updatedOrdine.numero_ordine}`, fornitoreError);
       toast.error(`Errore recupero dettagli fornitore per sincronizzazione inventario.`);
       return { success: false, error: fornitoreError };
     }
@@ -597,7 +598,6 @@ export function useOrdiniAcquisto() {
 
       await supabase.from('ordini').delete().eq('ordine', numeroOrdine);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
-      await supabase.from('esauriti').delete().eq('ordine', numeroOrdine); // Aggiunto per pulire anche esauriti
       await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', numeroOrdine);
 
       const { error } = await supabase
@@ -639,8 +639,8 @@ export function useOrdiniAcquisto() {
     loading,
     addOrdineAcquisto,
     updateOrdineAcquisto,
-    updateOrdineAcquistoStatus, 
-    updateArticleInPurchaseOrder, 
+    updateOrdineAcquistoStatus,
+    updateArticleStatusInOrder,
     cancelOrdineAcquisto,
     deleteOrdineAcquistoPermanently,
     loadOrdiniAcquisto,
