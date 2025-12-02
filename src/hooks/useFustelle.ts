@@ -3,8 +3,8 @@ import { supabase } from '@/lib/supabase';
 import { Fustella } from '@/types'; // Rimosso: StoricoMovimentoFustella
 import * as notifications from '@/utils/notifications';
 import { useAuth } from '@/hooks/useAuth';
-import { resetFustellaCodeGenerator, fetchMaxFustellaCodeFromDB } from '@/utils/fustellaUtils';
-import { resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
+import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la nuova funzione
+import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione aggiornata
 
 export function useFustelle() {
   const [fustelle, setFustelle] = useState<Fustella[]>([]);

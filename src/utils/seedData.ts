@@ -4,7 +4,7 @@ import * as notifications from './notifications'; // Aggiornato a percorso relat
 import { generateNextCartoneCode } from './cartoneUtils';
 import { generateNextFscCommessa, resetFscCommessaGenerator } from './fscUtils'; // Importa le utilità FSC
 import { findNextAvailableFustellaCode } from './fustellaUtils'; // Importa la nuova funzione
-import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from './pulitoreUtils'; // Importa le utilità Pulitore
+import { generateNextPulitoreCode } from './pulitoreUtils'; // Importa la funzione aggiornata
 
 export async function seedPurchaseOrders() {
   notifications.showInfo('Generazione ordini d\'acquisto di test in corso...');
@@ -43,7 +43,7 @@ export async function seedPurchaseOrders() {
     // Inizializza i generatori di codici per i dati di test
     resetFscCommessaGenerator(31, 2024); // Inizia da 31 per generare 32/24
     // Non è più necessario resettare un contatore globale per findNextAvailableFustellaCode
-    resetPulitoreCodeGenerator(0); // Inizializza generatore Pulitore
+    // Non è più necessario resettare un contatore globale per generateNextPulitoreCode
     
     const ordersToInsert: (Omit<OrdineAcquisto, 'id' | 'created_at' | 'fornitore_nome' | 'fornitore_tipo'> & { articoli: ArticoloOrdineAcquisto[] })[] = [];
 
@@ -245,7 +245,7 @@ export async function seedPurchaseOrders() {
             data_consegna_prevista: '2024-08-01',
             stato: 'in_attesa',
             hasPulitore: true,
-            pulitore_codice_fustella: generateNextPulitoreCode(),
+            pulitore_codice_fustella: await generateNextPulitoreCode(), // Genera codice pulitore
             prezzo_pulitore: 50.00, // Prezzo del pulitore
             pinza_tagliata: true,
             tasselli_intercambiabili: false,
@@ -365,7 +365,8 @@ export async function seedPurchaseOrders() {
               notifications.showError(`Errore aggiunta cartone ${codiceCtn} a giacenza.`);
             }
           }
-        } else if (fornitoreTipo === 'Fustelle' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) {
+        }
+      } else if (fornitoreTipo === 'Fustelle' && (newOrdine.stato === 'confermato' || newOrdine.stato === 'ricevuto' || newOrdine.stato === 'in_attesa' || newOrdine.stato === 'inviato')) {
           for (const articolo of articoli) {
             const fustellaCodice = articolo.fustella_codice;
             const pulitoreCodice = articolo.pulitore_codice_fustella;
