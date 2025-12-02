@@ -215,7 +215,7 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                   onCheckedChange={(checked) => handleChange('pinza_tagliata', checked)}
                 />
                 <Label htmlFor="pinza_tagliata" className="text-xs sm:text-sm">Pinza Tagliata</Label>
-              </div>
+            </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="tasselli_intercambiabili"
@@ -235,8 +235,8 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
                   id="pulitore_codice"
                   type="text"
                   value={formData.pulitore_codice}
-                  disabled
-                  className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md bg-gray-100 text-xs sm:text-sm font-mono font-bold"
+                  readOnly // Modificato da disabled
+                  className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold" // Rimosso bg-gray-100
                 />
               </div>
             )}
@@ -328,14 +328,38 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
           </Button>
           <Button
             type="button"
-            onClick={onClose}
+            onClick={async () => { // Modificato per essere async
+              await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
+
+              const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+              resetPulitoreCodeGenerator(maxPulitoreCode);
+
+              setFormData(prev => ({
+                ...prev,
+                // codice: nextFustellaCode, // Già aggiornato da generateAndSetFustellaCode
+                fornitore: '',
+                codice_fornitore: '',
+                cliente: '',
+                lavoro: '',
+                fustellatrice: '',
+                resa: '',
+                hasPulitore: false,
+                pulitore_codice: '',
+                pinza_tagliata: false,
+                tasselli_intercambiabili: false,
+                nr_tasselli: null,
+                incollatura: false,
+                incollatrice: '',
+                tipo_incollatura: '',
+              }));
+            }}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
           >
-            <i className="fas fa-times mr-1 sm:mr-2"></i>
-            Annulla
+            <i className="fas fa-eraser mr-1 sm:mr-2"></i>
+            Pulisci Form
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </div>
   );
 }

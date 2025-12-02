@@ -285,8 +285,7 @@ export function OrdineAcquistoArticoloFormRow({
                   id={`articoli.${index}.codice_ctn`}
                   {...register(`articoli.${index}.codice_ctn`)}
                   readOnly
-                  disabled={true}
-                  className="text-sm font-mono font-bold bg-gray-100"
+                  className="text-sm font-mono font-bold" // Rimosso bg-gray-100
                 />
                 {errors.articoli?.[index]?.codice_ctn && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_ctn?.message}</p>}
               </div>
@@ -520,8 +519,7 @@ export function OrdineAcquistoArticoloFormRow({
                       id={`articoli.${index}.rif_commessa_fsc`}
                       {...register(`articoli.${index}.rif_commessa_fsc`)}
                       readOnly
-                      disabled={true}
-                      className="text-sm font-mono font-bold bg-gray-100"
+                      className="text-sm font-mono font-bold" // Rimosso bg-gray-100
                     />
                     {errors.articoli?.[index]?.rif_commessa_fsc && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.rif_commessa_fsc?.message}</p>}
                   </div>
@@ -558,8 +556,7 @@ export function OrdineAcquistoArticoloFormRow({
                   id={`articoli.${index}.fustella_codice`}
                   {...register(`articoli.${index}.fustella_codice`)}
                   readOnly
-                  disabled={true}
-                  className="text-sm font-mono font-bold bg-gray-100"
+                  className="text-sm font-mono font-bold" // Rimosso bg-gray-100
                 />
                 {errors.articoli?.[index]?.fustella_codice && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fustella_codice?.message}</p>}
               </div>
@@ -771,8 +768,7 @@ export function OrdineAcquistoArticoloFormRow({
                         id={`articoli.${index}.pulitore_codice_fustella`}
                         {...register(`articoli.${index}.pulitore_codice_fustella`)}
                         readOnly
-                        disabled={true}
-                        className="text-sm font-mono font-bold bg-gray-100"
+                        className="text-sm font-mono font-bold" // Rimosso bg-gray-100
                       />
                       {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
                     </div>
@@ -932,8 +928,7 @@ export function OrdineAcquistoArticoloFormRow({
                   id={`articoli.${index}.pulitore_codice_fustella`}
                   {...register(`articoli.${index}.pulitore_codice_fustella`)}
                   readOnly
-                  disabled={true}
-                  className="text-sm font-mono font-bold bg-gray-100"
+                  className="text-sm font-mono font-bold" // Rimosso bg-gray-100
                 />
                 {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
               </div>

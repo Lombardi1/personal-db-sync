@@ -142,8 +142,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
               id="codice"
               type="text"
               value={formData.codice}
-              disabled
-              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md bg-gray-100 text-xs sm:text-sm font-mono font-bold"
+              readOnly // Modificato da disabled
+              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold" // Rimosso bg-gray-100
             />
           </div>
 
@@ -272,8 +272,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
                 id="pulitore_codice"
                 type="text"
                 value={formData.pulitore_codice}
-                disabled
-                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md bg-gray-100 text-xs sm:text-sm font-mono font-bold"
+                readOnly // Modificato da disabled
+                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold" // Rimosso bg-gray-100
               />
             </div>
           )}
