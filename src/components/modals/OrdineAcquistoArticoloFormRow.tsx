@@ -133,26 +133,28 @@ export function OrdineAcquistoArticoloFormRow({
   // State for Fustella lookup for standalone pulitore
   const [nrFustellaLookup, setNrFustellaLookup] = React.useState('');
 
-  // Local states for price inputs to handle comma/dot display
+  // Local states for number inputs to handle comma/dot display and free typing
+  const [displayNumeroFogli, setDisplayNumeroFogli] = React.useState<string>(() => formatItalianNumber(currentArticle?.numero_fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => formatItalianNumber(currentArticle?.quantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
   const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => {
     const val = currentArticle?.prezzo_unitario;
     if (val === undefined || val === null) return '';
-    // Determine precision based on fornitore type
     if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
-      return formatItalianNumber(val, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Cartone/Generic
+      return formatItalianNumber(val, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
     } else if (isFustelleFornitore && articleType === 'fustella') {
-      return formatItalianNumber(val, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella
+      return formatItalianNumber(val, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-    return formatItalianNumber(val); // Fallback
+    return formatItalianNumber(val);
   });
+  const [displayPrezzoPulitore, setDisplayPrezzoPulitore] = React.useState<string>(() => formatItalianNumber(currentArticle?.prezzo_pulitore, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const [displayNrTasselli, setDisplayNrTasselli] = React.useState<string>(() => formatItalianNumber(currentArticle?.nr_tasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
 
-  const [displayPrezzoPulitore, setDisplayPrezzoPulitore] = React.useState<string>(() => {
-    const val = currentArticle?.prezzo_pulitore;
-    return formatItalianNumber(val, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore
-  });
 
   // Update local states when currentArticle changes from outside (e.g., initialData, reset)
   React.useEffect(() => {
+    setDisplayNumeroFogli(formatItalianNumber(currentArticle?.numero_fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+    setDisplayQuantita(formatItalianNumber(currentArticle?.quantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+    
     const puVal = currentArticle?.prezzo_unitario;
     if (puVal !== undefined && puVal !== null) {
       if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
@@ -166,9 +168,9 @@ export function OrdineAcquistoArticoloFormRow({
       setDisplayPrezzoUnitario('');
     }
 
-    const ppVal = currentArticle?.prezzo_pulitore;
-    setDisplayPrezzoPulitore(formatItalianNumber(ppVal, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-  }, [currentArticle?.prezzo_unitario, currentArticle?.prezzo_pulitore, isCartoneFornitore, isFustelleFornitore, articleType]);
+    setDisplayPrezzoPulitore(formatItalianNumber(currentArticle?.prezzo_pulitore, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setDisplayNrTasselli(formatItalianNumber(currentArticle?.nr_tasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  }, [currentArticle?.numero_fogli, currentArticle?.quantita, currentArticle?.prezzo_unitario, currentArticle?.prezzo_pulitore, currentArticle?.nr_tasselli, isCartoneFornitore, isFustelleFornitore, articleType]);
 
 
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura for Cartone
@@ -195,8 +197,9 @@ export function OrdineAcquistoArticoloFormRow({
   // Update the 'quantita' field (which stores kg for cartone) whenever inputs change
   React.useEffect(() => {
     if (isCartoneFornitore) {
-      console.log(`[Article ${index}] Setting quantita (kg) to: ${calculatedQuantitaKg.toFixed(3)}`);
-      setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true });
+      const newQuantita = parseFloat(calculatedQuantitaKg.toFixed(3));
+      setValue(`articoli.${index}.quantita`, newQuantita, { shouldValidate: true });
+      setDisplayQuantita(formatItalianNumber(newQuantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
     }
   }, [calculatedQuantitaKg, index, setValue, isCartoneFornitore]);
 
@@ -231,9 +234,11 @@ export function OrdineAcquistoArticoloFormRow({
     if (isFustelleFornitore && articleType === 'fustella' && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
       console.log(`[Article ${index}] Setting nr_tasselli to 0.`);
       setValue(`articoli.${index}.nr_tasselli`, 0, { shouldValidate: true });
+      setDisplayNrTasselli(formatItalianNumber(0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
     } else if (isFustelleFornitore && articleType === 'fustella' && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
       console.log(`[Article ${index}] Clearing nr_tasselli.`);
       setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
+      setDisplayNrTasselli('');
     }
   }, [isFustelleFornitore, articleType, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
 
@@ -265,29 +270,22 @@ export function OrdineAcquistoArticoloFormRow({
 
           if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
             console.error('Error fetching fustella for pulitore lookup:', error);
-            // notifications.showError(`Errore ricerca fustella: ${error.message}`); // Rimosso per non essere troppo intrusivo
             setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true });
           } else if (data) {
             const foundCodiceFornitore = data.codice_fornitore || data.codice; // Prefer codice_fornitore, fallback to codice
             setValue(`articoli.${index}.codice_fornitore_fustella`, foundCodiceFornitore, { shouldValidate: true });
-            // Update description based on found codice_fornitore
             const newPulitoreDescription = foundCodiceFornitore 
               ? `Pulitore per Fustella ${foundCodiceFornitore}` 
               : `Pulitore per fustella`;
             setValue(`articoli.${index}.descrizione`, newPulitoreDescription, { shouldValidate: true });
-            // notifications.showInfo(`Fustella trovata. Codice Fornitore: ${foundCodiceFornitore}`); // Rimosso per non essere troppo intrusivo
           } else {
-            // notifications.showInfo('Nessuna fustella trovata con il codice/codice fornitore inserito.'); // Rimosso per non essere troppo intrusivo
             setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true });
-            // Reset description if no fustella found
             setValue(`articoli.${index}.descrizione`, 'Pulitore per fustella', { shouldValidate: true });
           }
         } catch (e: any) {
           console.error('Unexpected error during fustella lookup:', e);
-          // notifications.showError(`Errore inatteso durante la ricerca fustella: ${e.message}`); // Rimosso per non essere troppo intrusivo
         }
       } else if (isFustelleFornitore && articleType === 'pulitore' && !nrFustellaLookup.trim()) {
-        // If lookup field is cleared, clear codice_fornitore_fustella and reset description
         setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true });
         setValue(`articoli.${index}.descrizione`, 'Pulitore per fustella', { shouldValidate: true });
       }
@@ -335,6 +333,9 @@ export function OrdineAcquistoArticoloFormRow({
     setValue(`articoli.${index}.prezzo_unitario`, 0, { shouldValidate: true }); // Default prezzo unitario
     setDisplayPrezzoUnitario(formatItalianNumber(0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })); // Reset display state
     setDisplayPrezzoPulitore(formatItalianNumber(0, { minimumFractionDigits: 2, maximumFractionDigits: 2 })); // Reset display state
+    setDisplayNumeroFogli('');
+    setDisplayQuantita('');
+    setDisplayNrTasselli('');
     setNrFustellaLookup(''); // Clear lookup field
 
     if (newType === 'fustella') {
@@ -453,15 +454,13 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.numero_fogli`} className="text-xs">Fogli *</Label>
                   <Input
                     id={`articoli.${index}.numero_fogli`}
-                    type="text" // Changed to text
-                    value={formatItalianNumber(currentNumeroFogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    onChange={(e) => {
-                      const num = parseItalianNumber(e.target.value);
-                      setValue(`articoli.${index}.numero_fogli`, num, { shouldValidate: true });
-                    }}
+                    type="text"
+                    value={displayNumeroFogli}
+                    onChange={(e) => setDisplayNumeroFogli(e.target.value)}
                     onBlur={(e) => {
                       const num = parseItalianNumber(e.target.value);
                       setValue(`articoli.${index}.numero_fogli`, num, { shouldValidate: true });
+                      setDisplayNumeroFogli(formatItalianNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
                     }}
                     placeholder="0"
                     disabled={isSubmitting || isOrderCancelled}
@@ -473,7 +472,7 @@ export function OrdineAcquistoArticoloFormRow({
                 <div className="col-span-1">
                   <Label className="text-xs">Quantità (kg)</Label>
                   <Input
-                    value={formatItalianNumber(calculatedQuantitaKg, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                    value={displayQuantita}
                     readOnly
                     disabled={true}
                     className="text-sm font-bold bg-gray-100"
@@ -486,25 +485,16 @@ export function OrdineAcquistoArticoloFormRow({
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
                       type="text"
-                      value={displayPrezzoUnitario} // Use local state for display
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
-                        const numericValue = parseItalianNumber(rawValue);
-                        if (numericValue !== undefined) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
+                      value={displayPrezzoUnitario}
+                      onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
                       onBlur={(e) => {
                         const numericValue = parseItalianNumber(e.target.value);
                         if (numericValue !== undefined) {
                           const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true }); // Store the actual numeric value
+                          setDisplayPrezzoUnitario(formattedValue);
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
+                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
@@ -717,14 +707,12 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.quantita`}
                     type="text" // Changed to text
-                    value={formatItalianNumber(currentQuantita, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    onChange={(e) => {
-                      const num = parseItalianNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                    }}
+                    value={displayQuantita}
+                    onChange={(e) => setDisplayQuantita(e.target.value)}
                     onBlur={(e) => {
                       const num = parseItalianNumber(e.target.value);
                       setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                      setDisplayQuantita(formatItalianNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
                     }}
                     placeholder="Es. 1"
                     disabled={isSubmitting || isOrderCancelled}
@@ -738,25 +726,16 @@ export function OrdineAcquistoArticoloFormRow({
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
                       type="text" // Changed to text
-                      value={displayPrezzoUnitario} // Use local state for display
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
-                        const numericValue = parseItalianNumber(rawValue);
-                        if (numericValue !== undefined) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
+                      value={displayPrezzoUnitario}
+                      onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
                       onBlur={(e) => {
                         const numericValue = parseItalianNumber(e.target.value);
                         if (numericValue !== undefined) {
                           const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella price
-                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
+                          setDisplayPrezzoUnitario(formattedValue);
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
+                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
@@ -881,25 +860,16 @@ export function OrdineAcquistoArticoloFormRow({
                         <Input
                           id={`articoli.${index}.prezzo_pulitore`}
                           type="text" // Changed to text
-                          value={displayPrezzoPulitore} // Use local state for display
-                          onChange={(e) => {
-                            const rawValue = e.target.value;
-                            setDisplayPrezzoPulitore(rawValue); // Update local state immediately
-                            const numericValue = parseItalianNumber(rawValue);
-                            if (numericValue !== undefined) {
-                              setValue(`articoli.${index}.prezzo_pulitore`, numericValue, { shouldValidate: true });
-                            } else {
-                              setValue(`articoli.${index}.prezzo_pulitore`, undefined, { shouldValidate: true });
-                            }
-                          }}
+                          value={displayPrezzoPulitore}
+                          onChange={(e) => setDisplayPrezzoPulitore(e.target.value)}
                           onBlur={(e) => {
                             const numericValue = parseItalianNumber(e.target.value);
                             if (numericValue !== undefined) {
                               const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
-                              setDisplayPrezzoPulitore(formattedValue); // Format on blur
+                              setDisplayPrezzoPulitore(formattedValue);
                               setValue(`articoli.${index}.prezzo_pulitore`, numericValue, { shouldValidate: true });
                             } else {
-                              setDisplayPrezzoPulitore(''); // Clear if not a valid number
+                              setDisplayPrezzoPulitore('');
                               setValue(`articoli.${index}.prezzo_pulitore`, undefined, { shouldValidate: true });
                             }
                           }}
@@ -946,14 +916,12 @@ export function OrdineAcquistoArticoloFormRow({
                     <Input
                       id={`articoli.${index}.nr_tasselli`}
                       type="text" // Changed to text
-                      value={formatItalianNumber(currentNrTasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                      onChange={(e) => {
-                        const num = parseItalianNumber(e.target.value);
-                        setValue(`articoli.${index}.nr_tasselli`, num, { shouldValidate: true });
-                      }}
+                      value={displayNrTasselli}
+                      onChange={(e) => setDisplayNrTasselli(e.target.value)}
                       onBlur={(e) => {
                         const num = parseItalianNumber(e.target.value);
                         setValue(`articoli.${index}.nr_tasselli`, num, { shouldValidate: true });
+                        setDisplayNrTasselli(formatItalianNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
                       }}
                       placeholder="0"
                       disabled={isSubmitting || isOrderCancelled}
@@ -1082,14 +1050,12 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.quantita`}
                     type="text" // Changed to text
-                    value={formatItalianNumber(currentQuantita, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    onChange={(e) => {
-                      const num = parseItalianNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                    }}
+                    value={displayQuantita}
+                    onChange={(e) => setDisplayQuantita(e.target.value)}
                     onBlur={(e) => {
                       const num = parseItalianNumber(e.target.value);
                       setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                      setDisplayQuantita(formatItalianNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
                     }}
                     placeholder="Es. 1"
                     disabled={isSubmitting || isOrderCancelled}
@@ -1103,25 +1069,16 @@ export function OrdineAcquistoArticoloFormRow({
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
                       type="text" // Changed to text
-                      value={displayPrezzoUnitario} // Use local state for display
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
-                        const numericValue = parseItalianNumber(rawValue);
-                        if (numericValue !== undefined) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
+                      value={displayPrezzoUnitario}
+                      onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
                       onBlur={(e) => {
                         const numericValue = parseItalianNumber(e.target.value);
                         if (numericValue !== undefined) {
                           const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
-                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
+                          setDisplayPrezzoUnitario(formattedValue);
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
+                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
@@ -1234,14 +1191,12 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.quantita`}
                     type="text" // Changed to text
-                    value={formatItalianNumber(currentQuantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                    onChange={(e) => {
-                      const num = parseItalianNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                    }}
+                    value={displayQuantita}
+                    onChange={(e) => setDisplayQuantita(e.target.value)}
                     onBlur={(e) => {
                       const num = parseItalianNumber(e.target.value);
                       setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
+                      setDisplayQuantita(formatItalianNumber(num, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
                     }}
                     placeholder="Es. 0,870" // Changed to comma for placeholder
                     disabled={isSubmitting || isOrderCancelled}
@@ -1255,25 +1210,16 @@ export function OrdineAcquistoArticoloFormRow({
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
                       type="text" // Changed to text
-                      value={displayPrezzoUnitario} // Use local state for display
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
-                        const numericValue = parseItalianNumber(rawValue);
-                        if (numericValue !== undefined) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
+                      value={displayPrezzoUnitario}
+                      onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
                       onBlur={(e) => {
                         const numericValue = parseItalianNumber(e.target.value);
                         if (numericValue !== undefined) {
                           const formattedValue = formatItalianNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Generic price
-                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
+                          setDisplayPrezzoUnitario(formattedValue);
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
+                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
