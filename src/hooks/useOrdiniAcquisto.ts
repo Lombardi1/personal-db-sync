@@ -17,11 +17,6 @@ export function useOrdiniAcquisto() {
 
     console.log(`[syncArticleInventoryStatus] Fornitore Type: ${ordineAcquisto.fornitore_tipo}, isCartoneFornitore: ${isCartoneFornitore}, isFustelleFornitore: ${isFustelleFornitore}`);
 
-    // Elimina tutti gli articoli di questo ordine dalle tabelle 'ordini', 'giacenza' e 'fustelle'
-    await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
-    await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine);
-    await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
-
     if (!Array.isArray(ordineAcquisto.articoli)) {
       console.error(`[syncArticleInventoryStatus] Errore: ordineAcquisto.articoli non è un array per OA: ${ordineAcquisto.numero_ordine}. Tipo: ${typeof ordineAcquisto.articoli}, Valore:`, ordineAcquisto.articoli);
       toast.error(`Errore interno: Articoli dell'ordine non validi per ${ordineAcquisto.numero_ordine}.`);
@@ -36,6 +31,17 @@ export function useOrdiniAcquisto() {
       return;
     }
 
+    // Step 1: Fetch existing giacenza/ordini/fustelle entries for this order BEFORE any deletion
+    const { data: existingGiacenzaEntries } = await supabase.from('giacenza').select('*').eq('ordine', ordineAcquisto.numero_ordine);
+    const { data: existingOrdiniEntries } = await supabase.from('ordini').select('*').eq('ordine', ordineAcquisto.numero_ordine);
+    const { data: existingFustelleEntries } = await supabase.from('fustelle').select('*').eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
+
+    // Step 2: Delete all articles of this order from 'ordini', 'giacenza', and 'fustelle'
+    await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
+    await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine);
+    await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
+
+    // Step 3: Re-insert/update based on the current state of ordineAcquisto.articoli
     for (const articolo of validArticles) { // Itera solo sugli articoli validi
       console.log(`[syncArticleInventoryStatus] Inizio elaborazione articolo nel loop:`, JSON.stringify(articolo, null, 2));
       try {
@@ -56,6 +62,9 @@ export function useOrdiniAcquisto() {
             console.warn(`[syncArticleInventoryStatus] Articolo Cartone '${codiceCtn}' con numero_fogli non valido. Saltato.`);
             continue;
           }
+
+          // Find if this specific cartone had an existing entry in giacenza before deletion
+          const previousGiacenzaState = existingGiacenzaEntries?.find(e => e.codice === codiceCtn);
 
           // Costruisci l'oggetto Cartone con i campi specifici per la tabella 'ordini'
           const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
@@ -88,26 +97,6 @@ export function useOrdiniAcquisto() {
               console.log(`[syncArticleInventoryStatus] Inserimento in 'ordini' riuscito per cartone '${codiceCtn}'.`);
             }
           } else if (articolo.stato === 'ricevuto') {
-            // Seleziona esplicitamente le colonne per la tabella 'giacenza'
-            const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
-              .from('giacenza')
-              .select('codice, fornitore, ordine, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, ddt, data_arrivo, note, fsc, alimentare, rif_commessa_fsc')
-              .eq('codice', codiceCtn)
-              .single();
-
-            if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') {
-              console.error(`[syncArticleInventoryStatus] Errore recupero giacenza per cartone '${codiceCtn}':`, fetchGiacenzaError);
-              toast.error(`Errore recupero giacenza: ${fetchGiacenzaError.message}`);
-              continue;
-            }
-
-            const giacenzaDataToUpdate = {
-              ddt: existingGiacenza?.ddt || null,
-              data_arrivo: existingGiacenza?.data_arrivo || new Date().toISOString().split('T')[0],
-              magazzino: existingGiacenza?.magazzino || '-',
-              rif_commessa_fsc: existingGiacenza?.rif_commessa_fsc || null,
-            };
-
             // Costruisci l'oggetto Cartone per la tabella 'giacenza'
             const dataToInsertIntoGiacenza: Omit<Cartone, 'confermato' | 'data_consegna'> = {
               codice: codiceCtn,
@@ -116,36 +105,25 @@ export function useOrdiniAcquisto() {
               tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
               formato: articolo.formato || 'N/A',
               grammatura: articolo.grammatura || 'N/A',
-              fogli: numFogli,
+              fogli: previousGiacenzaState?.fogli || numFogli, // Preserve manual fogli if exists, else use OA
               cliente: articolo.cliente || 'N/A',
               lavoro: articolo.lavoro || 'N/A',
               prezzo: articolo.prezzo_unitario,
               note: ordineAcquisto.note || '-',
               fsc: articolo.fsc,
               alimentare: articolo.alimentare,
-              // Campi specifici per giacenza, sovrascritti o aggiunti
-              ddt: giacenzaDataToUpdate.ddt,
-              data_arrivo: giacenzaDataToUpdate.data_arrivo,
-              magazzino: giacenzaDataToUpdate.magazzino,
-              rif_commessa_fsc: giacenzaDataToUpdate.rif_commessa_fsc,
+              rif_commessa_fsc: articolo.rif_commessa_fsc || null,
+              ddt: previousGiacenzaState?.ddt || null, // Preserve manual DDT
+              data_arrivo: previousGiacenzaState?.data_arrivo || new Date().toISOString().split('T')[0], // Preserve manual data_arrivo
+              magazzino: previousGiacenzaState?.magazzino || '-', // Preserve manual magazzino
             };
 
-            if (existingGiacenza) {
-              const { error: updateError } = await supabase.from('giacenza').update(dataToInsertIntoGiacenza).eq('codice', codiceCtn);
-              if (updateError) {
-                console.error(`[syncArticleInventoryStatus] Errore aggiornamento in giacenza per cartone '${codiceCtn}':`, updateError);
-                toast.error(`Errore aggiornamento in giacenza: ${updateError.message}`);
-              } else {
-                console.log(`[syncArticleInventoryStatus] Aggiornamento in 'giacenza' riuscito per cartone '${codiceCtn}'.`);
-              }
+            const { error: insertError } = await supabase.from('giacenza').insert([dataToInsertIntoGiacenza]);
+            if (insertError) {
+              console.error(`[syncArticleInventoryStatus] Errore inserimento in giacenza per cartone '${codiceCtn}':`, insertError);
+              toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
             } else {
-              const { error: insertError } = await supabase.from('giacenza').insert([dataToInsertIntoGiacenza]);
-              if (insertError) {
-                console.error(`[syncArticleInventoryStatus] Errore inserimento in giacenza per cartone '${codiceCtn}':`, insertError);
-                toast.error(`Errore inserimento in giacenza: ${insertError.message}`);
-              } else {
-                console.log(`[syncArticleInventoryStatus] Inserimento in 'giacenza' riuscito per cartone '${codiceCtn}'.`);
-              }
+              console.log(`[syncArticleInventoryStatus] Inserimento in 'giacenza' riuscito per cartone '${codiceCtn}'.`);
             }
           }
         } else if (isFustelleFornitore) {
@@ -154,6 +132,8 @@ export function useOrdiniAcquisto() {
           // Case 1: Article is a Fustella (has fustella_codice)
           if (articolo.fustella_codice) {
             const fustellaCodice = articolo.fustella_codice;
+            const previousFustellaState = existingFustelleEntries?.find(e => e.codice === fustellaCodice);
+
             const fustellaBase: Fustella = {
               codice: fustellaCodice,
               fornitore: fornitoreNome,
@@ -162,7 +142,7 @@ export function useOrdiniAcquisto() {
               lavoro: articolo.lavoro || 'N/A',
               fustellatrice: articolo.fustellatrice || null,
               resa: articolo.resa_fustella || null,
-              pulitore_codice: articolo.hasPulitore ? articolo.pulitore_codice_fustella || null : null, // Set pulitore_codice if hasPulitore
+              pulitore_codice: previousFustellaState?.pulitore_codice || (articolo.hasPulitore ? articolo.pulitore_codice_fustella || null : null), // Preserve manual pulitore_codice
               pinza_tagliata: articolo.pinza_tagliata || false,
               tasselli_intercambiabili: articolo.tasselli_intercambiabili || false,
               nr_tasselli: articolo.nr_tasselli || null,
@@ -170,35 +150,15 @@ export function useOrdiniAcquisto() {
               incollatrice: articolo.incollatrice || null,
               tipo_incollatura: articolo.tipo_incollatura || null,
               disponibile: articolo.stato === 'ricevuto',
-              data_creazione: new Date().toISOString(),
+              data_creazione: previousFustellaState?.data_creazione || new Date().toISOString(),
               ultima_modifica: new Date().toISOString(),
               ordine_acquisto_numero: ordineAcquisto.numero_ordine,
             };
 
-            const { data: existingFustella, error: fetchFustellaError } = await supabase
-              .from('fustelle')
-              .select('codice')
-              .eq('codice', fustellaCodice)
-              .single();
-
-            if (fetchFustellaError && fetchFustellaError.code !== 'PGRST116') {
-              console.error(`[syncArticleInventoryStatus] Errore recupero fustella '${fustellaCodice}':`, fetchFustellaError);
-              toast.error(`Errore recupero fustella: ${fetchFustellaError.message}`);
-              continue;
-            }
-
-            if (existingFustella) {
-              const { error: updateError } = await supabase.from('fustelle').update(fustellaBase).eq('codice', fustellaCodice);
-              if (updateError) {
-                console.error(`[syncArticleInventoryStatus] Errore aggiornamento fustella '${fustellaCodice}':`, updateError);
-                toast.error(`Errore aggiornamento fustella: ${updateError.message}`);
-              }
-            } else {
-              const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
-              if (insertError) {
-                console.error(`[syncArticleInventoryStatus] Errore inserimento fustella '${fustellaCodice}':`, insertError);
-                toast.error(`Errore inserimento fustella: ${insertError.message}`);
-              }
+            const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
+            if (insertError) {
+              console.error(`[syncArticleInventoryStatus] Errore inserimento fustella '${fustellaCodice}':`, insertError);
+              toast.error(`Errore inserimento fustella: ${insertError.message}`);
             }
           } 
           // Case 2: Article is a Standalone Pulitore (has pulitore_codice_fustella but NO fustella_codice)
@@ -207,31 +167,28 @@ export function useOrdiniAcquisto() {
             const pulitoreCodice = articolo.pulitore_codice_fustella;
             const targetFustellaCodiceFornitore = articolo.codice_fornitore_fustella;
 
-            const { data: existingFustella, error: fetchFustellaError } = await supabase
+            const { data: existingFustellaForPulitore } = await supabase
               .from('fustelle')
-              .select('codice')
+              .select('codice, pulitore_codice')
               .eq('codice_fornitore', targetFustellaCodiceFornitore)
               .single();
 
-            if (fetchFustellaError && fetchFustellaError.code !== 'PGRST116') {
-              console.error(`[syncArticleInventoryStatus] Errore recupero fustella per pulitore (codice_fornitore: ${targetFustellaCodiceFornitore}):`, fetchFustellaError);
-              toast.error(`Errore recupero fustella per pulitore: ${fetchFustellaError.message}`);
-              continue;
-            }
+            if (existingFustellaForPulitore) {
+              console.log(`[syncArticleInventoryStatus] Trovata fustella esistente per pulitore: ${existingFustellaForPulitore.codice}. Aggiornamento pulitore_codice.`);
+              // Only update if the pulitore_codice is different or null
+              if (existingFustellaForPulitore.pulitore_codice !== pulitoreCodice) {
+                const { error: updateError } = await supabase
+                  .from('fustelle')
+                  .update({ pulitore_codice: pulitoreCodice, ultima_modifica: new Date().toISOString() })
+                  .eq('codice', existingFustellaForPulitore.codice);
 
-            if (existingFustella) {
-              console.log(`[syncArticleInventoryStatus] Trovata fustella esistente per pulitore: ${existingFustella.codice}. Aggiornamento pulitore_codice.`);
-              const { error: updateError } = await supabase
-                .from('fustelle')
-                .update({ pulitore_codice: pulitoreCodice, ultima_modifica: new Date().toISOString() })
-                .eq('codice', existingFustella.codice);
-
-              if (updateError) {
-                console.error(`[syncArticleInventoryStatus] Supabase ERROR updating pulitore_codice for fustella ${existingFustella.codice}:`, updateError);
-                toast.error(`Errore aggiornamento codice pulitore per fustella ${existingFustella.codice}: ${updateError.message}`);
-              } else {
-                console.log(`[syncArticleInventoryStatus] SUCCESS: Codice pulitore '${pulitoreCodice}' aggiornato per fustella '${existingFustella.codice}'.`);
-                toast.success(`Codice pulitore '${pulitoreCodice}' aggiornato per fustella '${existingFustella.codice}'`);
+                if (updateError) {
+                  console.error(`[syncArticleInventoryStatus] Supabase ERROR updating pulitore_codice for fustella ${existingFustellaForPulitore.codice}:`, updateError);
+                  toast.error(`Errore aggiornamento codice pulitore per fustella ${existingFustellaForPulitore.codice}: ${updateError.message}`);
+                } else {
+                  console.log(`[syncArticleInventoryStatus] SUCCESS: Codice pulitore '${pulitoreCodice}' aggiornato per fustella '${existingFustellaForPulitore.codice}'.`);
+                  toast.success(`Codice pulitore '${pulitoreCodice}' aggiornato per fustella '${existingFustellaForPulitore.codice}'`);
+                }
               }
             } else {
               console.warn(`[syncArticleInventoryStatus] Nessuna fustella trovata con codice fornitore '${targetFustellaCodiceFornitore}' per associare il pulitore '${pulitoreCodice}'.`);
