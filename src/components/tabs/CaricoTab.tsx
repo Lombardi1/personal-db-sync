@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Cartone } from '@/types';
 import { formatFormato, formatGrammatura } from '@/utils/formatters';
 import { Button } from '@/components/ui/button';
-import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
+import * as notifications from '@/utils/notifications';
 import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCodeFromDB } from '@/utils/cartoneUtils';
-import { parseUserNumber, formatUserNumber } from '@/lib/utils'; // Importa le nuove utilità
+import { parseInputNumber, formatOutputNumber } from '@/lib/utils'; // Importa le nuove utilità
 
 interface CaricoTabProps {
   aggiungiOrdine: (cartone: Cartone) => Promise<{ error: any }>;
@@ -42,16 +42,16 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
 
   const handleBlur = (field: string, value: any) => {
     if (field === 'prezzo') {
-      const numericValue = parseUserNumber(value);
+      const numericValue = parseInputNumber(value);
       if (numericValue !== undefined) {
-        setFormData(prev => ({ ...prev, [field]: formatUserNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) }));
+        setFormData(prev => ({ ...prev, [field]: formatOutputNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) }));
       } else {
         setFormData(prev => ({ ...prev, [field]: '' }));
       }
     } else if (field === 'fogli') {
-      const numericValue = parseUserNumber(value);
+      const numericValue = parseInputNumber(value);
       if (numericValue !== undefined) {
-        setFormData(prev => ({ ...prev, [field]: formatUserNumber(numericValue, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }));
+        setFormData(prev => ({ ...prev, [field]: formatOutputNumber(numericValue, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }));
       } else {
         setFormData(prev => ({ ...prev, [field]: '' }));
       }
@@ -76,11 +76,11 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
       tipologia: formData.tipologia.trim(),
       formato: formatFormato(formData.formato),
       grammatura: formatGrammatura(formData.grammatura),
-      fogli: parseUserNumber(formData.fogli) || 0, // Parsa il numero
+      fogli: parseInputNumber(formData.fogli) || 0, // Parsa il numero
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
       magazzino: '-',
-      prezzo: parseUserNumber(formData.prezzo) || 0, // Parsa il numero
+      prezzo: parseInputNumber(formData.prezzo) || 0, // Parsa il numero
       data_consegna: formData.data_consegna,
       confermato: formData.confermato,
       note: formData.note.trim() || '-'
