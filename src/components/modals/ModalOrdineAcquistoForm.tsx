@@ -640,7 +640,7 @@ export function ModalOrdineAcquistoForm({
     setFustellaGeneratorInitialized(false);
 
     const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
-    const orderDate = watch('data_ordine');
+    const orderDate = methods.getValues('data_ordine'); // Use methods.getValues to get current form value
     const orderYear = new Date(orderDate).getFullYear();
 
     const maxCodeFromDB = await fetchMaxCartoneCodeFromDB();
@@ -706,7 +706,17 @@ export function ModalOrdineAcquistoForm({
     setFscCommessaGeneratorInitialized(true);
     setFustellaGeneratorInitialized(true);
     console.log('[resetArticlesAndGenerators] Generators re-initialized and first article set.');
-  }, [fornitori, setValue, watch, getNextFustellaCodeInForm, getNextPulitoreCodeInForm, findNextAvailableCodeLocally, dbFustellaCodes, dbPulitoreCodes]);
+  }, [fornitori, setValue, methods, getNextFustellaCodeInForm, getNextPulitoreCodeInForm, findNextAvailableCodeLocally, dbFustellaCodes, dbPulitoreCodes]);
+
+  // New useEffect to trigger resetArticlesAndGenerators when watchedFornitoreId changes
+  React.useEffect(() => {
+    // Only run if the form is ready and a fornitore has been selected
+    if (isFormReady && watchedFornitoreId && !isSubmitting) {
+      console.log(`[useEffect - watchedFornitoreId] Fornitore ID changed to: ${watchedFornitoreId}. Triggering resetArticlesAndGenerators.`);
+      resetArticlesAndGenerators(watchedFornitoreId);
+    }
+  }, [watchedFornitoreId, isFormReady, isSubmitting, resetArticlesAndGenerators]);
+
 
   const handleAddArticle = async () => {
     console.log('[handleAddArticle] Adding new article...');
@@ -790,7 +800,7 @@ export function ModalOrdineAcquistoForm({
             <DialogDescription className="text-sm sm:text-base">
               Attendere il caricamento dei dati dell'ordine.
             </DialogDescription>
-          </DialogHeader>
+          </DialogDescription>
           <div className="flex items-center justify-center h-48">
             <p className="text-muted-foreground">Caricamento...</p>
           </div>
@@ -888,12 +898,8 @@ export function ModalOrdineAcquistoForm({
                                 value={fornitore.nome}
                                 onSelect={(currentValue) => {
                                   const newFornitoreId = fornitori.find(f => f.nome === currentValue)?.id || '';
-                                  // Set the value immediately
                                   setValue('fornitore_id', newFornitoreId, { shouldValidate: true });
-                                  // Close the combobox immediately after selection
-                                  setOpenCombobox(false);
-                                  // Then, trigger the heavy async operation
-                                  resetArticlesAndGenerators(newFornitoreId);
+                                  setOpenCombobox(false); // Close the popover immediately
                                 }}
                               >
                                 <Check
