@@ -23,7 +23,8 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
     prezzo: '',
     data_consegna: '',
     note: '',
-    confermato: false
+    confermato: false,
+    magazzino: null as string | null, // Inizializzato a null
   });
 
   useEffect(() => {
@@ -71,11 +72,11 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
       fogli: parseInt(formData.fogli),
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
-      magazzino: '-',
+      magazzino: null, // Impostato a null per gli ordini in arrivo
       prezzo: parseFloat(formData.prezzo.replace(',', '.')), // Parse after comma replacement
       data_consegna: formData.data_consegna,
       confermato: formData.confermato,
-      note: formData.note.trim() || '-'
+      note: formData.note.trim() || null // Impostato a null se vuoto
     };
 
     const { error } = await aggiungiOrdine(nuovoOrdine);
@@ -96,7 +97,8 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
         prezzo: '',
         data_consegna: '',
         note: '',
-        confermato: false
+        confermato: false,
+        magazzino: null,
       });
     } else {
       notifications.showError('Errore durante il salvataggio dell\'ordine');
@@ -318,7 +320,8 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
                 prezzo: '',
                 data_consegna: '',
                 note: '',
-                confermato: false
+                confermato: false,
+                magazzino: null, // Reset anche qui
               });
             }}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"

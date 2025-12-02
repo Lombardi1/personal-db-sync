@@ -336,10 +336,10 @@ export async function seedPurchaseOrders() {
             fogli: articolo.numero_fogli || 0, // Usa numero_fogli
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
-            magazzino: '-',
+            magazzino: null, // Impostato a null per gli ordini in arrivo
             prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
-            note: ordineData.note || '-',
+            note: ordineData.note || null, // Impostato a null se vuoto
             fsc: articolo.fsc, // Aggiunto
             alimentare: articolo.alimentare, // Aggiunto
             rif_commessa_fsc: articolo.rif_commessa_fsc, // Aggiunto
