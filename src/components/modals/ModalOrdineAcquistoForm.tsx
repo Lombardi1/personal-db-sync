@@ -40,8 +40,8 @@ import { OrdineAcquistoArticoloFormRow } from './OrdineAcquistoArticoloFormRow';
 import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCodeFromDB } from '@/utils/cartoneUtils';
 import { fetchMaxOrdineAcquistoNumeroFromDB, generateNextOrdineAcquistoNumero } from '@/utils/ordineAcquistoUtils';
 import { fetchMaxFscCommessaFromDB, generateNextFscCommessa, resetFscCommessaGenerator } from '@/utils/fscUtils';
-import { fetchAllFustellaCodes } from '@/utils/fustellaUtils'; // Importa la nuova funzione
-import { fetchAllPulitoreCodes } from '@/utils/pulitoreUtils'; // Importa la nuova funzione
+import { fetchAllFustellaCodes } from '@/utils/fustellaUtils';
+import { fetchAllPulitoreCodes } from '@/utils/pulitoreUtils';
 
 interface ModalOrdineAcquistoFormProps {
   isOpen: boolean;
@@ -849,11 +849,15 @@ export function ModalOrdineAcquistoForm({
                               <CommandItem
                                 key={fornitore.id}
                                 value={fornitore.nome}
-                                onSelect={async (currentValue) => {
+                                onSelect={(currentValue) => { // Made synchronous
                                   const newFornitoreId = fornitori.find(f => f.nome === currentValue)?.id || '';
                                   setValue('fornitore_id', newFornitoreId, { shouldValidate: true });
-                                  setOpenCombobox(false);
-                                  await resetArticlesAndGenerators(newFornitoreId);
+                                  setOpenCombobox(false); // Close the popover immediately
+
+                                  // Defer the heavy async operation to allow UI to update
+                                  setTimeout(async () => {
+                                    await resetArticlesAndGenerators(newFornitoreId);
+                                  }, 0);
                                 }}
                               >
                                 <Check
