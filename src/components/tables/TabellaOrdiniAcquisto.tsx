@@ -115,8 +115,48 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
     }
   };
 
+  const fetchOrderAndFornitore = async (orderId: string) => {
+    // Fetch the order itself
+    const { data: orderData, error: orderError } = await supabase
+      .from('ordini_acquisto')
+      .select('*')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError) {
+      console.error(`[TabellaOrdiniAcquisto] Errore nel recupero dell'ordine ID ${orderId}:`, orderError);
+      throw new Error("Errore nel recupero dell'ordine più recente.");
+    }
+    if (!orderData) {
+      console.error(`[TabellaOrdiniAcquisto] Ordine non trovato per ID ${orderId}.`);
+      throw new Error("Errore nel recupero dell'ordine più recente.");
+    }
+
+    // Fetch the fornitore separately
+    const { data: fornitoreData, error: fornitoreError } = await supabase
+      .from('fornitori')
+      .select('nome, tipo_fornitore, considera_iva')
+      .eq('id', orderData.fornitore_id)
+      .single();
+
+    if (fornitoreError && fornitoreError.code !== 'PGRST116') { // PGRST116 = No rows found, which is fine if supplier was deleted
+      console.error(`[TabellaOrdiniAcquisto] Errore nel recupero del fornitore ID ${orderData.fornitore_id}:`, fornitoreError);
+      // Don't throw, just log and proceed with null fornitore data
+    }
+
+    const orderToProcess: OrdineAcquisto = {
+      ...orderData,
+      fornitore_nome: fornitoreData?.nome || 'N/A',
+      fornitore_tipo: fornitoreData?.tipo_fornitore || 'N/A',
+      articoli: (orderData.articoli || []) as ArticoloOrdineAcquisto[],
+    };
+
+    return orderToProcess;
+  };
+
   const handlePreviewPdfAndUpdateStatus = async (ordine: OrdineAcquisto) => {
     console.log(`[TabellaOrdiniAcquisto] handlePreviewPdfAndUpdateStatus chiamato per ordine: ${ordine.numero_ordine}, stato attuale: ${ordine.stato}`);
+    console.log(`[TabellaOrdiniAcquisto] Tentativo di recuperare l'ordine con ID: ${ordine.id}`);
     
     // 1. Open a new blank window immediately to avoid pop-up blockers
     const newWindow = window.open('', '_blank');
@@ -131,27 +171,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
     try {
       // 1. Fetch the latest version of the order from Supabase immediately
-      const { data: latestOrder, error: fetchLatestError } = await supabase
-          .from('ordini_acquisto')
-          .select(`*, fornitori ( nome, tipo_fornitore, considera_iva )`) // AGGIUNTO: considera_iva
-          .eq('id', ordine.id)
-          .single();
-
-      if (fetchLatestError || !latestOrder) {
-          notifications.showError("Errore nel recupero dell'ordine più recente.");
-          newWindow.close();
-          return;
-      }
-      let orderToProcess: OrdineAcquisto = {
-          ...latestOrder,
-          fornitore_nome: latestOrder.fornitori?.nome || 'N/A',
-          fornitore_tipo: latestOrder.fornitore_tipo || 'N/A', // Usa fornitore_tipo direttamente
-          articoli: (latestOrder.articoli || []) as ArticoloOrdineAcquisto[],
-      };
-
-      // DEBUG LOG: Log the order data before passing to PDF export
-      console.log("[TabellaOrdiniAcquisto] Dati ordine (orderToProcess) prima dell'esportazione PDF (Preview):", JSON.stringify(orderToProcess, null, 2));
-
+      const orderToProcess = await fetchOrderAndFornitore(ordine.id!);
 
       // 2. If the main order is cancelled, just generate PDF of the cancelled order and return.
       if (orderToProcess.stato === 'annullato') {
@@ -194,7 +214,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               .from('ordini_acquisto')
               .update({ stato: newMainOrderStatus, articoli: updatedArticles as any, updated_at: new Date().toISOString() })
               .eq('id', ordine.id)
-              .select(`*, fornitori ( nome, tipo_fornitore, considera_iva )`) // AGGIUNTO: considera_iva
+              .select(`*`) // Simplified select
               .single();
 
           if (updateError || !updatedOrderData) {
@@ -202,12 +222,9 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               newWindow.close();
               return;
           }
-          orderToProcess = {
-              ...updatedOrderData,
-              fornitore_nome: updatedOrderData.fornitori?.nome || 'N/A',
-              fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
-              articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
-          };
+          // Re-fetch fornitore info for the updated order
+          const updatedOrderWithFornitore = await fetchOrderAndFornitore(updatedOrderData.id);
+          orderToProcess = updatedOrderWithFornitore;
       }
 
       // 5. Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
@@ -224,32 +241,12 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
 
   const handleDirectPrint = async (ordine: OrdineAcquisto) => {
     console.log(`[TabellaOrdiniAcquisto] handleDirectPrint chiamato per ordine: ${ordine.numero_ordine}, stato attuale: ${ordine.stato}`);
+    console.log(`[TabellaOrdiniAcquisto] Tentativo di recuperare l'ordine con ID: ${ordine.id}`);
     
     notifications.showInfo('Aggiornamento stato ordine in corso. Il PDF verrà scaricato automaticamente.');
 
     try {
-      const { data: fetchedOrderData, error: fetchError } = await supabase
-        .from('ordini_acquisto')
-        .select('*, fornitori(nome, tipo_fornitore, considera_iva)') // AGGIUNTO: considera_iva
-        .eq('id', ordine.id)
-        .single();
-
-      if (fetchError || !fetchedOrderData) {
-        console.error('[TabellaOrdiniAcquisto] Errore durante il fetch dell\'ordine:', fetchError);
-        notifications.showError("Errore nel recupero dell'ordine dal database.");
-        return;
-      }
-
-      let orderToProcess: OrdineAcquisto = {
-        ...fetchedOrderData,
-        fornitore_nome: fetchedOrderData.fornitore_nome || 'N/A',
-        fornitore_tipo: fetchedOrderData.fornitore_tipo || 'N/A',
-        articoli: (fetchedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
-      };
-
-      // DEBUG LOG: Log the order data before passing to PDF export
-      console.log("[TabellaOrdiniAcquisto] Dati ordine (orderToProcess) prima dell'esportazione PDF (Download):", JSON.stringify(orderToProcess, null, 2));
-
+      const orderToProcess = await fetchOrderAndFornitore(ordine.id!); // Use the new helper function
 
       let updatedArticles = [...orderToProcess.articoli];
       let newMainOrderStatus = orderToProcess.stato;
@@ -280,7 +277,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           .from('ordini_acquisto')
           .update({ stato: newMainOrderStatus, articoli: updatedArticles as any, updated_at: new Date().toISOString() })
           .eq('id', ordine.id)
-          .select('*, fornitori(nome, tipo_fornitore, considera_iva)') // AGGIUNTO: considera_iva
+          .select('*') // Simplified select
           .single();
 
         if (updateError || !updatedOrderData) {
@@ -288,17 +285,14 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
           notifications.showError("Errore nell'aggiornamento dello stato dell'ordine o degli articoli.");
           return;
         }
-        orderToProcess = {
-          ...updatedOrderData,
-          fornitore_nome: updatedOrderData.fornitore_nome || 'N/A',
-          fornitore_tipo: updatedOrderData.fornitore_tipo || 'N/A',
-          articoli: (updatedOrderData.articoli || []) as ArticoloOrdineAcquisto[],
-        };
+        // Re-fetch fornitore info for the updated order
+        const updatedOrderWithFornitore = await fetchOrderAndFornitore(updatedOrderData.id);
+        orderToProcess = updatedOrderWithFornitore;
       }
 
       // Generate PDF regardless of article status (cancelled articles are already filtered in export.ts)
       console.log(`[TabellaOrdiniAcquisto] Scaricando PDF per ordine: ${orderToProcess.numero_ordine}`);
-      exportOrdineAcquistoPDF(orderToProcess, fornitori, clientes, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
+      exportOrdineAcquistoPDF(orderToProcess, fornitori, clienti, 'ordini-acquisto', aziendaInfo, false, null); // Passa aziendaInfo
       
 
     } catch (error: any) {
@@ -464,7 +458,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                 <React.Fragment key={order.id}>
                   {visibleArticles.map((row, idx) => {
                     const isFirstDisplayRowOfOrder = idx === 0; // Ora si basa sull'indice degli articoli visibili
-                    const currentRowTotal = (row.quantita || 0) * (row.prezzo_unitario || 0);
+                    const currentRowTotal = (row.quantita || 0) * (row.prezzo_unitario || 0) + (row.hasPulitore ? (row.prezzo_pulitore || 0) : 0);
 
                     return (
                       <tr key={`${row.orderId}-${row.id || idx}`} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)] transition-colors">
