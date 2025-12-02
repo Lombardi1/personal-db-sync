@@ -137,18 +137,28 @@ export function useCartoni() {
     const fogliFinali = fogliEffettivi; // fogliEffettivi è ora sempre un numero
     const magazzinoFinale = magazzino; 
     
-    const cartoneGiacenza: Cartone = { // Specificato il tipo Cartone
-      ...ordine, 
-      ddt, // Usato direttamente come string | null
-      data_arrivo: dataArrivo, 
-      fogli: fogliFinali, 
-      magazzino: magazzinoFinale, // Usato direttamente come string | null
+    // Creazione esplicita dell'oggetto Cartone per giacenza
+    const cartoneGiacenza: Cartone = {
+      codice: ordine.codice,
+      fornitore: ordine.fornitore,
+      ordine: ordine.ordine,
+      tipologia: ordine.tipologia,
+      formato: ordine.formato,
+      grammatura: ordine.grammatura,
+      fogli: fogliFinali,
+      cliente: ordine.cliente,
+      lavoro: ordine.lavoro,
+      prezzo: ordine.prezzo,
+      data_consegna: ordine.data_consegna || null,
+      note: ordine.note || '-',
       fsc: ordine.fsc,
       alimentare: ordine.alimentare,
       rif_commessa_fsc: ordine.rif_commessa_fsc || null,
-      data_consegna: ordine.data_consegna || null,
+      // Campi specifici per giacenza, sovrascritti o aggiunti
+      ddt: ddt, // Usato direttamente come string | null
+      data_arrivo: dataArrivo,
+      magazzino: magazzinoFinale, // Usato direttamente come string | null
     };
-    delete cartoneGiacenza.confermato; // 'confermato' è specifico della tabella 'ordini'
     
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
 
