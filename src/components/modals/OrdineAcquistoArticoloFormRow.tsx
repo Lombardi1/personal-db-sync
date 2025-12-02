@@ -133,6 +133,44 @@ export function OrdineAcquistoArticoloFormRow({
   // State for Fustella lookup for standalone pulitore
   const [nrFustellaLookup, setNrFustellaLookup] = React.useState('');
 
+  // Local states for price inputs to handle comma/dot display
+  const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => {
+    const val = currentArticle?.prezzo_unitario;
+    if (val === undefined || val === null) return '';
+    // Determine precision based on fornitore type
+    if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
+      return val.toFixed(3).replace('.', ','); // 3 decimals for Cartone/Generic
+    } else if (isFustelleFornitore && articleType === 'fustella') {
+      return val.toFixed(2).replace('.', ','); // 2 decimals for Fustella
+    }
+    return String(val).replace('.', ','); // Fallback
+  });
+
+  const [displayPrezzoPulitore, setDisplayPrezzoPulitore] = React.useState<string>(() => {
+    const val = currentArticle?.prezzo_pulitore;
+    return (val !== undefined && val !== null) ? val.toFixed(2).replace('.', ',') : ''; // 2 decimals for Pulitore
+  });
+
+  // Update local states when currentArticle changes from outside (e.g., initialData, reset)
+  React.useEffect(() => {
+    const puVal = currentArticle?.prezzo_unitario;
+    if (puVal !== undefined && puVal !== null) {
+      if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
+        setDisplayPrezzoUnitario(puVal.toFixed(3).replace('.', ','));
+      } else if (isFustelleFornitore && articleType === 'fustella') {
+        setDisplayPrezzoUnitario(puVal.toFixed(2).replace('.', ','));
+      } else {
+        setDisplayPrezzoUnitario(String(puVal).replace('.', ','));
+      }
+    } else {
+      setDisplayPrezzoUnitario('');
+    }
+
+    const ppVal = currentArticle?.prezzo_pulitore;
+    setDisplayPrezzoPulitore((ppVal !== undefined && ppVal !== null) ? ppVal.toFixed(2).replace('.', ',') : '');
+  }, [currentArticle?.prezzo_unitario, currentArticle?.prezzo_pulitore, isCartoneFornitore, isFustelleFornitore, articleType]);
+
+
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura for Cartone
   const calculatedQuantitaKg = React.useMemo(() => {
     if (!isCartoneFornitore) return 0;
@@ -295,8 +333,8 @@ export function OrdineAcquistoArticoloFormRow({
     setValue(`articoli.${index}.tipo_incollatura`, '', { shouldValidate: true });
     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Default quantity
     setValue(`articoli.${index}.prezzo_unitario`, 0, { shouldValidate: true }); // Default prezzo unitario
-    // setDisplayPrezzoUnitario('0,000'); // No longer needed with type="number"
-    // setDisplayPrezzoPulitore(''); // No longer needed with type="number"
+    setDisplayPrezzoUnitario('0,000'); // Reset display state
+    setDisplayPrezzoPulitore(''); // Reset display state
     setNrFustellaLookup(''); // Clear lookup field
 
     if (newType === 'fustella') {
@@ -428,7 +466,7 @@ export function OrdineAcquistoArticoloFormRow({
                 <div className="col-span-1">
                   <Label className="text-xs">Quantità (kg)</Label>
                   <Input
-                    value={calculatedQuantitaKg.toFixed(0)}
+                    value={calculatedQuantitaKg.toFixed(3)}
                     readOnly
                     disabled={true}
                     className="text-sm font-bold bg-gray-100"
@@ -441,11 +479,10 @@ export function OrdineAcquistoArticoloFormRow({
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
                       type="text"
-                      value={currentArticle?.prezzo_unitario !== undefined && currentArticle.prezzo_unitario !== null
-                        ? currentArticle.prezzo_unitario.toFixed(3).replace('.', ',')
-                        : ''}
+                      value={displayPrezzoUnitario} // Use local state for display
                       onChange={(e) => {
                         const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
                         const numericValue = parseFloat(rawValue.replace(',', '.'));
                         if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
@@ -456,8 +493,11 @@ export function OrdineAcquistoArticoloFormRow({
                       onBlur={(e) => {
                         const numericValue = parseFloat(e.target.value.replace(',', '.'));
                         if (!isNaN(numericValue)) {
+                          const formattedValue = numericValue.toFixed(3).replace('.', ',');
+                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
                           setValue(`articoli.${index}.prezzo_unitario`, parseFloat(numericValue.toFixed(3)), { shouldValidate: true });
                         } else {
+                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
@@ -684,10 +724,30 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="number" // Changed to number
-                      step="0.001" // Added step for decimals
-                      {...register(`articoli.${index}.prezzo_unitario`, { valueAsNumber: true })}
-                      placeholder="Es. 150.00" // Changed to dot for number input
+                      type="text" // Changed to text
+                      value={displayPrezzoUnitario} // Use local state for display
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
+                        } else {
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          const formattedValue = numericValue.toFixed(2).replace('.', ','); // 2 decimals for Fustella price
+                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
+                          setValue(`articoli.${index}.prezzo_unitario`, parseFloat(numericValue.toFixed(2)), { shouldValidate: true });
+                        } else {
+                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      placeholder="Es. 150,00" // Changed placeholder to comma
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -807,10 +867,30 @@ export function OrdineAcquistoArticoloFormRow({
                       <div className="relative">
                         <Input
                           id={`articoli.${index}.prezzo_pulitore`}
-                          type="number" // Changed to number
-                          step="0.001" // Added step for decimals
-                          {...register(`articoli.${index}.prezzo_pulitore`, { valueAsNumber: true })}
-                          placeholder="Es. 50.00" // Changed to dot for number input
+                          type="text" // Changed to text
+                          value={displayPrezzoPulitore} // Use local state for display
+                          onChange={(e) => {
+                            const rawValue = e.target.value;
+                            setDisplayPrezzoPulitore(rawValue); // Update local state immediately
+                            const numericValue = parseFloat(rawValue.replace(',', '.'));
+                            if (!isNaN(numericValue)) {
+                              setValue(`articoli.${index}.prezzo_pulitore`, numericValue, { shouldValidate: true });
+                            } else {
+                              setValue(`articoli.${index}.prezzo_pulitore`, undefined, { shouldValidate: true });
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                            if (!isNaN(numericValue)) {
+                              const formattedValue = numericValue.toFixed(2).replace('.', ','); // 2 decimals for Pulitore price
+                              setDisplayPrezzoPulitore(formattedValue); // Format on blur
+                              setValue(`articoli.${index}.prezzo_pulitore`, parseFloat(numericValue.toFixed(2)), { shouldValidate: true });
+                            } else {
+                              setDisplayPrezzoPulitore(''); // Clear if not a valid number
+                              setValue(`articoli.${index}.prezzo_pulitore`, undefined, { shouldValidate: true });
+                            }
+                          }}
+                          placeholder="Es. 50,00" // Changed placeholder to comma
                           min="0"
                           disabled={isSubmitting || isOrderCancelled}
                           className="text-sm pr-10"
@@ -1007,10 +1087,30 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="number" // Changed to number
-                      step="0.001" // Added step for decimals
-                      {...register(`articoli.${index}.prezzo_unitario`, { valueAsNumber: true })}
-                      placeholder="Es. 50.00" // Changed to dot for number input
+                      type="text" // Changed to text
+                      value={displayPrezzoUnitario} // Use local state for display
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
+                        } else {
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          const formattedValue = numericValue.toFixed(2).replace('.', ','); // 2 decimals for Pulitore price
+                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
+                          setValue(`articoli.${index}.prezzo_unitario`, parseFloat(numericValue.toFixed(2)), { shouldValidate: true });
+                        } else {
+                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      placeholder="Es. 50,00" // Changed placeholder to comma
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -1078,10 +1178,30 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="number" // Changed to number
-                      step="0.001" // Allow decimals for generic price
-                      {...register(`articoli.${index}.prezzo_unitario`, { valueAsNumber: true })}
-                      placeholder="Es. 0.870" // Changed to dot for number input
+                      type="text" // Changed to text
+                      value={displayPrezzoUnitario} // Use local state for display
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue); // Update local state immediately
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
+                        } else {
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          const formattedValue = numericValue.toFixed(3).replace('.', ','); // 3 decimals for Generic price
+                          setDisplayPrezzoUnitario(formattedValue); // Format on blur
+                          setValue(`articoli.${index}.prezzo_unitario`, parseFloat(numericValue.toFixed(3)), { shouldValidate: true });
+                        } else {
+                          setDisplayPrezzoUnitario(''); // Clear if not a valid number
+                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      placeholder="Es. 0,870" // Changed placeholder to comma
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -1115,7 +1235,7 @@ export function OrdineAcquistoArticoloFormRow({
               <Label htmlFor={`articoli.${index}.stato`} className="text-xs">Stato Articolo *</Label>
               <Select
                 onValueChange={(value: ArticoloOrdineAcquisto['stato']) => setValue(`articoli.${index}.stato`, value, { shouldValidate: true })}
-                value={currentStatoArticolo || 'in_attesa'}
+                value={currentArticle?.stato || 'in_attesa'}
                 disabled={isSubmitting || isOrderCancelled}
               >
                 <SelectTrigger className="w-full text-sm">
