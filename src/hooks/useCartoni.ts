@@ -153,32 +153,35 @@ export function useCartoni() {
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento/aggiornamento in 'giacenza':`, cartoneGiacenza);
 
     // 1. Controlla se il cartone esiste già in giacenza
-    const { data: existingGiacenzaItem, error: fetchGiacenzaError } = await supabase
+    const { data: existingGiacenzaItems, error: fetchGiacenzaError } = await supabase
       .from('giacenza')
-      .select('codice')
+      .select('*') // Modificato da 'codice' a '*'
       .eq('codice', codice)
-      .single();
+      .limit(1); // Aggiunto limit(1)
 
     if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') { // PGRST116 = No rows found
       console.error(`[useCartoni - spostaInGiacenza] Errore durante la verifica esistenza in giacenza per codice ${codice}:`, fetchGiacenzaError);
       notifications.showError(`Errore verifica giacenza: ${fetchGiacenzaError.message}`);
-      return { error: fetchGiacenzaError };
+      // Non blocchiamo l'operazione qui, ma logghiamo l'errore.
+      // Potrebbe essere un problema di RLS che impedisce la SELECT ma non l'INSERT/UPDATE.
     }
+    // Controlla se è stato trovato un elemento esistente
+    const existingGiacenzaItem = existingGiacenzaItems && existingGiacenzaItems.length > 0 ? existingGiacenzaItems[0] : null;
     console.log(`[useCartoni - spostaInGiacenza] Risultato ricerca esistenza in giacenza per codice ${codice}:`, existingGiacenzaItem ? 'Trovato' : 'Non trovato');
 
 
     let operationError = null;
-    let operationData = null; // To store the result of insert/update
+    let operationData = null; // Per memorizzare il risultato di insert/update
     if (existingGiacenzaItem) {
       // Se esiste, aggiorna
       console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} trovato in giacenza. Eseguo UPDATE con dati:`, cartoneGiacenza);
-      const { data, error } = await supabase.from('giacenza').update(cartoneGiacenza).eq('codice', codice).select().single(); // Added .select().single() to get the updated row
+      const { data, error } = await supabase.from('giacenza').update(cartoneGiacenza).eq('codice', codice).select().single();
       operationError = error;
       operationData = data;
     } else {
       // Se non esiste, inserisci
       console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} NON trovato in giacenza. Eseguo INSERT con dati:`, cartoneGiacenza);
-      const { data, error } = await supabase.from('giacenza').insert([cartoneGiacenza]).select().single(); // Added .select().single() to get the inserted row
+      const { data, error } = await supabase.from('giacenza').insert([cartoneGiacenza]).select().single();
       operationError = error;
       operationData = data;
     }
