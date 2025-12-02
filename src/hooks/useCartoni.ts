@@ -134,41 +134,67 @@ export function useCartoni() {
     }
     console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, ordine);
 
-    const fogliFinali = fogliEffettivi; // fogliEffettivi è ora sempre un numero
+    const fogliFinali = fogliEffettivi;
     const magazzinoFinale = magazzino; 
     
-    const cartoneGiacenza: Cartone = { // Specificato il tipo Cartone
+    const cartoneGiacenza: Cartone = {
       ...ordine, 
-      ddt, // Usato direttamente come string | null
+      ddt,
       data_arrivo: dataArrivo, 
       fogli: fogliFinali, 
-      magazzino: magazzinoFinale, // Usato direttamente come string | null
+      magazzino: magazzinoFinale,
       fsc: ordine.fsc,
       alimentare: ordine.alimentare,
       rif_commessa_fsc: ordine.rif_commessa_fsc || null,
       data_consegna: ordine.data_consegna || null,
     };
-    delete cartoneGiacenza.confermato; // 'confermato' è specifico della tabella 'ordini'
+    delete cartoneGiacenza.confermato;
     
-    console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza':`, cartoneGiacenza);
+    console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento/aggiornamento in 'giacenza':`, cartoneGiacenza);
 
+    // 1. Controlla se il cartone esiste già in giacenza
+    const { data: existingGiacenzaItem, error: fetchGiacenzaError } = await supabase
+      .from('giacenza')
+      .select('codice')
+      .eq('codice', codice)
+      .single();
+
+    if (fetchGiacenzaError && fetchGiacenzaError.code !== 'PGRST116') { // PGRST116 = No rows found
+      console.error(`[useCartoni - spostaInGiacenza] Errore durante la verifica esistenza in giacenza per codice ${codice}:`, fetchGiacenzaError);
+      notifications.showError(`Errore verifica giacenza: ${fetchGiacenzaError.message}`);
+      return { error: fetchGiacenzaError };
+    }
+
+    let operationError = null;
+    if (existingGiacenzaItem) {
+      // Se esiste, aggiorna
+      console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} trovato in giacenza. Eseguo UPDATE.`);
+      const { error } = await supabase.from('giacenza').update(cartoneGiacenza).eq('codice', codice);
+      operationError = error;
+    } else {
+      // Se non esiste, inserisci
+      console.log(`[useCartoni - spostaInGiacenza] Cartone ${codice} NON trovato in giacenza. Eseguo INSERT.`);
+      const { error } = await supabase.from('giacenza').insert([cartoneGiacenza]);
+      operationError = error;
+    }
+
+    if (operationError) {
+      console.error(`[useCartoni - spostaInGiacenza] Errore operazione (INSERT/UPDATE) in 'giacenza':`, operationError);
+      notifications.showError(`Errore salvataggio in giacenza: ${operationError.message}`);
+      return { error: operationError };
+    }
+    console.log(`[useCartoni - spostaInGiacenza] Operazione (INSERT/UPDATE) in 'giacenza' riuscita per codice: ${codice}`);
+
+    // Elimina da 'ordini' solo dopo aver gestito l'inserimento/aggiornamento in 'giacenza'
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di eliminare da 'ordini' il codice: ${codice}`);
     const { error: deleteError } = await supabase.from('ordini').delete().eq('codice', codice);
     if (deleteError) {
       console.error(`[useCartoni - spostaInGiacenza] Errore eliminazione ordine da 'ordini':`, deleteError);
       notifications.showError(`Errore eliminazione ordine: ${deleteError.message}`);
-      return { error: deleteError };
+      // Non ritorniamo qui, l'operazione principale è già riuscita
+    } else {
+      console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}`);
     }
-    console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}`);
-
-    console.log(`[useCartoni - spostaInGiacenza] Tentativo di inserire in 'giacenza' il cartone:`, cartoneGiacenza);
-    const { error: insertError } = await supabase.from('giacenza').insert([cartoneGiacenza]);
-    if (insertError) {
-      console.error(`[useCartoni - spostaInGiacenza] Errore inserimento in 'giacenza':`, insertError);
-      notifications.showError(`Errore inserimento in giacenza: ${insertError.message}`);
-      return { error: insertError };
-    }
-    console.log(`[useCartoni - spostaInGiacenza] Inserimento in 'giacenza' riuscito per codice: ${codice}`);
 
     const movimento: StoricoMovimento = {
       codice,
@@ -191,21 +217,18 @@ export function useCartoni() {
       console.log(`[useCartoni - spostaInGiacenza] Registrazione storico riuscita per codice: ${codice}`);
     }
 
-    // Aggiorna lo stato dell'articolo nell'ordine d'acquisto a 'ricevuto'
     if (ordine.ordine && codice) { 
       console.log(`[useCartoni - spostaInGiacenza] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'ricevuto'`);
       const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordine.ordine, codice, 'ricevuto'); 
       if (updateArticleError) {
         console.error(`[useCartoni - spostaInGiacenza] Errore durante l'aggiornamento dello stato dell'articolo nell'OA:`, updateArticleError);
         notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}. Il cartone è stato comunque spostato in magazzino.`);
-        // NON ritornare qui, permetti all'operazione principale di completarsi
       } else {
         console.log(`[useCartoni - spostaInGiacenza] updateArticleStatusInOrder completato con successo: ${updateSuccess}`);
       }
     } else {
       console.warn(`[useCartoni - spostaInGiacenza] Impossibile chiamare updateArticleStatusInOrder: ordine.ordine o codice mancante. Ordine.ordine: '${ordine.ordine}', Codice: '${codice}'`);
       notifications.showInfo(`Impossibile aggiornare lo stato dell'articolo nell'ordine d'acquisto (dati mancanti). Il cartone è stato comunque spostato in magazzino.`);
-      // NON ritornare qui
     }
 
     console.log(`[useCartoni - spostaInGiacenza] Ricarico tutti i dati.`);
