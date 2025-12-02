@@ -41,7 +41,7 @@ import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCode
 import { fetchMaxOrdineAcquistoNumeroFromDB, generateNextOrdineAcquistoNumero } from '@/utils/ordineAcquistoUtils';
 import { fetchMaxFscCommessaFromDB, generateNextFscCommessa, resetFscCommessaGenerator } from '@/utils/fscUtils';
 import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils';
-import { findNextAvailablePulitoreCode } from '@/utils/pulitoreUtils'; // Updated import
+import { findNextAvailablePulitoreCode } from '@/utils/pulitoreUtils';
 
 interface ModalOrdineAcquistoFormProps {
   isOpen: boolean;
@@ -128,6 +128,11 @@ export function ModalOrdineAcquistoForm({
   clienti,
 }: ModalOrdineAcquistoFormProps) {
   console.log('ModalOrdineAcquistoForm: Rendered with initialData:', initialData);
+
+  const [isFormReady, setIsFormReady] = React.useState(false); // New state for form readiness
+  const [ctnGeneratorInitialized, setCtnGeneratorInitialized] = React.useState(false);
+  const [fscCommessaGeneratorInitialized, setFscCommessaGeneratorInitialized] = React.useState(false);
+  const [fustellaGeneratorInitialized, setFustellaGeneratorInitialized] = React.useState(false);
 
   const methods = useForm<OrdineAcquisto>({
     resolver: zodResolver(
@@ -269,210 +274,271 @@ export function ModalOrdineAcquistoForm({
             }
             // Campi non consentiti per altri tipi di fornitori
             if (articolo.codice_ctn || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.cliente || articolo.lavoro || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc || articolo.fustella_codice || articolo.codice_fornitore_fustella || articolo.fustellatrice || articolo.resa_fustella || articolo.hasPulitore || articolo.pulitore_codice_fustella || articolo.prezzo_pulitore || articolo.pinza_tagliata || articolo.tasselli_intercambiabili || articolo.nr_tasselli || articolo.incollatura || articolo.incollatrice || articolo.tipo_incollatura) {
-              console.log(`[superRefine] Article ${index}: Adding issue: non-generic fields present.`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per questo tipo di fornitore.', path: [`articoli`, index, `tipologia_cartone`] });
             }
           }
         });
       })
     ),
-    defaultValues: React.useMemo(() => {
-      const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
-      
-      const articlesToUse = initialData?.articoli && initialData.articoli.length > 0 
-        ? initialData.articoli.map(art => {
-            let descriptionForPulitore = art.descrizione || '';
-            // If it's a pulitore article (pulitore_codice_fustella exists, but not fustella_codice)
-            // AND the description is empty or the generic one, set it.
-            if (art.pulitore_codice_fustella && !art.fustella_codice && (!art.descrizione || art.descrizione === 'Pulitore per fustella')) {
-                descriptionForPulitore = art.codice_fornitore_fustella 
-                    ? `Pulitore per Fustella ${art.codice_fornitore_fustella}` 
+    // Initialize with a minimal, synchronous default.
+    // The actual default values will be set via `reset` in useEffect.
+    defaultValues: {
+      fornitore_id: '',
+      data_ordine: new Date().toISOString().split('T')[0],
+      numero_ordine: '',
+      stato: 'in_attesa',
+      articoli: [{ 
+        quantita: undefined, 
+        numero_fogli: undefined, 
+        prezzo_unitario: 0, 
+        codice_ctn: '', 
+        data_consegna_prevista: new Date().toISOString().split('T')[0], 
+        stato: 'in_attesa',
+        fsc: false,
+        alimentare: false,
+        rif_commessa_fsc: '',
+        fustella_codice: '',
+        codice_fornitore_fustella: '',
+        fustellatrice: '',
+        resa_fustella: '',
+        hasPulitore: false,
+        pulitore_codice_fustella: '',
+        prezzo_pulitore: undefined,
+        pinza_tagliata: false,
+        tasselli_intercambiabili: false,
+        nr_tasselli: null,
+        incollatura: false,
+        incollatrice: '',
+        tipo_incollatura: '',
+        cliente: '',
+        lavoro: '',
+        descrizione: '',
+      }],
+      importo_totale: 0,
+      note: '',
+    },
+  });
+
+  const { register, control, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = methods;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'articoli',
+  });
+
+  const watchedFornitoreId = watch('fornitore_id');
+  const selectedFornitore = fornitori.find((f) => f.id === watchedFornitoreId);
+  const isCartoneFornitore = selectedFornitore?.tipo_fornitore === 'Cartone';
+  const isFustelleFornitore = selectedFornitore?.tipo_fornitore === 'Fustelle';
+  const watchedArticles = watch('articoli');
+  const isCancelled = watch('stato') === 'annullato';
+  const isNewOrder = !initialData?.id;
+
+  const [openCombobox, setOpenCombobox] = React.useState(false);
+
+  const totalAmount = watchedArticles.reduce((sum, item) => {
+    if (item.stato !== 'annullato') {
+      const qty = item.quantita || 0;
+      const price = item.prezzo_unitario || 0;
+      const pulitorePrice = item.hasPulitore ? (item.prezzo_pulitore || 0) : 0;
+      return sum + (qty * price) + pulitorePrice;
+    }
+    return sum;
+  }, 0);
+
+  // This effect will handle setting up the form with async default values
+  React.useEffect(() => {
+    if (!isOpen) {
+      setIsFormReady(false); // Reset readiness when modal closes
+      return;
+    }
+
+    const setupFormAndGenerators = async () => {
+      try {
+        const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
+        
+        const articlesToUse = initialData?.articoli && initialData.articoli.length > 0 
+          ? initialData.articoli.map(art => {
+              let descriptionForPulitore = art.descrizione || '';
+              if (art.pulitore_codice_fustella && !art.fustella_codice && (!art.descrizione || art.descrizione === 'Pulitore per fustella')) {
+                  descriptionForPulitore = art.codice_fornitore_fustella 
+                      ? `Pulitore per Fustella ${art.codice_fornitore_fustella}` 
+                      : `Pulitore per fustella`;
+              }
+
+              const isFustellaOrPulitore = (art.fustella_codice && art.fustella_codice.trim() !== '') || (art.pulitore_codice_fustella && art.pulitore_codice_fustella.trim() !== '');
+
+              return { 
+                  ...art, 
+                  codice_ctn: art.codice_ctn || '', 
+                  data_consegna_prevista: art.data_consegna_prevista || defaultDateForNewArticle, 
+                  stato: (art.stato || 'in_attesa') as ArticoloOrdineAcquisto['stato'],
+                  numero_fogli: art.numero_fogli || undefined,
+                  quantita: isFustellaOrPulitore ? (art.quantita || 1) : (art.quantita || undefined),
+                  fsc: art.fsc || false,
+                  alimentare: art.alimentare || false,
+                  rif_commessa_fsc: art.rif_commessa_fsc || '',
+                  fustella_codice: art.fustella_codice || '',
+                  codice_fornitore_fustella: art.codice_fornitore_fustella || '',
+                  fustellatrice: art.fustellatrice || '',
+                  resa_fustella: art.resa_fustella || '',
+                  hasPulitore: art.hasPulitore || false,
+                  pulitore_codice_fustella: art.pulitore_codice_fustella || '',
+                  prezzo_pulitore: art.prezzo_pulitore || undefined,
+                  pinza_tagliata: art.pinza_tagliata || false,
+                  tasselli_intercambiabili: art.tasselli_intercambiabili || false,
+                  nr_tasselli: art.nr_tasselli || null,
+                  incollatura: art.incollatura || false,
+                  incollatrice: art.incollatrice || '',
+                  tipo_incollatura: art.tipo_incollatura || '',
+                  cliente: art.cliente || '',
+                  lavoro: art.lavoro || '',
+                  descrizione: descriptionForPulitore,
+                };
+            })
+          : [{ 
+              quantita: undefined, 
+              numero_fogli: undefined, 
+              prezzo_unitario: 0, 
+              codice_ctn: '', 
+              data_consegna_prevista: defaultDateForNewArticle, 
+              stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
+              fsc: false,
+              alimentare: false,
+              rif_commessa_fsc: '',
+              fustella_codice: '',
+              codice_fornitore_fustella: '',
+              fustellatrice: '',
+              resa_fustella: '',
+              hasPulitore: false,
+              pulitore_codice_fustella: '',
+              prezzo_pulitore: undefined,
+              pinza_tagliata: false,
+              tasselli_intercambiabili: false,
+              nr_tasselli: null,
+              incollatura: false,
+              incollatrice: '',
+              tipo_incollatura: '',
+              cliente: '',
+              lavoro: '',
+              descrizione: '',
+            }];
+
+        let dataToReset: OrdineAcquisto;
+
+        if (initialData) {
+          dataToReset = {
+            ...initialData,
+            articoli: articlesToUse as ArticoloOrdineAcquisto[],
+          };
+          console.log('ModalOrdineAcquistoForm: Editing existing or duplicating order. dataToReset:', dataToReset);
+        } else {
+          const maxOrdineAcquistoNum = await fetchMaxOrdineAcquistoNumeroFromDB();
+          const newDefaultNumeroOrdine = generateNextOrdineAcquistoNumero(maxOrdineAcquistoNum);
+          console.log(`ModalOrdineAcquistoForm: Generated new order number: ${newDefaultNumeroOrdine} (based on max ${maxOrdineAcquistoNum})`);
+
+          dataToReset = {
+            fornitore_id: '',
+            data_ordine: new Date().toISOString().split('T')[0],
+            numero_ordine: newDefaultNumeroOrdine,
+            stato: 'in_attesa' as OrdineAcquisto['stato'],
+            articoli: articlesToUse as ArticoloOrdineAcquisto[],
+            importo_totale: 0,
+            note: '',
+          } as OrdineAcquisto;
+          console.log('ModalOrdineAcquistoForm: Creating new order from scratch. dataToReset:', dataToReset);
+        }
+        console.log('ModalOrdineAcquistoForm: Data prepared for reset:', dataToReset);
+
+        const maxCodeFromDB = await fetchMaxCartoneCodeFromDB();
+        resetCartoneCodeGenerator(maxCodeFromDB);
+
+        const orderYear = new Date(dataToReset.data_ordine).getFullYear();
+        const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
+        resetFscCommessaGenerator(maxFscCommessa, orderYear);
+        
+        reset(dataToReset);
+        console.log('ModalOrdineAcquistoForm: Form reset with data:', dataToReset);
+        console.log('ModalOrdineAcquistoForm: Form values after reset:', methods.getValues());
+
+        if (dataToReset.fornitore_id) setValue('fornitore_id', dataToReset.fornitore_id, { shouldValidate: true });
+        if (dataToReset.stato) setValue('stato', dataToReset.stato, { shouldValidate: true });
+        setValue('numero_ordine', dataToReset.numero_ordine, { shouldValidate: true });
+
+        const currentSelectedFornitore = fornitori.find((f) => f.id === dataToReset.fornitore_id);
+        const currentIsCartoneFornitore = currentSelectedFornitore?.tipo_fornitore === 'Cartone';
+        const currentIsFustelleFornitore = currentSelectedFornitore?.tipo_fornitore === 'Fustelle';
+
+        if (dataToReset.articoli.length > 0) {
+          for (const [index, article] of dataToReset.articoli.entries()) {
+            if (currentIsCartoneFornitore) {
+              if (!article.codice_ctn) {
+                setValue(`articoli.${index}.codice_ctn`, generateNextCartoneCode(), { shouldValidate: true });
+              }
+              if (article.numero_fogli === undefined) {
+                setValue(`articoli.${index}.numero_fogli`, 1, { shouldValidate: true });
+              }
+              if (article.fsc && !article.rif_commessa_fsc) {
+                setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
+              }
+            } else if (currentIsFustelleFornitore) {
+              let currentArticleType: 'fustella' | 'pulitore' | 'generico' = 'generico';
+              if (article.fustella_codice) {
+                currentArticleType = 'fustella';
+              } else if (article.pulitore_codice_fustella && !article.fustella_codice) {
+                currentArticleType = 'pulitore';
+              }
+
+              if (currentArticleType === 'fustella') {
+                if (!article.fustella_codice) {
+                  const nextFustellaCode = await findNextAvailableFustellaCode();
+                  setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
+                }
+                if (article.quantita === undefined) {
+                  setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
+                }
+                if (article.hasPulitore && !article.pulitore_codice_fustella) {
+                  setValue(`articoli.${index}.pulitore_codice_fustella`, await findNextAvailablePulitoreCode(), { shouldValidate: true });
+                }
+              } else if (currentArticleType === 'pulitore') {
+                if (!article.pulitore_codice_fustella) {
+                  setValue(`articoli.${index}.pulitore_codice_fustella`, await findNextAvailablePulitoreCode(), { shouldValidate: true });
+                }
+                if (article.quantita === undefined) {
+                  setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
+                }
+                if (!article.descrizione) {
+                  const pulitoreDescription = article.codice_fornitore_fustella 
+                    ? `Pulitore per Fustella ${article.codice_fornitore_fustella}` 
                     : `Pulitore per fustella`;
-            }
-
-            const isFustellaOrPulitore = (art.fustella_codice && art.fustella_codice.trim() !== '') || (art.pulitore_codice_fustella && art.pulitore_codice_fustella.trim() !== '');
-
-            return { 
-                ...art, 
-                codice_ctn: art.codice_ctn || '', 
-                data_consegna_prevista: art.data_consegna_prevista || defaultDateForNewArticle, 
-                stato: (art.stato || 'in_attesa') as ArticoloOrdineAcquisto['stato'],
-                numero_fogli: art.numero_fogli || undefined,
-                quantita: isFustellaOrPulitore ? (art.quantita || 1) : (art.quantita || undefined), // Default 1 for Fustella/Pulitore
-                fsc: art.fsc || false,
-                alimentare: art.alimentare || false,
-                rif_commessa_fsc: art.rif_commessa_fsc || '',
-                // Fustelle fields
-                fustella_codice: art.fustella_codice || '',
-                codice_fornitore_fustella: art.codice_fornitore_fustella || '',
-                fustellatrice: art.fustellatrice || '',
-                resa_fustella: art.resa_fustella || '',
-                hasPulitore: art.hasPulitore || false,
-                pulitore_codice_fustella: art.pulitore_codice_fustella || '',
-                prezzo_pulitore: art.prezzo_pulitore || undefined,
-                pinza_tagliata: art.pinza_tagliata || false,
-                tasselli_intercambiabili: art.tasselli_intercambiabili || false,
-                nr_tasselli: art.nr_tasselli || null,
-                incollatura: art.incollatura || false,
-                incollatrice: art.incollatrice || '',
-                tipo_incollatura: art.tipo_incollatura || '',
-                cliente: art.cliente || '',
-                lavoro: art.lavoro || '',
-                descrizione: descriptionForPulitore,
-              };
-          })
-        : [{ 
-            quantita: undefined, 
-            numero_fogli: undefined, 
-            prezzo_unitario: 0, 
-            codice_ctn: '', 
-            data_consegna_prevista: defaultDateForNewArticle, 
-            stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
-            fsc: false,
-            alimentare: false,
-            rif_commessa_fsc: '',
-            // Fustelle fields
-            fustella_codice: '',
-            codice_fornitore_fustella: '',
-            fustellatrice: '',
-            resa_fustella: '',
-            hasPulitore: false,
-            pulitore_codice_fustella: '',
-            prezzo_pulitore: undefined,
-            pinza_tagliata: false,
-            tasselli_intercambiabili: false,
-            nr_tasselli: null,
-            incollatura: false,
-            incollatrice: '',
-            tipo_incollatura: '',
-            cliente: '',
-            lavoro: '',
-            descrizione: '',
-          }];
-
-      let dataToReset: OrdineAcquisto;
-
-      if (initialData) {
-        dataToReset = {
-          ...initialData,
-          articoli: articlesToUse as ArticoloOrdineAcquisto[],
-        };
-        console.log('ModalOrdineAcquistoForm: Editing existing or duplicating order. dataToReset:', dataToReset);
-      } else {
-        const maxOrdineAcquistoNum = await fetchMaxOrdineAcquistoNumeroFromDB();
-        const newDefaultNumeroOrdine = generateNextOrdineAcquistoNumero(maxOrdineAcquistoNum);
-        console.log(`ModalOrdineAcquistoForm: Generated new order number: ${newDefaultNumeroOrdine} (based on max ${maxOrdineAcquistoNum})`);
-
-        dataToReset = {
-          fornitore_id: '',
-          data_ordine: new Date().toISOString().split('T')[0],
-          numero_ordine: newDefaultNumeroOrdine,
-          stato: 'in_attesa' as OrdineAcquisto['stato'],
-          articoli: articlesToUse as ArticoloOrdineAcquisto[],
-          importo_totale: 0,
-          note: '',
-        } as OrdineAcquisto;
-        console.log('ModalOrdineAcquistoForm: Creating new order from scratch. dataToReset:', dataToReset);
-      }
-      console.log('ModalOrdineAcquistoForm: Data prepared for reset:', dataToReset);
-
-      // Inizializzazione generatori
-      const maxCodeFromDB = await fetchMaxCartoneCodeFromDB();
-      resetCartoneCodeGenerator(maxCodeFromDB);
-
-      const orderYear = new Date(dataToReset.data_ordine).getFullYear();
-      const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
-      resetFscCommessaGenerator(maxFscCommessa, orderYear);
-
-      // No need to reset pulitore generator here, it's handled by findNextAvailablePulitoreCode directly
-      
-      reset(dataToReset);
-      console.log('ModalOrdineAcquistoForm: Form reset with data:', dataToReset);
-      console.log('ModalOrdineAcquistoForm: Form values after reset:', methods.getValues());
-
-      if (dataToReset.fornitore_id) setValue('fornitore_id', dataToReset.fornitore_id, { shouldValidate: true });
-      if (dataToReset.stato) setValue('stato', dataToReset.stato, { shouldValidate: true });
-      setValue('numero_ordine', dataToReset.numero_ordine, { shouldValidate: true });
-
-      const currentSelectedFornitore = fornitori.find((f) => f.id === dataToReset.fornitore_id);
-      const currentIsCartoneFornitore = currentSelectedFornitore?.tipo_fornitore === 'Cartone';
-      const currentIsFustelleFornitore = currentSelectedFornitore?.tipo_fornitore === 'Fustelle';
-
-      if (dataToReset.articoli.length > 0) {
-        for (const [index, article] of dataToReset.articoli.entries()) {
-          if (currentIsCartoneFornitore) {
-            if (!article.codice_ctn) {
-              setValue(`articoli.${index}.codice_ctn`, generateNextCartoneCode(), { shouldValidate: true });
-            }
-            if (article.numero_fogli === undefined) {
-              setValue(`articoli.${index}.numero_fogli`, 1, { shouldValidate: true });
-            }
-            if (article.fsc && !article.rif_commessa_fsc) {
-              setValue(`articoli.${index}.rif_commessa_fsc`, generateNextFscCommessa(orderYear), { shouldValidate: true });
-            }
-          } else if (currentIsFustelleFornitore) {
-            // Determine articleType for existing articles to correctly apply logic
-            let currentArticleType: 'fustella' | 'pulitore' | 'generico' = 'generico';
-            if (article.fustella_codice) {
-              currentArticleType = 'fustella';
-            } else if (article.pulitore_codice_fustella && !article.fustella_codice) {
-              currentArticleType = 'pulitore';
-            }
-
-            if (currentArticleType === 'fustella') {
-              if (!article.fustella_codice) { // Should not happen if currentArticleType is 'fustella'
-                const nextFustellaCode = await findNextAvailableFustellaCode();
-                setValue(`articoli.${index}.fustella_codice`, nextFustellaCode, { shouldValidate: true });
+                  setValue(`articoli.${index}.descrizione`, pulitoreDescription, { shouldValidate: true });
+                }
+              } else {
+                if (article.quantita === undefined) {
+                  setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
+                }
               }
+            } else {
               if (article.quantita === undefined) {
                 setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
               }
-              if (article.hasPulitore && !article.pulitore_codice_fustella) {
-                setValue(`articoli.${index}.pulitore_codice_fustella`, await findNextAvailablePulitoreCode(), { shouldValidate: true });
-              }
-            } else if (currentArticleType === 'pulitore') {
-              if (!article.pulitore_codice_fustella) { // Should not happen if currentArticleType is 'pulitore'
-                setValue(`articoli.${index}.pulitore_codice_fustella`, await findNextAvailablePulitoreCode(), { shouldValidate: true });
-              }
-              if (article.quantita === undefined) {
-                setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
-              }
-              if (!article.descrizione) {
-                const pulitoreDescription = article.codice_fornitore_fustella 
-                  ? `Pulitore per Fustella ${article.codice_fornitore_fustella}` 
-                  : `Pulitore per fustella`;
-                setValue(`articoli.${index}.descrizione`, pulitoreDescription, { shouldValidate: true });
-              }
-            } else { // Generic Fustelle article
-              if (article.quantita === undefined) {
-                setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
-              }
-            }
-          } else {
-            if (article.quantita === undefined) {
-              setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
             }
           }
         }
+
+        setCtnGeneratorInitialized(true);
+        setFscCommessaGeneratorInitialized(true);
+        setFustellaGeneratorInitialized(true);
+        console.log('ModalOrdineAcquistoForm: All generators initialized states set to true.');
+        setIsFormReady(true); // Mark form as ready
+      } catch (error) {
+        console.error('ModalOrdineAcquistoForm: Error during setupFormAndGenerators:', error);
+        toast.error('Errore durante l\'inizializzazione del modulo. Riprova.');
+        onClose();
       }
+    };
 
-      setCtnGeneratorInitialized(true);
-      setFscCommessaGeneratorInitialized(true);
-      setFustellaGeneratorInitialized(true);
-      console.log('ModalOrdineAcquistoForm: All generators initialized states set to true.');
-    } catch (error) {
-      console.error('ModalOrdineAcquistoForm: Error during setupFormAndGenerators:', error);
-      toast.error('Errore durante l\'inizializzazione del modulo. Riprova.');
-      onClose();
-    }
-  };
-  setupFormAndGenerators();
-}
-}, [isOpen, initialData, reset, setValue, fornitori, resetArticlesAndGenerators, methods]);
-
-  React.useEffect(() => {
-    setValue('importo_totale', parseFloat(totalAmount.toFixed(3)));
-  }, [totalAmount, setValue]);
+    setupFormAndGenerators();
+  }, [isOpen, initialData, reset, setValue, fornitori, onClose]);
 
   const handleFormSubmit = async (data: any) => {
     console.log("ModalOrdineAcquistoForm: Attempting to submit form with data:", data);
@@ -486,6 +552,66 @@ export function ModalOrdineAcquistoForm({
     }
   };
 
+  const resetArticlesAndGenerators = React.useCallback(async (newFornitoreId: string) => {
+    setCtnGeneratorInitialized(false);
+    setFscCommessaGeneratorInitialized(false);
+    setFustellaGeneratorInitialized(false);
+
+    const defaultDateForNewArticle = new Date().toISOString().split('T')[0];
+    const orderYear = new Date(watch('data_ordine')).getFullYear();
+
+    const maxCodeFromDB = await fetchMaxCartoneCodeFromDB();
+    resetCartoneCodeGenerator(maxCodeFromDB);
+
+    const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
+    resetFscCommessaGenerator(maxFscCommessa, orderYear);
+
+    const newSelectedFornitore = fornitori.find((f) => f.id === newFornitoreId);
+    const newIsCartoneFornitore = newSelectedFornitore?.tipo_fornitore === 'Cartone';
+    const newIsFustelleFornitore = newSelectedFornitore?.tipo_fornitore === 'Fustelle';
+
+    let newArticle: ArticoloOrdineAcquisto = { 
+      quantita: undefined, 
+      numero_fogli: undefined, 
+      prezzo_unitario: 0, 
+      data_consegna_prevista: defaultDateForNewArticle,
+      stato: 'in_attesa' as ArticoloOrdineAcquisto['stato'],
+      fsc: false,
+      alimentare: false,
+      rif_commessa_fsc: '',
+      fustella_codice: '',
+      codice_fornitore_fustella: '',
+      fustellatrice: '',
+      resa_fustella: '',
+      hasPulitore: false,
+      pulitore_codice_fustella: '',
+      prezzo_pulitore: undefined,
+      pinza_tagliata: false,
+      tasselli_intercambiabili: false,
+      nr_tasselli: null,
+      incollatura: false,
+      incollatrice: '',
+      tipo_incollatura: '',
+      cliente: '',
+      lavoro: '',
+      descrizione: '',
+    };
+
+    if (newIsCartoneFornitore) {
+      newArticle = { ...newArticle, codice_ctn: generateNextCartoneCode(), numero_fogli: 1 };
+    } else if (newIsFustelleFornitore) {
+      const nextFustellaCode = await findNextAvailableFustellaCode();
+      newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 };
+    } else {
+      newArticle = { ...newArticle, quantita: 1 };
+    }
+
+    setValue('articoli', [newArticle], { shouldValidate: true });
+    setCtnGeneratorInitialized(true);
+    setFscCommessaGeneratorInitialized(true);
+    setFustellaGeneratorInitialized(true);
+  }, [fornitori, setValue, watch]);
+
   const handleAddArticle = async () => {
     if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized) {
       toast.error("Generatore codici non pronto. Riprova.");
@@ -493,7 +619,8 @@ export function ModalOrdineAcquistoForm({
     }
     
     const firstArticleDate = watchedArticles[0]?.data_consegna_prevista || new Date().toISOString().split('T')[0];
-    const orderYear = new Date(watch('data_ordine')).getFullYear();
+    const orderDate = watch('data_ordine');
+    const orderYear = new Date(orderDate).getFullYear();
 
     let newArticle: ArticoloOrdineAcquisto = { 
       quantita: undefined, 
@@ -542,11 +669,34 @@ export function ModalOrdineAcquistoForm({
     append(newArticle);
   };
 
+  React.useEffect(() => {
+    setValue('importo_totale', parseFloat(totalAmount.toFixed(3)));
+  }, [totalAmount, setValue]);
+
   const title = initialData?.id ? `Modifica Ordine d'Acquisto` : `Nuovo Ordine d'Acquisto`;
   const description = initialData?.id ? `Modifica i dettagli per l'ordine ${initialData.numero_ordine}.` : `Inserisci i dettagli per il nuovo ordine d'acquisto.`
   
   console.log("ModalOrdineAcquistoForm: Current form errors (at render):", errors);
   
+  // Conditional rendering of the form
+  if (!isFormReady) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[900px] lg:max-w-[1100px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Caricamento Ordine...</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
+              Attendere il caricamento dei dati dell'ordine.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center h-48">
+            <p className="text-muted-foreground">Caricamento...</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
