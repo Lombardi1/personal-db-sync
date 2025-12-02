@@ -320,12 +320,10 @@ export function OrdineAcquistoArticoloFormRow({
       }
     } else if (newType === 'pulitore') {
       setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
-      // Set description immediately for new pulitore article
-      const newPulitoreDescription = currentCodiceFornitoreFustella 
-        ? `Pulitore per Fustella ${currentCodiceFornitoreFustella}` 
-        : `Pulitore per fustella`;
-      setValue(`articoli.${index}.descrizione`, newPulitoreDescription, { shouldValidate: true }); // Explicitly set description
+      // Set description immediately for new pulitore article to a generic one
+      setValue(`articoli.${index}.descrizione`, 'Pulitore per fustella', { shouldValidate: true }); // Explicitly set generic description
       setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Quantità fissa per pulitore
+      setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true }); // Clear this field, it will be populated by lookup
     }
   };
 
@@ -980,132 +978,6 @@ export function OrdineAcquistoArticoloFormRow({
             <Separator className="my-1" />
 
             {/* Section: Consegna Fustella */}
-            <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
-              <div>
-                <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
-                <Input
-                  id={`articoli.${index}.data_consegna_prevista`}
-                  type="date"
-                  {...register(`articoli.${index}.data_consegna_prevista`)}
-                  disabled={isSubmitting || isOrderCancelled}
-                  className="text-sm"
-                />
-                {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
-              </div>
-            </div>
-          </>
-        ) : isFustelleFornitore && articleType === 'pulitore' ? ( // NUOVA SEZIONE PER PULITORE
-          <>
-            {/* Section: Codice Identificativo Pulitore */}
-            <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo</h5>
-              <div>
-                <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
-                <Input
-                  id={`articoli.${index}.pulitore_codice_fustella`}
-                  {...register(`articoli.${index}.pulitore_codice_fustella`)}
-                  readOnly
-                  className="text-sm font-mono font-bold" // Rimosso bg-gray-100
-                />
-                {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
-              </div>
-            </div>
-
-            <Separator className="my-1" />
-
-            {/* Section: Dettagli Articolo Pulitore */}
-            <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor={`articoli.${index}.nr_fustella_lookup`} className="text-xs">Nr. Fustella (per ricerca)</Label>
-                  <Input
-                    id={`articoli.${index}.nr_fustella_lookup`}
-                    type="text"
-                    value={nrFustellaLookup}
-                    onChange={(e) => setNrFustellaLookup(e.target.value)}
-                    placeholder="Cerca FST-XXX o Codice Fornitore"
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.codice_fornitore_fustella`} className="text-xs">Codice Fornitore</Label>
-                  <Input
-                    id={`articoli.${index}.codice_fornitore_fustella`}
-                    {...register(`articoli.${index}.codice_fornitore_fustella`)}
-                    readOnly
-                    className="text-sm bg-gray-100"
-                  />
-                  {errors.articoli?.[index]?.codice_fornitore_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione *</Label>
-                  <Input
-                    id={`articoli.${index}.descrizione`}
-                    {...register(`articoli.${index}.descrizione`)}
-                    readOnly
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm font-bold bg-gray-100"
-                  />
-                  {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
-                  <Input
-                    id={`articoli.${index}.quantita`}
-                    type="number"
-                    {...register(`articoli.${index}.quantita`, { valueAsNumber: true })}
-                    placeholder="1"
-                    min="1"
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
-                  {errors.articoli?.[index]?.quantita && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.quantita?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.prezzo_unitario`} className="text-xs">Prezzo Unitario *</Label>
-                  <div className="relative">
-                    <Input
-                      id={`articoli.${index}.prezzo_unitario`}
-                      type="text"
-                      value={displayPrezzoUnitario}
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        setDisplayPrezzoUnitario(rawValue);
-                        const numericValue = parseFloat(rawValue.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
-                        } else {
-                          setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
-                        if (!isNaN(numericValue)) {
-                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
-                        } else {
-                          setDisplayPrezzoUnitario('');
-                        }
-                      }}
-                      placeholder="Es. 50,00"
-                      min="0"
-                      disabled={isSubmitting || isOrderCancelled}
-                      className="text-sm pr-10"
-                    />
-                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-muted-foreground pointer-events-none">
-                      €
-                    </span>
-                  </div>
-                  {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
-                </div>
-              </div>
-            </div>
-
-            <Separator className="my-1" />
-
-            {/* Section: Consegna Pulitore */}
             <div className="p-2 bg-gray-50 rounded-lg border">
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
               <div>
