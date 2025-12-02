@@ -492,7 +492,16 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                         </td>
                         <td className="px-2 py-1.5 text-[10px] sm:text-xs min-w-[150px] max-w-[150px] overflow-hidden text-ellipsis">
                           {row.isPulitoreRow ? (
-                            <div className="font-bold text-[9px] sm:text-[10px]">Pulitore: <span className="codice">{row.pulitore_codice_fustella}</span></div>
+                            <>
+                              {row.pulitore_codice_fustella && (
+                                <div className="font-bold mb-1 text-[9px] sm:text-[10px]">
+                                  <span className="codice">{row.pulitore_codice_fustella}</span>
+                                </div>
+                              )}
+                              <div className="font-bold text-[9px] sm:text-[10px]">
+                                Pulitore per Fustella: {row.codice_fornitore_fustella || 'N/A'}
+                              </div>
+                            </>
                           ) : row.isCartoneFornitore ? (
                             <>
                               {row.codice_ctn && <div className="font-bold mb-1 text-[9px] sm:text-[10px]"><span className="codice">{row.codice_ctn}</span></div>}
