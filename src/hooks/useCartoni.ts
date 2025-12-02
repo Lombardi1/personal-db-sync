@@ -39,9 +39,15 @@ export function useCartoni() {
 
       if (ordiniRes.data) {
         setOrdini(ordiniRes.data);
-        console.log('[useCartoni - loadData] Ordini data loaded:', ordiniRes.data.length, 'items. Sample:', ordiniRes.data.slice(0, 2));
+        console.log('[useCartoni - loadData] Ordini data loaded:', ordiniRes.data.length, 'items.');
+        const ctn132InOrdini = ordiniRes.data.find(item => item.codice === 'CTN-132');
+        if (ctn132InOrdini) {
+          console.log('[useCartoni - loadData] Found CTN-132 in ordiniRes.data:', JSON.stringify(ctn132InOrdini, null, 2));
+        } else {
+          console.log('[useCartoni - loadData] CTN-132 NOT found in ordiniRes.data.');
+        }
         ordiniRes.data.forEach(item => {
-          console.log(`  - Ordine ${item.codice}: DDT='${item.ddt}', DataArrivo='${item.data_arrivo}', Magazzino='${item.magazzino}', Fogli=${item.fogli}`);
+          // console.log(`  - Ordine ${item.codice}: DDT='${item.ddt}', DataArrivo='${item.data_arrivo}', Magazzino='${item.magazzino}', Fogli=${item.fogli}`); // Keep this for general check
         });
       } else if (ordiniRes.error) {
         console.error('[useCartoni - loadData] Error loading ordini:', ordiniRes.error);

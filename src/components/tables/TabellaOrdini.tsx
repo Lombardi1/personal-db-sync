@@ -60,7 +60,9 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
         </thead>
         <tbody id="ordini-body">
           {ordini.map((ordine) => {
-            console.log(`[TabellaOrdini] Ordine ricevuto per riga ${ordine.codice}:`, JSON.stringify(ordine, null, 2)); // LOG DI DEBUG
+            if (ordine.codice === 'CTN-132') {
+              console.log(`[TabellaOrdini] Rendering CTN-132. Ordine object:`, JSON.stringify(ordine, null, 2));
+            }
             return (
             <tr 
               key={ordine.codice} 
