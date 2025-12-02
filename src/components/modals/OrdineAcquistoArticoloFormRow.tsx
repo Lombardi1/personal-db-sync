@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
-import *s z from 'zod';
+import * as z from 'zod';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -578,7 +578,7 @@ export function OrdineAcquistoArticoloFormRow({
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.fsc`} className="text-xs">FSC</Label>
-                  {errors.articoli?.[index]?.fsc && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fsc?.message}</p>}
+                  {errors.articoli?.[index]?.fsc && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.fsc?.message}</p>}
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
