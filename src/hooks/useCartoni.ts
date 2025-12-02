@@ -20,8 +20,7 @@ export function useCartoni() {
     console.log('[useCartoni] Attempting to load data...');
     try {
       const [giacenzaRes, ordiniRes, esauritiRes, storicoRes] = await Promise.all([
-        // Seleziona esplicitamente tutte le colonne per evitare l'errore 406
-        supabase.from('giacenza').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, data_consegna, confermato, note, fsc, alimentare, rif_commessa_fsc'),
+        supabase.from('giacenza').select('*'),
         supabase.from('ordini').select('*'),
         supabase.from('esauriti').select('*'),
         supabase.from('storico').select(`*, app_users(username)`).order('data', { ascending: false })
