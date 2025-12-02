@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Cartone } from '@/types';
 import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
 import { formatFormato, formatGrammatura } from '@/utils/formatters'; // Importa formatFormato e formatGrammatura
-import { parseInputNumber, formatOutputNumber } from '@/lib/utils'; // Importa le nuove utilità
 
 interface ModalModificaOrdineProps {
   ordine: Cartone;
@@ -17,11 +16,11 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
     tipologia: ordine.tipologia,
     formato: ordine.formato,
     grammatura: ordine.grammatura.replace(' g/m²', ''),
-    fogli: formatOutputNumber(ordine.fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Formatta per display
+    fogli: ordine.fogli.toString(),
     cliente: ordine.cliente,
     lavoro: ordine.lavoro,
     magazzino: ordine.magazzino || '', // Assicurati che sia una stringa vuota se null
-    prezzo: formatOutputNumber(ordine.prezzo, { minimumFractionDigits: 3, maximumFractionDigits: 3 }), // Formatta per display
+    prezzo: ordine.prezzo !== undefined && ordine.prezzo !== null ? ordine.prezzo.toFixed(3).replace('.', ',') : '',
     data_consegna: ordine.data_consegna,
     note: ordine.note || '',
     ddt: ordine.ddt || '', // NUOVO CAMPO
@@ -34,16 +33,9 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
 
   const handleBlur = (field: string, value: any) => {
     if (field === 'prezzo') {
-      const numericValue = parseInputNumber(value);
-      if (numericValue !== undefined) {
-        setFormData(prev => ({ ...prev, [field]: formatOutputNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) }));
-      } else {
-        setFormData(prev => ({ ...prev, [field]: '' }));
-      }
-    } else if (field === 'fogli') {
-      const numericValue = parseInputNumber(value);
-      if (numericValue !== undefined) {
-        setFormData(prev => ({ ...prev, [field]: formatOutputNumber(numericValue, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }));
+      const numericValue = parseFloat(String(value).replace(',', '.'));
+      if (!isNaN(numericValue)) {
+        setFormData(prev => ({ ...prev, [field]: numericValue.toFixed(3).replace('.', ',') }));
       } else {
         setFormData(prev => ({ ...prev, [field]: '' }));
       }
@@ -59,11 +51,11 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
       tipologia: formData.tipologia.trim(),
       formato: formatFormato(formData.formato),
       grammatura: formatGrammatura(formData.grammatura),
-      fogli: parseInputNumber(formData.fogli) || 0, // Parsa il numero
+      fogli: parseInt(formData.fogli),
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
       magazzino: formData.magazzino.trim() || null, // Invia null se vuoto
-      prezzo: parseInputNumber(formData.prezzo) || 0, // Parsa il numero
+      prezzo: parseFloat(formData.prezzo.replace(',', '.')), // Parse after comma replacement
       data_consegna: formData.data_consegna,
       note: formData.note.trim() || '-',
       ddt: formData.ddt.trim() || null, // NUOVO: Invia null se vuoto
@@ -160,10 +152,9 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
                 <i className="fas fa-layer-group mr-1"></i> Fogli
               </label>
               <input
-                type="text" // Changed to text
+                type="number"
                 value={formData.fogli}
                 onChange={(e) => handleChange('fogli', e.target.value)}
-                onBlur={(e) => handleBlur('fogli', e.target.value)} // Added onBlur
                 className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
                 required
               />

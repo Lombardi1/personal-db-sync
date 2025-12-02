@@ -497,7 +497,7 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     type="text"
                     value={filtri.pulitore_codice || ''}
                     onChange={(e) => handleChange('pulitore_codice', e.target.value)}
-                    placeholder="PUL-001"
+                    placeholder="PU-001"
                     className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--fustelle-color))] focus:ring-2 focus:ring-[hsl(var(--fustelle-color))]/10"
                   />
                 </div>
@@ -626,6 +626,51 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                 </div>
               </>
             )}
+
+            {/* Rimosso: Filtri per Storico Polimeri */}
+            {/* {isStoricoPolimeriSection && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-barcode"></i> Codice Polimero
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.codice_polimero || ''}
+                    onChange={(e) => handleChange('codice_polimero', e.target.value)}
+                    placeholder="PLM-001"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-exchange-alt"></i> Tipo Movimento
+                  </label>
+                  <select
+                    value={filtri.tipo || ''}
+                    onChange={(e) => handleChange('tipo', e.target.value)}
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  >
+                    <option value="">Tutti</option>
+                    <option value="carico">Carico</option>
+                    <option value="scarico">Scarico</option>
+                    <option value="modifica">Modifica</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-user"></i> Utente
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.username || ''}
+                    onChange={(e) => handleChange('username', e.target.value)}
+                    placeholder="Nome Utente"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+              </>
+            )} */}
           </div>
         </div>
       </CollapsibleContent>

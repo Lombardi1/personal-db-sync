@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Check, ChevronsUpDown } from 'lucide-react';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Cliente } from '@/types';
 import { formatFormato, formatGrammatura } from '@/utils/formatters';
-import { cn, parseInputNumber, formatOutputNumber } from '@/lib/utils'; // Importa le nuove utilità
+import { cn } from '@/lib/utils';
 import {
   Command,
   CommandEmpty,
@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { generateNextFscCommessa } from '@/utils/fscUtils';
-import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
+import { generateNextPulitoreCode, fetchMaxPulitoreCodeFromDB, resetPulitoreCodeGenerator } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
 import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la funzione di generazione del codice fustella
 import { supabase } from '@/lib/supabase'; // Importa supabase per la ricerca
 
@@ -130,49 +130,25 @@ export function OrdineAcquistoArticoloFormRow({
   const currentLavoro = currentArticle?.lavoro;
   const currentDescrizione = currentArticle?.descrizione;
 
+  // State for controlled input values to retain formatting
+  const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => 
+    currentArticle?.prezzo_unitario !== undefined && currentArticle.prezzo_unitario !== null
+      ? currentArticle.prezzo_unitario.toFixed(3).replace('.', ',')
+      : ''
+  );
+  const [displayPrezzoPulitore, setDisplayPrezzoPulitore] = React.useState<string>(() => // Nuovo stato
+    currentArticle?.prezzo_pulitore !== undefined && currentArticle.prezzo_pulitore !== null
+      ? currentArticle.prezzo_pulitore.toFixed(3).replace('.', ',')
+      : ''
+  );
+  const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => 
+    !isCartoneFornitore && currentArticle?.quantita !== undefined && currentArticle.quantita !== null
+      ? currentArticle.quantita.toFixed(3).replace('.', ',')
+      : ''
+  );
+
   // State for Fustella lookup for standalone pulitore
   const [nrFustellaLookup, setNrFustellaLookup] = React.useState('');
-
-  // Local states for number inputs to handle comma/dot display and free typing
-  const [displayNumeroFogli, setDisplayNumeroFogli] = React.useState<string>(() => formatOutputNumber(currentArticle?.numero_fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-  const [displayQuantita, setDisplayQuantita] = React.useState<string>(() => formatOutputNumber(currentArticle?.quantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
-  const [displayPrezzoUnitario, setDisplayPrezzoUnitario] = React.useState<string>(() => {
-    const val = currentArticle?.prezzo_unitario;
-    if (val === undefined || val === null) return '';
-    // Determine precision based on fornitore type
-    if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
-      return formatOutputNumber(val, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Cartone/Generic
-    } else if (isFustelleFornitore && articleType === 'fustella') {
-      return formatOutputNumber(val, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella
-    }
-    return formatOutputNumber(val); // Fallback
-  });
-  const [displayPrezzoPulitore, setDisplayPrezzoPulitore] = React.useState<string>(() => formatOutputNumber(currentArticle?.prezzo_pulitore, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-  const [displayNrTasselli, setDisplayNrTasselli] = React.useState<string>(() => formatOutputNumber(currentArticle?.nr_tasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-
-
-  // Update local states when currentArticle changes from outside (e.g., initialData, reset)
-  React.useEffect(() => {
-    setDisplayNumeroFogli(formatOutputNumber(currentArticle?.numero_fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-    setDisplayQuantita(formatOutputNumber(currentArticle?.quantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
-    
-    const puVal = currentArticle?.prezzo_unitario;
-    if (puVal !== undefined && puVal !== null) {
-      if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
-        setDisplayPrezzoUnitario(formatOutputNumber(puVal, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
-      } else if (isFustelleFornitore && articleType === 'fustella') {
-        setDisplayPrezzoUnitario(formatOutputNumber(puVal, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      } else {
-        setDisplayPrezzoUnitario(formatOutputNumber(puVal));
-      }
-    } else {
-      setDisplayPrezzoUnitario('');
-    }
-
-    setDisplayPrezzoPulitore(formatOutputNumber(currentArticle?.prezzo_pulitore, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    setDisplayNrTasselli(formatOutputNumber(currentArticle?.nr_tasselli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-  }, [currentArticle?.numero_fogli, currentArticle?.quantita, currentArticle?.prezzo_unitario, currentArticle?.prezzo_pulitore, currentArticle?.nr_tasselli, isCartoneFornitore, isFustelleFornitore, articleType]);
-
 
   // Calculate Quantita (kg) from Numero Fogli, Formato, and Grammatura for Cartone
   const calculatedQuantitaKg = React.useMemo(() => {
@@ -198,9 +174,8 @@ export function OrdineAcquistoArticoloFormRow({
   // Update the 'quantita' field (which stores kg for cartone) whenever inputs change
   React.useEffect(() => {
     if (isCartoneFornitore) {
-      const newQuantita = parseFloat(calculatedQuantitaKg.toFixed(3));
-      setValue(`articoli.${index}.quantita`, newQuantita, { shouldValidate: true });
-      setDisplayQuantita(formatOutputNumber(newQuantita, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+      console.log(`[Article ${index}] Setting quantita (kg) to: ${calculatedQuantitaKg.toFixed(3)}`);
+      setValue(`articoli.${index}.quantita`, parseFloat(calculatedQuantitaKg.toFixed(3)), { shouldValidate: true });
     }
   }, [calculatedQuantitaKg, index, setValue, isCartoneFornitore]);
 
@@ -217,17 +192,13 @@ export function OrdineAcquistoArticoloFormRow({
 
   // Gestione della generazione del pulitore_codice_fustella quando hasPulitore viene flaggato (per Fustella)
   React.useEffect(() => {
-    const updatePulitoreCode = async () => {
-      if (isFustelleFornitore && articleType === 'fustella' && currentHasPulitore && !currentPulitoreCodiceFustella) {
-        console.log(`[Article ${index}] Generating new Pulitore code for Fustella.`);
-        const code = await generateNextPulitoreCode();
-        setValue(`articoli.${index}.pulitore_codice_fustella`, code, { shouldValidate: true });
-      } else if (isFustelleFornitore && articleType === 'fustella' && !currentHasPulitore && currentPulitoreCodiceFustella) {
-        console.log(`[Article ${index}] Clearing Pulitore code for Fustella.`);
-        setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
-      }
-    };
-    updatePulitoreCode();
+    if (isFustelleFornitore && articleType === 'fustella' && currentHasPulitore && !currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Generating new Pulitore code for Fustella.`);
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
+    } else if (isFustelleFornitore && articleType === 'fustella' && !currentHasPulitore && currentPulitoreCodiceFustella) {
+      console.log(`[Article ${index}] Clearing Pulitore code for Fustella.`);
+      setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
+    }
   }, [isFustelleFornitore, articleType, currentHasPulitore, currentPulitoreCodiceFustella, index, setValue]);
 
   // Gestione del nr_tasselli quando tasselli_intercambiabili viene flaggato
@@ -235,11 +206,9 @@ export function OrdineAcquistoArticoloFormRow({
     if (isFustelleFornitore && articleType === 'fustella' && currentTasselliIntercambiabili && (currentNrTasselli === undefined || currentNrTasselli === null)) {
       console.log(`[Article ${index}] Setting nr_tasselli to 0.`);
       setValue(`articoli.${index}.nr_tasselli`, 0, { shouldValidate: true });
-      setDisplayNrTasselli(formatOutputNumber(0, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
     } else if (isFustelleFornitore && articleType === 'fustella' && !currentTasselliIntercambiabili && (currentNrTasselli !== undefined && currentNrTasselli !== null)) {
       console.log(`[Article ${index}] Clearing nr_tasselli.`);
       setValue(`articoli.${index}.nr_tasselli`, null, { shouldValidate: true });
-      setDisplayNrTasselli('');
     }
   }, [isFustelleFornitore, articleType, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
 
@@ -271,22 +240,29 @@ export function OrdineAcquistoArticoloFormRow({
 
           if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
             console.error('Error fetching fustella for pulitore lookup:', error);
+            // notifications.showError(`Errore ricerca fustella: ${error.message}`); // Rimosso per non essere troppo intrusivo
             setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true });
           } else if (data) {
             const foundCodiceFornitore = data.codice_fornitore || data.codice; // Prefer codice_fornitore, fallback to codice
             setValue(`articoli.${index}.codice_fornitore_fustella`, foundCodiceFornitore, { shouldValidate: true });
+            // Update description based on found codice_fornitore
             const newPulitoreDescription = foundCodiceFornitore 
               ? `Pulitore per Fustella ${foundCodiceFornitore}` 
               : `Pulitore per fustella`;
             setValue(`articoli.${index}.descrizione`, newPulitoreDescription, { shouldValidate: true });
+            // notifications.showInfo(`Fustella trovata. Codice Fornitore: ${foundCodiceFornitore}`); // Rimosso per non essere troppo intrusivo
           } else {
+            // notifications.showInfo('Nessuna fustella trovata con il codice/codice fornitore inserito.'); // Rimosso per non essere troppo intrusivo
             setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true });
+            // Reset description if no fustella found
             setValue(`articoli.${index}.descrizione`, 'Pulitore per fustella', { shouldValidate: true });
           }
         } catch (e: any) {
           console.error('Unexpected error during fustella lookup:', e);
+          // notifications.showError(`Errore inatteso durante la ricerca fustella: ${e.message}`); // Rimosso per non essere troppo intrusivo
         }
       } else if (isFustelleFornitore && articleType === 'pulitore' && !nrFustellaLookup.trim()) {
+        // If lookup field is cleared, clear codice_fornitore_fustella and reset description
         setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true });
         setValue(`articoli.${index}.descrizione`, 'Pulitore per fustella', { shouldValidate: true });
       }
@@ -332,11 +308,8 @@ export function OrdineAcquistoArticoloFormRow({
     setValue(`articoli.${index}.tipo_incollatura`, '', { shouldValidate: true });
     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Default quantity
     setValue(`articoli.${index}.prezzo_unitario`, 0, { shouldValidate: true }); // Default prezzo unitario
-    setDisplayPrezzoUnitario(formatOutputNumber(0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })); // Reset display state
-    setDisplayPrezzoPulitore(formatOutputNumber(0, { minimumFractionDigits: 2, maximumFractionDigits: 2 })); // Reset display state
-    setDisplayNumeroFogli('');
-    setDisplayQuantita('');
-    setDisplayNrTasselli('');
+    setDisplayPrezzoUnitario('0,000');
+    setDisplayPrezzoPulitore('');
     setNrFustellaLookup(''); // Clear lookup field
 
     if (newType === 'fustella') {
@@ -346,7 +319,7 @@ export function OrdineAcquistoArticoloFormRow({
         setValue(`articoli.${index}.fustella_codice`, code, { shouldValidate: true });
       }
     } else if (newType === 'pulitore') {
-      setValue(`articoli.${index}.pulitore_codice_fustella`, await generateNextPulitoreCode(), { shouldValidate: true });
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
       // Set description immediately for new pulitore article to a generic one
       setValue(`articoli.${index}.descrizione`, 'Pulitore per fustella', { shouldValidate: true }); // Explicitly set generic description
       setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Quantità fissa per pulitore
@@ -455,15 +428,10 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.numero_fogli`} className="text-xs">Fogli *</Label>
                   <Input
                     id={`articoli.${index}.numero_fogli`}
-                    type="text"
-                    value={displayNumeroFogli}
-                    onChange={(e) => setDisplayNumeroFogli(e.target.value)}
-                    onBlur={(e) => {
-                      const num = parseInputNumber(e.target.value);
-                      setValue(`articoli.${index}.numero_fogli`, num, { shouldValidate: true });
-                      setDisplayNumeroFogli(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-                    }}
+                    type="number"
+                    {...register(`articoli.${index}.numero_fogli`, { valueAsNumber: true })}
                     placeholder="0"
+                    min="1"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -473,7 +441,7 @@ export function OrdineAcquistoArticoloFormRow({
                 <div className="col-span-1">
                   <Label className="text-xs">Quantità (kg)</Label>
                   <Input
-                    value={displayQuantita}
+                    value={calculatedQuantitaKg.toFixed(0)}
                     readOnly
                     disabled={true}
                     className="text-sm font-bold bg-gray-100"
@@ -487,16 +455,22 @@ export function OrdineAcquistoArticoloFormRow({
                       id={`articoli.${index}.prezzo_unitario`}
                       type="text"
                       value={displayPrezzoUnitario}
-                      onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
-                      onBlur={(e) => {
-                        const numericValue = parseInputNumber(e.target.value);
-                        if (numericValue !== undefined) {
-                          const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-                          setDisplayPrezzoUnitario(formattedValue);
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue);
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
+                        } else {
+                          setDisplayPrezzoUnitario('');
                         }
                       }}
                       placeholder="Es. 0,870"
@@ -707,15 +681,28 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
                     id={`articoli.${index}.quantita`}
-                    type="text" // Changed to text
+                    type="text"
                     value={displayQuantita}
-                    onChange={(e) => setDisplayQuantita(e.target.value)}
+                    onChange={(e) => {
+                      const rawValue = e.target.value;
+                      setDisplayQuantita(rawValue);
+                      const numericValue = parseFloat(rawValue.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
+                      } else {
+                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
+                      }
+                    }}
                     onBlur={(e) => {
-                      const num = parseInputNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                      setDisplayQuantita(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
+                      } else {
+                        setDisplayQuantita('');
+                      }
                     }}
                     placeholder="Es. 1"
+                    min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -726,21 +713,27 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="text" // Changed to text
+                      type="text"
                       value={displayPrezzoUnitario}
-                      onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
-                      onBlur={(e) => {
-                        const numericValue = parseInputNumber(e.target.value);
-                        if (numericValue !== undefined) {
-                          const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Fustella price
-                          setDisplayPrezzoUnitario(formattedValue);
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue);
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
-                      placeholder="Es. 150,00" // Changed placeholder to comma
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
+                        } else {
+                          setDisplayPrezzoUnitario('');
+                        }
+                      }}
+                      placeholder="Es. 150,00"
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -860,21 +853,27 @@ export function OrdineAcquistoArticoloFormRow({
                       <div className="relative">
                         <Input
                           id={`articoli.${index}.prezzo_pulitore`}
-                          type="text" // Changed to text
+                          type="text"
                           value={displayPrezzoPulitore}
-                          onChange={(e) => setDisplayPrezzoPulitore(e.target.value)}
-                          onBlur={(e) => {
-                            const numericValue = parseInputNumber(e.target.value);
-                            if (numericValue !== undefined) {
-                              const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
-                              setDisplayPrezzoPulitore(formattedValue);
+                          onChange={(e) => {
+                            const rawValue = e.target.value;
+                            setDisplayPrezzoPulitore(rawValue);
+                            const numericValue = parseFloat(rawValue.replace(',', '.'));
+                            if (!isNaN(numericValue)) {
                               setValue(`articoli.${index}.prezzo_pulitore`, numericValue, { shouldValidate: true });
                             } else {
-                              setDisplayPrezzoPulitore('');
                               setValue(`articoli.${index}.prezzo_pulitore`, undefined, { shouldValidate: true });
                             }
                           }}
-                          placeholder="Es. 50,00" // Changed placeholder to comma
+                          onBlur={(e) => {
+                            const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                            if (!isNaN(numericValue)) {
+                              setDisplayPrezzoPulitore(numericValue.toFixed(3).replace('.', ','));
+                            } else {
+                              setDisplayPrezzoPulitore('');
+                            }
+                          }}
+                          placeholder="Es. 50,00"
                           min="0"
                           disabled={isSubmitting || isOrderCancelled}
                           className="text-sm pr-10"
@@ -897,7 +896,7 @@ export function OrdineAcquistoArticoloFormRow({
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.pinza_tagliata`} className="text-xs">Pinza Tagliata</Label>
-                  {errors.articoli?.[index]?.pinza_tagliata && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
+                  {errors.articoli?.[index]?.pinza_tagliata && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
@@ -916,15 +915,10 @@ export function OrdineAcquistoArticoloFormRow({
                     <Label htmlFor={`articoli.${index}.nr_tasselli`} className="text-xs">Nr. Tasselli *</Label>
                     <Input
                       id={`articoli.${index}.nr_tasselli`}
-                      type="text" // Changed to text
-                      value={displayNrTasselli}
-                      onChange={(e) => setDisplayNrTasselli(e.target.value)}
-                      onBlur={(e) => {
-                        const num = parseInputNumber(e.target.value);
-                        setValue(`articoli.${index}.nr_tasselli`, num, { shouldValidate: true });
-                        setDisplayNrTasselli(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-                      }}
+                      type="number"
+                      {...register(`articoli.${index}.nr_tasselli`, { valueAsNumber: true })}
                       placeholder="0"
+                      min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm"
                     />
@@ -999,33 +993,20 @@ export function OrdineAcquistoArticoloFormRow({
               </div>
             </div>
           </>
-        ) : isFustelleFornitore && articleType === 'pulitore' ? ( // NUOVA SEZIONE PER PULITORE AUTONOMO
+        ) : isFustelleFornitore && articleType === 'pulitore' ? ( // NUOVA SEZIONE PER PULITORE
           <>
             {/* Section: Codice Identificativo Pulitore */}
             <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo Pulitore</h5>
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Codice Identificativo</h5>
               <div>
                 <Label htmlFor={`articoli.${index}.pulitore_codice_fustella`} className="text-xs">Codice Pulitore *</Label>
                 <Input
                   id={`articoli.${index}.pulitore_codice_fustella`}
                   {...register(`articoli.${index}.pulitore_codice_fustella`)}
                   readOnly
-                  className="text-sm font-mono font-bold"
+                  className="text-sm font-mono font-bold" // Rimosso bg-gray-100
                 />
                 {errors.articoli?.[index]?.pulitore_codice_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pulitore_codice_fustella?.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor={`articoli.${index}.codice_fornitore_fustella`} className="text-xs">Codice Fustella Associata (Fornitore) *</Label>
-                <Input
-                  id={`articoli.${index}.codice_fornitore_fustella`}
-                  {...register(`articoli.${index}.codice_fornitore_fustella`)}
-                  value={nrFustellaLookup}
-                  onChange={(e) => setNrFustellaLookup(e.target.value)}
-                  placeholder="Cerca per codice FST-XXX o FOR-XXX"
-                  disabled={isSubmitting || isOrderCancelled}
-                  className="text-sm"
-                />
-                {errors.articoli?.[index]?.codice_fornitore_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
               </div>
             </div>
 
@@ -1036,13 +1017,37 @@ export function OrdineAcquistoArticoloFormRow({
               <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
+                  <Label htmlFor={`articoli.${index}.nr_fustella_lookup`} className="text-xs">Nr. Fustella (per ricerca)</Label>
+                  <Input
+                    id={`articoli.${index}.nr_fustella_lookup`}
+                    type="text"
+                    value={nrFustellaLookup}
+                    onChange={(e) => setNrFustellaLookup(e.target.value)}
+                    placeholder="Cerca FST-XXX o Codice Fornitore"
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`articoli.${index}.codice_fornitore_fustella`} className="text-xs">Codice Fornitore</Label>
+                  <Input
+                    id={`articoli.${index}.codice_fornitore_fustella`}
+                    {...register(`articoli.${index}.codice_fornitore_fustella`)}
+                    placeholder="Popolato da ricerca o manuale" // Aggiunto placeholder
+                    readOnly // Reso di sola lettura
+                    disabled={isSubmitting || isOrderCancelled}
+                    className="text-sm"
+                  />
+                  {errors.articoli?.[index]?.codice_fornitore_fustella && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.codice_fornitore_fustella?.message}</p>}
+                </div>
+                <div>
                   <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione *</Label>
                   <Input
                     id={`articoli.${index}.descrizione`}
                     {...register(`articoli.${index}.descrizione`)}
-                    placeholder="Descrizione pulitore"
+                    readOnly // Questo campo è derivato
                     disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
+                    className="text-sm font-bold bg-gray-100"
                   />
                   {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
                 </div>
@@ -1050,15 +1055,10 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
                     id={`articoli.${index}.quantita`}
-                    type="text" // Changed to text
-                    value={displayQuantita}
-                    onChange={(e) => setDisplayQuantita(e.target.value)}
-                    onBlur={(e) => {
-                      const num = parseInputNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                      setDisplayQuantita(formatOutputNumber(num, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-                    }}
-                    placeholder="Es. 1"
+                    type="number"
+                    {...register(`articoli.${index}.quantita`, { valueAsNumber: true })}
+                    placeholder="1"
+                    min="1"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -1069,21 +1069,27 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="text" // Changed to text
+                      type="text"
                       value={displayPrezzoUnitario}
-                      onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
-                      onBlur={(e) => {
-                        const numericValue = parseInputNumber(e.target.value);
-                        if (numericValue !== undefined) {
-                          const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 2 decimals for Pulitore price
-                          setDisplayPrezzoUnitario(formattedValue);
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue);
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
-                      placeholder="Es. 50,00" // Changed placeholder to comma
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
+                        } else {
+                          setDisplayPrezzoUnitario('');
+                        }
+                      }}
+                      placeholder="Es. 50,00"
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -1094,79 +1100,24 @@ export function OrdineAcquistoArticoloFormRow({
                   </div>
                   {errors.articoli?.[index]?.prezzo_unitario && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.prezzo_unitario?.message}</p>}
                 </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.cliente`} className="text-xs">Cliente</Label>
-                  <Popover open={openClientCombobox} onOpenChange={setOpenClientCombobox}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openClientCombobox}
-                        className={cn(
-                          "w-full justify-between text-sm",
-                          !currentCliente && "text-muted-foreground"
-                        )}
-                        disabled={isSubmitting || isOrderCancelled}
-                      >
-                        {currentCliente
-                          ? clienti.find((cliente) => cliente.nome === currentCliente)?.nome
-                          : "Seleziona cliente..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                      <Command>
-                        <CommandInput placeholder="Cerca cliente..." />
-                        <CommandList>
-                          <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
-                          <CommandGroup>
-                            {clienti.map((cliente) => (
-                              <CommandItem
-                                key={cliente.id}
-                                value={cliente.nome}
-                                onSelect={() => {
-                                  setValue(`articoli.${index}.cliente`, cliente.nome!, { shouldValidate: true });
-                                  setOpenClientCombobox(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    currentCliente === cliente.nome ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {cliente.nome}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  {errors.articoli?.[index]?.cliente && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.cliente?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.lavoro`} className="text-xs">Lavoro</Label>
-                  <Input
-                    id={`articoli.${index}.lavoro`}
-                    {...register(`articoli.${index}.lavoro`)}
-                    placeholder="Es. LAV-2025-089"
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
-                  {errors.articoli?.[index]?.lavoro && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.lavoro?.message}</p>}
-                </div>
-                <div>
-                  <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
-                  <Input
-                    id={`articoli.${index}.data_consegna_prevista`}
-                    type="date"
-                    {...register(`articoli.${index}.data_consegna_prevista`)}
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
-                  {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
-                </div>
+              </div>
+            </div>
+
+            <Separator className="my-1" />
+
+            {/* Section: Consegna Pulitore */}
+            <div className="p-2 bg-gray-50 rounded-lg border">
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">Consegna</h5>
+              <div>
+                <Label htmlFor={`articoli.${index}.data_consegna_prevista`} className="text-xs">Data Consegna Prevista *</Label>
+                <Input
+                  id={`articoli.${index}.data_consegna_prevista`}
+                  type="date"
+                  {...register(`articoli.${index}.data_consegna_prevista`)}
+                  disabled={isSubmitting || isOrderCancelled}
+                  className="text-sm"
+                />
+                {errors.articoli?.[index]?.data_consegna_prevista && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.data_consegna_prevista?.message}</p>}
               </div>
             </div>
           </>
@@ -1191,15 +1142,28 @@ export function OrdineAcquistoArticoloFormRow({
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
                     id={`articoli.${index}.quantita`}
-                    type="text" // Changed to text
+                    type="text"
                     value={displayQuantita}
-                    onChange={(e) => setDisplayQuantita(e.target.value)}
-                    onBlur={(e) => {
-                      const num = parseInputNumber(e.target.value);
-                      setValue(`articoli.${index}.quantita`, num, { shouldValidate: true });
-                      setDisplayQuantita(formatOutputNumber(num, { minimumFractionDigits: 3, maximumFractionDigits: 3 }));
+                    onChange={(e) => {
+                      const rawValue = e.target.value;
+                      setDisplayQuantita(rawValue);
+                      const numericValue = parseFloat(rawValue.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
+                      } else {
+                        setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
+                      }
                     }}
-                    placeholder="Es. 0,870" // Changed to comma for placeholder
+                    onBlur={(e) => {
+                      const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
+                      } else {
+                        setDisplayQuantita('');
+                      }
+                    }}
+                    placeholder="Es. 0,870"
+                    min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
                   />
@@ -1210,21 +1174,27 @@ export function OrdineAcquistoArticoloFormRow({
                   <div className="relative">
                     <Input
                       id={`articoli.${index}.prezzo_unitario`}
-                      type="text" // Changed to text
+                      type="text"
                       value={displayPrezzoUnitario}
-                      onChange={(e) => setDisplayPrezzoUnitario(e.target.value)}
-                      onBlur={(e) => {
-                        const numericValue = parseInputNumber(e.target.value);
-                        if (numericValue !== undefined) {
-                          const formattedValue = formatOutputNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); // 3 decimals for Generic price
-                          setDisplayPrezzoUnitario(formattedValue);
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        setDisplayPrezzoUnitario(rawValue);
+                        const numericValue = parseFloat(rawValue.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
                           setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
-                          setDisplayPrezzoUnitario('');
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
                         }
                       }}
-                      placeholder="Es. 0,870" // Changed placeholder to comma
+                      onBlur={(e) => {
+                        const numericValue = parseFloat(e.target.value.replace(',', '.'));
+                        if (!isNaN(numericValue)) {
+                          setDisplayPrezzoUnitario(numericValue.toFixed(3).replace('.', ','));
+                        } else {
+                          setDisplayPrezzoUnitario('');
+                        }
+                      }}
+                      placeholder="Es. 0,870"
                       min="0"
                       disabled={isSubmitting || isOrderCancelled}
                       className="text-sm pr-10"
@@ -1258,7 +1228,7 @@ export function OrdineAcquistoArticoloFormRow({
               <Label htmlFor={`articoli.${index}.stato`} className="text-xs">Stato Articolo *</Label>
               <Select
                 onValueChange={(value: ArticoloOrdineAcquisto['stato']) => setValue(`articoli.${index}.stato`, value, { shouldValidate: true })}
-                value={currentArticle?.stato || 'in_attesa'}
+                value={currentStatoArticolo || 'in_attesa'}
                 disabled={isSubmitting || isOrderCancelled}
               >
                 <SelectTrigger className="w-full text-sm">
@@ -1279,7 +1249,7 @@ export function OrdineAcquistoArticoloFormRow({
       </div>
       <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
         <span className="text-sm font-semibold whitespace-nowrap">
-          Totale: {formatOutputNumber(itemTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          Totale: {itemTotal.toFixed(2)} €
         </span>
         <Button
           type="button"

@@ -41,7 +41,7 @@ import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCode
 import { fetchMaxOrdineAcquistoNumeroFromDB, generateNextOrdineAcquistoNumero } from '@/utils/ordineAcquistoUtils';
 import { fetchMaxFscCommessaFromDB, generateNextFscCommessa, resetFscCommessaGenerator } from '@/utils/fscUtils';
 import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils';
-import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione aggiornata
+import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils';
 
 interface ModalOrdineAcquistoFormProps {
   isOpen: boolean;
@@ -271,6 +271,7 @@ export function ModalOrdineAcquistoForm({
             }
             // Campi non consentiti per altri tipi di fornitori
             if (articolo.codice_ctn || articolo.tipologia_cartone || articolo.formato || articolo.grammatura || articolo.numero_fogli || articolo.cliente || articolo.lavoro || articolo.fsc || articolo.alimentare || articolo.rif_commessa_fsc || articolo.fustella_codice || articolo.codice_fornitore_fustella || articolo.fustellatrice || articolo.resa_fustella || articolo.hasPulitore || articolo.pulitore_codice_fustella || articolo.prezzo_pulitore || articolo.pinza_tagliata || articolo.tasselli_intercambiabili || articolo.nr_tasselli || articolo.incollatura || articolo.incollatrice || articolo.tipo_incollatura) {
+              console.log(`[superRefine] Article ${index}: Adding issue: non-generic fields present.`);
               ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Questi campi non devono essere usati per questo tipo di fornitore.', path: [`articoli`, index, `tipologia_cartone`] });
             }
           }
@@ -394,7 +395,7 @@ export function ModalOrdineAcquistoForm({
   const [ctnGeneratorInitialized, setCtnGeneratorInitialized] = React.useState(false);
   const [fscCommessaGeneratorInitialized, setFscCommessaGeneratorInitialized] = React.useState(false);
   const [fustellaGeneratorInitialized, setFustellaGeneratorInitialized] = React.useState(false);
-  // Removed pulitoreGeneratorInitialized state, as generateNextPulitoreCode is always async and finds next available.
+  const [pulitoreGeneratorInitialized, setPulitoreGeneratorInitialized] = React.useState(false);
 
   const isCancelled = watch('stato') === 'annullato';
   const isNewOrder = !initialData?.id;
@@ -439,7 +440,7 @@ export function ModalOrdineAcquistoForm({
     setCtnGeneratorInitialized(false);
     setFscCommessaGeneratorInitialized(false);
     setFustellaGeneratorInitialized(false);
-    // Removed setPulitoreGeneratorInitialized(false);
+    setPulitoreGeneratorInitialized(false);
 
     const orderDateValue = watch('data_ordine');
     const orderYear = orderDateValue ? new Date(orderDateValue).getFullYear() : new Date().getFullYear();
@@ -458,7 +459,8 @@ export function ModalOrdineAcquistoForm({
       setValue(`articoli.0.fustella_codice`, nextFustellaCode, { shouldValidate: true });
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true });
 
-      // No need to reset pulitore generator, it finds next available
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
     } else {
       resetCartoneCodeGenerator(0);
       setValue(`articoli.0.quantita`, 1, { shouldValidate: true });
@@ -467,7 +469,7 @@ export function ModalOrdineAcquistoForm({
     setCtnGeneratorInitialized(true);
     setFscCommessaGeneratorInitialized(true);
     setFustellaGeneratorInitialized(true);
-    // Removed setPulitoreGeneratorInitialized(true);
+    setPulitoreGeneratorInitialized(true);
     console.log('resetArticlesAndGenerators: Completed.');
   }, [remove, append, setValue, fornitori, watch]);
 
@@ -478,7 +480,7 @@ export function ModalOrdineAcquistoForm({
       setCtnGeneratorInitialized(false);
       setFscCommessaGeneratorInitialized(false);
       setFustellaGeneratorInitialized(false);
-      // Removed setPulitoreGeneratorInitialized(false);
+      setPulitoreGeneratorInitialized(false);
       console.log('ModalOrdineAcquistoForm: Setting all generators initialized states to false.');
 
       const setupFormAndGenerators = async () => {
@@ -538,6 +540,7 @@ export function ModalOrdineAcquistoForm({
                 rif_commessa_fsc: '',
                 // Fustelle fields
                 fustella_codice: '',
+                codice_fornitore_fustella: '',
                 fustellatrice: '',
                 resa_fustella: '',
                 hasPulitore: false,
@@ -588,7 +591,8 @@ export function ModalOrdineAcquistoForm({
           const maxFscCommessa = await fetchMaxFscCommessaFromDB(String(orderYear).slice(-2));
           resetFscCommessaGenerator(maxFscCommessa, orderYear);
 
-          // No need to reset pulitore generator, it finds next available
+          const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+          resetPulitoreCodeGenerator(maxPulitoreCode);
           
           reset(dataToReset);
           console.log('ModalOrdineAcquistoForm: Form reset with data:', dataToReset);
@@ -632,11 +636,11 @@ export function ModalOrdineAcquistoForm({
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
                   }
                   if (article.hasPulitore && !article.pulitore_codice_fustella) {
-                    setValue(`articoli.${index}.pulitore_codice_fustella`, await generateNextPulitoreCode(), { shouldValidate: true });
+                    setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
                   }
                 } else if (currentArticleType === 'pulitore') {
                   if (!article.pulitore_codice_fustella) { // Should not happen if currentArticleType is 'pulitore'
-                    setValue(`articoli.${index}.pulitore_codice_fustella`, await generateNextPulitoreCode(), { shouldValidate: true });
+                    setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
                   }
                   if (article.quantita === undefined) {
                     setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true });
@@ -663,7 +667,7 @@ export function ModalOrdineAcquistoForm({
           setCtnGeneratorInitialized(true);
           setFscCommessaGeneratorInitialized(true);
           setFustellaGeneratorInitialized(true);
-          // Removed setPulitoreGeneratorInitialized(true);
+          setPulitoreGeneratorInitialized(true);
           console.log('ModalOrdineAcquistoForm: All generators initialized states set to true.');
         } catch (error) {
           console.error('ModalOrdineAcquistoForm: Error during setupFormAndGenerators:', error);
@@ -693,7 +697,7 @@ export function ModalOrdineAcquistoForm({
   };
 
   const handleAddArticle = async () => {
-    if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized) { // Removed pulitoreGeneratorInitialized
+    if (!ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || !pulitoreGeneratorInitialized) {
       toast.error("Generatore codici non pronto. Riprova.");
       return;
     }
@@ -740,7 +744,7 @@ export function ModalOrdineAcquistoForm({
       newArticle = { ...newArticle, fustella_codice: nextFustellaCode, quantita: 1 };
       if (watchedArticles[0]?.hasPulitore) { 
         newArticle.hasPulitore = true;
-        newArticle.pulitore_codice_fustella = await generateNextPulitoreCode();
+        newArticle.pulitore_codice_fustella = generateNextPulitoreCode();
       }
     } else {
       newArticle = { ...newArticle, quantita: 1 };
@@ -905,7 +909,7 @@ export function ModalOrdineAcquistoForm({
               type="button"
               variant="success"
               onClick={handleAddArticle}
-              disabled={isSubmitting || !ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || isCancelled} // Removed pulitoreGeneratorInitialized
+              disabled={isSubmitting || !ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || !pulitoreGeneratorInitialized || isCancelled}
               className="w-full sm:w-auto self-start gap-2"
             >
               <PlusCircle className="h-4 w-4" /> Aggiungi Articolo

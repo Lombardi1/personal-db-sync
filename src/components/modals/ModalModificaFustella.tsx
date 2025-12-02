@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione aggiornata
+import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 interface ModalModificaFustellaProps {
   fustella: Fustella;
@@ -41,16 +41,23 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
     tipo_incollatura: fustella.tipo_incollatura || '',
   });
 
-  const handleChange = async (field: keyof typeof formData, value: any) => { // Reso async
+  useEffect(() => {
+    // Inizializza il generatore di codici pulitore all'apertura del modale
+    const initializePulitoreCodeGenerator = async () => {
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
+    };
+    initializePulitoreCodeGenerator();
+  }, []);
+
+  const handleChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => {
       const newState = { ...prev, [field]: value };
       if (field === 'hasPulitore') {
         if (value) {
           // Se 'hasPulitore' viene spuntato e il codice non esiste, genera un nuovo codice
           if (!newState.pulitore_codice) {
-            generateNextPulitoreCode().then(code => {
-              setFormData(current => ({ ...current, pulitore_codice: code }));
-            });
+            newState.pulitore_codice = generateNextPulitoreCode();
           }
         } else {
           // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
@@ -322,15 +329,34 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
           <Button
             type="button"
             onClick={async () => { // Modificato per essere async
-              // Non è più necessario generare un nuovo codice FST qui, il form viene chiuso e riaperto
-              // o il codice FST è già impostato per la modifica.
-              // Se si vuole resettare il form per un nuovo inserimento, la logica è in CaricoFustellaTab.
-              onClose(); // Chiude il modale
+              await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
+
+              const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+              resetPulitoreCodeGenerator(maxPulitoreCode);
+
+              setFormData(prev => ({
+                ...prev,
+                // codice: nextFustellaCode, // Già aggiornato da generateAndSetFustellaCode
+                fornitore: '',
+                codice_fornitore: '',
+                cliente: '',
+                lavoro: '',
+                fustellatrice: '',
+                resa: '',
+                hasPulitore: false,
+                pulitore_codice: '',
+                pinza_tagliata: false,
+                tasselli_intercambiabili: false,
+                nr_tasselli: null,
+                incollatura: false,
+                incollatrice: '',
+                tipo_incollatura: '',
+              }));
             }}
             className="bg-[hsl(210,40%,96%)] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(214,32%,91%)] px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
           >
-            <i className="fas fa-times mr-1 sm:mr-2"></i>
-            Annulla
+            <i className="fas fa-eraser mr-1 sm:mr-2"></i>
+            Pulisci Form
           </Button>
         </div>
       </DialogContent>

@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as notifications from '@/utils/notifications';
 import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la nuova funzione
-import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione aggiornata
+import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 interface CaricoFustellaTabProps {
   aggiungiFustella: (fustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica'>) => Promise<{ error: any }>;
@@ -41,19 +41,20 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
   useEffect(() => {
     const initializeCodes = async () => {
       await generateAndSetFustellaCode(); // Genera il primo codice FST
+      
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
     };
     initializeCodes();
   }, []);
 
-  const handleChange = async (field: keyof typeof formData, value: any) => { // Reso async
+  const handleChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => {
       const newState = { ...prev, [field]: value };
       if (field === 'hasPulitore') {
         if (value) {
           // Se 'hasPulitore' viene spuntato, genera un nuovo codice pulitore
-          generateNextPulitoreCode().then(code => {
-            setFormData(current => ({ ...current, pulitore_codice: code }));
-          });
+          newState.pulitore_codice = generateNextPulitoreCode();
         } else {
           // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
           newState.pulitore_codice = '';
@@ -98,6 +99,9 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       
       // Genera il prossimo codice FST disponibile e resetta il resto del form
       await generateAndSetFustellaCode();
+
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
 
       setFormData(prev => ({
         ...prev,
@@ -346,6 +350,9 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
             type="button"
             onClick={async () => { // Modificato per essere async
               await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
+
+              const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+              resetPulitoreCodeGenerator(maxPulitoreCode);
 
               setFormData(prev => ({
                 ...prev,

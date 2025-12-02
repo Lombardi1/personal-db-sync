@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { Cartone } from '@/types';
 import { formatFormato, formatGrammatura } from '@/utils/formatters';
 import { Button } from '@/components/ui/button';
-import * as notifications from '@/utils/notifications';
+import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
 import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCodeFromDB } from '@/utils/cartoneUtils';
-import { parseInputNumber, formatOutputNumber } from '@/lib/utils'; // Importa le nuove utilità
 
 interface CaricoTabProps {
   aggiungiOrdine: (cartone: Cartone) => Promise<{ error: any }>;
@@ -42,16 +41,9 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
 
   const handleBlur = (field: string, value: any) => {
     if (field === 'prezzo') {
-      const numericValue = parseInputNumber(value);
-      if (numericValue !== undefined) {
-        setFormData(prev => ({ ...prev, [field]: formatOutputNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) }));
-      } else {
-        setFormData(prev => ({ ...prev, [field]: '' }));
-      }
-    } else if (field === 'fogli') {
-      const numericValue = parseInputNumber(value);
-      if (numericValue !== undefined) {
-        setFormData(prev => ({ ...prev, [field]: formatOutputNumber(numericValue, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }));
+      const numericValue = parseFloat(String(value).replace(',', '.'));
+      if (!isNaN(numericValue)) {
+        setFormData(prev => ({ ...prev, [field]: numericValue.toFixed(3).replace('.', ',') }));
       } else {
         setFormData(prev => ({ ...prev, [field]: '' }));
       }
@@ -76,11 +68,11 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
       tipologia: formData.tipologia.trim(),
       formato: formatFormato(formData.formato),
       grammatura: formatGrammatura(formData.grammatura),
-      fogli: parseInputNumber(formData.fogli) || 0, // Parsa il numero
+      fogli: parseInt(formData.fogli),
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
       magazzino: '-',
-      prezzo: parseInputNumber(formData.prezzo) || 0, // Parsa il numero
+      prezzo: parseFloat(formData.prezzo.replace(',', '.')), // Parse after comma replacement
       data_consegna: formData.data_consegna,
       confermato: formData.confermato,
       note: formData.note.trim() || '-'
@@ -206,12 +198,12 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
               <i className="fas fa-layer-group mr-1"></i> Fogli *
             </label>
             <input
-              type="text" // Changed to text
+              type="number"
               value={formData.fogli}
               onChange={(e) => handleChange('fogli', e.target.value)}
-              onBlur={(e) => handleBlur('fogli', e.target.value)} // Added onBlur
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
               placeholder="es. 1500"
+              min="1"
               required
             />
           </div>
@@ -254,7 +246,7 @@ export function CaricoTab({ aggiungiOrdine }: CaricoTabProps) {
               onChange={(e) => handleChange('prezzo', e.target.value)}
               onBlur={(e) => handleBlur('prezzo', e.target.value)} // Added onBlur
               className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-              placeholder="Es. 0.870" // Updated placeholder
+              placeholder="Es. 0,870" // Updated placeholder
               required
             />
           </div>
