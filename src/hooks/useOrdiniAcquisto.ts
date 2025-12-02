@@ -88,9 +88,10 @@ export function useOrdiniAcquisto() {
               console.log(`[syncArticleInventoryStatus] Inserimento in 'ordini' riuscito per cartone '${codiceCtn}'.`);
             }
           } else if (articolo.stato === 'ricevuto') {
+            // Seleziona esplicitamente le colonne per la tabella 'giacenza'
             const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
               .from('giacenza')
-              .select('codice, ddt, data_arrivo, magazzino, rif_commessa_fsc') // Explicitly select relevant fields
+              .select('codice, fornitore, ordine, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, ddt, data_arrivo, note, fsc, alimentare, rif_commessa_fsc')
               .eq('codice', codiceCtn)
               .single();
 
