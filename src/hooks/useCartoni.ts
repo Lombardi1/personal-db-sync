@@ -134,20 +134,31 @@ export function useCartoni() {
     }
     console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, JSON.stringify(ordine, null, 2));
 
-    // Destruttura per escludere 'id' e 'created_at' dall'oggetto 'ordine' originale
-    // Questi campi sono gestiti automaticamente da Supabase e non dovrebbero essere inclusi nell'INSERT/UPDATE
-    const { id, created_at, ...ordineWithoutIdAndCreatedAt } = ordine;
-
     const fogliFinali = fogliEffettivi;
     const magazzinoFinale = magazzino; 
     
-    // Creazione esplicita dell'oggetto Cartone per giacenza
+    // Creazione esplicita dell'oggetto Cartone per giacenza, includendo solo i campi pertinenti
     const cartoneGiacenza: Cartone = {
-      ...ordineWithoutIdAndCreatedAt, // Usa l'oggetto destrutturato
+      codice: ordine.codice,
+      fornitore: ordine.fornitore,
+      ordine: ordine.ordine,
+      tipologia: ordine.tipologia,
+      formato: ordine.formato,
+      grammatura: ordine.grammatura,
       fogli: fogliFinali,
-      magazzino: magazzinoFinale,
+      cliente: ordine.cliente,
+      lavoro: ordine.lavoro,
+      prezzo: ordine.prezzo,
+      note: ordine.note || '-',
+      fsc: ordine.fsc,
+      alimentare: ordine.alimentare,
+      rif_commessa_fsc: ordine.rif_commessa_fsc || null,
+      // Campi specifici per giacenza, sovrascritti o aggiunti
       ddt: ddt,
       data_arrivo: dataArrivo,
+      magazzino: magazzinoFinale,
+      // Escludiamo 'data_consegna' e 'confermato' che sono specifici della tabella 'ordini'
+      // Escludiamo 'id' e 'created_at' che sono auto-generati
     };
     
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
@@ -242,8 +253,27 @@ export function useCartoni() {
         return { error: deleteGiacenzaError };
       }
 
-      const { data_consegna, ...restOfCartone } = cartone; 
-      const cartoneEsaurito = { ...restOfCartone, fogli: 0 }; 
+      // Quando un cartone va in esauriti, non ha più data_consegna o confermato
+      const cartoneEsaurito: Cartone = {
+        codice: cartone.codice,
+        fornitore: cartone.fornitore,
+        ordine: cartone.ordine,
+        tipologia: cartone.tipologia,
+        formato: cartone.formato,
+        grammatura: cartone.grammatura,
+        fogli: 0, // Fogli a 0 quando esaurito
+        cliente: cartone.cliente,
+        lavoro: cartone.lavoro,
+        magazzino: cartone.magazzino,
+        prezzo: cartone.prezzo,
+        note: cartone.note,
+        fsc: cartone.fsc,
+        alimentare: cartone.alimentare,
+        rif_commessa_fsc: cartone.rif_commessa_fsc || null,
+        ddt: cartone.ddt,
+        data_arrivo: cartone.data_arrivo,
+        // Escludiamo data_consegna e confermato
+      };
       const { error: insertEsauritiError } = await supabase.from('esauriti').insert([cartoneEsaurito]);
       if (insertEsauritiError) {
         notifications.showError(`Errore inserimento in esauriti: ${insertEsauritiError.message}`);
@@ -283,10 +313,10 @@ export function useCartoni() {
       note: cartoneEsaurito.note,
       ddt: null, // DDT è null quando riportato da esauriti
       data_arrivo: new Date().toISOString().split('T')[0], // Data di arrivo odierna
-      data_consegna: cartoneEsaurito.data_consegna || null,
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
+      // Escludiamo data_consegna e confermato
     };
 
     try {
@@ -346,35 +376,50 @@ export function useCartoni() {
       return { error: new Error('Cartone non trovato') };
     }
 
-    const ordine: Cartone = { ...cartone };
-    ordine.ddt = null; // DDT è null quando riportato in ordini
-    ordine.data_arrivo = undefined; // data_arrivo non esiste in ordini
-    
-    ordine.confermato = true; 
-    if (!ordine.data_consegna) {
-      ordine.data_consegna = new Date().toISOString().split('T')[0];
-    }
+    // Creazione esplicita dell'oggetto Cartone per la tabella 'ordini'
+    const ordinePerOrdini: Cartone = {
+      codice: cartone.codice,
+      fornitore: cartone.fornitore,
+      ordine: cartone.ordine,
+      tipologia: cartone.tipologia,
+      formato: cartone.formato,
+      grammatura: cartone.grammatura,
+      fogli: cartone.fogli,
+      cliente: cartone.cliente,
+      lavoro: cartone.lavoro,
+      prezzo: cartone.prezzo,
+      note: cartone.note,
+      fsc: cartone.fsc,
+      alimentare: cartone.alimentare,
+      rif_commessa_fsc: cartone.rif_commessa_fsc || null,
+      // Campi specifici per ordini
+      ddt: null, // DDT è null quando riportato in ordini
+      data_consegna: cartone.data_consegna || new Date().toISOString().split('T')[0], // Usa data_consegna esistente o odierna
+      confermato: true, // Imposta a true quando riportato in ordini
+      magazzino: '-', // Default per ordini in arrivo
+      // Escludiamo data_arrivo
+    };
 
     await supabase.from('giacenza').delete().eq('codice', codice);
-    await supabase.from('ordini').insert([ordine]);
+    await supabase.from('ordini').insert([ordinePerOrdini]);
 
     const movimento: StoricoMovimento = {
       codice,
       tipo: 'carico',
-      quantita: ordine.fogli,
+      quantita: ordinePerOrdini.fogli,
       data: new Date().toISOString(),
       note: `Riportato in ordini in arrivo da giacenza`,
       user_id: user?.id,
-      numero_ordine_acquisto: ordine.ordine
+      numero_ordine_acquisto: ordinePerOrdini.ordine
     };
     const { error: storicoError } = await supabase.from('storico').insert([movimento]);
     if (storicoError) {
       notifications.showError(`Errore registrazione storico: ${storicoError.message}`);
     }
 
-    if (ordine.ordine && codice) {
-      console.log(`[useCartoni - riportaInOrdini] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'confermato'`);
-      const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordine.ordine, codice, 'confermato');
+    if (ordinePerOrdini.ordine && codice) {
+      console.log(`[useCartoni - riportaInOrdini] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${ordinePerOrdini.ordine}', Articolo: '${codice}', Nuovo stato: 'confermato'`);
+      const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordinePerOrdini.ordine, codice, 'confermato');
       if (updateArticleError) {
         console.error(`[useCartoni - riportaInOrdini] Errore durante l'aggiornamento dello stato dell'articolo nell'OA:`, updateArticleError);
         notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}. Il cartone è stato comunque riportato in ordini in arrivo.`);
@@ -382,7 +427,7 @@ export function useCartoni() {
         console.log(`[useCartoni - riportaInOrdini] updateArticleStatusInOrder completato con successo: ${updateSuccess}`);
       }
     } else {
-      console.warn(`[useCartoni - riportaInOrdini] Impossibile chiamare updateArticleStatusInOrder: ordine.ordine o codice mancante. Ordine.ordine: '${ordine.ordine}', Codice: '${codice}'`);
+      console.warn(`[useCartoni - riportaInOrdini] Impossibile chiamare updateArticleStatusInOrder: ordine.ordine o codice mancante. Ordine.ordine: '${ordinePerOrdini.ordine}', Codice: '${codice}'`);
       notifications.showInfo(`Impossibile aggiornare lo stato dell'articolo nell'ordine d'acquisto (dati mancanti). Il cartone è stato comunque riportato in ordini in arrivo.`);
     }
 
