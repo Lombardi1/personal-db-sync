@@ -91,7 +91,7 @@ export function useOrdiniAcquisto() {
           } else if (articolo.stato === 'ricevuto') {
             const { data: existingGiacenza, error: fetchGiacenzaError } = await supabase
               .from('giacenza')
-              .select('ddt, data_arrivo, magazzino')
+              .select('*') // Modificato da 'ddt, data_arrivo, magazzino' a '*'
               .eq('codice', codiceCtn)
               .single();
 
