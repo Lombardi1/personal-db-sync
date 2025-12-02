@@ -201,13 +201,13 @@ export function useCartoni() {
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
 
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di eliminare da 'ordini' il codice: ${codice}`);
-    const { error: deleteError } = await supabase.from('ordini').delete().eq('codice', codice);
+    const { error: deleteError, count: deletedCount } = await supabase.from('ordini').delete().eq('codice', codice);
     if (deleteError) {
       console.error(`[useCartoni - spostaInGiacenza] Errore eliminazione ordine da 'ordini':`, deleteError);
       notifications.showError(`Errore eliminazione ordine: ${deleteError.message}`);
       return { error: deleteError };
     }
-    console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}`);
+    console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}. Righe eliminate: ${deletedCount}`);
 
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di inserire in 'giacenza' il cartone:`, JSON.stringify(cartoneGiacenza, null, 2));
     const { error: insertError } = await supabase.from('giacenza').insert([cartoneGiacenza]);
@@ -413,6 +413,8 @@ export function useCartoni() {
       return { error: new Error('Cartone non trovato') };
     }
     console.log(`[useCartoni - riportaInOrdini] Cartone trovato in giacenza per codice ${codice}:`, JSON.stringify(cartone, null, 2));
+    console.log(`[useCartoni - riportaInOrdini] Valori da giacenza: DDT='${cartone.ddt}', DataArrivo='${cartone.data_arrivo}', Magazzino='${cartone.magazzino}', Fogli=${cartone.fogli}`);
+
 
     // Creazione esplicita dell'oggetto Cartone per la tabella 'ordini'
     // ORA INCLUDIAMO DDT, DATA_ARRIVO E MAGAZZINO
@@ -441,8 +443,17 @@ export function useCartoni() {
     };
     console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini (PRIMA DELL\'INSERT):', JSON.stringify(ordinePerOrdini, null, 2)); // LOG DI DEBUG
 
-    await supabase.from('giacenza').delete().eq('codice', codice);
-    await supabase.from('ordini').insert([ordinePerOrdini]);
+    // Prima di inserire, assicuriamoci che non ci sia un record esistente in 'ordini' con lo stesso codice.
+    // Questo dovrebbe essere già gestito dal flusso, ma un controllo esplicito o un upsert può aiutare.
+    // Per ora, ci affidiamo al fatto che 'spostaInGiacenza' lo abbia eliminato da 'ordini'.
+    const { error: insertError, data: insertedData } = await supabase.from('ordini').insert([ordinePerOrdini]).select();
+    if (insertError) {
+      console.error('[useCartoni - riportaInOrdini] Errore inserimento in ordini:', insertError);
+      notifications.showError(`Errore inserimento in ordini: ${insertError.message}`);
+      return { error: insertError };
+    }
+    console.log('[useCartoni - riportaInOrdini] Inserimento in ordini riuscito. Dati inseriti:', JSON.stringify(insertedData, null, 2));
+
 
     const movimento: StoricoMovimento = {
       codice,
