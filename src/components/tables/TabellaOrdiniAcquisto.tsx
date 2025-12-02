@@ -39,7 +39,7 @@ interface DisplayRow extends ArticoloOrdineAcquisto {
   orderImportoTotale: number;
   orderNote: string;
   isFirstDisplayRowOfOrder: boolean; // Indica se è la prima riga di visualizzazione per l'ordine
-  isLastDisplayRowOfOrder: boolean; // Indica se è l'ultima riga di visualizzazione per l'ordine
+  isLastDisplayRowOfOrder: boolean; // Indica indica se è l'ultima riga di visualizzazione per l'ordine
   parentOrder: OrdineAcquisto;
   isCartoneFornitore: boolean;
   isFustelleFornitore: boolean;
@@ -379,7 +379,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
             ...baseDisplayRow,
             isFirstDisplayRowOfOrder: allDisplayRowsForOrder.length === 0,
             isLastDisplayRowOfOrder: false,
-            isPulitoreRow: false,
+            // Set isPulitoreRow to true if it's a standalone pulitore
+            isPulitoreRow: isFustelleFornitore && !!article.pulitore_codice_fustella && !article.fustella_codice,
           });
 
           // If it's a fustella with a pulitore, add a separate row for the pulitore
@@ -415,7 +416,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               lavoro: article.lavoro, // Inherit from fustella
               isFirstDisplayRowOfOrder: false,
               isLastDisplayRowOfOrder: false,
-              isPulitoreRow: true,
+              isPulitoreRow: true, // THIS IS THE KEY FLAG for associated pulitore
             });
           }
         });
@@ -515,6 +516,8 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                               {row.resa_fustella && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Resa: {row.resa_fustella}</div>}
                               {row.cliente && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Cliente: {row.cliente}</div>}
                               {row.lavoro && <div className="mb-1 font-bold text-[9px] sm:text-[10px]">Lavoro: {row.lavoro}</div>}
+                              {/* If it's a generic article for Fustelle supplier, display its description */}
+                              {!row.fustella_codice && !row.pulitore_codice_fustella && row.descrizione && <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione}</div>}
                             </>
                           ) : (
                             <>

@@ -427,6 +427,14 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
       bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, 
+      columnStyles: { // Aggiunto per distribuire equamente la larghezza
+        0: { cellWidth: (pageWidth - 20) / 6 },
+        1: { cellWidth: (pageWidth - 20) / 6 },
+        2: { cellWidth: (pageWidth - 20) / 6 },
+        3: { cellWidth: (pageWidth - 20) / 6 },
+        4: { cellWidth: (pageWidth - 20) / 6 },
+        5: { cellWidth: (pageWidth - 20) / 6 },
+      },
       margin: { left: 10, right: 10 },
     });
 
@@ -494,55 +502,92 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
         subtotalNonCancelled += prezzoTotaleRiga;
 
       } else if (isFustelle) {
-        // Fustella row
-        umText = 'PZ';
-        quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-        prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Modificato a 2 decimali
-        prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
+        // Check if it's a standalone pulitore article
+        if (article.pulitore_codice_fustella && !article.fustella_codice) {
+          umText = 'PZ';
+          quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+          prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
 
-        let fustellaDescription = [];
-        if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
-        if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
-        if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
-        if (article.tasselli_intercambiabili) {
-          fustellaDescription.push(`Tasselli Intercambiabili: Sì`);
-          if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
-            fustellaDescription.push(`Nr. Tasselli: ${article.nr_tasselli}`);
-          }
-        }
-        if (article.incollatura) {
-          fustellaDescription.push(`Incollatura: Sì`);
-          if (article.incollatrice) fustellaDescription.push(`Incollatrice: ${article.incollatrice}`);
-          if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
-        }
-        
-        articlesBody.push([
-          article.fustella_codice || '',
-          fustellaDescription.join('\n'), // Fustella description without pulitore
-          umText,
-          quantitaFormatted,
-          prezzoUnitarioFormatted,
-          prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), // Only fustella price
-          fornitore?.considera_iva ? '22%' : '-',
-          formatData(article.data_consegna_prevista || '')
-        ]);
-        subtotalNonCancelled += prezzoTotaleRiga;
-
-        // Pulitore row (if exists)
-        if (article.hasPulitore && article.pulitore_codice_fustella && article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
-          const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Modificato a 2 decimali
-          const pulitoreTotaleRiga = (article.prezzo_pulitore || 0);
           articlesBody.push([
-            article.pulitore_codice_fustella,
-            `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Specific description for pulitore, without quotes
-            'PZ', // UM for pulitore
-            '1', // Quantity for pulitore
-            pulitorePrezzoFormatted,
-            pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            article.pulitore_codice_fustella, // Articolo: PU-XXX
+            `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Descrizione: Pulitore per Fustella FOR-XXX
+            umText,
+            quantitaFormatted,
+            prezzoUnitarioFormatted,
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             fornitore?.considera_iva ? '22%' : '-',
             formatData(article.data_consegna_prevista || '')
           ]);
-          subtotalNonCancelled += pulitoreTotaleRiga;
+          subtotalNonCancelled += prezzoTotaleRiga;
+        } else if (article.fustella_codice) { // It's a Fustella article (not a standalone pulitore)
+          // Fustella row
+          umText = 'PZ';
+          quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+          prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Modificato a 2 decimali
+          prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
+
+          let fustellaDescription = [];
+          if (article.codice_fornitore_fustella) fustellaDescription.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
+          if (article.resa_fustella) fustellaDescription.push(`Resa: ${article.resa_fustella}`);
+          if (article.pinza_tagliata) fustellaDescription.push(`Pinza Tagliata: Sì`);
+          if (article.tasselli_intercambiabili) {
+            fustellaDescription.push(`Tasselli Intercambiabili: Sì`);
+            if (article.nr_tasselli !== null && article.nr_tasselli !== undefined) {
+              fustellaDescription.push(`Nr. Tasselli: ${article.nr_tasselli}`);
+            }
+          }
+          if (article.incollatura) {
+            fustellaDescription.push(`Incollatura: Sì`);
+            if (article.incollatrice) fustellaDescription.push(`Incollatrice: ${article.incollatrice}`);
+            if (article.tipo_incollatura) fustellaDescription.push(`Tipo Incollatura: ${article.tipo_incollatura}`);
+          }
+          
+          articlesBody.push([
+            article.fustella_codice || '',
+            fustellaDescription.join('\n'), // Fustella description without pulitore
+            umText,
+            quantitaFormatted,
+            prezzoUnitarioFormatted,
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), // Only fustella price
+            fornitore?.considera_iva ? '22%' : '-',
+            formatData(article.data_consegna_prevista || '')
+          ]);
+          subtotalNonCancelled += prezzoTotaleRiga;
+
+          // Pulitore row (if exists)
+          if (article.hasPulitore && article.pulitore_codice_fustella && article.prezzo_pulitore !== undefined && article.prezzo_pulitore !== null) {
+            const pulitorePrezzoFormatted = (article.prezzo_pulitore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // Modificato a 2 decimali
+            const pulitoreTotaleRiga = (article.prezzo_pulitore || 0);
+            articlesBody.push([
+              article.pulitore_codice_fustella,
+              `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Specific description for pulitore, without quotes
+              'PZ', // UM for pulitore
+              '1', // Quantity for pulitore
+              pulitorePrezzoFormatted,
+              pulitoreTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+              fornitore?.considera_iva ? '22%' : '-',
+              formatData(article.data_consegna_prevista || '')
+            ]);
+            subtotalNonCancelled += pulitoreTotaleRiga;
+          }
+        } else { // Generic articles for Fustelle supplier (no fustella_codice and no pulitore_codice_fustella)
+          umText = 'PZ';
+          quantitaFormatted = (article.quantita || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          prezzoUnitarioFormatted = (article.prezzo_unitario || 0).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+          prezzoTotaleRiga = (article.quantita || 0) * (article.prezzo_unitario || 0);
+
+          articlesBody.push([
+            article.descrizione || '',
+            '', // No extra description for generic
+            umText,
+            quantitaFormatted,
+            prezzoUnitarioFormatted,
+            prezzoTotaleRiga.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            fornitore?.considera_iva ? '22%' : '-',
+            formatData(article.data_consegna_prevista || '')
+          ]);
+          subtotalNonCancelled += prezzoTotaleRiga;
         }
       } else { // Generic articles
         umText = 'PZ';
