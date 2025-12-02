@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { generateNextFscCommessa } from '@/utils/fscUtils';
-import { findNextAvailablePulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
+import { generateNextPulitoreCode, fetchMaxPulitoreCodeFromDB, resetPulitoreCodeGenerator } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
 import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la funzione di generazione del codice fustella
 import { supabase } from '@/lib/supabase'; // Importa supabase per la ricerca
 
@@ -194,9 +194,7 @@ export function OrdineAcquistoArticoloFormRow({
   React.useEffect(() => {
     if (isFustelleFornitore && articleType === 'fustella' && currentHasPulitore && !currentPulitoreCodiceFustella) {
       console.log(`[Article ${index}] Generating new Pulitore code for Fustella.`);
-      findNextAvailablePulitoreCode().then(code => {
-        setValue(`articoli.${index}.pulitore_codice_fustella`, code, { shouldValidate: true });
-      });
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
     } else if (isFustelleFornitore && articleType === 'fustella' && !currentHasPulitore && currentPulitoreCodiceFustella) {
       console.log(`[Article ${index}] Clearing Pulitore code for Fustella.`);
       setValue(`articoli.${index}.pulitore_codice_fustella`, '', { shouldValidate: true });
@@ -321,9 +319,7 @@ export function OrdineAcquistoArticoloFormRow({
         setValue(`articoli.${index}.fustella_codice`, code, { shouldValidate: true });
       }
     } else if (newType === 'pulitore') {
-      await findNextAvailablePulitoreCode().then(code => { // Usa la nuova funzione
-        setValue(`articoli.${index}.pulitore_codice_fustella`, code, { shouldValidate: true });
-      });
+      setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
       // Set description immediately for new pulitore article to a generic one
       setValue(`articoli.${index}.descrizione`, 'Pulitore per fustella', { shouldValidate: true }); // Explicitly set generic description
       setValue(`articoli.${index}.quantita`, 1, { shouldValidate: true }); // Quantità fissa per pulitore
@@ -578,7 +574,7 @@ export function OrdineAcquistoArticoloFormRow({
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.fsc`} className="text-xs">FSC</Label>
-                  {errors.articoli?.[index]?.fsc && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.fsc?.message}</p>}
+                  {errors.articoli?.[index]?.fsc && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.fsc?.message}</p>}
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
@@ -900,7 +896,7 @@ export function OrdineAcquistoArticoloFormRow({
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={`articoli.${index}.pinza_tagliata`} className="text-xs">Pinza Tagliata</Label>
-                  {errors.articoli?.[index]?.pinza_tagliata && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
+                  {errors.articoli?.[index]?.pinza_tagliata && <p className className="text-destructive text-xs mt-1">{errors.articoli[index]?.pinza_tagliata?.message}</p>}
                 </div>
                 <div className="flex items-center space-x-2">
                   <input

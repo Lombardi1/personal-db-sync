@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as notifications from '@/utils/notifications';
 import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la nuova funzione
-import { findNextAvailablePulitoreCode } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
+import { generateNextPulitoreCode, resetPulitoreCodeGenerator, fetchMaxPulitoreCodeFromDB } from '@/utils/pulitoreUtils'; // Importa le utilità per il pulitore
 
 interface CaricoFustellaTabProps {
   aggiungiFustella: (fustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica'>) => Promise<{ error: any }>;
@@ -42,8 +42,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
     const initializeCodes = async () => {
       await generateAndSetFustellaCode(); // Genera il primo codice FST
       
-      // Non è più necessario resettare il generatore di codici pulitore qui,
-      // findNextAvailablePulitoreCode lo fa al momento della chiamata.
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
     };
     initializeCodes();
   }, []);
@@ -54,9 +54,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       if (field === 'hasPulitore') {
         if (value) {
           // Se 'hasPulitore' viene spuntato, genera un nuovo codice pulitore
-          findNextAvailablePulitoreCode().then(code => {
-            setFormData(current => ({ ...current, pulitore_codice: code }));
-          });
+          newState.pulitore_codice = generateNextPulitoreCode();
         } else {
           // Se 'hasPulitore' viene deselezionato, resetta il codice pulitore
           newState.pulitore_codice = '';
@@ -102,17 +100,12 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
       // Genera il prossimo codice FST disponibile e resetta il resto del form
       await generateAndSetFustellaCode();
 
-      // Genera un nuovo codice pulitore se 'hasPulitore' è true
-      if (formData.hasPulitore) {
-        await findNextAvailablePulitoreCode().then(code => {
-          setFormData(prev => ({ ...prev, pulitore_codice: code }));
-        });
-      } else {
-        setFormData(prev => ({ ...prev, pulitore_codice: '' }));
-      }
+      const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+      resetPulitoreCodeGenerator(maxPulitoreCode);
 
       setFormData(prev => ({
         ...prev,
+        // codice: nextFustellaCode, // Già aggiornato da generateAndSetFustellaCode
         fornitore: '',
         codice_fornitore: '',
         cliente: '',
@@ -120,6 +113,7 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
         fustellatrice: '',
         resa: '',
         hasPulitore: false,
+        pulitore_codice: '',
         pinza_tagliata: false,
         tasselli_intercambiabili: false,
         nr_tasselli: null,
@@ -148,8 +142,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
               id="codice"
               type="text"
               value={formData.codice}
-              readOnly
-              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold"
+              readOnly // Modificato da disabled
+              className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold" // Rimosso bg-gray-100
             />
           </div>
 
@@ -278,8 +272,8 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
                 id="pulitore_codice"
                 type="text"
                 value={formData.pulitore_codice}
-                readOnly
-                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold"
+                readOnly // Modificato da disabled
+                className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm font-mono font-bold" // Rimosso bg-gray-100
               />
             </div>
           )}
@@ -354,20 +348,15 @@ export function CaricoFustellaTab({ aggiungiFustella }: CaricoFustellaTabProps) 
           </Button>
           <Button
             type="button"
-            onClick={async () => {
-              await generateAndSetFustellaCode();
+            onClick={async () => { // Modificato per essere async
+              await generateAndSetFustellaCode(); // Genera il prossimo codice FST disponibile
 
-              // Genera un nuovo codice pulitore se 'hasPulitore' è true
-              if (formData.hasPulitore) {
-                await findNextAvailablePulitoreCode().then(code => {
-                  setFormData(prev => ({ ...prev, pulitore_codice: code }));
-                });
-              } else {
-                setFormData(prev => ({ ...prev, pulitore_codice: '' }));
-              }
+              const maxPulitoreCode = await fetchMaxPulitoreCodeFromDB();
+              resetPulitoreCodeGenerator(maxPulitoreCode);
 
               setFormData(prev => ({
                 ...prev,
+                // codice: nextFustellaCode, // Già aggiornato da generateAndSetFustellaCode
                 fornitore: '',
                 codice_fornitore: '',
                 cliente: '',
