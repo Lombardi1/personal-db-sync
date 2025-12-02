@@ -180,7 +180,7 @@ export function useCartoni() {
       data_arrivo: dataArrivo,
       magazzino: magazzinoFinale,
       data_consegna: ordine.data_consegna, // Manteniamo data_consegna se presente nell'ordine originale
-      confermato: ordine.confermato, // Manteniamo confermato se presente nell'ordine originale
+      // Escludiamo 'confermato' che è specifico della tabella 'ordini'
     };
     
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
@@ -294,8 +294,7 @@ export function useCartoni() {
         rif_commessa_fsc: cartone.rif_commessa_fsc || null,
         ddt: cartone.ddt,
         data_arrivo: cartone.data_arrivo,
-        data_consegna: cartone.data_consegna,
-        confermato: cartone.confermato,
+        // Escludiamo data_consegna e confermato
       };
       const { error: insertEsauritiError } = await supabase.from('esauriti').insert([cartoneEsaurito]);
       if (insertEsauritiError) {
@@ -340,6 +339,7 @@ export function useCartoni() {
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
+      // Escludiamo 'confermato'
     };
 
     try {
