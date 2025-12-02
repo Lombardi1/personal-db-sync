@@ -388,7 +388,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
             allDisplayRowsForOrder.push({
               ...baseDisplayRow, // Inherit most order-level details
               id: `pulitore-${article.id || Date.now()}`, // Unique ID for pulitore row
-              descrizione: `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`,
+              descrizione: `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Use the description from the article itself
               quantita: 1, // Pulitore quantity is always 1
               prezzo_unitario: article.prezzo_pulitore,
               codice_ctn: '', // Clear cartone specific fields
@@ -400,7 +400,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
               alimentare: false,
               rif_commessa_fsc: '',
               fustella_codice: '', // Clear fustella specific fields
-              codice_fornitore_fustella: '',
+              // codice_fornitore_fustella: '', // Rimosso: questo campo deve essere ereditato dalla fustella madre
               fustellatrice: '',
               resa_fustella: '',
               hasPulitore: false, // This row *is* the pulitore, so it doesn't *have* a pulitore
@@ -498,8 +498,9 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                                   <span className="codice">{row.pulitore_codice_fustella}</span>
                                 </div>
                               )}
+                              {/* Mostra la descrizione completa del pulitore */}
                               <div className="font-bold text-[9px] sm:text-[10px]">
-                                Pulitore per Fustella: {row.codice_fornitore_fustella || 'N/A'}
+                                {row.descrizione || 'Pulitore per fustella'}
                               </div>
                             </>
                           ) : row.isCartoneFornitore ? (
@@ -646,7 +647,7 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
             }}>Annulla</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => {
-                console.log('[TabellaOrdiniAcquisto] AlertDialogAction cliccato. Chiamando handleConfirmAction.');
+                console.log('[TabellaOrdiniAcquisto] AlertDialogAction cliccato.');
                 handleConfirmAction();
               }}
               className={actionType === 'cancel' ? 'bg-red-500 hover:bg-red-600' : 'bg-destructive hover:bg-destructive/90'}
