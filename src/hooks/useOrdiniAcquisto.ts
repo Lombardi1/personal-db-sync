@@ -25,16 +25,19 @@ export function useOrdiniAcquisto() {
     // Quindi, non eliminiamo qui le fustelle per i pulitori autonomi.
     await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
 
-    if (!isCartoneFornitore && !isFustelleFornitore) {
-      return;
-    }
-
     if (!Array.isArray(ordineAcquisto.articoli)) {
       toast.error(`Errore interno: Articoli dell'ordine non validi per ${ordineAcquisto.numero_ordine}.`);
       return;
     }
 
-    for (const articolo of ordineAcquisto.articoli) {
+    // Filtra gli articoli null o undefined prima di elaborarli
+    const validArticles = ordineAcquisto.articoli.filter(art => art !== null && art !== undefined);
+
+    if (!isCartoneFornitore && !isFustelleFornitore) {
+      return;
+    }
+
+    for (const articolo of validArticles) { // Itera solo sugli articoli validi
       try {
         if (articolo.stato === 'annullato') {
           // Se l'articolo è annullato, non lo inseriamo in nessuna tabella di inventario.
@@ -194,6 +197,8 @@ export function useOrdiniAcquisto() {
           }
         }
       } catch (e: any) {
+        // Cattura l'errore e mostra un toast, ma non blocca l'intera sincronizzazione
+        console.error(`Errore durante la sincronizzazione dell'articolo:`, e);
         toast.error(`Errore interno durante la sincronizzazione dell'articolo: ${e.message}`);
       }
     }
