@@ -95,7 +95,7 @@ export function OrdineAcquistoArticoloFormRow({
       if (currentArticle?.pulitore_codice_fustella && !currentArticle?.fustella_codice) return 'pulitore';
       // If it has a description but no specific fustella/pulitore code, it's generic
       if (currentArticle?.descrizione && !currentArticle?.fustella_codice && !currentArticle?.pulitore_codice_fustella) return 'generico';
-      return 'generico'; // Default for new articles in Fustelle supplier
+      return 'fustella'; // Default for new articles in Fustelle supplier
     }
     return 'generico'; // For other suppliers, it's always generic
   });
