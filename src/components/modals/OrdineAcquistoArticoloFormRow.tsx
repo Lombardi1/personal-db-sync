@@ -26,7 +26,8 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { generateNextFscCommessa } from '@/utils/fscUtils';
-import { generateNextPulitoreCode } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
+import { generateNextPulitoreCode, fetchMaxPulitoreCodeFromDB, resetPulitoreCodeGenerator } from '@/utils/pulitoreUtils'; // Importa la funzione di generazione del pulitore
+import { findNextAvailableFustellaCode } from '@/utils/fustellaUtils'; // Importa la funzione di generazione del codice fustella
 
 interface OrdineAcquistoArticoloFormRowProps {
   index: number;
@@ -89,7 +90,10 @@ export function OrdineAcquistoArticoloFormRow({
   const [articleType, setArticleType] = React.useState<'fustella' | 'pulitore' | 'generico'>(() => {
     if (isFustelleFornitore) {
       if (currentArticle?.fustella_codice) return 'fustella';
-      if (currentArticle?.descrizione && !currentArticle?.fustella_codice) return 'pulitore';
+      // Correctly identify standalone pulitore based on pulitore_codice_fustella
+      if (currentArticle?.pulitore_codice_fustella && !currentArticle?.fustella_codice) return 'pulitore';
+      // If it has a description but no specific fustella/pulitore code, it's generic
+      if (currentArticle?.descrizione && !currentArticle?.fustella_codice && !currentArticle?.pulitore_codice_fustella) return 'generico';
       return 'generico'; // Default for new articles in Fustelle supplier
     }
     return 'generico'; // For other suppliers, it's always generic
@@ -204,12 +208,25 @@ export function OrdineAcquistoArticoloFormRow({
     }
   }, [isFustelleFornitore, articleType, currentTasselliIntercambiabili, currentNrTasselli, index, setValue]);
 
+  // Effect to set default description for pulitore when articleType is 'pulitore'
+  React.useEffect(() => {
+    if (isFustelleFornitore) {
+      if (articleType === 'pulitore' && !currentDescrizione) {
+        setValue(`articoli.${index}.descrizione`, `Pulitore per fustella`, { shouldValidate: true });
+      } else if (articleType !== 'pulitore' && currentDescrizione === `Pulitore per fustella` && !currentArticle?.id) {
+        // Clear description if it was auto-set and type changes, only for new articles
+        setValue(`articoli.${index}.descrizione`, '', { shouldValidate: true });
+      }
+    }
+  }, [articleType, isFustelleFornitore, currentDescrizione, index, setValue, currentArticle?.id]);
+
+
   const itemTotal = (currentArticle?.quantita || 0) * (currentArticle?.prezzo_unitario || 0) + (currentArticle?.hasPulitore ? (currentArticle?.prezzo_pulitore || 0) : 0); // Aggiornato calcolo totale
 
   const [openClientCombobox, setOpenClientCombobox] = React.useState(false);
 
   // Handle article type change for Fustelle suppliers
-  const handleArticleTypeChange = (newType: 'fustella' | 'pulitore' | 'generico') => {
+  const handleArticleTypeChange = async (newType: 'fustella' | 'pulitore' | 'generico') => { // Made async
     setArticleType(newType);
     // Clear all fields specific to Fustella/Pulitore/Cartone when type changes
     setValue(`articoli.${index}.codice_ctn`, '', { shouldValidate: true });
@@ -220,7 +237,7 @@ export function OrdineAcquistoArticoloFormRow({
     setValue(`articoli.${index}.fsc`, false, { shouldValidate: true });
     setValue(`articoli.${index}.alimentare`, false, { shouldValidate: true });
     setValue(`articoli.${index}.rif_commessa_fsc`, '', { shouldValidate: true });
-    setValue(`articoli.${index}.descrizione`, '', { shouldValidate: true });
+    setValue(`articoli.${index}.descrizione`, '', { shouldValidate: true }); // Always clear description first
     setValue(`articoli.${index}.fustella_codice`, '', { shouldValidate: true });
     setValue(`articoli.${index}.codice_fornitore_fustella`, '', { shouldValidate: true });
     setValue(`articoli.${index}.fustellatrice`, '', { shouldValidate: true });
@@ -240,10 +257,10 @@ export function OrdineAcquistoArticoloFormRow({
     setDisplayPrezzoPulitore('');
 
     if (newType === 'fustella') {
-      // La generazione del codice FST è ora gestita dal componente padre (ModalOrdineAcquistoForm)
-      // quando si aggiunge un nuovo articolo. Qui, se si cambia tipo, si resetta solo.
-      // Se si sta modificando un articolo esistente, il codice FST sarà già presente.
-      // Per un nuovo articolo, il codice FST sarà impostato dal padre.
+      if (isNewOrder && !currentFustellaCodice) {
+        const code = await findNextAvailableFustellaCode(); // Await the code generation
+        setValue(`articoli.${index}.fustella_codice`, code, { shouldValidate: true });
+      }
     } else if (newType === 'pulitore') {
       setValue(`articoli.${index}.pulitore_codice_fustella`, generateNextPulitoreCode(), { shouldValidate: true });
       setValue(`articoli.${index}.descrizione`, `Pulitore per fustella`, { shouldValidate: true }); // Descrizione predefinita
