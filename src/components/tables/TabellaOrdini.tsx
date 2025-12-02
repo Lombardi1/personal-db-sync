@@ -44,6 +44,7 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[80px]">Codice</th>
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[120px]">Fornitore</th>
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[80px]">Ordine</th>
+            <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[80px]">DDT</th> {/* NUOVO */}
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[100px]">Tipologia</th>
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[120px]">Formato</th>
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[80px]">Grammatura</th>
@@ -53,6 +54,7 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[80px]">Magazzino</th>
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[80px]">Prezzo €/kg</th>
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[100px]">Data consegna</th>
+            <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[100px]">Data Arrivo</th> {/* NUOVO */}
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[180px]">Azioni</th>
           </tr>
         </thead>
@@ -67,15 +69,17 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
               </td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[120px]">{ordine.fornitore}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[80px]">{ordine.ordine}</td>
+              <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[80px]">{ordine.ddt || '-'}</td> {/* NUOVO */}
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[100px]">{ordine.tipologia}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[120px]">{formatFormato(ordine.formato)}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[80px]">{ordine.grammatura}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm font-semibold whitespace-nowrap w-[80px]">{formatFogli(ordine.fogli)}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[120px]">{ordine.cliente}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[120px]">{ordine.lavoro}</td>
-              <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[80px]">{ordine.magazzino}</td>
+              <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[80px]">{ordine.magazzino || '-'}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[80px]">{formatPrezzo(ordine.prezzo)}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[100px]">{formatData(ordine.data_consegna || '')}</td>
+              <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[100px]">{formatData(ordine.data_arrivo || '')}</td> {/* NUOVO */}
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[180px]">
                 <div className="flex gap-0.5">
                   <button
