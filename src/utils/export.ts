@@ -296,7 +296,7 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
 
     doc.save(finalFileName);
     toast.success('✅ File PDF esportato con successo!');
-  } catch (error: any) {
+  } catch (error) {
     console.error('Errore esportazione PDF:', error);
     toast.error(`Errore durante l'esportazione PDF: ${error.message || 'Errore sconosciuto'}`);
   }
@@ -525,7 +525,6 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
           articoloColumnText = article.fustella_codice || '';
           let fustellaDescriptionParts = [];
           if (article.codice_fornitore_fustella) fustellaDescriptionParts.push(`Codice Fornitore: ${article.codice_fornitore_fustella}`);
-          if (article.resa_fustella) fustellaDescriptionParts.push(`Resa: ${article.resa_fustella}`);
           // Rimosse le seguenti righe come richiesto dall'utente:
           // if (article.pinza_tagliata) fustellaDescriptionParts.push(`Pinza Tagliata: Sì`);
           // if (article.tasselli_intercambiabili) {
