@@ -158,7 +158,7 @@ export function OrdineAcquistoArticoloFormRow({
       if (isCartoneFornitore || (!isFustelleFornitore && articleType === 'generico')) {
         setDisplayPrezzoUnitario(puVal.toFixed(3).replace('.', ','));
       } else if (isFustelleFornitore && articleType === 'fustella') {
-        setDisplayPrezzoUnitario(puVal.toFixed(2).replace('.', ','));
+        setDisplayPrezzoUnitario(puVal.toFixed(2).replace('.', ',');
       } else {
         setDisplayPrezzoUnitario(String(puVal).replace('.', ','));
       }
@@ -495,7 +495,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           const formattedValue = numericValue.toFixed(3).replace('.', ',');
                           setDisplayPrezzoUnitario(formattedValue); // Format on blur
-                          setValue(`articoli.${index}.prezzo_unitario`, parseFloat(numericValue.toFixed(3)), { shouldValidate: true });
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true }); // Store the actual numeric value
                         } else {
                           setDisplayPrezzoUnitario(''); // Clear if not a valid number
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
@@ -741,7 +741,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           const formattedValue = numericValue.toFixed(2).replace('.', ','); // 2 decimals for Fustella price
                           setDisplayPrezzoUnitario(formattedValue); // Format on blur
-                          setValue(`articoli.${index}.prezzo_unitario`, parseFloat(numericValue.toFixed(2)), { shouldValidate: true });
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
                           setDisplayPrezzoUnitario(''); // Clear if not a valid number
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
@@ -884,7 +884,7 @@ export function OrdineAcquistoArticoloFormRow({
                             if (!isNaN(numericValue)) {
                               const formattedValue = numericValue.toFixed(2).replace('.', ','); // 2 decimals for Pulitore price
                               setDisplayPrezzoPulitore(formattedValue); // Format on blur
-                              setValue(`articoli.${index}.prezzo_pulitore`, parseFloat(numericValue.toFixed(2)), { shouldValidate: true });
+                              setValue(`articoli.${index}.prezzo_pulitore`, numericValue, { shouldValidate: true });
                             } else {
                               setDisplayPrezzoPulitore(''); // Clear if not a valid number
                               setValue(`articoli.${index}.prezzo_pulitore`, undefined, { shouldValidate: true });
@@ -1104,7 +1104,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           const formattedValue = numericValue.toFixed(2).replace('.', ','); // 2 decimals for Pulitore price
                           setDisplayPrezzoUnitario(formattedValue); // Format on blur
-                          setValue(`articoli.${index}.prezzo_unitario`, parseFloat(numericValue.toFixed(2)), { shouldValidate: true });
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
                           setDisplayPrezzoUnitario(''); // Clear if not a valid number
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
@@ -1166,7 +1166,7 @@ export function OrdineAcquistoArticoloFormRow({
                     type="number" // Changed to number
                     step="0.001" // Allow decimals for generic quantity
                     {...register(`articoli.${index}.quantita`, { valueAsNumber: true })}
-                    placeholder="Es. 0.870" // Changed to dot for number input
+                    placeholder="Es. 0,870" // Changed to comma for placeholder
                     min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
@@ -1195,7 +1195,7 @@ export function OrdineAcquistoArticoloFormRow({
                         if (!isNaN(numericValue)) {
                           const formattedValue = numericValue.toFixed(3).replace('.', ','); // 3 decimals for Generic price
                           setDisplayPrezzoUnitario(formattedValue); // Format on blur
-                          setValue(`articoli.${index}.prezzo_unitario`, parseFloat(numericValue.toFixed(3)), { shouldValidate: true });
+                          setValue(`articoli.${index}.prezzo_unitario`, numericValue, { shouldValidate: true });
                         } else {
                           setDisplayPrezzoUnitario(''); // Clear if not a valid number
                           setValue(`articoli.${index}.prezzo_unitario`, undefined, { shouldValidate: true });
