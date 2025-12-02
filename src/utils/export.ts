@@ -426,7 +426,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2, fontStyle: 'bold', textColor: [0, 0, 0] }, // Imposta textColor a nero
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
-      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0] }, 
+      bodyStyles: { lineWidth: 0.3, lineColor: [0, 0, 0], fontStyle: 'bold' }, // Modificato: Aggiunto fontStyle: 'bold'
       columnStyles: { // Aggiunto per distribuire equamente la larghezza
         0: { cellWidth: (pageWidth - 20) / 6 },
         1: { cellWidth: (pageWidth - 20) / 6 },
@@ -442,10 +442,20 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
     // Seconda riga: Resa, Mezzo, Banca
     console.log(`[exportOrdineAcquistoPDF] Valore di fornitore?.banca prima di popolare la tabella: '${fornitore?.banca}'`); // LOG DI DEBUG
+    
+    let resaValue = '';
+    if (fornitore?.tipo_fornitore === 'Fustelle' && ordine.articoli && ordine.articoli.length > 0) {
+      // Trova la resa del primo articolo di tipo fustella o pulitore
+      const firstFustellaOrPulitoreArticle = ordine.articoli.find(art => art.fustella_codice || art.pulitore_codice_fustella);
+      if (firstFustellaOrPulitoreArticle?.resa_fustella) {
+        resaValue = firstFustellaOrPulitoreArticle.resa_fustella;
+      }
+    }
+
     autoTable(doc, {
       startY: y,
       head: [['Resa', 'Mezzo', 'Banca']],
-      body: [['', '', fornitore?.banca || '']], // Popola il campo Banca qui
+      body: [[resaValue, '', fornitore?.banca || '']], // Popola il campo Banca qui
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2, minCellHeight: 8, fontStyle: 'bold', textColor: [0, 0, 0], overflow: 'ellipsize' }, // Modificato fontStyle e overflow
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineWidth: 0.3, lineColor: [0, 0, 0] }, 
@@ -511,7 +521,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
 
           articlesBody.push([
             article.pulitore_codice_fustella, // Articolo: PU-XXX
-            `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Descrizione: Pulitore per Fustella FOR-XXX
+            article.descrizione || 'Pulitore per fustella', // Descrizione: Pulitore per Fustella FOR-XXX
             umText,
             quantitaFormatted,
             prezzoUnitarioFormatted,
@@ -561,7 +571,7 @@ export function exportOrdineAcquistoPDF(ordine: OrdineAcquisto, fornitori: Forni
             const pulitoreTotaleRiga = (article.prezzo_pulitore || 0);
             articlesBody.push([
               article.pulitore_codice_fustella,
-              `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Specific description for pulitore, without quotes
+              article.descrizione || `Pulitore per Fustella ${article.codice_fornitore_fustella || ''}`, // Usa la descrizione dell'articolo
               'PZ', // UM for pulitore
               '1', // Quantity for pulitore
               pulitorePrezzoFormatted,
