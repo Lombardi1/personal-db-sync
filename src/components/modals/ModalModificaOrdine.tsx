@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Cartone } from '@/types';
 import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
 import { formatFormato, formatGrammatura } from '@/utils/formatters'; // Importa formatFormato e formatGrammatura
-import { parseItalianNumber, formatItalianNumber } from '@/lib/utils'; // Importa le nuove utilità
+import { parseUserNumber, formatUserNumber } from '@/lib/utils'; // Importa le nuove utilità
 
 interface ModalModificaOrdineProps {
   ordine: Cartone;
@@ -17,11 +17,11 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
     tipologia: ordine.tipologia,
     formato: ordine.formato,
     grammatura: ordine.grammatura.replace(' g/m²', ''),
-    fogli: formatItalianNumber(ordine.fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Formatta per display
+    fogli: formatUserNumber(ordine.fogli, { minimumFractionDigits: 0, maximumFractionDigits: 0 }), // Formatta per display
     cliente: ordine.cliente,
     lavoro: ordine.lavoro,
     magazzino: ordine.magazzino || '', // Assicurati che sia una stringa vuota se null
-    prezzo: formatItalianNumber(ordine.prezzo, { minimumFractionDigits: 3, maximumFractionDigits: 3 }), // Formatta per display
+    prezzo: formatUserNumber(ordine.prezzo, { minimumFractionDigits: 3, maximumFractionDigits: 3 }), // Formatta per display
     data_consegna: ordine.data_consegna,
     note: ordine.note || '',
     ddt: ordine.ddt || '', // NUOVO CAMPO
@@ -34,16 +34,16 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
 
   const handleBlur = (field: string, value: any) => {
     if (field === 'prezzo') {
-      const numericValue = parseItalianNumber(value);
+      const numericValue = parseUserNumber(value);
       if (numericValue !== undefined) {
-        setFormData(prev => ({ ...prev, [field]: formatItalianNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) }));
+        setFormData(prev => ({ ...prev, [field]: formatUserNumber(numericValue, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) }));
       } else {
         setFormData(prev => ({ ...prev, [field]: '' }));
       }
     } else if (field === 'fogli') {
-      const numericValue = parseItalianNumber(value);
+      const numericValue = parseUserNumber(value);
       if (numericValue !== undefined) {
-        setFormData(prev => ({ ...prev, [field]: formatItalianNumber(numericValue, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }));
+        setFormData(prev => ({ ...prev, [field]: formatUserNumber(numericValue, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }));
       } else {
         setFormData(prev => ({ ...prev, [field]: '' }));
       }
@@ -59,11 +59,11 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
       tipologia: formData.tipologia.trim(),
       formato: formatFormato(formData.formato),
       grammatura: formatGrammatura(formData.grammatura),
-      fogli: parseItalianNumber(formData.fogli) || 0, // Parsa il numero
+      fogli: parseUserNumber(formData.fogli) || 0, // Parsa il numero
       cliente: formData.cliente.trim(),
       lavoro: formData.lavoro.trim(),
       magazzino: formData.magazzino.trim() || null, // Invia null se vuoto
-      prezzo: parseItalianNumber(formData.prezzo) || 0, // Parsa il numero
+      prezzo: parseUserNumber(formData.prezzo) || 0, // Parsa il numero
       data_consegna: formData.data_consegna,
       note: formData.note.trim() || '-',
       ddt: formData.ddt.trim() || null, // NUOVO: Invia null se vuoto
@@ -218,7 +218,7 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
                 onChange={(e) => handleChange('prezzo', e.target.value)}
                 onBlur={(e) => handleBlur('prezzo', e.target.value)} // Added onBlur
                 className="w-full px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
-                placeholder="Es. 0,870" // Updated placeholder
+                placeholder="Es. 0.870" // Updated placeholder
                 required
               />
             </div>

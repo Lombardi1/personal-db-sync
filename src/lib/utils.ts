@@ -60,29 +60,30 @@ export function normalizeAnagraficaData(data: AnagraficaBase | Fornitore | Clien
 }
 
 /**
- * Parsa una stringa numerica in formato italiano (es. "1.234,56") in un numero JavaScript standard (es. 1234.56).
- * Rimuove i separatori delle migliaia (punti) e sostituisce la virgola decimale con un punto.
+ * Parsa una stringa numerica secondo la preferenza dell'utente (punto come decimale, virgola come migliaia).
+ * Rimuove i separatori delle migliaia (virgole) e poi usa parseFloat che interpreta il punto come decimale.
  * @param value La stringa o il numero da parsare.
  * @returns Il numero parsato o undefined se non è un numero valido.
  */
-export function parseItalianNumber(value: string | number | undefined | null): number | undefined {
+export function parseUserNumber(value: string | number | undefined | null): number | undefined {
   if (value === '' || value === null || value === undefined) return undefined;
   const s = String(value).trim();
-  // Rimuove i separatori delle migliaia (punti)
-  const cleaned = s.replace(/\./g, '');
-  // Sostituisce la virgola decimale con un punto
-  const normalized = cleaned.replace(/,/g, '.');
-  const num = parseFloat(normalized);
+  // Rimuove le virgole (separatori delle migliaia)
+  const cleaned = s.replace(/,/g, '');
+  // parseFloat interpreterà il punto come separatore decimale
+  const num = parseFloat(cleaned);
   return isNaN(num) ? undefined : num;
 }
 
 /**
- * Formatta un numero JavaScript standard (es. 1234.56) in una stringa in formato italiano (es. "1.234,56").
+ * Formatta un numero JavaScript standard in una stringa secondo la preferenza dell'utente
+ * (punto come decimale, virgola come migliaia). Questo corrisponde al formato 'en-US'.
  * @param value Il numero da formattare.
  * @param options Opzioni per Intl.NumberFormat (es. { minimumFractionDigits: 2, maximumFractionDigits: 2 }).
  * @returns La stringa formattata o una stringa vuota se il valore non è un numero valido.
  */
-export function formatItalianNumber(value: number | undefined | null, options?: Intl.NumberFormatOptions): string {
+export function formatUserNumber(value: number | undefined | null, options?: Intl.NumberFormatOptions): string {
   if (value === undefined || value === null || isNaN(value)) return '';
-  return new Intl.NumberFormat('it-IT', options).format(value);
+  // Utilizza 'en-US' per punto come decimale e virgola come migliaia
+  return new Intl.NumberFormat('en-US', options).format(value);
 }
