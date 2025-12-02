@@ -72,7 +72,7 @@ export function useOrdiniAcquisto() {
             fogli: numFogli,
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
-            magazzino: '-',
+            magazzino: null, // Impostato a null per gli ordini in arrivo
             prezzo: articolo.prezzo_unitario,
             data_consegna: articolo.data_consegna_prevista,
             note: ordineAcquisto.note || '-',
@@ -104,7 +104,7 @@ export function useOrdiniAcquisto() {
             const giacenzaDataToUpdate = {
               ddt: existingGiacenza?.ddt || null,
               data_arrivo: existingGiacenza?.data_arrivo || new Date().toISOString().split('T')[0],
-              magazzino: existingGiacenza?.magazzino || '-',
+              magazzino: existingGiacenza?.magazzino || null, // Usa existing magazzino o null
             };
 
             if (existingGiacenza) {
@@ -142,7 +142,7 @@ export function useOrdiniAcquisto() {
               incollatura: articolo.incollatura || false,
               incollatrice: articolo.incollatrice || null,
               tipo_incollatura: articolo.tipo_incollatura || null,
-              disponibile: articolo.stato === 'ricevuto',
+              disponibile: articolo.stato === 'ricevuto', // Disponibile solo se lo stato è 'ricevuto'
               data_creazione: new Date().toISOString(),
               ultima_modifica: new Date().toISOString(),
               ordine_acquisto_numero: ordineAcquisto.numero_ordine,
