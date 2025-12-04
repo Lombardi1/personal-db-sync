@@ -47,7 +47,7 @@ export default function StoricoStampa() {
       // 2. Fetch storico entries for these users
       const { data, error } = await supabase
         .from('storico')
-        .select(`*, app_users(username)`)
+        .select(`*, app_users(username), cliente, lavoro`) // AGGIUNTO: cliente, lavoro
         .in('user_id', ids) // Filter by array of IDs
         .order('data', { ascending: false });
 
