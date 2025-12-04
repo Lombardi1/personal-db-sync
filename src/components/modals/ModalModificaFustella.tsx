@@ -88,12 +88,21 @@ export function ModalModificaFustella({ fustella, onClose, onModifica }: ModalMo
       ultima_modifica: new Date().toISOString(),
     };
 
-    const { error } = await onModifica(fustella.codice, datiAggiornati);
-    if (!error) {
-      notifications.showSuccess(`✅ Fustella '${fustella.codice}' modificata con successo!`);
-      onClose();
+    console.log('[ModalModificaFustella] Calling onModifica with:', fustella.codice, datiAggiornati);
+    const result = await onModifica(fustella.codice, datiAggiornati);
+    console.log('[ModalModificaFustella] Received result from onModifica:', result);
+    
+    if (result && typeof result === 'object' && 'error' in result) {
+      const { error } = result;
+      if (!error) {
+        notifications.showSuccess(`✅ Fustella '${fustella.codice}' modificata con successo!`);
+        onClose();
+      } else {
+        notifications.showError('Errore durante la modifica della fustella');
+      }
     } else {
-      notifications.showError('Errore durante la modifica della fustella');
+      console.error('[ModalModificaFustella] Unexpected return value from onModifica:', result);
+      notifications.showError('Errore inatteso durante la modifica della fustella. Il risultato dell\'operazione non è valido.');
     }
   };
 

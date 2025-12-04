@@ -69,12 +69,12 @@ export function useFustelle() {
     };
   }, []);
 
-  const aggiungiFustella = async (fustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica'>) => {
+  const aggiungiFustella = useCallback(async (fustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica'>) => {
     const fustellaToInsert = {
       ...fustella,
       data_creazione: new Date().toISOString(),
       ultima_modifica: new Date().toISOString(),
-      ordine_acquisto_numero: null, // NUOVO: Imposta a null per le fustelle aggiunte manualmente
+      ordine_acquisto_numero: null,
     };
     console.log('[aggiungiFustella] Attempting to insert:', fustellaToInsert); // Add logging
     const { error } = await supabase.from('fustelle').insert([fustellaToInsert]);
@@ -94,12 +94,14 @@ export function useFustelle() {
       notifications.showError(`Errore aggiunta fustella: ${error.message}`);
     }
     return { error };
-  };
+  }, [loadData, notifications, user?.id]);
 
+  // Removed useCallback from modificaFustella
   const modificaFustella = async (codice: string, dati: Partial<Fustella>) => {
     const fustellaEsistente = fustelle.find(f => f.codice === codice);
     if (!fustellaEsistente) {
       notifications.showError('Fustella non trovata per la modifica.');
+      console.log('[modificaFustella] Returning error: Fustella not found.');
       return { error: new Error('Fustella non trovata.') };
     }
 
@@ -107,27 +109,22 @@ export function useFustelle() {
       ...dati,
       ultima_modifica: new Date().toISOString(),
     };
-    console.log('[modificaFustella] Attempting to update:', fustellaToUpdate, 'for codice:', codice); // Add logging
+    console.log('[modificaFustella] Attempting to update:', fustellaToUpdate, 'for codice:', codice);
     const { error } = await supabase.from('fustelle').update(fustellaToUpdate).eq('codice', codice);
     if (!error) {
-      // Rimosso: const movimento: StoricoMovimentoFustella = {
-      //   codice_fustella: codice,
-      //   tipo: 'modifica',
-      //   data: new Date().toISOString(),
-      //   note: `Dettagli fustella modificati`,
-      //   user_id: user?.id,
-      // };
-      // Rimosso: await supabase.from('storico_fustelle').insert([movimento]);
       await loadData();
       notifications.showSuccess(`✅ Fustella '${codice}' modificata con successo!`);
+      console.log('[modificaFustella] Returning success: { error: null }');
+      return { error: null };
     } else {
-      console.error('[modificaFustella] Supabase error:', error); // Log the full error
+      console.error('[modificaFustella] Supabase error:', error);
       notifications.showError(`Errore modifica fustella: ${error.message}`);
+      console.log('[modificaFustella] Returning error: { error }');
+      return { error };
     }
-    return { error };
   };
 
-  const eliminaFustella = async (codice: string) => {
+  const eliminaFustella = useCallback(async (codice: string) => {
     const fustellaEsistente = fustelle.find(f => f.codice === codice);
     if (!fustellaEsistente) {
       notifications.showError('Fustella non trovata per l\'eliminazione.');
@@ -150,9 +147,9 @@ export function useFustelle() {
       notifications.showError(`Errore eliminazione fustella: ${error.message}`);
     }
     return { error };
-  };
+  }, [fustelle, loadData, notifications, user?.id]);
 
-  const cambiaDisponibilitaFustella = async (codice: string, disponibile: boolean) => {
+  const cambiaDisponibilitaFustella = useCallback(async (codice: string, disponibile: boolean) => {
     const fustellaEsistente = fustelle.find(f => f.codice === codice);
     if (!fustellaEsistente) {
       notifications.showError('Fustella non trovata.');
@@ -175,7 +172,7 @@ export function useFustelle() {
       notifications.showError(`Errore aggiornamento disponibilità fustella: ${error.message}`);
     }
     return { error };
-  };
+  }, [fustelle, loadData, notifications, user?.id]);
 
   return {
     fustelle,
