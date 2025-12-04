@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Cartone, StoricoMovimento } from '@/types'; // Importa StoricoMovimento
+import { Cartone, StoricoMovimento } from '@/types';
 import { formatFormato, formatFogli } from '@/utils/formatters';
 import { Search, Home, PlusCircle, MinusCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -143,7 +143,9 @@ export default function Produzione() {
         data: new Date().toISOString(),
         note: notaCompletaPerEntry,
         user_id: user?.id,
-        numero_ordine_acquisto: cartone.ordine
+        numero_ordine_acquisto: cartone.ordine,
+        cliente: cartone.cliente, // AGGIUNTO
+        lavoro: cartone.lavoro,   // AGGIUNTO
       });
     }
 
