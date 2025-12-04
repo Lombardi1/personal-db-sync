@@ -382,8 +382,8 @@ export function ModalOrdineAcquistoForm({
                   codice_ctn: art.codice_ctn || '', 
                   data_consegna_prevista: art.data_consegna_prevista || defaultDateForNewArticle, 
                   stato: (art.stato || 'in_attesa') as ArticoloOrdineAcquisto['stato'],
-                  numero_fogli: art.numero_fogli || undefined,
                   quantita: isFustellaOrPulitore ? (art.quantita || 1) : (art.quantita || undefined),
+                  numero_fogli: art.numero_fogli || undefined,
                   fsc: art.fsc || false,
                   alimentare: art.alimentare || false,
                   rif_commessa_fsc: art.rif_commessa_fsc || '',
@@ -591,6 +591,7 @@ export function ModalOrdineAcquistoForm({
       fsc: false,
       alimentare: false,
       rif_commessa_fsc: '',
+      // Fustelle fields
       fustella_codice: '',
       codice_fornitore_fustella: '',
       fustellatrice: '',
@@ -645,7 +646,6 @@ export function ModalOrdineAcquistoForm({
       rif_commessa_fsc: '',
       // Fustelle fields
       fustella_codice: '',
-      codice_fornitore_fustella: '',
       fustellatrice: '',
       resa_fustella: '',
       hasPulitore: false,
@@ -861,7 +861,7 @@ export function ModalOrdineAcquistoForm({
               type="button"
               variant="success"
               onClick={handleAddArticle}
-              disabled={isSubmitting || !ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || isCancelled}
+              disabled={isSubmitting || !ctnGeneratorInitialized || !fscCommessaGeneratorInitialized || !fustellaGeneratorInitialized || isCancelled || (isFustelleFornitore && fields.length >= 1)}
               className="w-full sm:w-auto self-start gap-2"
             >
               <PlusCircle className="h-4 w-4" /> Aggiungi Articolo
