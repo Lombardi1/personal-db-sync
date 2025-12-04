@@ -36,8 +36,6 @@ export function ModalStorico({ codice, movimenti, onClose }: ModalStoricoProps) 
                     <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Tipo</th>
                     <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Quantità</th>
                     <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Utente</th>
-                    <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Cliente</th> {/* NUOVO */}
-                    <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Lavoro</th> {/* NUOVO */}
                     <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Ordine Acquisto</th>
                     <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Note</th>
                   </tr>
@@ -59,8 +57,6 @@ export function ModalStorico({ codice, movimenti, onClose }: ModalStoricoProps) 
                       </td>
                       <td className="px-3 py-2 text-[10px] sm:text-sm font-semibold">{mov.quantita}</td>
                       <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.username || 'Sconosciuto'}</td>
-                      <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.cliente || '-'}</td> {/* NUOVO */}
-                      <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.lavoro || '-'}</td> {/* NUOVO */}
                       <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.numero_ordine_acquisto || '-'}</td>
                       <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.note}</td>
                     </tr>

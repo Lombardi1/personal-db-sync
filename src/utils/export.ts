@@ -214,7 +214,7 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
       } else if (section === 'storico') {
         const storicoData = sourceData as StoricoMovimento[];
         head = [[
-          "Codice", "Data", "Tipo", "Quantità", "Utente", "Cliente", "Lavoro", "Ordine Acquisto", "Note" // NUOVO HEAD
+          "Codice", "Data", "Tipo", "Quantità", "Utente", "Ordine Acquisto", "Note"
         ]];
         body = storicoData.map((mov: StoricoMovimento) => [
           mov.codice,
@@ -222,9 +222,6 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
           mov.tipo === 'carico' ? '↑ Carico' : '↓ Scarico',
           String(mov.quantita),
           mov.username || 'Sconosciuto',
-          mov.cliente || '-', // NUOVO
-          mov.lavoro || '-',   // NUOVO
-          mov.numero_ordine_acquisto || '-',
           mov.note,
         ]);
       }

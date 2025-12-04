@@ -154,9 +154,7 @@ export function useCartoni() {
         data: new Date().toISOString(),
         note: `Nuovo ordine in arrivo registrato`,
         user_id: user?.id,
-        numero_ordine_acquisto: cartone.ordine,
-        cliente: cartone.cliente, // NUOVO
-        lavoro: cartone.lavoro,   // NUOVO
+        numero_ordine_acquisto: cartone.ordine
       };
       await supabase.from('storico').insert([movimento]);
       // Rimosso: await loadData();
@@ -233,9 +231,7 @@ export function useCartoni() {
         : `Caricato da ordine ${ordine.ordine}`
       }`,
       user_id: user?.id,
-      numero_ordine_acquisto: ordine.ordine,
-      cliente: ordine.cliente, // NUOVO
-      lavoro: ordine.lavoro,   // NUOVO
+      numero_ordine_acquisto: ordine.ordine
     };
     console.log(`[useCartoni - spostaInGiacenza] Registrando movimento storico. User ID:`, user?.id, "Movimento:", movimento);
     const { error: storicoError } = await supabase.from('storico').insert([movimento]);
@@ -281,9 +277,7 @@ export function useCartoni() {
       data: new Date().toISOString(),
       note,
       user_id: user?.id,
-      numero_ordine_acquisto: cartone.ordine,
-      cliente: cartone.cliente, // NUOVO
-      lavoro: cartone.lavoro,   // NUOVO
+      numero_ordine_acquisto: cartone.ordine
     };
     const { error: storicoError } = await supabase.from('storico').insert([movimento]);
     if (storicoError) {
@@ -383,9 +377,7 @@ export function useCartoni() {
         data: new Date().toISOString(),
         note: `Riportato in giacenza da esauriti`,
         user_id: user?.id,
-        numero_ordine_acquisto: cartoneEsaurito.ordine,
-        cliente: cartoneEsaurito.cliente, // NUOVO
-        lavoro: cartoneEsaurito.lavoro,   // NUOVO
+        numero_ordine_acquisto: cartoneEsaurito.ordine
       };
       const { error: storicoError } = await supabase.from('storico').insert([movimento]);
       if (storicoError) {
@@ -475,9 +467,7 @@ export function useCartoni() {
       data: new Date().toISOString(),
       note: `Riportato in ordini in arrivo da giacenza`,
       user_id: user?.id,
-      numero_ordine_acquisto: ordinePerOrdini.ordine,
-      cliente: ordinePerOrdini.cliente, // NUOVO
-      lavoro: ordinePerOrdini.lavoro,   // NUOVO
+      numero_ordine_acquisto: ordinePerOrdini.ordine
     };
     const { error: storicoError } = await supabase.from('storico').insert([movimento]);
     if (storicoError) {
@@ -565,9 +555,7 @@ export function useCartoni() {
       data: new Date().toISOString(),
       note: `Ordine in arrivo ${confermato ? 'confermato' : 'non confermato'}`,
       user_id: user?.id,
-      numero_ordine_acquisto: ordineInArrivo.ordine,
-      cliente: ordineInArrivo.cliente, // NUOVO
-      lavoro: ordineInArrivo.lavoro,   // NUOVO
+      numero_ordine_acquisto: ordineInArrivo.ordine
     };
     await supabase.from('storico').insert([movimento]);
 
@@ -589,9 +577,7 @@ export function useCartoni() {
         data: new Date().toISOString(),
         note: `Ordine in arrivo eliminato`,
         user_id: user?.id,
-        numero_ordine_acquisto: ordineInArrivo.ordine,
-        cliente: ordineInArrivo.cliente, // NUOVO
-        lavoro: ordineInArrivo.lavoro,   // NUOVO
+        numero_ordine_acquisto: ordineInArrivo.ordine
       };
       await supabase.from('storico').insert([movimento]);
     }
@@ -639,9 +625,7 @@ export function useCartoni() {
         data: new Date().toISOString(),
         note: `Modifica dettagli ordine in arrivo`,
         user_id: user?.id,
-        numero_ordine_acquisto: ordineInArrivo.ordine,
-        cliente: dati.cliente, // NUOVO
-        lavoro: dati.lavoro,   // NUOVO
+        numero_ordine_acquisto: ordineInArrivo.ordine
       };
       await supabase.from('storico').insert([movimento]);
       // Rimosso: await loadData();
