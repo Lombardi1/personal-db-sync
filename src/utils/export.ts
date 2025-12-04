@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Cartone, OrdineAcquisto, Fornitore, Cliente, ArticoloOrdineAcquisto, StoricoMovimento, AziendaInfo } from '@/types';
 import { formatData, formatFormato, formatGrammatura, formatFogli, formatPrezzo, getStatoText } from '@/utils/formatters';
 import logoAG from '@/assets/logo-ag.jpg';
-import logoFSC from '@/assets/assets/logo-fsc.jpg';
+import logoFSC from '@/assets/logo-fsc.jpg';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -214,7 +214,7 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
       } else if (section === 'storico') {
         const storicoData = sourceData as StoricoMovimento[];
         head = [[
-          "Codice", "Data", "Tipo", "Quantità", "Utente", "Ordine Acquisto", "Cliente", "Lavoro", "Note" // AGGIUNTO CLIENTE E LAVORO
+          "Codice", "Data", "Tipo", "Quantità", "Utente", "Ordine Acquisto", "Note"
         ]];
         body = storicoData.map((mov: StoricoMovimento) => [
           mov.codice,
@@ -222,9 +222,6 @@ export function esportaTabellaPDF(tabellaId: string, nomeFile: string, section: 
           mov.tipo === 'carico' ? '↑ Carico' : '↓ Scarico',
           String(mov.quantita),
           mov.username || 'Sconosciuto',
-          mov.numero_ordine_acquisto || '-',
-          mov.cliente || '-', // AGGIUNTO CLIENTE
-          mov.lavoro || '-', // AGGIUNTO LAVORO
           mov.note,
         ]);
       }
