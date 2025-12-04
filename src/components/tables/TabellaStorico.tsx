@@ -9,6 +9,7 @@ interface TabellaStoricoProps {
 }
 
 export function TabellaStorico({ storico, tableId = "tab-storico" }: TabellaStoricoProps) { // Valore di default per tableId
+  console.log("TabellaStorico: Received storico prop:", storico); // Log di debug
   return (
     <ScrollArea className="w-full rounded-md">
       <div className="w-full min-w-max">
@@ -20,6 +21,8 @@ export function TabellaStorico({ storico, tableId = "tab-storico" }: TabellaStor
                 <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Tipo</th>
                 <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Quantità</th>
                 <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Utente</th>
+                <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Cliente</th> {/* NUOVO */}
+                <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Lavoro</th> {/* NUOVO */}
                 <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Ordine Acquisto</th>
                 <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold">Note</th>
           </tr>
@@ -44,6 +47,8 @@ export function TabellaStorico({ storico, tableId = "tab-storico" }: TabellaStor
               </td>
               <td className="px-3 py-2 text-[10px] sm:text-sm font-semibold">{mov.quantita}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.username || 'Sconosciuto'}</td>
+              <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.cliente || '-'}</td> {/* NUOVO */}
+              <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.lavoro || '-'}</td> {/* NUOVO */}
               <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.numero_ordine_acquisto || '-'}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm">{mov.note}</td>
             </tr>

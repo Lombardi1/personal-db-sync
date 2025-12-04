@@ -30,6 +30,8 @@ export interface StoricoMovimento {
   user_id?: string; // Nuovo campo per l'ID dell'utente
   username?: string; // Campo opzionale per il nome utente, popolato in fase di fetch
   numero_ordine_acquisto?: string; // Nuovo campo per il numero dell'ordine d'acquisto
+  cliente?: string; // NUOVO CAMPO
+  lavoro?: string; // NUOVO CAMPO
 }
 
 export interface AnagraficaBase {
