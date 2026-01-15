@@ -34,10 +34,20 @@ export function formatPrezzo(val: number): string {
   }).format(val) + ' €/kg';
 }
 
-export function formatData(dataISO: string): string {
+export function formatData(dataISO: string | null | undefined): string {
   if (!dataISO) return '';
-  const [yyyy, mm, dd] = dataISO.split('-');
-  return `${dd}/${mm}/${yyyy}`;
+  try {
+    const date = new Date(dataISO);
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date string provided to formatData: ${dataISO}`);
+      return dataISO; // Return original string if invalid
+    }
+    return date.toLocaleDateString('it-IT'); // Formats to DD/MM/YYYY
+  } catch (e) {
+    console.error(`Error formatting date ${dataISO}:`, e);
+    return dataISO; // Fallback to original string on error
+  }
 }
 
 export function parseData(dataIT: string): string {
