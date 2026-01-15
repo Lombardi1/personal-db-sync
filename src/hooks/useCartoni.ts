@@ -26,7 +26,7 @@ export function useCartoni() {
         // AGGIUNTO: ddt e data_arrivo
         supabase.from('ordini').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_consegna, data_arrivo, confermato, note, fsc, alimentare, rif_commessa_fsc'),
         // Seleziona esplicitamente le colonne per la tabella 'esauriti'
-        supabase.from('esauriti').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc'),
+        supabase.from('esauriti').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc, data_esaurimento'), // ADDED data_esaurimento
         supabase.from('storico').select(`*, app_users(username), cliente, lavoro`).order('data', { ascending: false }) // AGGIUNTO: cliente, lavoro
       ]);
 
@@ -124,7 +124,7 @@ export function useCartoni() {
   }, []);
 
   const aggiungiOrdine = async (cartone: Cartone) => {
-    const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
+    const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo' | 'data_esaurimento'> = { // Aggiunto data_esaurimento
       codice: cartone.codice,
       fornitore: cartone.fornitore,
       ordine: cartone.ordine,
@@ -183,7 +183,7 @@ export function useCartoni() {
     const fogliFinali = fogliEffettivi;
     const magazzinoFinale = magazzino; 
     
-    const cartoneGiacenza: Omit<Cartone, 'confermato' | 'data_consegna'> = {
+    const cartoneGiacenza: Omit<Cartone, 'confermato' | 'data_consegna' | 'data_esaurimento'> = { // Aggiunto data_esaurimento
       codice: ordine.codice,
       fornitore: ordine.fornitore,
       ordine: ordine.ordine,
@@ -316,6 +316,7 @@ export function useCartoni() {
         rif_commessa_fsc: cartone.rif_commessa_fsc || null,
         ddt: cartone.ddt,
         data_arrivo: cartone.data_arrivo,
+        data_esaurimento: new Date().toISOString(), // Set data_esaurimento here
       };
       console.log('[useCartoni - scaricoFogli] Inserting into esauriti:', JSON.stringify(cartoneEsaurito, null, 2));
       const { error: insertEsauritiError } = await supabase.from('esauriti').insert([cartoneEsaurito]);
@@ -342,7 +343,7 @@ export function useCartoni() {
       return { error: new Error('Cartone non trovato negli esauriti.') };
     }
 
-    const cartonePerGiacenza: Omit<Cartone, 'confermato' | 'data_consegna'> = { // Specificato il tipo Cartone
+    const cartonePerGiacenza: Omit<Cartone, 'confermato' | 'data_consegna' | 'data_esaurimento'> = { // Aggiunto data_esaurimento
       codice: cartoneEsaurito.codice,
       fornitore: cartoneEsaurito.fornitore,
       ordine: cartoneEsaurito.ordine,
@@ -360,6 +361,7 @@ export function useCartoni() {
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
+      data_esaurimento: null, // Clear data_esaurimento when moving out of esauriti
     };
     console.log('[useCartoni - riportaInGiacenza] Inserting into giacenza:', JSON.stringify(cartonePerGiacenza, null, 2));
 
@@ -445,6 +447,7 @@ export function useCartoni() {
       ddt: cartone.ddt,
       data_arrivo: cartone.data_arrivo,
       magazzino: cartone.magazzino,
+      data_esaurimento: null, // Clear data_esaurimento when moving out of esauriti
     };
     console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini (PRIMA DELL\'INSERT):', JSON.stringify(ordinePerOrdini, null, 2)); // LOG DI DEBUG
 
@@ -627,6 +630,7 @@ export function useCartoni() {
       rif_commessa_fsc: dati.rif_commessa_fsc,
       ddt: dati.ddt, // Mantiene il DDT originale
       data_arrivo: dati.data_arrivo, // Mantiene la data_arrivo originale
+      data_esaurimento: dati.data_esaurimento, // Mantiene la data_esaurimento originale
     };
     console.log('[useCartoni - modificaOrdine] Updating ordini with:', JSON.stringify(datiPerAggiornamento, null, 2));
 

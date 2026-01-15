@@ -53,10 +53,17 @@ export function EsauritiTab({ esauriti, riportaInGiacenza, storico }: EsauritiTa
         else {
           filtered = filtered.filter(c => {
             const field = c[key as keyof Cartone];
-            return String(field).toLowerCase().includes(value.toLowerCase());
+            return String(field || '').toLowerCase().includes(value.toLowerCase());
           });
         }
       }
+    });
+
+    // Ordina per data_esaurimento in ordine decrescente (più recenti sopra)
+    filtered.sort((a, b) => {
+      const dateA = a.data_esaurimento ? new Date(a.data_esaurimento).getTime() : 0;
+      const dateB = b.data_esaurimento ? new Date(b.data_esaurimento).getTime() : 0;
+      return dateB - dateA; // Descending order
     });
 
     setEsauritiFiltered(filtered);
@@ -106,14 +113,18 @@ export function EsauritiTab({ esauriti, riportaInGiacenza, storico }: EsauritiTa
         </Button>
       </div>
 
-      <TabellaEsauriti 
-        cartoni={esauritiFiltered}
-        onStorico={(codice) => {
-          setSelectedCodice(codice);
-          setShowModalStorico(true);
-        }}
-        onRiportaGiacenza={riportaInGiacenza}
-      />
+      {esauritiFiltered.length === 0 ? (
+        <p className="text-sm sm:text-base text-[hsl(var(--muted-foreground))]">Nessun cartone esaurito.</p>
+      ) : (
+        <TabellaEsauriti 
+          cartoni={esauritiFiltered}
+          onStorico={(codice) => {
+            setSelectedCodice(codice);
+            setShowModalStorico(true);
+          }}
+          onRiportaGiacenza={riportaInGiacenza}
+        />
+      )}
 
       {showModalStorico && selectedCodice && (
         <ModalStorico

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Cartone } from '@/types';
-import { formatFormato, formatPrezzo, formatFogli } from '@/utils/formatters';
+import { formatFormato, formatPrezzo, formatFogli, formatData } from '@/utils/formatters'; // Importa formatData
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
@@ -40,6 +40,7 @@ export function TabellaEsauriti({ cartoni, onStorico, onRiportaGiacenza }: Tabel
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[120px]">Lavoro</th>
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[80px]">Magazzino</th>
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[80px]">Prezzo €/kg</th>
+            <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[100px]">Data Esaurimento</th> {/* NUOVA COLONNA */}
             <th className="px-3 py-3 text-left text-[10px] sm:text-sm font-semibold w-[150px]">Azioni</th>
           </tr>
         </thead>
@@ -60,6 +61,7 @@ export function TabellaEsauriti({ cartoni, onStorico, onRiportaGiacenza }: Tabel
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[120px]">{cartone.lavoro}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[80px]">{cartone.magazzino}</td>
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[80px]">{formatPrezzo(cartone.prezzo)}</td>
+              <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[100px]">{formatData(cartone.data_esaurimento || '')}</td> {/* NUOVA COLONNA */}
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[150px]">
                 <div className="flex gap-1">
                   <button
