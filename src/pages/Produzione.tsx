@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Header } from '@/components/Header';
+import { useCartoni } from '@/hooks/useCartoni'; // Importa useCartoni
 
 interface DischargeEntry {
   id: string;
@@ -37,6 +38,8 @@ export default function Produzione() {
   const [loading, setLoading] = useState(false);
   const [scaricando, setScaricando] = useState(false);
   const [codiciDisponibili, setCodiciDisponibili] = useState<string[]>([]);
+
+  const { scaricoFogli: scaricoFogliFromHook } = useCartoni(); // Ottieni scaricoFogli dal hook
 
   const handleCodiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let inputValue = e.target.value;
@@ -108,7 +111,7 @@ export default function Produzione() {
     }
 
     let totalFogliEffettivi = 0;
-    const storicoEntriesToInsert: StoricoMovimento[] = []; // Array per le voci di storico
+    const notePerScarico: string[] = [];
 
     for (const entry of dischargeEntries) {
       const qty = parseInt(entry.quantita);
@@ -130,23 +133,8 @@ export default function Produzione() {
       }
       totalFogliEffettivi += fogliEffettiviForEntry;
 
-      // Prepara la nota per la singola voce di storico
       const entryNote = entry.note.trim();
-      const notaCompletaPerEntry = entryNote
-        ? entryNote // Se c'è una nota, usa solo quella
-        : `Scarico da produzione`; // Altrimenti, usa la nota predefinita
-
-      storicoEntriesToInsert.push({
-        codice: cartone.codice,
-        tipo: 'scarico',
-        quantita: fogliEffettiviForEntry,
-        data: new Date().toISOString(),
-        note: notaCompletaPerEntry,
-        user_id: user?.id,
-        numero_ordine_acquisto: cartone.ordine,
-        cliente: cartone.cliente, // AGGIUNTO
-        lavoro: cartone.lavoro,   // AGGIUNTO
-      });
+      notePerScarico.push(entryNote || `Scarico da produzione`);
     }
 
     if (totalFogliEffettivi > cartone.fogli) {
@@ -158,30 +146,21 @@ export default function Produzione() {
     setScaricando(true);
 
     try {
-      const nuovaQuantita = cartone.fogli - totalFogliEffettivi;
+      // Chiama la funzione scaricoFogli dal hook useCartoni
+      const { error } = await scaricoFogliFromHook(cartone.codice, totalFogliEffettivi, notePerScarico.join('; '));
 
-      // Inserisci tutte le voci di storico in un'unica operazione
-      await supabase.from('storico').insert(storicoEntriesToInsert);
-
-      if (nuovaQuantita === 0) {
-        await supabase.from('giacenza').delete().eq('codice', cartone.codice);
-        await supabase.from('esauriti').insert({
-          ...cartone,
-          fogli: 0
-        });
-        toast.success(`Scarico di ${totalFogliEffettivi} fogli completato in ${storicoEntriesToInsert.length} operazioni. Cartone esaurito.`);
+      if (error) {
+        toast.error('Errore durante lo scarico');
+        console.error('Errore scarico:', error);
       } else {
-        await supabase
-          .from('giacenza')
-          .update({ fogli: nuovaQuantita })
-          .eq('codice', cartone.codice);
-        toast.success(`Scarico di ${totalFogliEffettivi} fogli completato in ${storicoEntriesToInsert.length} operazioni.`);
+        toast.success(`Scarico di ${totalFogliEffettivi} fogli completato.`);
       }
 
       setCartone(null);
       setCodice('CTN-');
       setDischargeEntries([{ id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }]); // Reset entries
       
+      // Ricarica i codici disponibili dopo lo scarico
       const { data } = await supabase
         .from('giacenza')
         .select('codice')
