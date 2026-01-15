@@ -343,7 +343,9 @@ export function useCartoni() {
       return { error: new Error('Cartone non trovato negli esauriti.') };
     }
 
-    const cartonePerGiacenza: Omit<Cartone, 'confermato' | 'data_consegna' | 'data_esaurimento'> = { // Aggiunto data_esaurimento
+    // Create an object for insertion into 'giacenza'
+    // The 'giacenza' table does not have 'data_esaurimento' or 'confermato'
+    const cartonePerGiacenza: Omit<Cartone, 'confermato' | 'data_consegna' | 'data_esaurimento'> = {
       codice: cartoneEsaurito.codice,
       fornitore: cartoneEsaurito.fornitore,
       ordine: cartoneEsaurito.ordine,
@@ -361,7 +363,6 @@ export function useCartoni() {
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
-      data_esaurimento: null, // Clear data_esaurimento when moving out of esauriti
     };
     console.log('[useCartoni - riportaInGiacenza] Inserting into giacenza:', JSON.stringify(cartonePerGiacenza, null, 2));
 
