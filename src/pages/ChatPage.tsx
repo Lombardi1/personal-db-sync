@@ -144,14 +144,14 @@ export default function ChatPage() {
     : 'Seleziona una chat';
 
   return (
-    <div className="min-h-screen bg-[hsl(210,40%,96%)] flex flex-col">
+    <div className="h-screen bg-[hsl(210,40%,96%)] flex flex-col">
       <Header
         title="Chat"
         activeTab="chat"
         showUsersButton={true}
       />
 
-      <div className="flex-1 flex max-w-[1400px] mx-auto w-full p-3 sm:p-5 md:px-8 gap-4 h-full">
+      <div className="flex-1 flex max-w-[1400px] mx-auto w-full p-3 sm:p-5 md:px-8 gap-4">
         {/* Sidebar Chat List */}
         <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full">
           <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
