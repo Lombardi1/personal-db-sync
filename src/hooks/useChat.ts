@@ -30,24 +30,40 @@ export function useChat() {
   const fetchChats = useCallback(async () => {
     if (!user?.id) return;
     setLoadingChats(true);
-    const { data, error } = await supabase
+
+    // 1. Fetch chats relevant to the current user
+    const { data: chatsData, error: chatsError } = await supabase
       .from('chats')
-      .select(`
-        *,
-        user_chat_status(last_read_at)
-      `)
+      .select(`id, created_at, participant_ids, last_message_content, last_message_at`)
       .contains('participant_ids', [user.id])
       .order('last_message_at', { ascending: false, nullsFirst: false });
 
-    if (error) {
-      console.error('Error fetching chats:', error);
+    if (chatsError) {
+      console.error('Error fetching chats:', chatsError);
       toast.error('Errore nel caricamento delle chat.');
       setLoadingChats(false);
       return;
     }
 
+    // 2. Fetch user_chat_status for the current user for all fetched chats
+    const chatIds = (chatsData || []).map(chat => chat.id);
+    const { data: userChatStatusData, error: statusError } = await supabase
+      .from('user_chat_status')
+      .select('chat_id, last_read_at')
+      .eq('user_id', user.id)
+      .in('chat_id', chatIds);
+
+    if (statusError) {
+      console.error('Error fetching user chat status:', statusError);
+      // Don't block, proceed with potentially missing status
+    }
+
+    const userChatStatusMap = new Map(
+      (userChatStatusData || []).map(status => [status.chat_id, status.last_read_at])
+    );
+
     let currentTotalUnread = 0;
-    const chatsWithUsernames: Chat[] = await Promise.all((data || []).map(async (chat) => {
+    const chatsWithUsernames: Chat[] = await Promise.all((chatsData || []).map(async (chat) => {
       const participantUsernames = await Promise.all(chat.participant_ids.map(async (pId: string) => {
         const foundUser = allUsers.find(u => u.id === pId);
         if (foundUser) return foundUser.username;
@@ -60,39 +76,41 @@ export function useChat() {
         return userData?.username || 'Sconosciuto';
       }));
 
-      // Calcola unread_count
-      const lastReadAt = (chat.user_chat_status as any[])?.[0]?.last_read_at;
+      // Get last_read_at for the current user from the map
+      const lastReadAt = userChatStatusMap.get(chat.id);
       let unreadCount = 0;
-      if (chat.last_message_at && lastReadAt) {
-        const lastMessageDate = new Date(chat.last_message_at);
-        const lastReadDate = new Date(lastReadAt);
-        if (lastMessageDate > lastReadDate) {
-          // Fetch messages count since last_read_at
+
+      if (chat.last_message_at) {
+        if (lastReadAt) {
+          const lastMessageDate = new Date(chat.last_message_at);
+          const lastReadDate = new Date(lastReadAt);
+          if (lastMessageDate > lastReadDate) {
+            const { count, error: countError } = await supabase
+              .from('messages')
+              .select('id', { count: 'exact' })
+              .eq('chat_id', chat.id)
+              .gt('created_at', lastReadAt)
+              .neq('sender_id', user.id);
+
+            if (countError) {
+              console.error('Error counting unread messages:', countError);
+            } else {
+              unreadCount = count || 0;
+            }
+          }
+        } else {
+          // If no last_read_at, all messages are unread
           const { count, error: countError } = await supabase
             .from('messages')
             .select('id', { count: 'exact' })
             .eq('chat_id', chat.id)
-            .gt('created_at', lastReadAt)
-            .neq('sender_id', user.id); // Non contare i messaggi inviati dall'utente stesso
+            .neq('sender_id', user.id);
 
           if (countError) {
-            console.error('Error counting unread messages:', countError);
+            console.error('Error counting unread messages (no last_read_at):', countError);
           } else {
             unreadCount = count || 0;
           }
-        }
-      } else if (chat.last_message_at && !lastReadAt) {
-        // If no last_read_at, all messages are unread
-        const { count, error: countError } = await supabase
-          .from('messages')
-          .select('id', { count: 'exact' })
-          .eq('chat_id', chat.id)
-          .neq('sender_id', user.id);
-
-        if (countError) {
-          console.error('Error counting unread messages (no last_read_at):', countError);
-        } else {
-          unreadCount = count || 0;
         }
       }
       
