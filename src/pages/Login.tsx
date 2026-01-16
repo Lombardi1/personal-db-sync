@@ -25,22 +25,13 @@ export default function Login() {
     const result = await login(username, password);
     setLoading(false);
     if (result.success) {
-      // Controlla se è la prima volta che l'utente accede o se c'è una nuova versione
-      const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
-      const shouldShowWhatsNew = lastSeenVersion !== currentAppVersion;
-      
       notifications.showSuccess('Login effettuato con successo');
       
+      // Reindirizza l'utente alla dashboard appropriata
       if (result.user?.role === 'stampa') {
         navigate('/stampa-dashboard');
       } else {
-        // Per gli amministratori, mostriamo il modale delle novità se necessario
-        if (shouldShowWhatsNew) {
-          // Il modale verrà mostrato tramite l'effetto in App.tsx
-          navigate('/summary');
-        } else {
-          navigate('/summary');
-        }
+        navigate('/summary');
       }
     } else {
       notifications.showError(result.error || 'Errore durante il login');

@@ -1,6 +1,17 @@
-export const currentAppVersion = "1.1.4"; // Incrementa questa versione per ogni nuovo rilascio
+export const currentAppVersion = "1.1.5"; // Incrementa questa versione per ogni nuovo rilascio
 
 export const releaseNotes = [
+  {
+    version: "1.1.5",
+    date: "2024-08-02",
+    title: "Visualizzazione Modale Novità per Tutti gli Utenti",
+    features: [
+      "**Modale Novità per Tutti:** Ora il modale delle novità viene mostrato a tutti gli utenti (sia 'amministratore' che 'stampa') al login quando c'è una nuova versione disponibile.",
+    ],
+    bugFixes: [
+      "Corretta la logica di visualizzazione del modale delle novità per assicurare che venga mostrato a tutti gli utenti dopo il login.",
+    ],
+  },
   {
     version: "1.1.4",
     date: "2024-08-02",
