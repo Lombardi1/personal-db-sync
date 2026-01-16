@@ -28,6 +28,39 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     return data || [];
   }, []);
 
+  // New function to request notification permission
+  const requestNotificationPermission = useCallback(async () => {
+    if (!('Notification' in window)) {
+      console.warn('Browser does not support desktop notifications.');
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          console.log('Desktop notification permission granted.');
+        } else {
+          console.warn('Desktop notification permission denied.');
+          toast.info('Le notifiche desktop sono state bloccate. Puoi abilitarle dalle impostazioni del browser.');
+        }
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+      }
+    } else if (Notification.permission === 'denied') {
+      console.warn('Desktop notification permission already denied.');
+      // Optionally, inform the user they need to enable it manually
+      // toast.info('Le notifiche desktop sono state bloccate. Puoi abilitarle dalle impostazioni del browser.');
+    }
+  }, []);
+
+  // Call requestNotificationPermission when user is logged in and on chat page
+  useEffect(() => {
+    if (user?.id) {
+      requestNotificationPermission();
+    }
+  }, [user?.id, requestNotificationPermission]);
+
   const fetchChats = useCallback(async () => {
     if (!user?.id) return;
     setLoadingChats(true);
@@ -194,35 +227,50 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
             const newMessage = payload.new as Message;
             console.log('Global message INSERT received:', newMessage);
 
-            // If the message is from another user
-            if (newMessage.sender_id !== user.id) {
-                // If it's for the active chat, update messages and mark as read
-                if (newMessage.chat_id === activeChatId) {
-                    fetchMessages(activeChatId);
-                    markChatAsRead(activeChatId); // This will also update totalUnreadCount locally
-                } else {
-                    // If it's for a non-active chat, update unread count locally and show toast
-                    setChats(prevChats => {
-                        const updatedChats = prevChats.map(chat => {
-                            if (chat.id === newMessage.chat_id) {
-                                const newUnreadCount = (chat.unread_count || 0) + 1;
-                                setTotalUnreadCount(prevTotal => prevTotal + 1);
-                                return {
-                                    ...chat,
-                                    last_message_content: newMessage.content,
-                                    last_message_at: newMessage.created_at,
-                                    unread_count: newUnreadCount,
-                                };
-                            }
-                            return chat;
-                        });
-                        // If the chat is not in the current list (e.g., new chat created by other user)
-                        // We might need to re-fetch chats fully. For now, assume it's in the list.
-                        return updatedChats;
+            // If the message is from another user AND it's not for the active chat
+            if (newMessage.sender_id !== user.id && newMessage.chat_id !== activeChatId) {
+                // ... existing logic for updating unread count and in-app toast ...
+                setChats(prevChats => {
+                    const updatedChats = prevChats.map(chat => {
+                        if (chat.id === newMessage.chat_id) {
+                            const newUnreadCount = (chat.unread_count || 0) + 1;
+                            setTotalUnreadCount(prevTotal => prevTotal + 1);
+                            return {
+                                ...chat,
+                                last_message_content: newMessage.content,
+                                last_message_at: newMessage.created_at,
+                                unread_count: newUnreadCount,
+                            };
+                        }
+                        return chat;
                     });
+                    // If the chat is not in the current list (e.g., new chat created by other user)
+                    // We might need to re-fetch chats fully. For now, assume it's in the list.
+                    return updatedChats;
+                });
 
-                    const sender = allUsers.find(u => u.id === newMessage.sender_id);
-                    const senderUsername = sender?.username || 'Sconosciuto';
+                const sender = allUsers.find(u => u.id === newMessage.sender_id);
+                const senderUsername = sender?.username || 'Sconosciuto';
+
+                // --- NEW: Desktop Notification Logic ---
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const notificationTitle = `Nuovo messaggio da ${senderUsername}`;
+                    const notificationOptions: NotificationOptions = {
+                        body: newMessage.content,
+                        icon: '/favicon.png', // Path to your app's icon
+                        tag: newMessage.chat_id, // Group notifications by chat
+                        renotify: true // Show new notification even if one exists for this tag
+                    };
+
+                    const notification = new Notification(notificationTitle, notificationOptions);
+
+                    notification.onclick = () => {
+                        window.focus(); // Bring the browser window to front
+                        navigate(`/chat/${newMessage.chat_id}`); // Navigate to the specific chat
+                        notification.close(); // Close the notification
+                    };
+                } else {
+                    // Fallback to in-app toast if desktop notifications are not granted/supported
                     toast.info(`${senderUsername}: ${newMessage.content}`, {
                         duration: 5000,
                         position: 'top-left',
@@ -234,6 +282,10 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
                         },
                     });
                 }
+            } else if (newMessage.sender_id !== user.id && newMessage.chat_id === activeChatId) {
+                // If it's for the active chat, update messages and mark as read
+                fetchMessages(activeChatId);
+                markChatAsRead(activeChatId); // This will also update totalUnreadCount locally
             }
         })
         .subscribe();
@@ -241,7 +293,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     return () => {
         supabase.removeChannel(globalMessageChannel);
     };
-}, [user?.id, activeChatId, fetchMessages, markChatAsRead, allUsers, navigate]);
+  }, [user?.id, activeChatId, fetchMessages, markChatAsRead, allUsers, navigate]);
 
   useEffect(() => {
     if (!user?.id) {
