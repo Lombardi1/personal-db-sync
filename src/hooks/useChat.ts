@@ -174,14 +174,15 @@ export function useChat() {
   useEffect(() => {
     if (!user?.id) {
       console.log('[useChat useEffect] User ID is not available, skipping chat channel setup.');
-      return;
+      return; // Exit early if user is not available
     }
+
     console.log(`[useChat useEffect] Setting up chat channel for user: ${user.id}`);
     fetchChats();
 
     const chatChannel = supabase
       .channel('chats-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `participant_ids.ov.{"${user.id}"}` }, async (payload) => { // CAMBIATO: .cs. a .ov.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `participant_ids.ov.{"${user.id}"}` }, async (payload) => {
           console.log('Chat change received!', payload);
           fetchChats(); // Always re-fetch chats to update the list and badge counts
 
@@ -236,10 +237,9 @@ export function useChat() {
         })
         .subscribe();
 
-      return () => {
-        supabase.removeChannel(chatChannel);
-      };
-    }
+    return () => { // This cleanup function is now correctly outside the 'if' block
+      supabase.removeChannel(chatChannel);
+    };
   }, [user?.id, fetchChats, activeChatId, allUsers]);
 
   useEffect(() => {
