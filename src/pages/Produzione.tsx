@@ -19,6 +19,16 @@ import {
 } from '@/components/ui/select';
 import { Header } from '@/components/Header';
 import { useCartoni } from '@/hooks/useCartoni'; // Importa useCartoni
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'; // Importa AlertDialog
 
 interface DischargeEntry {
   id: string;
@@ -32,16 +42,20 @@ export default function Produzione() {
   const navigate = useNavigate();
   const [codice, setCodice] = useState('CTN-');
   const [cartone, setCartone] = useState<Cartone | null>(null);
-  const [similarCartons, setSimilarCartons] = useState<Cartone[]>([]); // NUOVO STATO
+  const [similarCartons, setSimilarCartons] = useState<Cartone[]>([]);
   const [dischargeEntries, setDischargeEntries] = useState<DischargeEntry[]>([
     { id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }
   ]);
   const [loading, setLoading] = useState(false);
-  const [loadingSimilar, setLoadingSimilar] = useState(false); // NUOVO STATO
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [scaricando, setScaricando] = useState(false);
   const [codiciDisponibili, setCodiciDisponibili] = useState<string[]>([]);
 
-  const { scaricoFogli: scaricoFogliFromHook } = useCartoni(); // Ottieni scaricoFogli dal hook
+  // Nuovi stati per il modale di conferma cambio CTN
+  const [isConfirmChangeModalOpen, setIsConfirmChangeModalOpen] = useState(false);
+  const [codiceToConfirmChange, setCodiceToConfirmChange] = useState<string | null>(null);
+
+  const { scaricoFogli: scaricoFogliFromHook } = useCartoni();
 
   const handleCodiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let inputValue = e.target.value;
@@ -66,8 +80,8 @@ export default function Produzione() {
 
     setLoading(true);
     setCartone(null);
-    setSimilarCartons([]); // Reset similar cartons
-    setDischargeEntries([{ id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }]); // Reset entries
+    setSimilarCartons([]);
+    setDischargeEntries([{ id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }]);
     
     try {
       const { data, error } = await supabase
@@ -85,12 +99,9 @@ export default function Produzione() {
       setCartone(data as Cartone);
       toast.success('Cartone trovato');
 
-      // NUOVO: Cerca cartoni simili
       setLoadingSimilar(true);
       try {
-        // Normalizza i valori di formato e grammatura per la query
         const formattedFormatoForQuery = formatFormato(data.formato);
-        // Estrai solo il valore numerico dalla grammatura del cartone trovato
         const numericGrammatura = parseInt(String(data.grammatura).replace(/\s*g\/m²\s*$/i, ''));
 
         console.log(`[Produzione] Cartone trovato: Codice=${data.codice}, Formato DB='${data.formato}', Grammatura DB='${data.grammatura}'`);
@@ -99,15 +110,13 @@ export default function Produzione() {
 
         const { data: similarData, error: similarError } = await supabase
           .from('giacenza')
-          .select('codice, formato, grammatura, fogli') // Seleziona solo i campi necessari
-          .eq('formato', formattedFormatoForQuery) // Usa il valore formattato per la query
-          // Utilizza l'operatore 'or' per cercare sia il numero puro che il numero con ' g/m²'
+          .select('codice, formato, grammatura, fogli')
+          .eq('formato', formattedFormatoForQuery)
           .or(`grammatura.eq.${numericGrammatura},grammatura.eq.${numericGrammatura} g/m²`)
-          .neq('codice', data.codice); // Escludi il cartone corrente
+          .neq('codice', data.codice);
 
         if (similarError) {
           console.error('Errore ricerca cartoni simili:', similarError);
-          // Non mostrare un toast di errore all'utente per i cartoni simili, è un'informazione aggiuntiva
         } else if (similarData) {
           setSimilarCartons(similarData as Cartone[]);
           console.log(`[Produzione] Trovati ${similarData.length} cartoni simili.`);
@@ -183,7 +192,6 @@ export default function Produzione() {
     setScaricando(true);
 
     try {
-      // Chiama la funzione scaricoFogli dal hook useCartoni
       const { error } = await scaricoFogliFromHook(cartone.codice, totalFogliEffettivi, notePerScarico.join('; '));
 
       if (error) {
@@ -194,11 +202,10 @@ export default function Produzione() {
       }
 
       setCartone(null);
-      setSimilarCartons([]); // Reset similar cartons after discharge
+      setSimilarCartons([]);
       setCodice('CTN-');
-      setDischargeEntries([{ id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }]); // Reset entries
+      setDischargeEntries([{ id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }]);
       
-      // Ricarica i codici disponibili dopo lo scarico
       const { data } = await supabase
         .from('giacenza')
         .select('codice')
@@ -239,6 +246,16 @@ export default function Produzione() {
   }, 0);
 
   const difference = cartone ? totalFogliEffettiviDisplay - cartone.fogli : 0;
+
+  // Funzione per gestire la conferma del cambio CTN
+  const handleConfirmChangeCTN = () => {
+    if (codiceToConfirmChange) {
+      setCodice(codiceToConfirmChange);
+      setIsConfirmChangeModalOpen(false);
+      setCodiceToConfirmChange(null);
+      setTimeout(() => cercaCartone(), 0); // Trigger search for the selected similar carton
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
@@ -361,7 +378,7 @@ export default function Produzione() {
                 </div>
               </div>
 
-              {/* NUOVO: Sezione Cartoni Simili */}
+              {/* Sezione Cartoni Simili */}
               {loadingSimilar ? (
                 <div className="text-center text-sm text-[hsl(var(--muted-foreground))]">Caricamento cartoni simili...</div>
               ) : similarCartons.length > 0 && (
@@ -375,10 +392,8 @@ export default function Produzione() {
                       <button
                         key={simCartone.codice}
                         onClick={() => {
-                          setCodice(simCartone.codice);
-                          // Non resetto cartone e similarCartons qui, la funzione cercaCartone lo farà
-                          // e poi popolerà i nuovi dati, mantenendo la visualizzazione fluida.
-                          setTimeout(() => cercaCartone(), 0); // Trigger search for the selected similar carton
+                          setCodiceToConfirmChange(simCartone.codice);
+                          setIsConfirmChangeModalOpen(true);
                         }}
                         className="flex flex-col items-center justify-center p-2 bg-[hsl(var(--muted))] rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors text-xs sm:text-sm"
                         title={`Fogli: ${formatFogli(simCartone.fogli)}`}
@@ -525,6 +540,28 @@ export default function Produzione() {
           </div>
         </div>
       </div>
+
+      {/* Modale di conferma cambio CTN */}
+      <AlertDialog open={isConfirmChangeModalOpen} onOpenChange={setIsConfirmChangeModalOpen}>
+        <AlertDialogContent className="sm:max-w-[425px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg sm:text-xl">Conferma Cambio Cartone</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm sm:text-base">
+              Sei sicuro di voler cambiare il cartone da <strong>{cartone?.codice || 'N/A'}</strong> a <strong>{codiceToConfirmChange}</strong>?
+              Tutti i campi di scarico verranno resettati.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
+            <AlertDialogCancel className="w-full sm:w-auto text-sm">Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmChangeCTN}
+              className="w-full sm:w-auto text-sm"
+            >
+              Conferma
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
