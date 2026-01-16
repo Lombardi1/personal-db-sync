@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft } from 'lucide-react'; // Importa ArrowLeft
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -153,10 +153,10 @@ export default function ChatPage() {
         showUsersButton={true}
       />
 
-      <div className="flex-1 flex max-w-[1400px] mx-auto w-full p-3 sm:p-5 md:px-8 gap-4 overflow-hidden">
+      <div className="flex-1 flex max-w-[1400px] mx-auto w-full p-3 sm:p-5 md:px-8 gap-4 overflow-hidden min-h-0">
         {/* Sidebar Chat List */}
         {(!isMobile || !activeChatId) && ( // Mostra la sidebar se non è mobile O se è mobile ma non c'è una chat attiva
-          <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" /> Le mie Chat
@@ -210,7 +210,7 @@ export default function ChatPage() {
 
         {/* Main Chat Window */}
         {(!isMobile || activeChatId) && ( // Mostra la chat principale se non è mobile O se è mobile e c'è una chat attiva
-          <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <h2 className="text-lg font-bold">{chatTitle}</h2>
               <div className="flex items-center gap-2">
