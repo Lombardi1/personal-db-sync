@@ -1,6 +1,18 @@
-export const currentAppVersion = "1.1.0"; // Incrementa questa versione per ogni nuovo rilascio
+export const currentAppVersion = "1.1.1"; // Incrementa questa versione per ogni nuovo rilascio
 
 export const releaseNotes = [
+  {
+    version: "1.1.1",
+    date: "2024-08-02",
+    title: "Messaggio di Prova - Nuove Funzionalità!",
+    features: [
+      "**Funzionalità di Test 1:** Questo è un messaggio di prova per la nuova funzionalità.",
+      "**Funzionalità di Test 2:** Un'altra funzionalità di prova per verificare il modale.",
+    ],
+    bugFixes: [
+      "Risolto un bug di prova che causava un errore immaginario.",
+    ],
+  },
   {
     version: "1.1.0",
     date: "2024-08-01",
