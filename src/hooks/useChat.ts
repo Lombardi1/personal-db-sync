@@ -3,8 +3,9 @@ import { supabase } from '@/lib/supabase';
 import { Chat, Message } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
+import { NavigateFunction } from 'react-router-dom'; // Import NavigateFunction type
 
-export function useChat() {
+export function useChat(navigate: NavigateFunction) { // Accept navigate as a parameter
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -234,8 +235,8 @@ export function useChat() {
                   action: {
                     label: 'Apri Chat',
                     onClick: () => {
-                      // Direct navigation using window.location.href
-                      window.location.href = `/chat/${newChatData.id}`;
+                      // Use navigate for client-side routing
+                      navigate(`/chat/${newChatData.id}`);
                     },
                   },
                 });
@@ -252,7 +253,7 @@ export function useChat() {
     return () => { // This cleanup function is now correctly outside the 'if' block
       supabase.removeChannel(chatChannel);
     };
-  }, [user?.id, fetchChats, activeChatId, allUsers]);
+  }, [user?.id, fetchChats, activeChatId, allUsers, navigate]); // Add navigate to dependencies
 
   useEffect(() => {
     if (activeChatId) {

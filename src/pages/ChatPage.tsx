@@ -55,7 +55,7 @@ export default function ChatPage() {
     allUsers,
     fetchChats,
     markChatAsRead, // Importa la nuova funzione
-  } = useChat();
+  } = useChat(navigate); // Pass navigate here
 
   const [newMessageContent, setNewMessageContent] = useState('');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
