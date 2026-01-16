@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select, // Keep Select for other potential uses if any, but it's not used for participant selection anymore
+  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -38,7 +38,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MultiSelectUsers } from '@/components/MultiSelectUsers'; // Import the new component
+import { MultiSelectUsers } from '@/components/MultiSelectUsers';
 
 export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
@@ -141,7 +141,7 @@ export default function ChatPage() {
   }
 
   const activeChat = chats.find(chat => chat.id === activeChatId);
-  const chatTitle = activeChat 
+  const chatTitle = activeChat
     ? activeChat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'
     : 'Seleziona una chat';
 
@@ -287,51 +287,64 @@ export default function ChatPage() {
             )}
           </div>
         )}
-      </div>
 
-      {/* New Chat Modal */}
-      <Dialog open={isNewChatModalOpen} onOpenChange={setIsNewChatModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Crea Nuova Chat</DialogTitle>
-            <DialogDescription>
-              Seleziona gli utenti con cui vuoi iniziare una nuova chat.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <MultiSelectUsers
-              options={allUsers}
-              selected={selectedParticipants}
-              onSelectionChange={setSelectedParticipants}
-              currentUser={user}
-              placeholder="Seleziona partecipanti..."
-              disabled={false}
-            />
+        {/* Mobile New Chat Button - Fixed at bottom */}
+        {isMobile && (
+          <div className="fixed bottom-20 right-4 z-50">
+            <Button
+              onClick={() => setIsNewChatModalOpen(true)}
+              size="icon"
+              className="h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+            >
+              <PlusCircle className="h-6 w-6" />
+            </Button>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewChatModalOpen(false)}>Annulla</Button>
-            <Button onClick={handleCreateNewChat}>Crea Chat</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        )}
 
-      {/* Delete Chat Alert Dialog */}
-      <AlertDialog open={isDeleteChatAlertOpen} onOpenChange={setIsDeleteChatAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Conferma Eliminazione Chat</AlertDialogTitle>
-            <AlertDialogDescription>
-              Sei sicuro di voler eliminare questa chat? Questa azione non può essere annullata.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDeleteChat} className="bg-destructive hover:bg-destructive/90">
-              Elimina
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* New Chat Modal */}
+        <Dialog open={isNewChatModalOpen} onOpenChange={setIsNewChatModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Crea Nuova Chat</DialogTitle>
+              <DialogDescription>
+                Seleziona gli utenti con cui vuoi iniziare una nuova chat.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <MultiSelectUsers
+                options={allUsers}
+                selected={selectedParticipants}
+                onSelectionChange={setSelectedParticipants}
+                currentUser={user}
+                placeholder="Seleziona partecipanti..."
+                disabled={false}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsNewChatModalOpen(false)}>Annulla</Button>
+              <Button onClick={handleCreateNewChat}>Crea Chat</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Chat Alert Dialog */}
+        <AlertDialog open={isDeleteChatAlertOpen} onOpenChange={setIsDeleteChatAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conferma Eliminazione Chat</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler eliminare questa chat? Questa azione non può essere annullata.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDeleteChat} className="bg-destructive hover:bg-destructive/90">
+                Elimina
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }
