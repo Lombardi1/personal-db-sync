@@ -26,9 +26,6 @@ export default function Login() {
     const result = await login(username, password);
     setLoading(false);
     if (result.success) {
-      // Rimuovi il localStorage per forzare la visualizzazione del modale delle novità
-      localStorage.removeItem('lastSeenAppVersion');
-      
       notifications.showSuccess('Login effettuato con successo');
       
       // Reindirizza l'utente alla dashboard appropriata
