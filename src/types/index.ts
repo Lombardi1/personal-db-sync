@@ -178,6 +178,7 @@ export interface Chat {
   participant_usernames?: string[]; // Popolato dal frontend per visualizzazione
   last_message_content?: string | null;
   last_message_at?: string | null;
+  unread_count?: number; // NUOVO: Conteggio messaggi non letti per l'utente corrente
 }
 
 export interface Message {

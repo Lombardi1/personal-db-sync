@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useChat } from '@/hooks/useChat'; // Importa l'hook useChat
 
 interface HeaderProps {
   activeTab?: string;
@@ -25,6 +26,7 @@ export function Header({
   const { user, logout, isAmministratore } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { totalUnreadCount } = useChat(); // Ottieni il conteggio dei messaggi non letti
   
   const handleLogout = () => {
     logout();
@@ -106,16 +108,23 @@ export function Header({
               <span className="text-xs sm:text-sm text-white/90">
                 {isAmministratore ? 'Admin' : 'Stampa'}: <strong>{user.username}</strong>
               </span>
-              <Button
-                onClick={() => navigate('/chat')}
-                variant="outline"
-                size="sm"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex-shrink-0"
-                title="Chat"
-              >
-                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="hidden sm:inline ml-1">Chat</span>
-              </Button>
+              <div className="relative"> {/* Wrapper per il badge */}
+                <Button
+                  onClick={() => navigate('/chat')}
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex-shrink-0"
+                  title="Chat"
+                >
+                  <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden sm:inline ml-1">Chat</span>
+                </Button>
+                {totalUnreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {totalUnreadCount}
+                  </span>
+                )}
+              </div>
               {(showUsersButton === undefined ? defaultShowUsersButton : showUsersButton) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

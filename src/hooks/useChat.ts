@@ -12,6 +12,7 @@ export function useChat() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<{ id: string; username: string }[]>([]);
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0); // Nuovo stato per il conteggio totale
 
   const fetchAllUsers = useCallback(async () => {
     const { data, error } = await supabase
@@ -31,7 +32,10 @@ export function useChat() {
     setLoadingChats(true);
     const { data, error } = await supabase
       .from('chats')
-      .select('*')
+      .select(`
+        *,
+        user_chat_status(last_read_at)
+      `)
       .contains('participant_ids', [user.id])
       .order('last_message_at', { ascending: false, nullsFirst: false });
 
@@ -42,12 +46,12 @@ export function useChat() {
       return;
     }
 
+    let currentTotalUnread = 0;
     const chatsWithUsernames: Chat[] = await Promise.all((data || []).map(async (chat) => {
       const participantUsernames = await Promise.all(chat.participant_ids.map(async (pId: string) => {
         const foundUser = allUsers.find(u => u.id === pId);
         if (foundUser) return foundUser.username;
         
-        // Fallback if user not in allUsers (e.g., new user or not yet fetched)
         const { data: userData, error: userError } = await supabase
           .from('app_users')
           .select('username')
@@ -55,10 +59,52 @@ export function useChat() {
           .single();
         return userData?.username || 'Sconosciuto';
       }));
-      return { ...chat, participant_usernames: participantUsernames };
+
+      // Calcola unread_count
+      const lastReadAt = (chat.user_chat_status as any[])?.[0]?.last_read_at;
+      let unreadCount = 0;
+      if (chat.last_message_at && lastReadAt) {
+        const lastMessageDate = new Date(chat.last_message_at);
+        const lastReadDate = new Date(lastReadAt);
+        if (lastMessageDate > lastReadDate) {
+          // Fetch messages count since last_read_at
+          const { count, error: countError } = await supabase
+            .from('messages')
+            .select('id', { count: 'exact' })
+            .eq('chat_id', chat.id)
+            .gt('created_at', lastReadAt)
+            .neq('sender_id', user.id); // Non contare i messaggi inviati dall'utente stesso
+
+          if (countError) {
+            console.error('Error counting unread messages:', countError);
+          } else {
+            unreadCount = count || 0;
+          }
+        }
+      } else if (chat.last_message_at && !lastReadAt) {
+        // If no last_read_at, all messages are unread
+        const { count, error: countError } = await supabase
+          .from('messages')
+          .select('id', { count: 'exact' })
+          .eq('chat_id', chat.id)
+          .neq('sender_id', user.id);
+
+        if (countError) {
+          console.error('Error counting unread messages (no last_read_at):', countError);
+        } else {
+          unreadCount = count || 0;
+        }
+      }
+      
+      if (unreadCount > 0) {
+        currentTotalUnread++;
+      }
+
+      return { ...chat, participant_usernames: participantUsernames, unread_count: unreadCount };
     }));
 
     setChats(chatsWithUsernames);
+    setTotalUnreadCount(currentTotalUnread);
     setLoadingChats(false);
   }, [user?.id, allUsers]);
 
@@ -85,6 +131,24 @@ export function useChat() {
     setLoadingMessages(false);
   }, []);
 
+  const markChatAsRead = useCallback(async (chatId: string) => {
+    if (!user?.id) return;
+
+    const { error } = await supabase
+      .from('user_chat_status')
+      .upsert(
+        { user_id: user.id, chat_id: chatId, last_read_at: new Date().toISOString() },
+        { onConflict: 'user_id,chat_id' }
+      );
+
+    if (error) {
+      console.error('Error marking chat as read:', error);
+      toast.error('Errore nell\'aggiornamento dello stato di lettura.');
+    } else {
+      fetchChats(); // Refresh chat list to update unread counts
+    }
+  }, [user?.id, fetchChats]);
+
   useEffect(() => {
     fetchAllUsers();
   }, [fetchAllUsers]);
@@ -110,12 +174,14 @@ export function useChat() {
   useEffect(() => {
     if (activeChatId) {
       fetchMessages(activeChatId);
+      markChatAsRead(activeChatId); // Mark as read when active chat changes
 
       const messageChannel = supabase
         .channel(`messages-chat-${activeChatId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${activeChatId}` }, (payload) => {
           console.log('Message change received!', payload);
           fetchMessages(activeChatId); // Re-fetch messages for the active chat
+          markChatAsRead(activeChatId); // Mark as read on new message
         })
         .subscribe();
 
@@ -125,7 +191,7 @@ export function useChat() {
     } else {
       setMessages([]); // Clear messages if no active chat
     }
-  }, [activeChatId, fetchMessages]);
+  }, [activeChatId, fetchMessages, markChatAsRead]);
 
   const createOrGetChat = useCallback(async (participantIds: string[]) => {
     if (!user?.id) {
@@ -156,6 +222,7 @@ export function useChat() {
       if (foundChat) {
         setActiveChatId(foundChat.id);
         toast.info('Chat esistente aperta.');
+        markChatAsRead(foundChat.id); // Mark as read if existing chat is opened
         return foundChat.id;
       }
     }
@@ -170,7 +237,6 @@ export function useChat() {
 
     if (createError) {
       console.error('Error creating new chat:', createError);
-      // Log the full error object for detailed debugging
       console.error('Supabase create chat error details:', JSON.stringify(createError, null, 2));
       toast.error('Errore nella creazione della nuova chat.');
       return null;
@@ -178,9 +244,10 @@ export function useChat() {
 
     setActiveChatId(newChat.id);
     toast.success('Nuova chat creata!');
+    markChatAsRead(newChat.id); // Mark as read immediately after creation
     fetchChats(); // Refresh chat list
     return newChat.id;
-  }, [user?.id, fetchChats]);
+  }, [user?.id, fetchChats, markChatAsRead]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!user?.id || !activeChatId || !content.trim()) {
@@ -195,7 +262,6 @@ export function useChat() {
 
     if (error) {
       console.error('Error sending message:', error);
-      // Log the full error object for detailed debugging
       console.error('Supabase send message error details:', JSON.stringify(error, null, 2));
       toast.error('Errore nell\'invio del messaggio.');
       return;
@@ -208,7 +274,9 @@ export function useChat() {
       .eq('id', activeChatId);
 
     // Messages will be re-fetched by the real-time subscription
-  }, [user?.id, activeChatId]);
+    // Also mark as read since the user just sent a message
+    markChatAsRead(activeChatId);
+  }, [user?.id, activeChatId, markChatAsRead]);
 
   const deleteChat = useCallback(async (chatId: string) => {
     if (!user?.id) {
@@ -246,5 +314,6 @@ export function useChat() {
     deleteChat,
     allUsers,
     fetchChats, // Expose fetchChats to allow manual refresh
+    totalUnreadCount, // Esposto il conteggio totale
   };
 }
