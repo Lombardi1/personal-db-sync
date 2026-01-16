@@ -64,6 +64,11 @@ export function useChat() {
 
     let currentTotalUnread = 0;
     const chatsWithUsernames: Chat[] = await Promise.all((chatsData || []).map(async (chat) => {
+      console.log(`[fetchChats] --- Processing chat ID: ${chat.id} ---`);
+      console.log(`[fetchChats] Chat last_message_at: ${chat.last_message_at}`);
+      const lastReadAt = userChatStatusMap.get(chat.id);
+      console.log(`[fetchChats] User last_read_at for this chat: ${lastReadAt}`);
+      
       const participantUsernames = await Promise.all(chat.participant_ids.map(async (pId: string) => {
         const foundUser = allUsers.find(u => u.id === pId);
         if (foundUser) return foundUser.username;
@@ -76,8 +81,6 @@ export function useChat() {
         return userData?.username || 'Sconosciuto';
       }));
 
-      // Get last_read_at for the current user from the map
-      const lastReadAt = userChatStatusMap.get(chat.id);
       let unreadCount = 0;
 
       if (chat.last_message_at) {
@@ -85,6 +88,7 @@ export function useChat() {
           const lastMessageDate = new Date(chat.last_message_at);
           const lastReadDate = new Date(lastReadAt);
           if (lastMessageDate > lastReadDate) {
+            console.log(`[fetchChats] Counting unread messages after ${lastReadAt}`);
             const { count, error: countError } = await supabase
               .from('messages')
               .select('id', { count: 'exact' })
@@ -93,13 +97,16 @@ export function useChat() {
               .neq('sender_id', user.id);
 
             if (countError) {
-              console.error('Error counting unread messages:', countError);
+              console.error('[fetchChats] Error counting unread messages:', countError);
             } else {
               unreadCount = count || 0;
+              console.log(`[fetchChats] Counted ${unreadCount} unread messages for chat ${chat.id}`);
             }
+          } else {
+            console.log(`[fetchChats] No new messages since last read for chat ${chat.id}. unreadCount = 0.`);
           }
         } else {
-          // If no last_read_at, all messages are unread
+          console.log(`[fetchChats] No last_read_at found for chat ${chat.id}. Counting all messages from others.`);
           const { count, error: countError } = await supabase
             .from('messages')
             .select('id', { count: 'exact' })
@@ -107,20 +114,25 @@ export function useChat() {
             .neq('sender_id', user.id);
 
           if (countError) {
-            console.error('Error counting unread messages (no last_read_at):', countError);
+            console.error('[fetchChats] Error counting unread messages (no last_read_at):', countError);
           } else {
             unreadCount = count || 0;
+            console.log(`[fetchChats] Counted ${unreadCount} unread messages for chat ${chat.id} (no last_read_at).`);
           }
         }
+      } else {
+          console.log(`[fetchChats] Chat ${chat.id} has no last_message_at. unreadCount = 0.`);
       }
       
       if (unreadCount > 0) {
-        currentTotalUnread++;
+        currentTotalUnread += unreadCount; // Correzione qui: somma il numero di messaggi non letti
+        console.log(`[fetchChats] Incrementing totalUnreadCount. Current total: ${currentTotalUnread}`);
       }
 
       return { ...chat, participant_usernames: participantUsernames, unread_count: unreadCount };
     }));
 
+    console.log(`[fetchChats] Final totalUnreadCount: ${currentTotalUnread}`);
     setChats(chatsWithUsernames);
     setTotalUnreadCount(currentTotalUnread);
     setLoadingChats(false);
@@ -183,7 +195,7 @@ export function useChat() {
     const chatChannel = supabase
       .channel('chats-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `participant_ids.ov.{"${user.id}"}` }, async (payload) => {
-          console.log('Chat change received!', payload);
+          console.log('--- Real-time chat change received! ---', payload);
           fetchChats(); // Always re-fetch chats to update the list and badge counts
 
           // Check for new messages in non-active chats for toast notification
