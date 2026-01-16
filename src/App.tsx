@@ -29,16 +29,23 @@ const App = () => {
   const [showWhatsNewModal, setShowWhatsNewModal] = React.useState(false);
 
   React.useEffect(() => {
-    // Mostra il modale solo se l'utente è autenticato e la versione è nuova
-    if (!loading && user) {
+    // Controlla se c'è una nuova versione disponibile
+    const checkForNewVersion = () => {
       const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
-      if (lastSeenVersion !== currentAppVersion) {
+      // Mostra il modale se:
+      // 1. L'utente è autenticato
+      // 2. La versione corrente è diversa dall'ultima versione vista
+      // 3. C'è almeno una nota di rilascio
+      if (user && lastSeenVersion !== currentAppVersion) {
         setShowWhatsNewModal(true);
       }
-    }
-  }, [loading, user]);
+    };
+
+    checkForNewVersion();
+  }, [user]);
 
   const handleCloseWhatsNewModal = () => {
+    // Salva la versione corrente come ultima versione vista
     localStorage.setItem('lastSeenAppVersion', currentAppVersion);
     setShowWhatsNewModal(false);
   };
