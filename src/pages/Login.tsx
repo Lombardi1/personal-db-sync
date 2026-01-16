@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,14 +7,15 @@ import { Label } from '@/components/ui/label';
 import * as notifications from '@/utils/notifications';
 import logoAG from '@/assets/logo-ag.jpg';
 import { currentAppVersion } from '@/config/releaseNotes';
+import { WhatsNewModal } from '@/components/WhatsNewModal';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showWhatsNewModal, setShowWhatsNewModal] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,16 +30,36 @@ export default function Login() {
       // Rimuovi il localStorage per forzare la visualizzazione del modale delle novità
       localStorage.removeItem('lastSeenAppVersion');
       
-      notifications.showSuccess('Login effettuato con successo');
-      
-      // Reindirizza l'utente alla dashboard appropriata
-      if (result.user?.role === 'stampa') {
-        navigate('/stampa-dashboard');
+      // Controlla se la versione è nuova e mostra il modale
+      const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
+      if (lastSeenVersion !== currentAppVersion) {
+        setShowWhatsNewModal(true);
       } else {
-        navigate('/summary');
+        // Se non ci sono novità, procedi con il reindirizzamento
+        notifications.showSuccess('Login effettuato con successo');
+        if (result.user?.role === 'stampa') {
+          navigate('/stampa-dashboard');
+        } else {
+          navigate('/summary');
+        }
       }
     } else {
       notifications.showError(result.error || 'Errore durante il login');
+    }
+  };
+
+  const handleCloseWhatsNewModal = () => {
+    // Salva la versione corrente
+    localStorage.setItem('lastSeenAppVersion', currentAppVersion);
+    setShowWhatsNewModal(false);
+    
+    // Mostra notifica di successo e reindirizza
+    notifications.showSuccess('Login effettuato con successo');
+    const savedUser = JSON.parse(localStorage.getItem('app_user') || '{}');
+    if (savedUser.role === 'stampa') {
+      navigate('/stampa-dashboard');
+    } else {
+      navigate('/summary');
     }
   };
 
@@ -90,6 +111,13 @@ export default function Login() {
           </Button>
         </form>
       </div>
+      
+      {showWhatsNewModal && (
+        <WhatsNewModal 
+          isOpen={showWhatsNewModal} 
+          onClose={handleCloseWhatsNewModal} 
+        />
+      )}
     </div>
   );
 }

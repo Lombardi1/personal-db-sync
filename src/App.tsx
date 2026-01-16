@@ -19,29 +19,11 @@ import PolimeriDashboard from "./pages/PolimeriDashboard";
 import GestioneFustelle from "./pages/GestioneFustelle";
 import { useAuth } from "@/hooks/useAuth";
 import React from "react";
-import { WhatsNewModal } from "@/components/WhatsNewModal";
-import { currentAppVersion } from "@/config/releaseNotes";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const { user, loading } = useAuth();
-  const [showWhatsNewModal, setShowWhatsNewModal] = React.useState(false);
-
-  React.useEffect(() => {
-    // Mostra il modale solo se l'utente è autenticato e la versione è nuova
-    if (!loading && user) {
-      const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
-      if (lastSeenVersion !== currentAppVersion) {
-        setShowWhatsNewModal(true);
-      }
-    }
-  }, [loading, user]);
-
-  const handleCloseWhatsNewModal = () => {
-    localStorage.setItem('lastSeenAppVersion', currentAppVersion);
-    setShowWhatsNewModal(false);
-  };
 
   const renderProtectedRoute = (element: React.ReactNode, allowedRoles: ('stampa' | 'amministratore')[]) => {
     return (
@@ -84,7 +66,6 @@ const App = () => {
         </BrowserRouter>
       </TooltipProvider>
       <Sonner />
-      {showWhatsNewModal && <WhatsNewModal isOpen={showWhatsNewModal} onClose={handleCloseWhatsNewModal} />}
     </QueryClientProvider>
   );
 };
