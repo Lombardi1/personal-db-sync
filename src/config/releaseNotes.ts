@@ -1,6 +1,18 @@
-export const currentAppVersion = "1.1.13"; // Incrementa questa versione per ogni nuovo rilascio
+export const currentAppVersion = "1.2.0"; // Nuova versione
 
 export const releaseNotes = [
+  {
+    version: "1.2.0",
+    date: "2024-08-02",
+    title: "Nuova Gestione Visualizzazione Novità",
+    features: [
+      "**Numero di Versione in Basso a Sinistra:** Aggiunto il numero di versione in basso a sinistra su tutte le dashboard. Cliccando su di esso si aprirà un dialog con le novità dell'applicazione.",
+      "**Rimozione Modale Novità al Login:** Rimosso il modale che appariva automaticamente al login. Ora le novità sono accessibili in qualsiasi momento tramite il numero di versione.",
+    ],
+    bugFixes: [
+      "Risolto il problema della persistenza del modale delle novità che continuava ad apparire anche dopo aver cliccato 'Ho Capito!'.",
+    ],
+  },
   {
     version: "1.1.13",
     date: "2024-08-02",
@@ -11,18 +23,6 @@ export const releaseNotes = [
     bugFixes: [
       "Rimossa la rimozione automatica di 'lastSeenAppVersion' dall'hook useAuth per preservare lo stato di visualizzazione del modale.",
       "Corretta la logica di persistenza per assicurare che il modale non venga più mostrato agli utenti che l'hanno già visto e chiuso.",
-    ],
-  },
-  {
-    version: "1.1.12",
-    date: "2024-08-02",
-    title: "Correzione Visualizzazione Immediata Modale Novità al Login",
-    features: [
-      "**Modale Novità Visualizzato Immediatamente al Login:** Risolto il problema per cui il modale delle novità non veniva mostrato immediatamente dopo il login. Ora il modale viene visualizzato subito dopo l'accesso dell'utente, senza dover ricaricare la pagina.",
-    ],
-    bugFixes: [
-      "Spostata la gestione del modale delle novità direttamente nel componente di login per garantire la visualizzazione immediata dopo l'autenticazione.",
-      "Corretta la logica di reindirizzamento per mostrare il modale prima di accedere alla dashboard.",
     ],
   },
   // ... altre versioni

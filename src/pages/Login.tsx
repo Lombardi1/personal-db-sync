@@ -6,14 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import * as notifications from '@/utils/notifications';
 import logoAG from '@/assets/logo-ag.jpg';
-import { currentAppVersion } from '@/config/releaseNotes';
-import { WhatsNewModal } from '@/components/WhatsNewModal';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showWhatsNewModal, setShowWhatsNewModal] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -27,36 +24,14 @@ export default function Login() {
     const result = await login(username, password);
     setLoading(false);
     if (result.success) {
-      // Controlla se la versione è nuova e mostra il modale solo se l'utente non l'ha ancora visto
-      const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
-      if (lastSeenVersion !== currentAppVersion) {
-        setShowWhatsNewModal(true);
+      notifications.showSuccess('Login effettuato con successo');
+      if (result.user?.role === 'stampa') {
+        navigate('/stampa-dashboard');
       } else {
-        // Se non ci sono novità o l'utente ha già visto il modale, procedi con il reindirizzamento
-        notifications.showSuccess('Login effettuato con successo');
-        if (result.user?.role === 'stampa') {
-          navigate('/stampa-dashboard');
-        } else {
-          navigate('/summary');
-        }
+        navigate('/summary');
       }
     } else {
       notifications.showError(result.error || 'Errore durante il login');
-    }
-  };
-
-  const handleCloseWhatsNewModal = () => {
-    // Salva la versione corrente per non mostrarla più all'utente
-    localStorage.setItem('lastSeenAppVersion', currentAppVersion);
-    setShowWhatsNewModal(false);
-    
-    // Mostra notifica di successo e reindirizza
-    notifications.showSuccess('Login effettuato con successo');
-    const savedUser = JSON.parse(localStorage.getItem('app_user') || '{}');
-    if (savedUser.role === 'stampa') {
-      navigate('/stampa-dashboard');
-    } else {
-      navigate('/summary');
     }
   };
 
@@ -108,13 +83,6 @@ export default function Login() {
           </Button>
         </form>
       </div>
-      
-      {showWhatsNewModal && (
-        <WhatsNewModal 
-          isOpen={showWhatsNewModal} 
-          onClose={handleCloseWhatsNewModal} 
-        />
-      )}
     </div>
   );
 }
