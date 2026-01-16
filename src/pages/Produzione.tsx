@@ -90,16 +90,19 @@ export default function Produzione() {
       try {
         // Normalizza i valori di formato e grammatura per la query
         const formattedFormatoForQuery = formatFormato(data.formato);
-        const formattedGrammaturaForQuery = formatGrammatura(data.grammatura);
+        // Estrai solo il valore numerico dalla grammatura del cartone trovato
+        const numericGrammatura = parseInt(String(data.grammatura).replace(/\s*g\/m²\s*$/i, ''));
 
         console.log(`[Produzione] Cartone trovato: Codice=${data.codice}, Formato DB='${data.formato}', Grammatura DB='${data.grammatura}'`);
-        console.log(`[Produzione] Query per simili: Formato='${formattedFormatoForQuery}', Grammatura='${formattedGrammaturaForQuery}'`);
+        console.log(`[Produzione] Numeric Grammatura for query: ${numericGrammatura}`);
+        console.log(`[Produzione] Formatted Formato for query: '${formattedFormatoForQuery}'`);
 
         const { data: similarData, error: similarError } = await supabase
           .from('giacenza')
           .select('codice, formato, grammatura, fogli') // Seleziona solo i campi necessari
           .eq('formato', formattedFormatoForQuery) // Usa il valore formattato per la query
-          .eq('grammatura', formattedGrammaturaForQuery) // Usa il valore formattato per la query
+          // Utilizza l'operatore 'or' per cercare sia il numero puro che il numero con ' g/m²'
+          .or(`grammatura.eq.${numericGrammatura},grammatura.eq.${numericGrammatura} g/m²`)
           .neq('codice', data.codice); // Escludi il cartone corrente
 
         if (similarError) {
@@ -373,8 +376,8 @@ export default function Produzione() {
                         key={simCartone.codice}
                         onClick={() => {
                           setCodice(simCartone.codice);
-                          // Rimosso: setCartone(null);
-                          // Rimosso: setSimilarCartons([]);
+                          // Non resetto cartone e similarCartons qui, la funzione cercaCartone lo farà
+                          // e poi popolerà i nuovi dati, mantenendo la visualizzazione fluida.
                           setTimeout(() => cercaCartone(), 0); // Trigger search for the selected similar carton
                         }}
                         className="flex flex-col items-center justify-center p-2 bg-[hsl(var(--muted))] rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors text-xs sm:text-sm"
