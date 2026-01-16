@@ -9,30 +9,30 @@ export function ChatSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeChat, setActiveChat] = useState<{id: string, username: string} | null>(null);
   const { destinatari, messaggi } = useChat();
-  
+
   const toggleSidebar = () => setIsOpen(!isOpen);
-  
+
   const startChat = (destinatario: {id: string, username: string}) => {
     setActiveChat(destinatario);
   };
-  
+
   const closeChat = () => {
     setActiveChat(null);
   };
-  
+
   // Conta i messaggi non letti per ogni destinatario
   const unreadCount = (destinatarioId: string) => {
     return messaggi.filter(
       m => m.mittente_id === destinatarioId && !m.letto
     ).length;
   };
-  
+
   return (
     <>
       {/* Bottone per aprire la chat */}
-      <Button
-        variant="outline"
-        size="icon"
+      <Button 
+        variant="outline" 
+        size="icon" 
         onClick={toggleSidebar}
         className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg bg-blue-500 hover:bg-blue-600"
       >
@@ -43,12 +43,12 @@ export function ChatSidebar() {
           </span>
         )}
       </Button>
-      
+
       {/* Sidebar chat */}
       {isOpen && (
         <div className="fixed inset-0 z-50">
           <div 
-            className="absolute inset-0 bg-black bg-opacity-50"
+            className="absolute inset-0 bg-black bg-opacity-50" 
             onClick={toggleSidebar}
           />
           <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl flex flex-col">
@@ -59,13 +59,13 @@ export function ChatSidebar() {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            
+
             {activeChat ? (
               /* Finestra chat attiva */
-              <ChatWindow
-                destinatarioId={activeChat.id}
-                destinatarioNome={activeChat.username}
-                onChiudi={closeChat}
+              <ChatWindow 
+                destinatarioId={activeChat.id} 
+                destinatarioNome={activeChat.username} 
+                onChiudi={closeChat} 
               />
             ) : (
               /* Lista contatti */
@@ -76,8 +76,8 @@ export function ChatSidebar() {
                 <ScrollArea className="flex-1">
                   <div className="p-2">
                     {destinatari.map(destinatario => (
-                      <div
-                        key={destinatario.id}
+                      <div 
+                        key={destinatario.id} 
                         className="flex items-center justify-between p-3 hover:bg-gray-100 rounded cursor-pointer"
                         onClick={() => startChat(destinatario)}
                       >
