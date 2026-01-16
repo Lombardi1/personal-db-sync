@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MinusCircle, History } from 'lucide-react'; // Importa l'icona History
+import { MinusCircle, History } from 'lucide-react';
 
 export default function StampaDashboard() {
   const { user, loading } = useAuth();
@@ -25,10 +25,9 @@ export default function StampaDashboard() {
       setCurrentDateTime(`${date} ${time}`);
     };
 
-    updateDateTime(); // Set initial date and time
-    const intervalId = setInterval(updateDateTime, 1000); // Update every second
-
-    return () => clearInterval(intervalId); // Clean up the interval on component unmount
+    updateDateTime();
+    const intervalId = setInterval(updateDateTime, 1000);
+    return () => clearInterval(intervalId);
   }, []);
 
   if (loading) {
@@ -59,17 +58,17 @@ export default function StampaDashboard() {
           {currentDateTime}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full sm:w-3/4 md:w-3/4 mx-auto">
-          <Button
-            onClick={() => navigate('/scarico-magazzino-stampa')}
-            size="lg"
+          <Button 
+            onClick={() => navigate('/scarico-magazzino-stampa')} 
+            size="lg" 
             className="bg-[hsl(var(--danger))] hover:bg-[hsl(0,72%,40%)] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12"
           >
             <MinusCircle className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
             <span className="leading-none text-sm sm:text-base whitespace-nowrap">Scarico Magazzino</span>
           </Button>
-          <Button
-            onClick={() => navigate('/storico-stampa')}
-            size="lg"
+          <Button 
+            onClick={() => navigate('/storico-stampa')} 
+            size="lg" 
             className="bg-[hsl(var(--storico-color))] hover:bg-[hsl(37,93%,35%)] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12"
           >
             <History className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
