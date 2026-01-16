@@ -19,26 +19,29 @@ import PolimeriDashboard from "./pages/PolimeriDashboard";
 import GestioneFustelle from "./pages/GestioneFustelle";
 import { useAuth } from "@/hooks/useAuth";
 import React from "react"; // Importa React
-// Rimosso: import { WhatsNewModal } from "@/components/WhatsNewModal"; // Importa il nuovo modale
-// Rimosso: import { currentAppVersion } from "@/config/releaseNotes"; // Importa la versione corrente
+import { WhatsNewModal } from "@/components/WhatsNewModal"; // Importa il nuovo modale
+import { currentAppVersion } from "@/config/releaseNotes"; // Importa la versione corrente
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const { user, loading } = useAuth();
-  // Rimosso: const [showWhatsNewModal, setShowWhatsNewModal] = React.useState(false);
+  const [showWhatsNewModal, setShowWhatsNewModal] = React.useState(false);
 
-  // Rimosso: React.useEffect(() => {
-  //   const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
-  //   if (lastSeenVersion !== currentAppVersion) {
-  //     setShowWhatsNewModal(true);
-  //   }
-  // }, []);
+  React.useEffect(() => {
+    // Mostra il modale solo se l'utente è autenticato e la versione è nuova
+    if (!loading && user) {
+      const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
+      if (lastSeenVersion !== currentAppVersion) {
+        setShowWhatsNewModal(true);
+      }
+    }
+  }, [loading, user]); // Dipende da `loading` e `user`
 
-  // Rimosso: const handleCloseWhatsNewModal = () => {
-  //   localStorage.setItem('lastSeenAppVersion', currentAppVersion);
-  //   setShowWhatsNewModal(false);
-  // };
+  const handleCloseWhatsNewModal = () => {
+    localStorage.setItem('lastSeenAppVersion', currentAppVersion);
+    setShowWhatsNewModal(false);
+  };
 
   const renderProtectedRoute = (element: React.ReactNode, allowedRoles: ('stampa' | 'amministratore')[]) => {
     return (
@@ -130,7 +133,7 @@ const App = () => {
         </BrowserRouter>
       </TooltipProvider>
       <Sonner /> 
-      {/* Rimosso: {showWhatsNewModal && <WhatsNewModal isOpen={showWhatsNewModal} onClose={handleCloseWhatsNewModal} />} */}
+      {showWhatsNewModal && <WhatsNewModal isOpen={showWhatsNewModal} onClose={handleCloseWhatsNewModal} />}
     </QueryClientProvider>
   );
 };

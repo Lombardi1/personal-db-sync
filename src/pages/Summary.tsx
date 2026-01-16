@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ShoppingCart, Warehouse, Shapes, Layers } from 'lucide-react'; // Rimosso: SprayCan
 import { useCartoni } from '@/hooks/useCartoni';
 // Rimosso l'import di RecentActivity
-import { WhatsNewModal } from "@/components/WhatsNewModal"; // Importa il nuovo modale
-import { currentAppVersion } from "@/config/releaseNotes"; // Importa la versione corrente
+// Rimosso: import { WhatsNewModal } from "@/components/WhatsNewModal"; // Importa il nuovo modale
+// Rimosso: import { currentAppVersion } from "@/config/releaseNotes"; // Importa la versione corrente
 import React from 'react'; // Importa React per useState e useEffect
 
 export default function Summary() {
@@ -15,7 +15,7 @@ export default function Summary() {
   const navigate = useNavigate();
   const [currentDateTime, setCurrentDateTime] = useState('');
   const { loading: cartoniLoading } = useCartoni();
-  const [showWhatsNewModal, setShowWhatsNewModal] = React.useState(false); // Stato per il modale Novità
+  // Rimosso: const [showWhatsNewModal, setShowWhatsNewModal] = React.useState(false); // Stato per il modale Novità
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -38,20 +38,20 @@ export default function Summary() {
     return () => clearInterval(intervalId); // Clean up the interval on component unmount
   }, []);
 
-  // Logica per mostrare il modale "Novità" dopo il login
-  useEffect(() => {
-    if (!authLoading && user && user.role === 'amministratore') {
-      const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
-      if (lastSeenVersion !== currentAppVersion) {
-        setShowWhatsNewModal(true);
-      }
-    }
-  }, [authLoading, user]);
+  // Rimosso: Logica per mostrare il modale "Novità" dopo il login
+  // Rimosso: useEffect(() => {
+  //   if (!authLoading && user && user.role === 'amministratore') {
+  //     const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
+  //     if (lastSeenVersion !== currentAppVersion) {
+  //       setShowWhatsNewModal(true);
+  //     }
+  //   }
+  // }, [authLoading, user]);
 
-  const handleCloseWhatsNewModal = () => {
-    localStorage.setItem('lastSeenAppVersion', currentAppVersion);
-    setShowWhatsNewModal(false);
-  };
+  // Rimosso: const handleCloseWhatsNewModal = () => {
+  //   localStorage.setItem('lastSeenAppVersion', currentAppVersion);
+  //   setShowWhatsNewModal(false);
+  // };
 
   if (authLoading || cartoniLoading) {
     return (
@@ -122,7 +122,7 @@ export default function Summary() {
           </div>
         )}
       </div>
-      {showWhatsNewModal && <WhatsNewModal isOpen={showWhatsNewModal} onClose={handleCloseWhatsNewModal} />}
+      {/* Rimosso: {showWhatsNewModal && <WhatsNewModal isOpen={showWhatsNewModal} onClose={handleCloseWhatsNewModal} />} */}
     </div>
   );
 }
