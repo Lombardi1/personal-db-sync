@@ -72,12 +72,15 @@ export default function Produzione() {
     }
   };
 
-  const cercaCartone = async () => {
-    if (!codice.trim() || codice === 'CTN-') {
+  const cercaCartone = async (targetCodice?: string) => { // Modificato per accettare un parametro opzionale
+    const codeToSearch = targetCodice || codice; // Usa targetCodice se fornito, altrimenti usa lo stato corrente
+    
+    if (!codeToSearch.trim() || codeToSearch === 'CTN-') {
       toast.error('Inserisci il codice CTN completo');
       return;
     }
 
+    setCodice(codeToSearch); // Aggiorna lo stato del codice per riflettere il valore cercato nell'input
     setLoading(true);
     setCartone(null);
     setSimilarCartons([]);
@@ -87,7 +90,7 @@ export default function Produzione() {
       const { data, error } = await supabase
         .from('giacenza')
         .select('*')
-        .eq('codice', codice.trim())
+        .eq('codice', codeToSearch.trim()) // Usa codeToSearch qui
         .single();
 
       if (error || !data) {
@@ -250,10 +253,9 @@ export default function Produzione() {
   // Funzione per gestire la conferma del cambio CTN
   const handleConfirmChangeCTN = () => {
     if (codiceToConfirmChange) {
-      setCodice(codiceToConfirmChange);
+      cercaCartone(codiceToConfirmChange); // Passa il codice direttamente a cercaCartone
       setIsConfirmChangeModalOpen(false);
       setCodiceToConfirmChange(null);
-      setTimeout(() => cercaCartone(), 0); // Trigger search for the selected similar carton
     }
   };
 
@@ -323,7 +325,7 @@ export default function Produzione() {
                   </div>
                   <div className="flex items-end">
                     <Button
-                      onClick={cercaCartone}
+                      onClick={() => cercaCartone()} // Chiamata senza parametro, userà lo stato 'codice'
                       disabled={loading || scaricando}
                       size="lg"
                       className="h-12 sm:h-16 px-6 sm:px-8 text-base sm:text-lg bg-[hsl(var(--danger))] hover:bg-[hsl(0,72%,40%)] text-white"
