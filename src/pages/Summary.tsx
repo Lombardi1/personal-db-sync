@@ -3,19 +3,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Warehouse, Shapes, Layers } from 'lucide-react'; // Rimosso: SprayCan
+import { ShoppingCart, Warehouse, Shapes, Layers } from 'lucide-react';
 import { useCartoni } from '@/hooks/useCartoni';
-// Rimosso l'import di RecentActivity
-// Rimosso: import { WhatsNewModal } from "@/components/WhatsNewModal"; // Importa il nuovo modale
-// Rimosso: import { currentAppVersion } from "@/config/releaseNotes"; // Importa la versione corrente
-import React from 'react'; // Importa React per useState e useEffect
+import React from 'react';
 
 export default function Summary() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [currentDateTime, setCurrentDateTime] = useState('');
   const { loading: cartoniLoading } = useCartoni();
-  // Rimosso: const [showWhatsNewModal, setShowWhatsNewModal] = React.useState(false); // Stato per il modale Novità
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -32,26 +28,10 @@ export default function Summary() {
       setCurrentDateTime(`${date} ${time}`);
     };
 
-    updateDateTime(); // Set initial date and time
-    const intervalId = setInterval(updateDateTime, 1000); // Update every second
-
-    return () => clearInterval(intervalId); // Clean up the interval on component unmount
+    updateDateTime();
+    const intervalId = setInterval(updateDateTime, 1000);
+    return () => clearInterval(intervalId);
   }, []);
-
-  // Rimosso: Logica per mostrare il modale "Novità" dopo il login
-  // Rimosso: useEffect(() => {
-  //   if (!authLoading && user && user.role === 'amministratore') {
-  //     const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
-  //     if (lastSeenVersion !== currentAppVersion) {
-  //       setShowWhatsNewModal(true);
-  //     }
-  //   }
-  // }, [authLoading, user]);
-
-  // Rimosso: const handleCloseWhatsNewModal = () => {
-  //   localStorage.setItem('lastSeenAppVersion', currentAppVersion);
-  //   setShowWhatsNewModal(false);
-  // };
 
   if (authLoading || cartoniLoading) {
     return (
@@ -65,8 +45,8 @@ export default function Summary() {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role === 'stampa') { // Ruolo aggiornato
-    return <Navigate to="/stampa-dashboard" replace />; // Aggiornato il percorso
+  if (user.role === 'stampa') {
+    return <Navigate to="/stampa-dashboard" replace />;
   }
 
   return (
@@ -83,46 +63,42 @@ export default function Summary() {
           <div className="grid grid-cols-1 gap-8 w-full">
             {/* Sezione Bottoni */}
             <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Button
-                onClick={() => navigate('/gestione-magazzino')}
+              <Button 
+                onClick={() => navigate('/gestione-magazzino')} 
                 size="lg" 
                 className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
               >
-                <Warehouse className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" /> {/* Icona Warehouse */}
+                <Warehouse className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Gestione Magazzino Cartoni</span>
               </Button>
-              <Button
-                onClick={() => navigate('/ordini-acquisto')}
+              <Button 
+                onClick={() => navigate('/ordini-acquisto')} 
                 size="lg" 
                 className="bg-[hsl(var(--ordini-acquisto-color))] hover:bg-[hsl(var(--ordini-acquisto-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
               >
                 <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Ordini d'Acquisto</span>
               </Button>
-              <Button
-                onClick={() => navigate('/gestione-fustelle')}
+              <Button 
+                onClick={() => navigate('/gestione-fustelle')} 
                 size="lg" 
                 className="bg-[hsl(var(--fustelle-color))] hover:bg-[hsl(var(--fustelle-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
               >
                 <Shapes className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Gestione Magazzino Fustelle</span>
               </Button>
-              <Button
-                onClick={() => navigate('/gestione-polimeri')}
+              <Button 
+                onClick={() => navigate('/gestione-polimeri')} 
                 size="lg" 
                 className="bg-[hsl(var(--polimeri-color))] hover:bg-[hsl(var(--polimeri-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
               >
                 <Layers className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Gestione Magazzino Polimeri</span>
               </Button>
-              {/* Rimosso: Button per Pulitori */}
             </div>
-            
-            {/* Attività Recenti rimosse */}
           </div>
         )}
       </div>
-      {/* Rimosso: {showWhatsNewModal && <WhatsNewModal isOpen={showWhatsNewModal} onClose={handleCloseWhatsNewModal} />} */}
     </div>
   );
 }

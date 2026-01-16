@@ -1,6 +1,17 @@
-export const currentAppVersion = "1.1.2"; // Incrementa questa versione per ogni nuovo rilascio
+export const currentAppVersion = "1.1.3"; // Incrementa questa versione per ogni nuovo rilascio
 
 export const releaseNotes = [
+  {
+    version: "1.1.3",
+    date: "2024-08-02",
+    title: "Correzione Visualizzazione Modale Novità",
+    features: [
+      "**Modale Novità:** Risolto il problema per cui il modale delle novità non veniva mostrato correttamente dopo il login.",
+    ],
+    bugFixes: [
+      "Corretta la logica di visualizzazione del modale delle novità nella dashboard principale.",
+    ],
+  },
   {
     version: "1.1.2",
     date: "2024-08-02",

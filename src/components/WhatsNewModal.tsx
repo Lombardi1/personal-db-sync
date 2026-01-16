@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { releaseNotes } from '@/config/releaseNotes';
@@ -30,16 +23,14 @@ export function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
         <DialogDescription className="text-sm sm:text-base text-muted-foreground mb-4">
           Scopri le ultime funzionalità e miglioramenti introdotti in questa versione.
         </DialogDescription>
-
         <ScrollArea className="flex-1 pr-4 -mr-4">
           <div className="space-y-6">
-            {latestRelease && ( // Mostra solo l'ultima release
-              <div key={latestRelease.version} className="pb-4 border-b-0"> {/* Rimosso border-b */}
+            {latestRelease && (
+              <div key={latestRelease.version} className="pb-4 border-b-0">
                 <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                   <span className="text-[hsl(var(--whats-new-color))]">v{latestRelease.version}</span> - {latestRelease.title}
                 </h3>
                 <p className="text-xs text-muted-foreground mb-3">{latestRelease.date}</p>
-
                 {latestRelease.features.length > 0 && (
                   <div className="mb-3">
                     <h4 className="text-sm font-medium text-foreground mb-1">Nuove Funzionalità:</h4>
@@ -50,7 +41,6 @@ export function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                     </ul>
                   </div>
                 )}
-
                 {latestRelease.bugFixes.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-foreground mb-1">Correzioni Bug:</h4>
@@ -65,9 +55,11 @@ export function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
             )}
           </div>
         </ScrollArea>
-
         <DialogFooter className="mt-6">
-          <Button onClick={onClose} className="bg-[hsl(var(--whats-new-color))] hover:bg-[hsl(var(--whats-new-color-dark))] text-white">
+          <Button 
+            onClick={onClose} 
+            className="bg-[hsl(var(--whats-new-color))] hover:bg-[hsl(var(--whats-new-color-dark))] text-white"
+          >
             Ho Capito!
           </Button>
         </DialogFooter>
