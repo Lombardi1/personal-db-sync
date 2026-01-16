@@ -18,7 +18,7 @@ interface WhatsNewModalProps {
 }
 
 export function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
-  const latestRelease = releaseNotes[0]; // Prende l'ultima versione
+  const latestRelease = releaseNotes[0]; // Prende solo l'ultima versione
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -28,41 +28,41 @@ export function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
           <DialogTitle className="text-xl sm:text-2xl font-bold">Novità del Gestionale</DialogTitle>
         </DialogHeader>
         <DialogDescription className="text-sm sm:text-base text-muted-foreground mb-4">
-          Scopri le ultime funzionalità e miglioramenti introdotti nel sistema.
+          Scopri le ultime funzionalità e miglioramenti introdotti in questa versione.
         </DialogDescription>
 
         <ScrollArea className="flex-1 pr-4 -mr-4">
           <div className="space-y-6">
-            {releaseNotes.map((release, index) => (
-              <div key={release.version} className="pb-4 border-b last:border-b-0 border-border">
+            {latestRelease && ( // Mostra solo l'ultima release
+              <div key={latestRelease.version} className="pb-4 border-b-0"> {/* Rimosso border-b */}
                 <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <span className="text-[hsl(var(--whats-new-color))]">v{release.version}</span> - {release.title}
+                  <span className="text-[hsl(var(--whats-new-color))]">v{latestRelease.version}</span> - {latestRelease.title}
                 </h3>
-                <p className="text-xs text-muted-foreground mb-3">{release.date}</p>
+                <p className="text-xs text-muted-foreground mb-3">{latestRelease.date}</p>
 
-                {release.features.length > 0 && (
+                {latestRelease.features.length > 0 && (
                   <div className="mb-3">
                     <h4 className="text-sm font-medium text-foreground mb-1">Nuove Funzionalità:</h4>
                     <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                      {release.features.map((feature, fIndex) => (
+                      {latestRelease.features.map((feature, fIndex) => (
                         <li key={fIndex} dangerouslySetInnerHTML={{ __html: feature }} />
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {release.bugFixes.length > 0 && (
+                {latestRelease.bugFixes.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-foreground mb-1">Correzioni Bug:</h4>
                     <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                      {release.bugFixes.map((bug, bIndex) => (
+                      {latestRelease.bugFixes.map((bug, bIndex) => (
                         <li key={bIndex} dangerouslySetInnerHTML={{ __html: bug }} />
                       ))}
                     </ul>
                   </div>
                 )}
               </div>
-            ))}
+            )}
           </div>
         </ScrollArea>
 
