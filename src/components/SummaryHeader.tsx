@@ -1,4 +1,4 @@
-import { LogOut, Users, Settings, Contact, Building2 } from 'lucide-react';
+import { LogOut, Users, Settings, Contact, Building2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -35,6 +35,16 @@ export function SummaryHeader() {
               <span className="text-xs sm:text-sm text-white/90">
                 {isAmministratore ? 'Admin' : 'Stampa'}: <strong className="text-white">{user.username}</strong>
               </span>
+              <Button
+                onClick={() => navigate('/chat')}
+                variant="outline"
+                size="sm"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex-shrink-0"
+                title="Chat"
+              >
+                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline ml-1">Chat</span>
+              </Button>
               {isAmministratore && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -56,7 +66,7 @@ export function SummaryHeader() {
                       <Contact className="mr-2 h-4 w-4" />
                       Gestione Anagrafiche
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator /> {/* Separatore aggiunto qui */}
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => navigate('/azienda-info')}>
                       <Building2 className="mr-2 h-4 w-4" />
                       Gestione Azienda
@@ -68,7 +78,7 @@ export function SummaryHeader() {
                 onClick={handleLogout}
                 variant="outline"
                 size="sm"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex-shrink-0"
               >
                 <LogOut className="mr-1 h-5 w-5 sm:mr-2 sm:h-6 sm:w-6" />
                 <span className="hidden sm:inline">Esci</span>
