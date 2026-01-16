@@ -177,9 +177,48 @@ export function useChat() {
 
       const chatChannel = supabase
         .channel('chats-realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `participant_ids.cs.{"${user.id}"}` }, (payload) => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `participant_ids.cs.{"${user.id}"}` }, async (payload) => {
           console.log('Chat change received!', payload);
-          fetchChats(); // Re-fetch chats on any change
+          fetchChats(); // Always re-fetch chats to update the list and badge counts
+
+          // Check for new messages in non-active chats for toast notification
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const newChatData = payload.new as Chat;
+            // Only show toast if it's not the active chat and there's a new last message
+            // Also ensure the last message is not from the current user
+            if (newChatData.id !== activeChatId && newChatData.last_message_content && newChatData.last_message_at) {
+              // Fetch the actual last message to get the sender_id
+              const { data: lastMessage, error: msgError } = await supabase
+                .from('messages')
+                .select('sender_id, content')
+                .eq('chat_id', newChatData.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+              if (msgError) {
+                console.error('Error fetching last message for toast:', msgError);
+                return;
+              }
+
+              // Only show toast if the sender is not the current user
+              if (lastMessage && lastMessage.sender_id !== user.id) {
+                const sender = allUsers.find(u => u.id === lastMessage.sender_id);
+                const senderUsername = sender?.username || 'Sconosciuto';
+                toast.info(`${senderUsername}: ${lastMessage.content}`, {
+                  duration: 5000, // Show for 5 seconds
+                  position: 'top-left', // Position on the left
+                  action: {
+                    label: 'Apri Chat',
+                    onClick: () => {
+                      // Direct navigation using window.location.href
+                      window.location.href = `/chat/${newChatData.id}`;
+                    },
+                  },
+                });
+              }
+            }
+          }
         })
         .subscribe();
 
@@ -187,7 +226,7 @@ export function useChat() {
         supabase.removeChannel(chatChannel);
       };
     }
-  }, [user?.id, fetchChats]);
+  }, [user?.id, fetchChats, activeChatId, allUsers]);
 
   useEffect(() => {
     if (activeChatId) {
