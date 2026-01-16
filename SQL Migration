@@ -1,0 +1,52 @@
+-- Crea la tabella user_chat_status
+CREATE TABLE public.user_chat_status (
+    user_id uuid NOT NULL REFERENCES public.app_users(id) ON DELETE CASCADE,
+    chat_id uuid NOT NULL REFERENCES public.chats(id) ON DELETE CASCADE,
+    last_read_at timestamptz DEFAULT now() NOT NULL,
+    PRIMARY KEY (user_id, chat_id)
+);
+
+-- Abilita Row Level Security (RLS) per user_chat_status
+ALTER TABLE public.user_chat_status ENABLE ROW LEVEL SECURITY;
+
+-- Policy per consentire agli utenti di visualizzare i propri stati di chat
+CREATE POLICY "Users can view their own chat statuses."
+ON public.user_chat_status FOR SELECT
+USING (auth.uid() = user_id);
+
+-- Policy per consentire agli utenti di inserire i propri stati di chat
+CREATE POLICY "Users can insert their own chat statuses."
+ON public.user_chat_status FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- Policy per consentire agli utenti di aggiornare i propri stati di chat
+CREATE POLICY "Users can update their own chat statuses."
+ON public.user_chat_status FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- Policy per consentire agli utenti di eliminare i propri stati di chat (opzionale, può essere ristretto)
+CREATE POLICY "Users can delete their own chat statuses."
+ON public.user_chat_status FOR DELETE
+USING (auth.uid() = user_id);
+
+-- Crea indici per ricerche più veloci
+CREATE INDEX idx_user_chat_status_user_id ON public.user_chat_status (user_id);
+CREATE INDEX idx_user_chat_status_chat_id ON public.user_chat_status (chat_id);
+
+-- Aggiungi la colonna last_message_at alla tabella chats se non esiste
+ALTER TABLE public.chats
+ADD COLUMN IF NOT EXISTS last_message_at timestamptz;
+
+-- Aggiorna le chat esistenti per impostare last_message_at a created_at se è NULL
+UPDATE public.chats
+SET last_message_at = created_at
+WHERE last_message_at IS NULL;
+
+-- Rendi last_message_at NOT NULL e imposta un valore di default
+ALTER TABLE public.chats
+ALTER COLUMN last_message_at SET NOT NULL,
+ALTER COLUMN last_message_at SET DEFAULT now();
+
+-- Crea un indice per un ordinamento più veloce
+CREATE INDEX idx_chats_last_message_at ON public.chats (last_message_at DESC);
