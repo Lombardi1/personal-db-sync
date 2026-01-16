@@ -1,17 +1,16 @@
-export const currentAppVersion = "1.1.10"; // Incrementa questa versione per ogni nuovo rilascio
+export const currentAppVersion = "1.1.11"; // Incrementa questa versione per ogni nuovo rilascio
 
 export const releaseNotes = [
   {
-    version: "1.1.10",
+    version: "1.1.11",
     date: "2024-08-02",
-    title: "Correzione Definitiva Visualizzazione Modale Novità",
+    title: "Correzione Visualizzazione Immediata Modale Novità",
     features: [
-      "**Modale Novità Corretto Definitivamente:** Risolto il problema per cui il modale delle novità non veniva mostrato correttamente dopo il login. Ora il modale viene visualizzato correttamente per tutti gli utenti al primo accesso o quando viene rilasciata una nuova versione.",
+      "**Modale Novità Visualizzato Immediatamente:** Risolto il problema per cui il modale delle novità non veniva mostrato immediatamente dopo il login. Ora il modale viene visualizzato subito dopo l'accesso dell'utente.",
     ],
     bugFixes: [
-      "Corretta la logica di visualizzazione del modale delle novità per assicurare che venga mostrato a tutti gli utenti dopo il login, indipendentemente dal ruolo.",
-      "Migliorata la gestione dello stato del modale per evitare che venga mostrato più volte o in modo errato.",
-      "Aggiunto il reset del localStorage nel processo di login per garantire che ogni utente veda il modale quando effettua il login.",
+      "Corretta la logica di visualizzazione del modale delle novità per assicurare che venga mostrato immediatamente dopo il login, senza dover ricaricare la pagina.",
+      "Migliorata la gestione dello stato del modale per garantire una visualizzazione immediata dopo l'autenticazione.",
     ],
   },
   // ... altre versioni
