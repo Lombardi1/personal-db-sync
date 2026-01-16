@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Cartone, StoricoMovimento } from '@/types';
-import { formatFormato, formatFogli } from '@/utils/formatters';
+import { formatFormato, formatFogli, formatGrammatura } from '@/utils/formatters'; // Importa formatGrammatura
 import { Search, Home, PlusCircle, MinusCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -88,11 +88,18 @@ export default function Produzione() {
       // NUOVO: Cerca cartoni simili
       setLoadingSimilar(true);
       try {
+        // Normalizza i valori di formato e grammatura per la query
+        const formattedFormatoForQuery = formatFormato(data.formato);
+        const formattedGrammaturaForQuery = formatGrammatura(data.grammatura);
+
+        console.log(`[Produzione] Cartone trovato: Codice=${data.codice}, Formato DB='${data.formato}', Grammatura DB='${data.grammatura}'`);
+        console.log(`[Produzione] Query per simili: Formato='${formattedFormatoForQuery}', Grammatura='${formattedGrammaturaForQuery}'`);
+
         const { data: similarData, error: similarError } = await supabase
           .from('giacenza')
           .select('codice, formato, grammatura, fogli') // Seleziona solo i campi necessari
-          .eq('formato', data.formato)
-          .eq('grammatura', data.grammatura)
+          .eq('formato', formattedFormatoForQuery) // Usa il valore formattato per la query
+          .eq('grammatura', formattedGrammaturaForQuery) // Usa il valore formattato per la query
           .neq('codice', data.codice); // Escludi il cartone corrente
 
         if (similarError) {
@@ -100,6 +107,7 @@ export default function Produzione() {
           // Non mostrare un toast di errore all'utente per i cartoni simili, è un'informazione aggiuntiva
         } else if (similarData) {
           setSimilarCartons(similarData as Cartone[]);
+          console.log(`[Produzione] Trovati ${similarData.length} cartoni simili.`);
         }
       } catch (similarFetchError) {
         console.error('Errore inatteso durante la ricerca di cartoni simili:', similarFetchError);
