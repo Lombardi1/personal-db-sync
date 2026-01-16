@@ -188,12 +188,15 @@ export function useChat() {
       return;
     }
 
+    console.log('[useChat] sendMessage: Attempting to send message:', { chat_id: activeChatId, sender_id: user.id, content: content.trim() });
     const { error } = await supabase
       .from('messages')
       .insert({ chat_id: activeChatId, sender_id: user.id, content: content.trim() });
 
     if (error) {
       console.error('Error sending message:', error);
+      // Log the full error object for detailed debugging
+      console.error('Supabase send message error details:', JSON.stringify(error, null, 2));
       toast.error('Errore nell\'invio del messaggio.');
       return;
     }
