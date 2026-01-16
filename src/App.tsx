@@ -17,7 +17,7 @@ import AziendaInfoPage from "./pages/AziendaInfo";
 import FustelleDashboard from "./pages/FustelleDashboard";
 import PolimeriDashboard from "./pages/PolimeriDashboard";
 import GestioneFustelle from "./pages/GestioneFustelle"; // Importa la nuova pagina GestioneFustelle
-// Rimosso: import PulitoriDashboard from "./pages/PulitoriDashboard"; // NUOVO: Importa la nuova pagina PulitoriDashboard
+import ChatPage from "./pages/ChatPage"; // NUOVO: Importa la pagina ChatPage
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -110,10 +110,15 @@ const App = () => {
               element={renderProtectedRoute(<PolimeriDashboard />, ['amministratore'])}
             />
 
-            {/* Rimosso: <Route
-              path="/gestione-pulitori"
-              element={renderProtectedRoute(<PulitoriDashboard />, ['amministratore'])}
-            /> */}
+            {/* NUOVO: Rotte per la chat */}
+            <Route
+              path="/chat"
+              element={renderProtectedRoute(<ChatPage />, ['amministratore', 'stampa'])}
+            />
+            <Route
+              path="/chat/:chatId"
+              element={renderProtectedRoute(<ChatPage />, ['amministratore', 'stampa'])}
+            />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

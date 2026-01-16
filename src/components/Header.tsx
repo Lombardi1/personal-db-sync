@@ -1,4 +1,4 @@
-import { LogOut, Users, Settings, Contact, Building2 } from 'lucide-react';
+import { LogOut, Users, Settings, Contact, Building2, MessageSquare } from 'lucide-react'; // Importa MessageSquare
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -50,9 +50,9 @@ export function Header({
       currentSection = 'fustelle';
     } else if (location.pathname === '/gestione-polimeri') {
       currentSection = 'polimeri';
-    } /* Rimosso: else if (location.pathname === '/gestione-pulitori') { // NUOVO: Colore per la pagina Pulitori
-      currentSection = 'pulitori';
-    } */ else if (location.pathname === '/gestione-magazzino') {
+    } else if (location.pathname.startsWith('/chat')) { // NUOVO: Colore per la chat
+      currentSection = 'chat';
+    } else if (location.pathname === '/gestione-magazzino') {
       const queryParams = new URLSearchParams(location.search);
       currentSection = queryParams.get('tab') || 'giacenza';
     }
@@ -82,8 +82,8 @@ export function Header({
         return 'linear-gradient(135deg, hsl(var(--fustelle-color)), hsl(var(--fustelle-color-dark)))';
       case 'polimeri':
         return 'linear-gradient(135deg, hsl(var(--polimeri-color)), hsl(var(--polimeri-color-dark)))';
-      /* Rimosso: case 'pulitori': // NUOVO: Colore per la pagina Pulitori
-        return 'linear-gradient(135deg, hsl(var(--pulitori-color)), hsl(var(--pulitori-color-dark)))'; */
+      case 'chat': // NUOVO: Colore per la chat
+        return 'linear-gradient(135deg, hsl(210, 80%, 40%), hsl(210, 80%, 30%))';
       default:
         return 'linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%))';
     }
@@ -106,6 +106,16 @@ export function Header({
               <span className="text-xs sm:text-sm text-white/90">
                 {isAmministratore ? 'Admin' : 'Stampa'}: <strong>{user.username}</strong>
               </span>
+              <Button
+                onClick={() => navigate('/chat')}
+                variant="outline"
+                size="sm"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                title="Chat"
+              >
+                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline ml-1">Chat</span>
+              </Button>
               {(showUsersButton === undefined ? defaultShowUsersButton : showUsersButton) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
