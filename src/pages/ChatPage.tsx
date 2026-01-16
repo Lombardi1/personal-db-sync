@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner'; // Importa toast
 
 export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
@@ -113,6 +114,14 @@ export default function ChatPage() {
       if (activeChatId === chatToDelete) {
         navigate('/chat', { replace: true });
       }
+    }
+  };
+
+  const handleGoToDashboard = () => {
+    if (user?.role === 'stampa') {
+      navigate('/stampa-dashboard');
+    } else {
+      navigate('/summary');
     }
   };
 
@@ -199,7 +208,7 @@ export default function ChatPage() {
         <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col">
           <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
             <h2 className="text-lg font-bold">{chatTitle}</h2>
-            <Button onClick={() => navigate('/summary')} variant="outline" size="sm" className="text-sm">
+            <Button onClick={handleGoToDashboard} variant="outline" size="sm" className="text-sm">
               <Home className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
               Dashboard
             </Button>
