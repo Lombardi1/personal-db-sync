@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -27,15 +27,12 @@ export default function Login() {
     const result = await login(username, password);
     setLoading(false);
     if (result.success) {
-      // Rimuovi il localStorage per forzare la visualizzazione del modale delle novità
-      localStorage.removeItem('lastSeenAppVersion');
-      
-      // Controlla se la versione è nuova e mostra il modale
+      // Controlla se la versione è nuova e mostra il modale solo se l'utente non l'ha ancora visto
       const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
       if (lastSeenVersion !== currentAppVersion) {
         setShowWhatsNewModal(true);
       } else {
-        // Se non ci sono novità, procedi con il reindirizzamento
+        // Se non ci sono novità o l'utente ha già visto il modale, procedi con il reindirizzamento
         notifications.showSuccess('Login effettuato con successo');
         if (result.user?.role === 'stampa') {
           navigate('/stampa-dashboard');
@@ -49,7 +46,7 @@ export default function Login() {
   };
 
   const handleCloseWhatsNewModal = () => {
-    // Salva la versione corrente
+    // Salva la versione corrente per non mostrarla più all'utente
     localStorage.setItem('lastSeenAppVersion', currentAppVersion);
     setShowWhatsNewModal(false);
     

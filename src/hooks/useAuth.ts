@@ -66,8 +66,8 @@ export function useAuth() {
       setUser(loggedUser);
       localStorage.setItem('app_user', JSON.stringify(loggedUser));
       
-      // Rimuovi il localStorage per forzare la visualizzazione del modale delle novità
-      localStorage.removeItem('lastSeenAppVersion');
+      // NON rimuoviamo più lastSeenAppVersion qui - lasciamo che venga gestito nel componente Login
+      // Questo permette di preservare lo stato di "utente che ha già visto le novità"
       
       console.log('✅ Login completato con successo. User ID:', loggedUser.id);
       return { success: true, user: loggedUser };
