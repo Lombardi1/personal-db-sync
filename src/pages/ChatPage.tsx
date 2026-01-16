@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2 } from 'lucide-react';
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft } from 'lucide-react'; // Importa ArrowLeft
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner'; // Importa toast
+import { useIsMobile } from '@/hooks/use-mobile'; // Importa l'hook useIsMobile
 
 export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
@@ -54,8 +55,8 @@ export default function ChatPage() {
     deleteChat,
     allUsers,
     fetchChats,
-    markChatAsRead, // Importa la nuova funzione
-  } = useChat(navigate); // Pass navigate here
+    markChatAsRead,
+  } = useChat(navigate);
 
   const [newMessageContent, setNewMessageContent] = useState('');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
@@ -64,6 +65,7 @@ export default function ChatPage() {
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile(); // Usa l'hook per rilevare il mobile
 
   useEffect(() => {
     if (urlChatId && urlChatId !== activeChatId) {
@@ -153,126 +155,138 @@ export default function ChatPage() {
 
       <div className="flex-1 flex max-w-[1400px] mx-auto w-full p-3 sm:p-5 md:px-8 gap-4 overflow-hidden">
         {/* Sidebar Chat List */}
-        <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full">
-          <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" /> Le mie Chat
-            </h2>
-            <Button size="sm" onClick={() => setIsNewChatModalOpen(true)} className="gap-1">
-              <PlusCircle className="h-4 w-4" /> Nuova
-            </Button>
-          </div>
-          <ScrollArea className="flex-1">
-            {chats.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground p-4">Nessuna chat. Inizia una nuova!</p>
-            ) : (
-              chats.map(chat => (
-                <div
-                  key={chat.id}
-                  onClick={() => navigate(`/chat/${chat.id}`)}
-                  className={cn(
-                    "flex items-center justify-between p-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-gray-50 transition-colors",
-                    activeChatId === chat.id && "bg-blue-50 border-l-4 border-blue-600"
-                  )}
-                >
-                  <div>
-                    <p className="font-semibold text-sm">
-                      {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
-                    </p>
-                    {chat.last_message_content && (
-                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                        {chat.last_message_content}
-                      </p>
+        {(!isMobile || !activeChatId) && ( // Mostra la sidebar se non è mobile O se è mobile ma non c'è una chat attiva
+          <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full">
+            <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" /> Le mie Chat
+              </h2>
+              <Button size="sm" onClick={() => setIsNewChatModalOpen(true)} className="gap-1">
+                <PlusCircle className="h-4 w-4" /> Nuova
+              </Button>
+            </div>
+            <ScrollArea className="flex-1">
+              {chats.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground p-4">Nessuna chat. Inizia una nuova!</p>
+              ) : (
+                chats.map(chat => (
+                  <div
+                    key={chat.id}
+                    onClick={() => navigate(`/chat/${chat.id}`)}
+                    className={cn(
+                      "flex items-center justify-between p-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-gray-50 transition-colors",
+                      activeChatId === chat.id && "bg-blue-50 border-l-4 border-blue-600"
                     )}
-                    {chat.last_message_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(chat.last_message_at), 'dd MMM HH:mm', { locale: it })}
+                  >
+                    <div>
+                      <p className="font-semibold text-sm">
+                        {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
                       </p>
+                      {chat.last_message_content && (
+                        <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          {chat.last_message_content}
+                        </p>
+                      )}
+                      {chat.last_message_at && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(chat.last_message_at), 'dd MMM HH:mm', { locale: it })}
+                        </p>
+                      )}
+                    </div>
+                    {chat.unread_count && chat.unread_count > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2 flex-shrink-0">
+                        {chat.unread_count}
+                      </span>
                     )}
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteChatClick(chat.id); }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
-                  {chat.unread_count && chat.unread_count > 0 && (
-                    <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2 flex-shrink-0">
-                      {chat.unread_count}
-                    </span>
-                  )}
-                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteChatClick(chat.id); }}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))
-            )}
-          </ScrollArea>
-        </div>
+                ))
+              )}
+            </ScrollArea>
+          </div>
+        )}
 
         {/* Main Chat Window */}
-        <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full">
-          <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
-            <h2 className="text-lg font-bold">{chatTitle}</h2>
-            <Button onClick={handleGoToDashboard} variant="outline" size="sm" className="text-sm">
-              <Home className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-              Dashboard
-            </Button>
-          </div>
+        {(!isMobile || activeChatId) && ( // Mostra la chat principale se non è mobile O se è mobile e c'è una chat attiva
+          <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full">
+            <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
+              <h2 className="text-lg font-bold">{chatTitle}</h2>
+              <div className="flex items-center gap-2">
+                {isMobile && activeChatId && ( // Pulsante Indietro per mobile quando la chat è attiva
+                  <Button onClick={() => navigate('/chat')} variant="outline" size="sm" className="text-sm">
+                    <ArrowLeft className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                    Indietro
+                  </Button>
+                )}
+                <Button onClick={handleGoToDashboard} variant="outline" size="sm" className="text-sm">
+                  <Home className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                  Dashboard
+                </Button>
+              </div>
+            </div>
 
-          {activeChatId ? (
-            <>
-              <ScrollArea className="flex-1 p-4 space-y-4">
-                {loadingMessages ? (
-                  <div className="flex justify-center items-center h-full">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : messages.length === 0 ? (
-                  <p className="text-center text-muted-foreground">Inizia la conversazione!</p>
-                ) : (
-                  messages.map(msg => (
-                    <div
-                      key={msg.id}
-                      className={cn(
-                        "flex",
-                        msg.sender_id === user.id ? "justify-end" : "justify-start"
-                      )}
-                    >
+            {activeChatId ? (
+              <>
+                <ScrollArea className="flex-1 p-4 space-y-4">
+                  {loadingMessages ? (
+                    <div className="flex justify-center items-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <p className="text-center text-muted-foreground">Inizia la conversazione!</p>
+                  ) : (
+                    messages.map(msg => (
                       <div
+                        key={msg.id}
                         className={cn(
-                          "max-w-[70%] p-3 rounded-lg",
-                          msg.sender_id === user.id
-                            ? "bg-blue-600 text-white rounded-br-none"
-                            : "bg-gray-200 text-gray-800 rounded-bl-none"
+                          "flex",
+                          msg.sender_id === user.id ? "justify-end" : "justify-start"
                         )}
                       >
-                        <p className="font-semibold text-xs mb-1">
-                          {msg.sender_username || 'Sconosciuto'}
-                        </p>
-                        <p className="text-sm">{msg.content}</p>
-                        <p className="text-xs mt-1 opacity-75">
-                          {format(new Date(msg.created_at), 'HH:mm', { locale: it })}
-                        </p>
+                        <div
+                          className={cn(
+                            "max-w-[70%] p-3 rounded-lg",
+                            msg.sender_id === user.id
+                              ? "bg-blue-600 text-white rounded-br-none"
+                              : "bg-gray-200 text-gray-800 rounded-bl-none"
+                          )}
+                        >
+                          <p className="font-semibold text-xs mb-1">
+                            {msg.sender_username || 'Sconosciuto'}
+                          </p>
+                          <p className="text-sm">{msg.content}</p>
+                          <p className="text-xs mt-1 opacity-75">
+                            {format(new Date(msg.created_at), 'HH:mm', { locale: it })}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                )}
-                <div ref={messagesEndRef} />
-              </ScrollArea>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </ScrollArea>
 
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-                <Input
-                  value={newMessageContent}
-                  onChange={(e) => setNewMessageContent(e.target.value)}
-                  placeholder="Scrivi un messaggio..."
-                  className="flex-1"
-                  disabled={loadingMessages}
-                />
-                <Button type="submit" disabled={loadingMessages || !newMessageContent.trim()}>
-                  <Send className="h-5 w-5" />
-                </Button>
-              </form>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <p>Seleziona una chat o creane una nuova.</p>
-            </div>
-          )}
-        </div>
+                <form onSubmit={handleSendMessage} className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
+                  <Input
+                    value={newMessageContent}
+                    onChange={(e) => setNewMessageContent(e.target.value)}
+                    placeholder="Scrivi un messaggio..."
+                    className="flex-1"
+                    disabled={loadingMessages}
+                  />
+                  <Button type="submit" disabled={loadingMessages || !newMessageContent.trim()}>
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <p>Seleziona una chat o creane una nuova.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* New Chat Modal */}
