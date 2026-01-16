@@ -5,6 +5,7 @@ import { generateNextCartoneCode } from './cartoneUtils';
 import { generateNextFscCommessa, resetFscCommessaGenerator } from './fscUtils'; // Importa le utilità FSC
 import { findNextAvailableFustellaCode } from './fustellaUtils'; // Importa la nuova funzione
 import { findNextAvailablePulitoreCode } from './pulitoreUtils'; // Importa le utilità Pulitore
+import { formatFormato, formatGrammatura } from './formatters'; // Importa le funzioni di formattazione
 
 export async function seedPurchaseOrders() {
   notifications.showInfo('Generazione ordini d\'acquisto di test in corso...');
@@ -59,8 +60,8 @@ export async function seedPurchaseOrders() {
           {
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Triplo',
-            formato: '120 x 80 cm',
-            grammatura: '350 g/m²',
+            formato: formatFormato('120 x 80'), // Standardizza
+            grammatura: formatGrammatura('350'), // Standardizza
             quantita: 1000,
             prezzo_unitario: 1.85,
             cliente: randomCliente.nome,
@@ -75,8 +76,8 @@ export async function seedPurchaseOrders() {
           {
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Microonda Bianco',
-            formato: '70 x 100 cm',
-            grammatura: '200 g/m²',
+            formato: formatFormato('70 x 100'), // Standardizza
+            grammatura: formatGrammatura('200'), // Standardizza
             quantita: 2500,
             prezzo_unitario: 1.20,
             cliente: randomCliente.nome,
@@ -131,8 +132,8 @@ export async function seedPurchaseOrders() {
           {
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Cartone Speciale',
-            formato: '80 x 120 cm',
-            grammatura: '450 g/m²',
+            formato: formatFormato('80 x 120'), // Standardizza
+            grammatura: formatGrammatura('450'), // Standardizza
             quantita: 500,
             prezzo_unitario: 2.50,
             cliente: randomCliente.nome,
@@ -160,8 +161,8 @@ export async function seedPurchaseOrders() {
           {
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Semplice',
-            formato: '60 x 80 cm',
-            grammatura: '180 g/m²',
+            formato: formatFormato('60 x 80'), // Standardizza
+            grammatura: formatGrammatura('180'), // Standardizza
             quantita: 1200,
             prezzo_unitario: 0.90,
             cliente: randomCliente.nome,
@@ -190,8 +191,8 @@ export async function seedPurchaseOrders() {
           {
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Doppio',
-            formato: '100 x 140 cm',
-            grammatura: '400 g/m²',
+            formato: formatFormato('100 x 140'), // Standardizza
+            grammatura: formatGrammatura('400'), // Standardizza
             quantita: 800,
             prezzo_unitario: 2.10,
             cliente: randomCliente.nome,
@@ -206,8 +207,8 @@ export async function seedPurchaseOrders() {
           {
             codice_ctn: generateNextCartoneCode(),
             tipologia_cartone: 'Ondulato Singolo',
-            formato: '50 x 70 cm',
-            grammatura: '150 g/m²',
+            formato: formatFormato('50 x 70'), // Standardizza
+            grammatura: formatGrammatura('150'), // Standardizza
             quantita: 300,
             prezzo_unitario: 0.75,
             cliente: randomCliente.nome,
@@ -331,8 +332,8 @@ export async function seedPurchaseOrders() {
             fornitore: fornitoreCartone!.nome,
             ordine: newOrdine.numero_ordine,
             tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
-            formato: articolo.formato || 'N/A',
-            grammatura: articolo.grammatura || 'N/A',
+            formato: formatFormato(articolo.formato || 'N/A'), // Standardizza qui
+            grammatura: formatGrammatura(articolo.grammatura || 'N/A'), // Standardizza qui
             fogli: articolo.numero_fogli || 0, // Usa numero_fogli
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',

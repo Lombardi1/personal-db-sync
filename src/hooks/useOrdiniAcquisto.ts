@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone, Fustella } from '@/types';
 import { toast } from 'sonner';
 import { generateNextCartoneCode } from '@/utils/cartoneUtils';
+import { formatFormato, formatGrammatura } from '@/utils/formatters'; // Importa le funzioni di formattazione
 
 export function useOrdiniAcquisto() {
   const [ordiniAcquisto, setOrdiniAcquisto] = useState<OrdineAcquisto[]>([]);
@@ -72,8 +73,8 @@ export function useOrdiniAcquisto() {
             fornitore: fornitoreNome,
             ordine: ordineAcquisto.numero_ordine,
             tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
-            formato: articolo.formato || 'N/A',
-            grammatura: articolo.grammatura || 'N/A',
+            formato: formatFormato(articolo.formato || 'N/A'), // Standardizza qui
+            grammatura: formatGrammatura(articolo.grammatura || 'N/A'), // Standardizza qui
             fogli: numFogli,
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
@@ -103,8 +104,8 @@ export function useOrdiniAcquisto() {
               fornitore: fornitoreNome,
               ordine: ordineAcquisto.numero_ordine,
               tipologia: articolo.tipologia_cartone || articolo.descrizione || 'N/A',
-              formato: articolo.formato || 'N/A',
-              grammatura: articolo.grammatura || 'N/A',
+              formato: formatFormato(articolo.formato || 'N/A'), // Standardizza qui
+              grammatura: formatGrammatura(articolo.grammatura || 'N/A'), // Standardizza qui
               fogli: previousGiacenzaState?.fogli || numFogli, // Preserve manual fogli if exists, else use OA
               cliente: articolo.cliente || 'N/A',
               lavoro: articolo.lavoro || 'N/A',
