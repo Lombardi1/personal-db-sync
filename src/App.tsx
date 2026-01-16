@@ -16,14 +16,29 @@ import StoricoStampa from "./pages/StoricoStampa";
 import AziendaInfoPage from "./pages/AziendaInfo";
 import FustelleDashboard from "./pages/FustelleDashboard";
 import PolimeriDashboard from "./pages/PolimeriDashboard";
-import GestioneFustelle from "./pages/GestioneFustelle"; // Importa la nuova pagina GestioneFustelle
-// Rimosso: import PulitoriDashboard from "./pages/PulitoriDashboard"; // NUOVO: Importa la nuova pagina PulitoriDashboard
+import GestioneFustelle from "./pages/GestioneFustelle";
 import { useAuth } from "@/hooks/useAuth";
+import React from "react"; // Importa React
+import { WhatsNewModal } from "@/components/WhatsNewModal"; // Importa il nuovo modale
+import { currentAppVersion } from "@/config/releaseNotes"; // Importa la versione corrente
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const { user, loading } = useAuth();
+  const [showWhatsNewModal, setShowWhatsNewModal] = React.useState(false);
+
+  React.useEffect(() => {
+    const lastSeenVersion = localStorage.getItem('lastSeenAppVersion');
+    if (lastSeenVersion !== currentAppVersion) {
+      setShowWhatsNewModal(true);
+    }
+  }, []);
+
+  const handleCloseWhatsNewModal = () => {
+    localStorage.setItem('lastSeenAppVersion', currentAppVersion);
+    setShowWhatsNewModal(false);
+  };
 
   const renderProtectedRoute = (element: React.ReactNode, allowedRoles: ('stampa' | 'amministratore')[]) => {
     return (
@@ -109,17 +124,13 @@ const App = () => {
               path="/gestione-polimeri"
               element={renderProtectedRoute(<PolimeriDashboard />, ['amministratore'])}
             />
-
-            {/* Rimosso: <Route
-              path="/gestione-pulitori"
-              element={renderProtectedRoute(<PulitoriDashboard />, ['amministratore'])}
-            /> */}
             
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
       <Sonner /> 
+      {showWhatsNewModal && <WhatsNewModal isOpen={showWhatsNewModal} onClose={handleCloseWhatsNewModal} />}
     </QueryClientProvider>
   );
 };
