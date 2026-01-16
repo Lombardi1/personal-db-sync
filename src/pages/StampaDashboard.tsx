@@ -3,14 +3,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MinusCircle, History, MessageSquare } from 'lucide-react'; // Importa l'icona History e MessageSquare
-import { useChat } from '@/hooks/useChat'; // Importa l'hook useChat
+import { MinusCircle, History } from 'lucide-react'; // Rimosso MessageSquare
+// Rimosso: import { useChat } from '@/hooks/useChat'; // Rimosso l'hook useChat
 
 export default function StampaDashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [currentDateTime, setCurrentDateTime] = useState('');
-  const { totalUnreadCount } = useChat(); // Ottieni il conteggio dei messaggi non letti
+  // Rimosso: const { totalUnreadCount } = useChat(); // Rimosso il conteggio dei messaggi non letti
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -77,21 +77,7 @@ export default function StampaDashboard() {
             <History className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
             <span className="leading-none text-sm sm:text-base whitespace-nowrap">Storico Movimenti</span>
           </Button>
-          <div className="relative col-span-full"> {/* Wrapper per il badge */}
-            <Button
-              onClick={() => navigate('/chat')}
-              size="lg"
-              className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12 w-full"
-            >
-              <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
-              <span className="leading-none text-sm sm:text-base whitespace-nowrap">Chat</span>
-            </Button>
-            {totalUnreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                {totalUnreadCount}
-              </span>
-            )}
-          </div>
+          {/* Rimosso: Pulsante Chat con badge */}
         </div>
       </div>
     </div>
