@@ -65,11 +65,6 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
 
     let currentTotalUnread = 0;
     const chatsWithUsernames: Chat[] = await Promise.all((chatsData || []).map(async (chat) => {
-      console.log(`[fetchChats] --- Processing chat ID: ${chat.id} ---`);
-      console.log(`[fetchChats] Chat last_message_at: ${chat.last_message_at}`);
-      const lastReadAt = userChatStatusMap.get(chat.id);
-      console.log(`[fetchChats] User last_read_at for this chat: ${lastReadAt}`);
-      
       const participantUsernames = await Promise.all(chat.participant_ids.map(async (pId: string) => {
         const foundUser = allUsers.find(u => u.id === pId);
         if (foundUser) return foundUser.username;
@@ -82,6 +77,8 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
         return userData?.username || 'Sconosciuto';
       }));
 
+      // Get last_read_at for the current user from the map
+      const lastReadAt = userChatStatusMap.get(chat.id);
       let unreadCount = 0;
 
       if (chat.last_message_at) {
@@ -89,7 +86,6 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
           const lastMessageDate = new Date(chat.last_message_at);
           const lastReadDate = new Date(lastReadAt);
           if (lastMessageDate > lastReadDate) {
-            console.log(`[fetchChats] Counting unread messages after ${lastReadAt}`);
             const { count, error: countError } = await supabase
               .from('messages')
               .select('id', { count: 'exact' })
@@ -98,16 +94,13 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
               .neq('sender_id', user.id);
 
             if (countError) {
-              console.error('[fetchChats] Error counting unread messages:', countError);
+              console.error('Error counting unread messages:', countError);
             } else {
               unreadCount = count || 0;
-              console.log(`[fetchChats] Counted ${unreadCount} unread messages for chat ${chat.id}`);
             }
-          } else {
-            console.log(`[fetchChats] No new messages since last read for chat ${chat.id}. unreadCount = 0.`);
           }
         } else {
-          console.log(`[fetchChats] No last_read_at found for chat ${chat.id}. Counting all messages from others.`);
+          // If no last_read_at, all messages are unread
           const { count, error: countError } = await supabase
             .from('messages')
             .select('id', { count: 'exact' })
@@ -115,25 +108,20 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
             .neq('sender_id', user.id);
 
           if (countError) {
-            console.error('[fetchChats] Error counting unread messages (no last_read_at):', countError);
+            console.error('Error counting unread messages (no last_read_at):', countError);
           } else {
             unreadCount = count || 0;
-            console.log(`[fetchChats] Counted ${unreadCount} unread messages for chat ${chat.id} (no last_read_at).`);
           }
         }
-      } else {
-          console.log(`[fetchChats] Chat ${chat.id} has no last_message_at. unreadCount = 0.`);
       }
       
       if (unreadCount > 0) {
         currentTotalUnread += unreadCount; // Correzione qui: somma il numero di messaggi non letti
-        console.log(`[fetchChats] Incrementing totalUnreadCount. Current total: ${currentTotalUnread}`);
       }
 
       return { ...chat, participant_usernames: participantUsernames, unread_count: unreadCount };
     }));
 
-    console.log(`[fetchChats] Final totalUnreadCount: ${currentTotalUnread}`);
     setChats(chatsWithUsernames);
     setTotalUnreadCount(currentTotalUnread);
     setLoadingChats(false);
@@ -165,6 +153,18 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
   const markChatAsRead = useCallback(async (chatId: string) => {
     if (!user?.id) return;
 
+    // Optimistic UI update
+    setChats(prevChats => {
+        const updatedChats = prevChats.map(chat => {
+            if (chat.id === chatId && chat.unread_count && chat.unread_count > 0) {
+                setTotalUnreadCount(prevTotal => prevTotal - chat.unread_count!);
+                return { ...chat, unread_count: 0 };
+            }
+            return chat;
+        });
+        return updatedChats;
+    });
+
     const { error } = await supabase
       .from('user_chat_status')
       .upsert(
@@ -175,8 +175,8 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     if (error) {
       console.error('Error marking chat as read:', error);
       toast.error('Errore nell\'aggiornamento dello stato di lettura.');
-    } else {
-      fetchChats(); // Refresh chat list to update unread counts
+      // Fallback to full fetch if optimistic update fails
+      fetchChats(); 
     }
   }, [user?.id, fetchChats]);
 
@@ -184,71 +184,95 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     fetchAllUsers();
   }, [fetchAllUsers]);
 
+  // Global messages real-time channel for new messages
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const globalMessageChannel = supabase
+        .channel('global-messages-realtime')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+            const newMessage = payload.new as Message;
+            console.log('Global message INSERT received:', newMessage);
+
+            // If the message is from another user
+            if (newMessage.sender_id !== user.id) {
+                // If it's for the active chat, update messages and mark as read
+                if (newMessage.chat_id === activeChatId) {
+                    fetchMessages(activeChatId);
+                    markChatAsRead(activeChatId); // This will also update totalUnreadCount locally
+                } else {
+                    // If it's for a non-active chat, update unread count locally and show toast
+                    setChats(prevChats => {
+                        const updatedChats = prevChats.map(chat => {
+                            if (chat.id === newMessage.chat_id) {
+                                const newUnreadCount = (chat.unread_count || 0) + 1;
+                                setTotalUnreadCount(prevTotal => prevTotal + 1);
+                                return {
+                                    ...chat,
+                                    last_message_content: newMessage.content,
+                                    last_message_at: newMessage.created_at,
+                                    unread_count: newUnreadCount,
+                                };
+                            }
+                            return chat;
+                        });
+                        // If the chat is not in the current list (e.g., new chat created by other user)
+                        // We might need to re-fetch chats fully. For now, assume it's in the list.
+                        return updatedChats;
+                    });
+
+                    const sender = allUsers.find(u => u.id === newMessage.sender_id);
+                    const senderUsername = sender?.username || 'Sconosciuto';
+                    toast.info(`${senderUsername}: ${newMessage.content}`, {
+                        duration: 5000,
+                        position: 'top-left',
+                        action: {
+                            label: 'Apri Chat',
+                            onClick: () => {
+                                navigate(`/chat/${newMessage.chat_id}`);
+                            },
+                        },
+                    });
+                }
+            }
+        })
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(globalMessageChannel);
+    };
+}, [user?.id, activeChatId, fetchMessages, markChatAsRead, allUsers, navigate]);
+
   useEffect(() => {
     if (!user?.id) {
       console.log('[useChat useEffect] User ID is not available, skipping chat channel setup.');
-      return; // Exit early if user is not available
+      return;
     }
 
     console.log(`[useChat useEffect] Setting up chat channel for user: ${user.id}`);
-    fetchChats();
+    fetchChats(); // Initial fetch
 
     const chatChannel = supabase
       .channel('chats-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `participant_ids.ov.{"${user.id}"}` }, async (payload) => {
           console.log('--- Real-time chat change received! ---', payload);
-          fetchChats(); // Always re-fetch chats to update the list and badge counts
-
-          // Check for new messages in non-active chats for toast notification
-          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            const newChatData = payload.new as Chat;
-            console.log(`[Toast Logic] Processing chat ID: ${newChatData.id}, activeChatId: ${activeChatId}`);
-            console.log(`[Toast Logic] last_message_content: ${newChatData.last_message_content}, last_message_at: ${newChatData.last_message_at}`);
-
-            if (newChatData.id !== activeChatId && newChatData.last_message_content && newChatData.last_message_at) {
-              console.log(`[Toast Logic] Conditions met for potential toast for chat ID: ${newChatData.id}`);
-              // Fetch the actual last message to get the sender_id
-              const { data: lastMessage, error: msgError } = await supabase
-                .from('messages')
-                .select('sender_id, content')
-                .eq('chat_id', newChatData.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
-
-              if (msgError) {
-                console.error('Error fetching last message for toast:', msgError);
-                return;
-              }
-              
-              console.log(`[Toast Logic] Fetched last message:`, lastMessage);
-              console.log(`[Toast Logic] Sender ID: ${lastMessage?.sender_id}, Current User ID: ${user.id}`);
-
-              // Only show toast if the sender is not the current user
-              if (lastMessage && lastMessage.sender_id !== user.id) {
-                const sender = allUsers.find(u => u.id === lastMessage.sender_id);
-                const senderUsername = sender?.username || 'Sconosciuto';
-                console.log(`[Toast Logic] Showing toast for sender: ${senderUsername}, content: ${lastMessage.content}`);
-                toast.info(`${senderUsername}: ${lastMessage.content}`, {
-                  duration: 5000, // Show for 5 seconds
-                  position: 'top-left', // Position on the left
-                  action: {
-                    label: 'Apri Chat',
-                    onClick: () => {
-                      // Use navigate for client-side routing
-                      navigate(`/chat/${newChatData.id}`);
-                    },
-                  },
-                });
-              } else {
-                console.log(`[Toast Logic] Not showing toast: sender is current user or last message not found.`);
-              }
-            } else {
-              console.log(`[Toast Logic] Conditions NOT met for toast for chat ID: ${newChatData.id}`);
-            }
+          
+          // If a chat is inserted or deleted, or participants change, re-fetch all chats
+          if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE' || (payload.eventType === 'UPDATE' && (payload.old as Chat).participant_ids !== (payload.new as Chat).participant_ids)) {
+              fetchChats();
+          } else if (payload.eventType === 'UPDATE') {
+              // For updates that are just last_message_content/last_message_at,
+              // update the chat list's last message content/time locally.
+              const updatedChat = payload.new as Chat;
+              setChats(prevChats => prevChats.map(chat => 
+                  chat.id === updatedChat.id 
+                      ? { ...chat, last_message_content: updatedChat.last_message_content, last_message_at: updatedChat.last_message_at } 
+                      : chat
+              ));
           }
-        })
-        .subscribe();
+          // Removed toast logic from here, globalMessageChannel handles it.
+      })
+      .subscribe();
 
     return () => { // This cleanup function is now correctly outside the 'if' block
       supabase.removeChannel(chatChannel);
