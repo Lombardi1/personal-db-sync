@@ -172,21 +172,27 @@ export function useChat() {
   }, [fetchAllUsers]);
 
   useEffect(() => {
-    if (user?.id) {
-      fetchChats();
+    if (!user?.id) {
+      console.log('[useChat useEffect] User ID is not available, skipping chat channel setup.');
+      return;
+    }
+    console.log(`[useChat useEffect] Setting up chat channel for user: ${user.id}`);
+    fetchChats();
 
-      const chatChannel = supabase
-        .channel('chats-realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `participant_ids.cs.{"${user.id}"}` }, async (payload) => {
+    const chatChannel = supabase
+      .channel('chats-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `participant_ids.ov.{"${user.id}"}` }, async (payload) => { // CAMBIATO: .cs. a .ov.
           console.log('Chat change received!', payload);
           fetchChats(); // Always re-fetch chats to update the list and badge counts
 
           // Check for new messages in non-active chats for toast notification
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const newChatData = payload.new as Chat;
-            // Only show toast if it's not the active chat and there's a new last message
-            // Also ensure the last message is not from the current user
+            console.log(`[Toast Logic] Processing chat ID: ${newChatData.id}, activeChatId: ${activeChatId}`);
+            console.log(`[Toast Logic] last_message_content: ${newChatData.last_message_content}, last_message_at: ${newChatData.last_message_at}`);
+
             if (newChatData.id !== activeChatId && newChatData.last_message_content && newChatData.last_message_at) {
+              console.log(`[Toast Logic] Conditions met for potential toast for chat ID: ${newChatData.id}`);
               // Fetch the actual last message to get the sender_id
               const { data: lastMessage, error: msgError } = await supabase
                 .from('messages')
@@ -200,11 +206,15 @@ export function useChat() {
                 console.error('Error fetching last message for toast:', msgError);
                 return;
               }
+              
+              console.log(`[Toast Logic] Fetched last message:`, lastMessage);
+              console.log(`[Toast Logic] Sender ID: ${lastMessage?.sender_id}, Current User ID: ${user.id}`);
 
               // Only show toast if the sender is not the current user
               if (lastMessage && lastMessage.sender_id !== user.id) {
                 const sender = allUsers.find(u => u.id === lastMessage.sender_id);
                 const senderUsername = sender?.username || 'Sconosciuto';
+                console.log(`[Toast Logic] Showing toast for sender: ${senderUsername}, content: ${lastMessage.content}`);
                 toast.info(`${senderUsername}: ${lastMessage.content}`, {
                   duration: 5000, // Show for 5 seconds
                   position: 'top-left', // Position on the left
@@ -216,7 +226,11 @@ export function useChat() {
                     },
                   },
                 });
+              } else {
+                console.log(`[Toast Logic] Not showing toast: sender is current user or last message not found.`);
               }
+            } else {
+              console.log(`[Toast Logic] Conditions NOT met for toast for chat ID: ${newChatData.id}`);
             }
           }
         })
@@ -313,22 +327,28 @@ export function useChat() {
     }
 
     console.log('[useChat] sendMessage: Attempting to send message:', { chat_id: activeChatId, sender_id: user.id, content: content.trim() });
-    const { error } = await supabase
+    const { error: insertMessageError } = await supabase
       .from('messages')
       .insert({ chat_id: activeChatId, sender_id: user.id, content: content.trim() });
 
-    if (error) {
-      console.error('Error sending message:', error);
-      console.error('Supabase send message error details:', JSON.stringify(error, null, 2));
+    if (insertMessageError) {
+      console.error('Error sending message:', insertMessageError);
+      console.error('Supabase send message error details:', JSON.stringify(insertMessageError, null, 2));
       toast.error('Errore nell\'invio del messaggio.');
       return;
     }
 
     // Update last_message_content and last_message_at in the chat
-    await supabase
+    const { error: updateChatError } = await supabase
       .from('chats')
       .update({ last_message_content: content.trim(), last_message_at: new Date().toISOString() })
       .eq('id', activeChatId);
+
+    if (updateChatError) {
+      console.error('Error updating chat last message:', updateChatError);
+      toast.error('Errore nell\'aggiornamento della chat.');
+      return;
+    }
 
     // Messages will be re-fetched by the real-time subscription
     // Also mark as read since the user just sent a message
