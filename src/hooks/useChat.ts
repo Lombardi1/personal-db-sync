@@ -161,6 +161,7 @@ export function useChat() {
     }
 
     // If no existing chat, create a new one
+    console.log('[useChat] createOrGetChat: Attempting to create chat with participants:', allParticipants, 'by user ID:', user.id);
     const { data: newChat, error: createError } = await supabase
       .from('chats')
       .insert({ participant_ids: allParticipants })
@@ -169,6 +170,8 @@ export function useChat() {
 
     if (createError) {
       console.error('Error creating new chat:', createError);
+      // Log the full error object for detailed debugging
+      console.error('Supabase create chat error details:', JSON.stringify(createError, null, 2));
       toast.error('Errore nella creazione della nuova chat.');
       return null;
     }
