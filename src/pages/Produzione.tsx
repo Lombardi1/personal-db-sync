@@ -32,10 +32,12 @@ export default function Produzione() {
   const navigate = useNavigate();
   const [codice, setCodice] = useState('CTN-');
   const [cartone, setCartone] = useState<Cartone | null>(null);
+  const [similarCartons, setSimilarCartons] = useState<Cartone[]>([]); // NUOVO STATO
   const [dischargeEntries, setDischargeEntries] = useState<DischargeEntry[]>([
     { id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }
   ]);
   const [loading, setLoading] = useState(false);
+  const [loadingSimilar, setLoadingSimilar] = useState(false); // NUOVO STATO
   const [scaricando, setScaricando] = useState(false);
   const [codiciDisponibili, setCodiciDisponibili] = useState<string[]>([]);
 
@@ -64,6 +66,7 @@ export default function Produzione() {
 
     setLoading(true);
     setCartone(null);
+    setSimilarCartons([]); // Reset similar cartons
     setDischargeEntries([{ id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }]); // Reset entries
     
     try {
@@ -81,6 +84,29 @@ export default function Produzione() {
 
       setCartone(data as Cartone);
       toast.success('Cartone trovato');
+
+      // NUOVO: Cerca cartoni simili
+      setLoadingSimilar(true);
+      try {
+        const { data: similarData, error: similarError } = await supabase
+          .from('giacenza')
+          .select('codice, formato, grammatura, fogli') // Seleziona solo i campi necessari
+          .eq('formato', data.formato)
+          .eq('grammatura', data.grammatura)
+          .neq('codice', data.codice); // Escludi il cartone corrente
+
+        if (similarError) {
+          console.error('Errore ricerca cartoni simili:', similarError);
+          // Non mostrare un toast di errore all'utente per i cartoni simili, è un'informazione aggiuntiva
+        } else if (similarData) {
+          setSimilarCartons(similarData as Cartone[]);
+        }
+      } catch (similarFetchError) {
+        console.error('Errore inatteso durante la ricerca di cartoni simili:', similarFetchError);
+      } finally {
+        setLoadingSimilar(false);
+      }
+
     } catch (error) {
       console.error('Errore ricerca:', error);
       toast.error('Errore durante la ricerca');
@@ -157,6 +183,7 @@ export default function Produzione() {
       }
 
       setCartone(null);
+      setSimilarCartons([]); // Reset similar cartons after discharge
       setCodice('CTN-');
       setDischargeEntries([{ id: Date.now().toString(), quantita: '', ricavoFoglio: '1', note: '' }]); // Reset entries
       
@@ -322,6 +349,36 @@ export default function Produzione() {
                   <p className="text-sm">{cartone.lavoro || '-'}</p>
                 </div>
               </div>
+
+              {/* NUOVO: Sezione Cartoni Simili */}
+              {loadingSimilar ? (
+                <div className="text-center text-sm text-[hsl(var(--muted-foreground))]">Caricamento cartoni simili...</div>
+              ) : similarCartons.length > 0 && (
+                <div className="space-y-3 border-t pt-4 border-[hsl(var(--border))]">
+                  <h3 className="text-base sm:text-lg font-bold text-[hsl(var(--foreground))] flex items-center gap-2">
+                    <i className="fas fa-clone text-[hsl(var(--primary))]"></i>
+                    Cartoni Simili (stesso formato e grammatura)
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {similarCartons.map((simCartone) => (
+                      <button
+                        key={simCartone.codice}
+                        onClick={() => {
+                          setCodice(simCartone.codice);
+                          setCartone(null); // Clear current carton to force new search
+                          setSimilarCartons([]); // Clear similar cartons
+                          setTimeout(() => cercaCartone(), 0); // Trigger search for the selected similar carton
+                        }}
+                        className="flex flex-col items-center justify-center p-2 bg-[hsl(var(--muted))] rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors text-xs sm:text-sm"
+                        title={`Fogli: ${formatFogli(simCartone.fogli)}`}
+                      >
+                        <span className="font-bold text-[hsl(var(--primary))]">{simCartone.codice}</span>
+                        <span className="text-[hsl(var(--muted-foreground))]">{formatFogli(simCartone.fogli)} fogli</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Form Scarico Multiplo */}
               <div className="space-y-3 border-t pt-4 border-[hsl(var(--border))]">
