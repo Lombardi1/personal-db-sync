@@ -134,7 +134,7 @@ export interface AziendaInfo {
   updated_at?: string;
 }
 
--- NUOVE INTERFACCE PER FUSTELLE
+// NUOVE INTERFACCE PER FUSTELLE
 export interface Fustella {
   codice: string;
   data_creazione?: string;
@@ -149,7 +149,7 @@ export interface Fustella {
   pulitore_codice?: string | null; // CAMBIATO: da 'pulitore: boolean' a 'pulitore_codice: string | null'
   pinza_tagliata?: boolean; // Nuovo campo
   tasselli_intercambiabili?: boolean; // Nuovo campo
-  nr_tasselli?: number | null; // Nuovo campo
+  nr_tasselli?: number | null;
   incollatura?: boolean; // Nuovo campo
   incollatrice?: string; // Nuovo campo
   tipo_incollatura?: string; // Nuovo campo
@@ -168,4 +168,23 @@ export interface Polimero {
   data_creazione?: string;
   ultima_modifica?: string;
   disponibile: boolean;
+}
+
+// NUOVE INTERFACCE PER LA CHAT
+export interface Chat {
+  id: string;
+  created_at: string;
+  participant_ids: string[]; // Array di UUID degli utenti partecipanti
+  participant_usernames?: string[]; // Popolato dal frontend per visualizzazione
+  last_message_content?: string | null;
+  last_message_at?: string | null;
+}
+
+export interface Message {
+  id: string;
+  created_at: string;
+  chat_id: string;
+  sender_id: string;
+  sender_username?: string; // Popolato dal frontend per visualizzazione
+  content: string;
 }
