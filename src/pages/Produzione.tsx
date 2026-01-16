@@ -373,8 +373,8 @@ export default function Produzione() {
                         key={simCartone.codice}
                         onClick={() => {
                           setCodice(simCartone.codice);
-                          setCartone(null); // Clear current carton to force new search
-                          setSimilarCartons([]); // Clear similar cartons
+                          // Rimosso: setCartone(null);
+                          // Rimosso: setSimilarCartons([]);
                           setTimeout(() => cercaCartone(), 0); // Trigger search for the selected similar carton
                         }}
                         className="flex flex-col items-center justify-center p-2 bg-[hsl(var(--muted))] rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors text-xs sm:text-sm"
