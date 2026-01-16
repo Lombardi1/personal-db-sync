@@ -3,15 +3,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Warehouse, Shapes, Layers } from 'lucide-react'; // Rimosso: SprayCan
+import { ShoppingCart, Warehouse, Shapes, Layers, MessageSquare } from 'lucide-react'; // Importa MessageSquare
 import { useCartoni } from '@/hooks/useCartoni';
-// Rimosso l'import di RecentActivity
+import { useChat } from '@/hooks/useChat'; // Importa l'hook useChat
 
 export default function Summary() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [currentDateTime, setCurrentDateTime] = useState('');
   const { loading: cartoniLoading } = useCartoni();
+  const { totalUnreadCount } = useChat(); // Ottieni il conteggio dei messaggi non letti
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -96,10 +97,22 @@ export default function Summary() {
                 <Layers className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Gestione Magazzino Polimeri</span>
               </Button>
-              {/* Rimosso: Button per Pulitori */}
+              <div className="relative"> {/* Wrapper per il badge */}
+                <Button
+                  onClick={() => navigate('/chat')}
+                  size="lg"
+                  className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
+                >
+                  <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
+                  <span className="leading-none">Chat</span>
+                </Button>
+                {totalUnreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {totalUnreadCount}
+                  </span>
+                )}
+              </div>
             </div>
-            
-            {/* Attività Recenti rimosse */}
           </div>
         )}
       </div>
