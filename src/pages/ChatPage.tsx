@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
+  Select, // Keep Select for other potential uses if any, but it's not used for participant selection anymore
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -36,8 +36,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner'; // Importa toast
-import { useIsMobile } from '@/hooks/use-mobile'; // Importa l'hook useIsMobile
+import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MultiSelectUsers } from '@/components/MultiSelectUsers'; // Import the new component
 
 export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
@@ -65,7 +66,7 @@ export default function ChatPage() {
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile(); // Usa l'hook per rilevare il mobile
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (urlChatId && urlChatId !== activeChatId) {
@@ -73,7 +74,6 @@ export default function ChatPage() {
     } else if (!urlChatId && activeChatId) {
       navigate(`/chat/${activeChatId}`, { replace: true });
     } else if (!urlChatId && chats.length > 0 && !activeChatId) {
-      // If no chat in URL and no active chat, but there are chats, open the first one
       setActiveChatId(chats[0].id);
       navigate(`/chat/${chats[0].id}`, { replace: true });
     }
@@ -155,7 +155,7 @@ export default function ChatPage() {
 
       <div className="flex-1 flex max-w-[1400px] mx-auto w-full p-3 sm:p-5 md:px-8 gap-4 overflow-hidden min-h-0">
         {/* Sidebar Chat List */}
-        {(!isMobile || !activeChatId) && ( // Mostra la sidebar se non è mobile O se è mobile ma non c'è una chat attiva
+        {(!isMobile || !activeChatId) && (
           <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2">
@@ -209,12 +209,12 @@ export default function ChatPage() {
         )}
 
         {/* Main Chat Window */}
-        {(!isMobile || activeChatId) && ( // Mostra la chat principale se non è mobile O se è mobile e c'è una chat attiva
+        {(!isMobile || activeChatId) && (
           <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <h2 className="text-lg font-bold">{chatTitle}</h2>
               <div className="flex items-center gap-2">
-                {isMobile && activeChatId && ( // Pulsante Indietro per mobile quando la chat è attiva
+                {isMobile && activeChatId && (
                   <Button onClick={() => navigate('/chat')} variant="outline" size="sm" className="text-sm">
                     <ArrowLeft className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
                     Indietro
@@ -299,49 +299,14 @@ export default function ChatPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <Select
-              onValueChange={(value) => setSelectedParticipants(prev => {
-                if (prev.includes(value)) {
-                  return prev.filter(id => id !== value);
-                } else {
-                  return [...prev, value];
-                }
-              })}
-              value={selectedParticipants.length > 0 ? selectedParticipants[0] : ''} // Display first selected or empty
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleziona partecipanti" />
-              </SelectTrigger>
-              <SelectContent>
-                {allUsers.filter(u => u.id !== user.id).map(u => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.username} {selectedParticipants.includes(u.id) && '(Selezionato)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedParticipants.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm font-medium">Partecipanti selezionati:</p>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {selectedParticipants.map(pId => {
-                    const participant = allUsers.find(u => u.id === pId);
-                    return (
-                      <span key={pId} className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full">
-                        {participant?.username || 'Sconosciuto'}
-                        <button 
-                          type="button" 
-                          onClick={() => setSelectedParticipants(prev => prev.filter(id => id !== pId))}
-                          className="ml-1 text-blue-600 hover:text-blue-900"
-                        >
-                          &times;
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <MultiSelectUsers
+              options={allUsers}
+              selected={selectedParticipants}
+              onSelectionChange={setSelectedParticipants}
+              currentUser={user}
+              placeholder="Seleziona partecipanti..."
+              disabled={false}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNewChatModalOpen(false)}>Annulla</Button>
