@@ -1,0 +1,1 @@
+ALTER TABLE public.chats ADD COLUMN name text;
