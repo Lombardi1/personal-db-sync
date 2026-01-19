@@ -1,37 +1,34 @@
--- Add a function to update chat participants
-CREATE OR REPLACE FUNCTION update_chat_participants(chat_id UUID, new_participants UUID[])
-RETURNS VOID AS $$
+-- Add name column to chats table
+ALTER TABLE chats 
+ADD COLUMN IF NOT EXISTS name TEXT;
+
+-- Add function to create or get named chat
+CREATE OR REPLACE FUNCTION create_or_get_named_chat(
+  chat_name TEXT,
+  participant_ids UUID[]
+)
+RETURNS TABLE(chat_id UUID, created BOOLEAN) AS $$
+DECLARE
+  existing_chat_id UUID;
 BEGIN
-  -- Update the chat with new participants
-  UPDATE chats 
-  SET participant_ids = new_participants,
-      updated_at = NOW()
-  WHERE id = chat_id;
+  -- First try to find an existing chat with the same name and participants
+  SELECT c.id INTO existing_chat_id
+  FROM chats c
+  WHERE c.name = chat_name
+    AND c.participant_ids @> participant_ids
+    AND c.participant_ids <@ participant_ids;
   
-  -- Notify all participants about the change
-  -- This will trigger the real-time subscription in the frontend
-END;
-$$ LANGUAGE plpgsql;
-
--- Add a trigger to automatically update the updated_at timestamp
-CREATE OR REPLACE FUNCTION update_chat_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create the trigger if it doesn't exist
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger 
-    WHERE tgname = 'update_chat_updated_at_trigger'
-  ) THEN
-    CREATE TRIGGER update_chat_updated_at_trigger
-    BEFORE UPDATE ON chats
-    FOR EACH ROW
-    EXECUTE FUNCTION update_chat_updated_at();
+  IF existing_chat_id IS NOT NULL THEN
+    -- Chat already exists with same participants
+    RETURN QUERY SELECT existing_chat_id, FALSE;
+  ELSE
+    -- Create new named chat
+    INSERT INTO chats (name, participant_ids)
+    VALUES (chat_name, participant_ids)
+    RETURNING id, TRUE;
   END IF;
-END $$;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add index for better performance on named chats
+CREATE INDEX IF NOT EXISTS idx_chats_name ON chats(name);

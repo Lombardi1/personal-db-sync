@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus } from 'lucide-react';
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MultiSelectUsers } from '@/components/MultiSelectUsers';
 import { EditChatParticipantsModal } from '@/components/modals/EditChatParticipantsModal';
+import { CreateNamedChatModal } from '@/components/modals/CreateNamedChatModal';
 
 export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
@@ -26,6 +27,7 @@ export default function ChatPage() {
   const { chats, messages, loadingChats, loadingMessages, activeChatId, setActiveChatId, createOrGetChat, sendMessage, deleteChat, allUsers, fetchChats, markChatAsRead, } = useChat(navigate);
   const [newMessageContent, setNewMessageContent] = useState('');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [isCreateNamedChatModalOpen, setIsCreateNamedChatModalOpen] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [isDeleteChatAlertOpen, setIsDeleteChatAlertOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
@@ -97,7 +99,13 @@ export default function ChatPage() {
 
   const handleParticipantsUpdated = () => {
     fetchChats();
-    toast.success('Partecipanti aggiornati!');
+    toast.success('Chat aggiornata!');
+  };
+
+  const handleCreateNamedChat = (chatId: string) => {
+    setActiveChatId(chatId);
+    navigate(`/chat/${chatId}`);
+    fetchChats();
   };
 
   if (authLoading || loadingChats) {
@@ -114,7 +122,9 @@ export default function ChatPage() {
   }
 
   const activeChat = chats.find(chat => chat.id === activeChatId);
-  const chatTitle = activeChat ? activeChat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat' : 'Seleziona una chat';
+  const chatTitle = activeChat 
+    ? (activeChat.name || activeChat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat') 
+    : 'Seleziona una chat';
 
   return (
     <div className="h-full bg-[hsl(210,40%,96%)] flex flex-col">
@@ -129,7 +139,11 @@ export default function ChatPage() {
                 Le mie Chat
               </h2>
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={() => setIsNewChatModalOpen(true)} className="gap-1">
+                <Button 
+                  size="sm" 
+                  onClick={() => setIsCreateNamedChatModalOpen(true)} 
+                  className="gap-1"
+                >
                   <PlusCircle className="h-4 w-4" />
                   Nuova
                 </Button>
@@ -153,10 +167,22 @@ export default function ChatPage() {
                       activeChatId === chat.id && "bg-blue-50 border-l-4 border-blue-600"
                     )}
                   >
-                    <div>
-                      <p className="font-semibold text-sm">
-                        {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {chat.name && (
+                          <span className="font-semibold text-sm truncate">
+                            {chat.name}
+                          </span>
+                        )}
+                        {!chat.name && (
+                          <span className="font-semibold text-sm truncate">
+                            {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
+                          </span>
+                        )}
+                        {chat.name && (
+                          <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        )}
+                      </div>
                       {chat.last_message_content && (
                         <p className="text-xs text-muted-foreground truncate max-w-[180px]">
                           {chat.last_message_content}
@@ -165,6 +191,11 @@ export default function ChatPage() {
                       {chat.last_message_at && (
                         <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(chat.last_message_at), 'dd MMM HH:mm', { locale: it })}
+                        </p>
+                      )}
+                      {chat.name && (
+                        <p className="text-xs text-muted-foreground truncate mt-1">
+                          {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Nessun partecipante'}
                         </p>
                       )}
                     </div>
@@ -190,7 +221,14 @@ export default function ChatPage() {
         {(!isMobile || activeChatId) && (
           <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
-              <h2 className="text-lg font-bold">{chatTitle}</h2>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold truncate">{chatTitle}</h2>
+                {activeChat?.name && activeChat.participant_usernames && (
+                  <p className="text-sm text-muted-foreground truncate">
+                    {activeChat.participant_usernames.filter(u => u !== user.username).join(', ')}
+                  </p>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 {activeChatId && (
                   <Button onClick={handleEditParticipants} variant="outline" size="sm" className="text-sm gap-1">
@@ -276,7 +314,7 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* New Chat Modal */}
+        {/* New Chat Modal (Legacy) */}
         <Dialog open={isNewChatModalOpen} onOpenChange={setIsNewChatModalOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -302,6 +340,14 @@ export default function ChatPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Create Named Chat Modal */}
+        <CreateNamedChatModal
+          isOpen={isCreateNamedChatModalOpen}
+          onClose={() => setIsCreateNamedChatModalOpen(false)}
+          allUsers={allUsers}
+          onCreateChat={handleCreateNamedChat}
+        />
+
         {/* Edit Participants Modal */}
         {activeChat && (
           <EditChatParticipantsModal
@@ -309,6 +355,7 @@ export default function ChatPage() {
             onClose={() => setIsEditParticipantsModalOpen(false)}
             chatId={activeChat.id}
             currentParticipants={activeChat.participant_ids}
+            currentName={activeChat.name}
             onParticipantsUpdated={handleParticipantsUpdated}
           />
         )}
