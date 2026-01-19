@@ -4,67 +4,32 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft } from 'lucide-react';
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MultiSelectUsers } from '@/components/MultiSelectUsers';
+import { EditChatParticipantsModal } from '@/components/modals/EditChatParticipantsModal';
 
 export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { chatId: urlChatId } = useParams<{ chatId?: string }>();
-  const {
-    chats,
-    messages,
-    loadingChats,
-    loadingMessages,
-    activeChatId,
-    setActiveChatId,
-    createOrGetChat,
-    sendMessage,
-    deleteChat,
-    allUsers,
-    fetchChats,
-    markChatAsRead,
-  } = useChat(navigate);
-
+  const { chats, messages, loadingChats, loadingMessages, activeChatId, setActiveChatId, createOrGetChat, sendMessage, deleteChat, allUsers, fetchChats, markChatAsRead, } = useChat(navigate);
   const [newMessageContent, setNewMessageContent] = useState('');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [isDeleteChatAlertOpen, setIsDeleteChatAlertOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
-
+  const [isEditParticipantsModalOpen, setIsEditParticipantsModalOpen] = useState(false);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
@@ -126,6 +91,15 @@ export default function ChatPage() {
     }
   };
 
+  const handleEditParticipants = () => {
+    setIsEditParticipantsModalOpen(true);
+  };
+
+  const handleParticipantsUpdated = () => {
+    fetchChats();
+    toast.success('Partecipanti aggiornati!');
+  };
+
   if (authLoading || loadingChats) {
     return (
       <div className="min-h-screen bg-[hsl(210,40%,96%)] flex items-center justify-center">
@@ -140,29 +114,24 @@ export default function ChatPage() {
   }
 
   const activeChat = chats.find(chat => chat.id === activeChatId);
-  const chatTitle = activeChat
-    ? activeChat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'
-    : 'Seleziona una chat';
+  const chatTitle = activeChat ? activeChat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat' : 'Seleziona una chat';
 
   return (
     <div className="h-full bg-[hsl(210,40%,96%)] flex flex-col">
-      <Header
-        title="Chat"
-        activeTab="chat"
-        showUsersButton={true}
-      />
-
+      <Header title="Chat" activeTab="chat" showUsersButton={true} />
       <div className="flex-1 flex max-w-[1400px] mx-auto w-full p-3 sm:p-5 md:px-8 gap-4 overflow-hidden min-h-0">
         {/* Sidebar Chat List */}
         {(!isMobile || !activeChatId) && (
           <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" /> Le mie Chat
+                <MessageSquare className="h-5 w-5" />
+                Le mie Chat
               </h2>
               <div className="flex items-center gap-2">
                 <Button size="sm" onClick={() => setIsNewChatModalOpen(true)} className="gap-1">
-                  <PlusCircle className="h-4 w-4" /> Nuova
+                  <PlusCircle className="h-4 w-4" />
+                  Nuova
                 </Button>
                 {isMobile && !activeChatId && (
                   <Button onClick={handleGoToDashboard} variant="outline" size="sm" className="gap-1">
@@ -176,8 +145,8 @@ export default function ChatPage() {
                 <p className="text-center text-sm text-muted-foreground p-4">Nessuna chat. Inizia una nuova!</p>
               ) : (
                 chats.map(chat => (
-                  <div
-                    key={chat.id}
+                  <div 
+                    key={chat.id} 
                     onClick={() => navigate(`/chat/${chat.id}`)}
                     className={cn(
                       "flex items-center justify-between p-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-gray-50 transition-colors",
@@ -204,7 +173,10 @@ export default function ChatPage() {
                         {chat.unread_count}
                       </span>
                     )}
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteChatClick(chat.id); }}>
+                    <Button variant="ghost" size="icon" onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteChatClick(chat.id);
+                    }}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -220,11 +192,22 @@ export default function ChatPage() {
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <h2 className="text-lg font-bold">{chatTitle}</h2>
               <div className="flex items-center gap-2">
+                {activeChatId && (
+                  <Button onClick={handleEditParticipants} variant="outline" size="sm" className="text-sm gap-1">
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Partecipanti</span>
+                  </Button>
+                )}
                 {isMobile && activeChatId && (
-                  <Button onClick={() => {
-                    setActiveChatId(null); // Clear the active chat
-                    navigate('/chat'); // Go to the base chat URL
-                  }} variant="outline" size="sm" className="text-sm">
+                  <Button 
+                    onClick={() => {
+                      setActiveChatId(null); // Clear the active chat
+                      navigate('/chat'); // Go to the base chat URL
+                    }} 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-sm"
+                  >
                     <ArrowLeft className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
                     Indietro
                   </Button>
@@ -235,7 +218,6 @@ export default function ChatPage() {
                 </Button>
               </div>
             </div>
-
             {activeChatId ? (
               <>
                 <ScrollArea className="flex-1 p-4 space-y-4">
@@ -247,21 +229,19 @@ export default function ChatPage() {
                     <p className="text-center text-muted-foreground">Inizia la conversazione!</p>
                   ) : (
                     messages.map(msg => (
-                      <div
-                        key={msg.id}
+                      <div 
+                        key={msg.id} 
                         className={cn(
                           "flex",
                           msg.sender_id === user.id ? "justify-end" : "justify-start"
                         )}
                       >
-                        <div
-                          className={cn(
-                            "max-w-[70%] p-3 rounded-lg",
-                            msg.sender_id === user.id
-                              ? "bg-blue-600 text-white rounded-br-none"
-                              : "bg-gray-200 text-gray-800 rounded-bl-none"
-                          )}
-                        >
+                        <div className={cn(
+                          "max-w-[70%] p-3 rounded-lg",
+                          msg.sender_id === user.id 
+                            ? "bg-blue-600 text-white rounded-br-none" 
+                            : "bg-gray-200 text-gray-800 rounded-bl-none"
+                        )}>
                           <p className="font-semibold text-xs mb-1">
                             {msg.sender_username || 'Sconosciuto'}
                           </p>
@@ -275,13 +255,12 @@ export default function ChatPage() {
                   )}
                   <div ref={messagesEndRef} />
                 </ScrollArea>
-
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-                  <Input
-                    value={newMessageContent}
-                    onChange={(e) => setNewMessageContent(e.target.value)}
-                    placeholder="Scrivi un messaggio..."
-                    className="flex-1"
+                  <Input 
+                    value={newMessageContent} 
+                    onChange={(e) => setNewMessageContent(e.target.value)} 
+                    placeholder="Scrivi un messaggio..." 
+                    className="flex-1" 
                     disabled={loadingMessages}
                   />
                   <Button type="submit" disabled={loadingMessages || !newMessageContent.trim()}>
@@ -307,9 +286,9 @@ export default function ChatPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <MultiSelectUsers
-                options={allUsers}
-                selected={selectedParticipants}
+              <MultiSelectUsers 
+                options={allUsers} 
+                selected={selectedParticipants} 
                 onSelectionChange={setSelectedParticipants}
                 currentUser={user}
                 placeholder="Seleziona partecipanti..."
@@ -322,6 +301,17 @@ export default function ChatPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Participants Modal */}
+        {activeChat && (
+          <EditChatParticipantsModal
+            isOpen={isEditParticipantsModalOpen}
+            onClose={() => setIsEditParticipantsModalOpen(false)}
+            chatId={activeChat.id}
+            currentParticipants={activeChat.participant_ids}
+            onParticipantsUpdated={handleParticipantsUpdated}
+          />
+        )}
 
         {/* Delete Chat Alert Dialog */}
         <AlertDialog open={isDeleteChatAlertOpen} onOpenChange={setIsDeleteChatAlertOpen}>

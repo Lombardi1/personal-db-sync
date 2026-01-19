@@ -19,7 +19,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     const { data, error } = await supabase
       .from('app_users')
       .select('id, username');
-      
+    
     if (error) {
       console.error('Error fetching all users:', error);
       toast.error('Errore nel caricamento degli utenti per la chat.');
@@ -28,9 +28,8 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     
     setAllUsers(data || []);
     return data || [];
-  }, []);
+  }, []); // New function to request notification permission
 
-  // New function to request notification permission
   const requestNotificationPermission = useCallback(async () => {
     if (!('Notification' in window)) {
       console.warn('Browser does not support desktop notifications.');
@@ -54,9 +53,8 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
       // Optionally, inform the user they need to enable it manually
       // toast.info('Le notifiche desktop sono state bloccate. Puoi abilitarle dalle impostazioni del browser.');
     }
-  }, []);
+  }, []); // Call requestNotificationPermission when user is logged in and on chat page
 
-  // Call requestNotificationPermission when user is logged in and on chat page
   useEffect(() => {
     if (user?.id) {
       requestNotificationPermission();
@@ -74,7 +72,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
       .select(`id, created_at, participant_ids, last_message_content, last_message_at`)
       .contains('participant_ids', [user.id])
       .order('last_message_at', { ascending: false, nullsFirst: false });
-      
+    
     if (chatsError) {
       console.error('Error fetching chats:', chatsError);
       toast.error('Errore nel caricamento delle chat.');
@@ -89,7 +87,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
       .select('chat_id, last_read_at')
       .eq('user_id', user.id)
       .in('chat_id', chatIds);
-      
+    
     if (statusError) {
       console.error('Error fetching user chat status:', statusError);
       // Don't block, proceed with potentially missing status
@@ -101,71 +99,72 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     
     let currentTotalUnread = 0;
     
-    const chatsWithUsernames: Chat[] = await Promise.all((chatsData || []).map(async (chat) => {
-      const participantUsernames = await Promise.all(
-        chat.participant_ids.map(async (pId: string) => {
-          const foundUser = allUsers.find(u => u.id === pId);
-          if (foundUser) return foundUser.username;
-          
-          const { data: userData, error: userError } = await supabase
-            .from('app_users')
-            .select('username')
-            .eq('id', pId)
-            .single();
+    const chatsWithUsernames: Chat[] = await Promise.all(
+      (chatsData || []).map(async (chat) => {
+        const participantUsernames = await Promise.all(
+          chat.participant_ids.map(async (pId: string) => {
+            const foundUser = allUsers.find(u => u.id === pId);
+            if (foundUser) return foundUser.username;
             
-          return userData?.username || 'Sconosciuto';
-        })
-      );
-      
-      // Get last_read_at for the current user from the map
-      const lastReadAt = userChatStatusMap.get(chat.id);
-      
-      let unreadCount = 0;
-      if (chat.last_message_at) {
-        if (lastReadAt) {
-          const lastMessageDate = new Date(chat.last_message_at);
-          const lastReadDate = new Date(lastReadAt);
-          
-          if (lastMessageDate > lastReadDate) {
+            const { data: userData, error: userError } = await supabase
+              .from('app_users')
+              .select('username')
+              .eq('id', pId)
+              .single();
+            
+            return userData?.username || 'Sconosciuto';
+          })
+        );
+        
+        // Get last_read_at for the current user from the map
+        const lastReadAt = userChatStatusMap.get(chat.id);
+        
+        let unreadCount = 0;
+        if (chat.last_message_at) {
+          if (lastReadAt) {
+            const lastMessageDate = new Date(chat.last_message_at);
+            const lastReadDate = new Date(lastReadAt);
+            if (lastMessageDate > lastReadDate) {
+              const { count, error: countError } = await supabase
+                .from('messages')
+                .select('id', { count: 'exact' })
+                .eq('chat_id', chat.id)
+                .gt('created_at', lastReadAt)
+                .neq('sender_id', user.id);
+              
+              if (countError) {
+                console.error('Error counting unread messages:', countError);
+              } else {
+                unreadCount = count || 0;
+              }
+            }
+          } else {
+            // If no last_read_at, all messages are unread
             const { count, error: countError } = await supabase
               .from('messages')
               .select('id', { count: 'exact' })
               .eq('chat_id', chat.id)
-              .gt('created_at', lastReadAt)
               .neq('sender_id', user.id);
-              
+            
             if (countError) {
-              console.error('Error counting unread messages:', countError);
+              console.error('Error counting unread messages (no last_read_at):', countError);
             } else {
               unreadCount = count || 0;
             }
           }
-        } else {
-          // If no last_read_at, all messages are unread
-          const { count, error: countError } = await supabase
-            .from('messages')
-            .select('id', { count: 'exact' })
-            .eq('chat_id', chat.id)
-            .neq('sender_id', user.id);
-            
-          if (countError) {
-            console.error('Error counting unread messages (no last_read_at):', countError);
-          } else {
-            unreadCount = count || 0;
-          }
         }
-      }
-      
-      if (unreadCount > 0) {
-        currentTotalUnread += unreadCount; // Correzione qui: somma il numero di messaggi non letti
-      }
-      
-      return {
-        ...chat,
-        participant_usernames: participantUsernames,
-        unread_count: unreadCount
-      };
-    }));
+        
+        if (unreadCount > 0) {
+          currentTotalUnread += unreadCount; // Correzione qui: somma il numero di messaggi non letti
+        }
+        
+        return {
+          ...chat,
+          participant_usernames: participantUsernames,
+          unread_count: unreadCount
+        };
+      })
+    );
     
     setChats(chatsWithUsernames);
     setTotalUnreadCount(currentTotalUnread);
@@ -180,7 +179,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
       .select(`*, app_users(username)`)
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
-      
+    
     if (error) {
       console.error('Error fetching messages:', error);
       toast.error('Errore nel caricamento dei messaggi.');
@@ -225,7 +224,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
         },
         { onConflict: 'user_id,chat_id' }
       );
-      
+    
     if (error) {
       console.error('Error marking chat as read:', error);
       toast.error('Errore nell\'aggiornamento dello stato di lettura.');
@@ -236,9 +235,8 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
 
   useEffect(() => {
     fetchAllUsers();
-  }, [fetchAllUsers]);
+  }, [fetchAllUsers]); // Global messages real-time channel for new messages
 
-  // Global messages real-time channel for new messages
   useEffect(() => {
     if (!user?.id) {
       console.log('[useChat useEffect] User ID is not available, skipping chat channel setup.');
@@ -246,7 +244,6 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     }
     
     console.log(`[useChat useEffect] Setting up chat channel for user: ${user.id}`);
-    
     fetchChats(); // Initial fetch
     
     const chatChannel = supabase
@@ -266,8 +263,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
           if (
             payload.eventType === 'INSERT' ||
             payload.eventType === 'DELETE' ||
-            (payload.eventType === 'UPDATE' &&
-              (payload.old as Chat).participant_ids !== (payload.new as Chat).participant_ids)
+            (payload.eventType === 'UPDATE' && (payload.old as Chat).participant_ids !== (payload.new as Chat).participant_ids)
           ) {
             fetchChats();
           } else if (payload.eventType === 'UPDATE') {
@@ -286,18 +282,17 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
               )
             );
           }
+          
           // Removed toast logic from here, globalMessageChannel handles it.
         }
       )
       .subscribe();
-      
+    
     return () => {
       // This cleanup function is now correctly outside the 'if' block
       supabase.removeChannel(chatChannel);
     };
-  }, [user?.id, fetchChats, activeChatId, allUsers, navigate]);
-
-  // Add navigate to dependencies
+  }, [user?.id, fetchChats, activeChatId, allUsers, navigate]); // Add navigate to dependencies
 
   useEffect(() => {
     if (activeChatId) {
@@ -321,7 +316,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
           }
         )
         .subscribe();
-        
+      
       return () => {
         supabase.removeChannel(messageChannel);
       };
@@ -344,7 +339,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
       .select('id, participant_ids')
       .contains('participant_ids', allParticipants)
       .limit(1);
-      
+    
     if (searchError) {
       console.error('Error searching for existing chat:', searchError);
       toast.error('Errore nella ricerca di chat esistenti.');
@@ -373,7 +368,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
       .insert({ participant_ids: allParticipants })
       .select()
       .single();
-      
+    
     if (createError) {
       console.error('Error creating new chat:', createError);
       console.error('Supabase create chat error details:', JSON.stringify(createError, null, 2));
@@ -385,6 +380,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     toast.success('Nuova chat creata!');
     markChatAsRead(newChat.id); // Mark as read immediately after creation
     fetchChats(); // Refresh chat list
+    
     return newChat.id;
   }, [user?.id, fetchChats, markChatAsRead]);
 
@@ -407,7 +403,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
         sender_id: user.id,
         content: content.trim()
       });
-      
+    
     if (insertMessageError) {
       console.error('Error sending message:', insertMessageError);
       console.error('Supabase send message error details:', JSON.stringify(insertMessageError, null, 2));
@@ -423,7 +419,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
         last_message_at: new Date().toISOString()
       })
       .eq('id', activeChatId);
-      
+    
     if (updateChatError) {
       console.error('Error updating chat last message:', updateChatError);
       toast.error('Errore nell\'aggiornamento della chat.');
@@ -445,7 +441,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
       .from('chats')
       .delete()
       .eq('id', chatId);
-      
+    
     if (error) {
       console.error('Error deleting chat:', error);
       toast.error('Errore nell\'eliminazione della chat.');
@@ -458,12 +454,11 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     
     toast.success('Chat eliminata con successo!');
     fetchChats(); // Refresh chat list
-  }, [user?.id, activeChatId, fetchChats]);
+  }, [user?.id, activeChatId, fetchChats]); // Global message channel for notifications
 
-  // Global message channel for notifications
   useEffect(() => {
     if (!user?.id) return;
-
+    
     const globalMessageChannel = supabase
       .channel('global-messages-realtime')
       .on(
@@ -486,7 +481,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
           // 2. The current user is a participant in the chat
           // 3. The chat is not the active chat (to avoid duplicate notifications)
           if (
-            newMessage.sender_id !== user.id && 
+            newMessage.sender_id !== user.id &&
             isCurrentUserParticipant &&
             newMessage.chat_id !== activeChatId
           ) {
@@ -544,7 +539,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
               });
             }
           } else if (
-            newMessage.sender_id !== user.id && 
+            newMessage.sender_id !== user.id &&
             isCurrentUserParticipant &&
             newMessage.chat_id === activeChatId
           ) {
@@ -555,7 +550,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
         }
       )
       .subscribe();
-      
+    
     return () => {
       supabase.removeChannel(globalMessageChannel);
     };
@@ -573,6 +568,7 @@ export function useChat(navigate: NavigateFunction) { // Accept navigate as a pa
     deleteChat,
     allUsers,
     fetchChats, // Expose fetchChats to allow manual refresh
-    totalUnreadCount // Esposto il conteggio totale
+    totalUnreadCount, // Esposto il conteggio totale
+    markChatAsRead // Expose markChatAsRead for external use
   };
 }
