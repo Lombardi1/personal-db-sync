@@ -354,7 +354,7 @@ export default function ChatPage() {
             currentParticipants={activeChat.participant_ids}
             currentName={activeChat.name}
             onParticipantsUpdated={handleParticipantsUpdated}
-            allUsers={allUsers} {/* NUOVO: Passa allUsers qui */}
+            allUsers={allUsers} 
           />
         )}
 
