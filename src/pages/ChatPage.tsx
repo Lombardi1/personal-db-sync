@@ -290,19 +290,6 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Mobile New Chat Button - Fixed at bottom */}
-        {isMobile && (
-          <div className="fixed bottom-20 right-4 z-50">
-            <Button
-              onClick={() => setIsNewChatModalOpen(true)}
-              size="icon"
-              className="h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-            >
-              <PlusCircle className="h-6 w-6" />
-            </Button>
-          </div>
-        )}
-
         {/* New Chat Modal */}
         <Dialog open={isNewChatModalOpen} onOpenChange={setIsNewChatModalOpen}>
           <DialogContent className="sm:max-w-[425px]">
