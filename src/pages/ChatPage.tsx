@@ -197,8 +197,8 @@ export default function ChatPage() {
                       )}
                     </div>
                     {chat.unread_count && chat.unread_count > 0 && (
-                      <span className="bg-red-500 rounded-full h-2.5 w-2.5 flex-shrink-0 ml-2">
-                        {/* No number here */}
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2 flex-shrink-0">
+                        {chat.unread_count}
                       </span>
                     )}
                     <Button variant="ghost" size="icon" onClick={(e) => {

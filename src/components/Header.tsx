@@ -26,7 +26,7 @@ export function Header({
   const { user, logout, isAmministratore } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { totalUnreadCount } = useChat(navigate); // Ottieni il conteggio dei messaggi non letti
+  const { totalUnreadCount } = useChat(); // Ottieni il conteggio dei messaggi non letti
   
   const handleLogout = () => {
     logout();
@@ -120,8 +120,8 @@ export function Header({
                   <span className="hidden sm:inline ml-1">Chat</span>
                 </Button>
                 {totalUnreadCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 rounded-full h-2.5 w-2.5 flex items-center justify-center">
-                    {/* Nessun numero qui */}
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {totalUnreadCount}
                   </span>
                 )}
               </div>

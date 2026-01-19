@@ -45,7 +45,7 @@ const requestNotificationPermission = async () => {
   }
 };
 
-// Helper function to fetch chats for a user (optimized unread count)
+// Helper function to fetch chats for a user
 const fetchUserChats = async (
   userId: string,
   allUsers: { id: string; username: string }[],
@@ -58,6 +58,7 @@ const fetchUserChats = async (
   setLoadingChats(true);
   
   try {
+    // 1. Fetch chats relevant to the current user
     const { data: chatsData, error: chatsError } = await supabase
       .from('chats')
       .select(`id, created_at, participant_ids, last_message_content, last_message_at, name`)
@@ -68,6 +69,7 @@ const fetchUserChats = async (
       throw new Error(`Error fetching chats: ${chatsError.message}`);
     }
     
+    // 2. Fetch user_chat_status for the current user for all fetched chats
     const chatIds = (chatsData || []).map(chat => chat.id);
     const { data: userChatStatusData, error: statusError } = await supabase
       .from('user_chat_status')
@@ -77,6 +79,7 @@ const fetchUserChats = async (
     
     if (statusError) {
       console.error('Error fetching user chat status:', statusError);
+      // Don't block, proceed with potentially missing status
     }
     
     const userChatStatusMap = new Map(
@@ -85,35 +88,72 @@ const fetchUserChats = async (
     
     let currentTotalUnread = 0;
     
-    const chatsWithUsernames: Chat[] = (chatsData || []).map((chat) => { // Removed async here
-      const participantUsernames = chat.participant_ids.map((pId: string) => {
-        const foundUser = allUsers.find(u => u.id === pId);
-        return foundUser?.username || 'Sconosciuto';
-      });
-      
-      const lastReadAt = userChatStatusMap.get(chat.id);
-      
-      let hasUnread = false;
-      if (chat.last_message_at) {
-        const lastMessageDate = new Date(chat.last_message_at);
-        const lastReadDate = lastReadAt ? new Date(lastReadAt) : new Date(0); // If never read, treat as very old
-        if (lastMessageDate > lastReadDate) {
-          hasUnread = true;
+    const chatsWithUsernames: Chat[] = await Promise.all(
+      (chatsData || []).map(async (chat) => {
+        const participantUsernames = await Promise.all(
+          chat.participant_ids.map(async (pId: string) => {
+            const foundUser = allUsers.find(u => u.id === pId);
+            if (foundUser) return foundUser.username;
+            
+            const { data: userData, error: userError } = await supabase
+              .from('app_users')
+              .select('username')
+              .eq('id', pId)
+              .single();
+            
+            return userData?.username || 'Sconosciuto';
+          })
+        );
+        
+        // Get last_read_at for the current user from the map
+        const lastReadAt = userChatStatusMap.get(chat.id);
+        
+        let unreadCount = 0;
+        if (chat.last_message_at) {
+          if (lastReadAt) {
+            const lastMessageDate = new Date(chat.last_message_at);
+            const lastReadDate = new Date(lastReadAt);
+            if (lastMessageDate > lastReadDate) {
+              const { count, error: countError } = await supabase
+                .from('messages')
+                .select('id', { count: 'exact' })
+                .eq('chat_id', chat.id)
+                .gt('created_at', lastReadAt)
+                .neq('sender_id', userId);
+              
+              if (countError) {
+                console.error('Error counting unread messages:', countError);
+              } else {
+                unreadCount = count || 0;
+              }
+            }
+          } else {
+            // If no last_read_at, all messages are unread
+            const { count, error: countError } = await supabase
+              .from('messages')
+              .select('id', { count: 'exact' })
+              .eq('chat_id', chat.id)
+              .neq('sender_id', userId);
+            
+            if (countError) {
+              console.error('Error counting unread messages (no last_read_at):', countError);
+            } else {
+              unreadCount = count || 0;
+            }
+          }
         }
-      } else if (!lastReadAt) { // If no messages yet, but also never read, consider it potentially unread if a message comes later
-          // This case is tricky. For now, if no last_message_at, it's not unread.
-      }
-      
-      if (hasUnread) {
-        currentTotalUnread++; // Count chats with unread messages
-      }
-      
-      return {
-        ...chat,
-        participant_usernames: participantUsernames,
-        unread_count: hasUnread ? 1 : 0 // Set to 1 if unread, 0 otherwise
-      };
-    });
+        
+        if (unreadCount > 0) {
+          currentTotalUnread += unreadCount;
+        }
+        
+        return {
+          ...chat,
+          participant_usernames: participantUsernames,
+          unread_count: unreadCount
+        };
+      })
+    );
     
     setChats(chatsWithUsernames);
     setTotalUnreadCount(currentTotalUnread);
@@ -203,6 +243,72 @@ const markChatAsRead = async (
     toast.error('Errore nell\'aggiornamento dello stato di lettura.');
     // Fallback to full fetch if optimistic update fails
     await fetchChats();
+  }
+};
+
+// Helper function to create or get a chat
+const createOrGetChat = async (
+  participantIds: string[],
+  userId: string,
+  setActiveChatId: React.Dispatch<React.SetStateAction<string | null>>,
+  markChatAsRead: (chatId: string) => Promise<void>,
+  fetchChats: () => Promise<void>,
+  navigate: NavigateFunction
+) => {
+  if (!userId) {
+    toast.error('Devi essere loggato per creare una chat.');
+    return null;
+  }
+  
+  const allParticipants = Array.from(new Set([...participantIds, userId])).sort();
+  
+  try {
+    // Check for existing chat with these participants
+    const { data: existingChats, error: searchError } = await supabase
+      .from('chats')
+      .select('id, participant_ids')
+      .contains('participant_ids', allParticipants)
+      .limit(1);
+    
+    if (searchError) {
+      throw new Error(`Error searching for existing chat: ${searchError.message}`);
+    }
+    
+    if (existingChats && existingChats.length > 0) {
+      const foundChat = existingChats.find(chat => 
+        chat.participant_ids.length === allParticipants.length && 
+        chat.participant_ids.every((id, index) => id === allParticipants[index])
+      );
+      
+      if (foundChat) {
+        setActiveChatId(foundChat.id);
+        toast.info('Chat esistente aperta.');
+        await markChatAsRead(foundChat.id);
+        return foundChat.id;
+      }
+    }
+    
+    // If no existing chat, create a new one
+    console.log('[useChat] createOrGetChat: Attempting to create chat with participants:', allParticipants, 'by user ID:', userId);
+    const { data: newChat, error: createError } = await supabase
+      .from('chats')
+      .insert({ participant_ids: allParticipants })
+      .select()
+      .single();
+    
+    if (createError) {
+      throw new Error(`Error creating new chat: ${createError.message}`);
+    }
+    
+    setActiveChatId(newChat.id);
+    toast.success('Nuova chat creata!');
+    await markChatAsRead(newChat.id);
+    await fetchChats();
+    return newChat.id;
+  } catch (error: any) {
+    console.error('Error in createOrGetChat:', error);
+    toast.error('Errore nella creazione della nuova chat.');
+    return null;
   }
 };
 
@@ -304,15 +410,9 @@ export function useChat(navigate: NavigateFunction) {
   const [allUsers, setAllUsers] = useState<{ id: string; username: string }[]>([]);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
-  const fetchAllUsersMemoized = useCallback(async () => {
-    const users = await fetchAllUsers(setAllUsers);
-    return users;
-  }, []);
-
   const fetchChats = useCallback(async () => {
-    const currentAllUsers = await fetchAllUsersMemoized(); // Ensure allUsers is fresh
-    await fetchUserChats(user?.id || '', currentAllUsers, setChats, setTotalUnreadCount, setLoadingChats);
-  }, [user?.id, fetchAllUsersMemoized]);
+    await fetchUserChats(user?.id || '', allUsers, setChats, setTotalUnreadCount, setLoadingChats);
+  }, [user?.id, allUsers]);
 
   const fetchMessages = useCallback(async (chatId: string) => {
     await fetchChatMessages(chatId, setMessages, setLoadingMessages);
@@ -322,90 +422,17 @@ export function useChat(navigate: NavigateFunction) {
     await markChatAsRead(chatId, user?.id || '', setChats, setTotalUnreadCount, fetchChats);
   }, [user?.id, fetchChats]);
 
-  // Moved createOrGetChat logic inside the hook as handleCreateOrGetChat
-  const handleCreateOrGetChat = useCallback(async (participantIds: string[]) => {
-    if (!user?.id) {
-      toast.error('Devi essere loggato per creare una chat.');
-      return null;
-    }
-    
-    const allParticipants = Array.from(new Set([...participantIds, user.id])).sort();
-    
-    try {
-      // Check for existing chat with these participants
-      const { data: existingChats, error: searchError } = await supabase
-        .from('chats')
-        .select('id, participant_ids')
-        .contains('participant_ids', allParticipants)
-        .limit(1);
-      
-      if (searchError) {
-        throw new Error(`Error searching for existing chat: ${searchError.message}`);
-      }
-      
-      if (existingChats && existingChats.length > 0) {
-        const foundChat = existingChats.find(chat => 
-          chat.participant_ids.length === allParticipants.length && 
-          chat.participant_ids.every((id, index) => id === allParticipants[index])
-        );
-        
-        if (foundChat) {
-          setActiveChatId(foundChat.id);
-          toast.info('Chat esistente aperta.');
-          await handleMarkChatAsRead(foundChat.id);
-          return foundChat.id;
-        }
-      }
-      
-      // If no existing chat, create a new one
-      console.log('[useChat] handleCreateOrGetChat: Attempting to create chat with participants:', allParticipants, 'by user ID:', user.id);
-      const { data: newChat, error: createError } = await supabase
-        .from('chats')
-        .insert({ participant_ids: allParticipants })
-        .select()
-        .single();
-      
-      if (createError) {
-        throw new Error(`Error creating new chat: ${createError.message}`);
-      }
-      
-      setActiveChatId(newChat.id);
-      toast.success('Nuova chat creata!');
-      await handleMarkChatAsRead(newChat.id);
-      await fetchChats();
-      return newChat.id;
-    } catch (error: any) {
-      console.error('Error in handleCreateOrGetChat:', error);
-      toast.error('Errore nella creazione della nuova chat.');
-      return null;
-    }
-  }, [user?.id, setActiveChatId, handleMarkChatAsRead, fetchChats]);
-
-  const handleSendMessage = useCallback(async (content: string) => {
-    await sendMessage(content, activeChatId, user?.id || '', handleMarkChatAsRead);
-  }, [activeChatId, user?.id, handleMarkChatAsRead]);
-
-  const handleDeleteChat = useCallback(async (chatId: string) => {
-    await deleteChat(chatId, user?.id || '', activeChatId, setActiveChatId, fetchChats);
-  }, [user?.id, activeChatId, setActiveChatId, fetchChats]);
-
-
   useEffect(() => {
     if (user?.id) {
       requestNotificationPermission();
     }
   }, [user?.id]);
 
-  // Initial fetch of all users and chats
   useEffect(() => {
-    if (user?.id) {
-      fetchAllUsersMemoized(); // Fetch all users once on mount
-      fetchChats(); // Initial fetch of chats
-    }
-  }, [user?.id, fetchAllUsersMemoized, fetchChats]);
+    fetchAllUsers(setAllUsers);
+  }, []);
 
-
-  // Global chats real-time channel for new chats or participant changes
+  // Global messages real-time channel for new messages
   useEffect(() => {
     if (!user?.id) {
       console.log('[useChat useEffect] User ID is not available, skipping chat channel setup.');
@@ -413,6 +440,7 @@ export function useChat(navigate: NavigateFunction) {
     }
     
     console.log(`[useChat useEffect] Setting up chat channel for user: ${user.id}`);
+    fetchChats(); // Initial fetch
     
     const chatChannel = supabase
       .channel('chats-realtime')
@@ -454,9 +482,9 @@ export function useChat(navigate: NavigateFunction) {
     return () => {
       supabase.removeChannel(chatChannel);
     };
-  }, [user?.id, fetchChats, activeChatId]); // Removed allUsers from dependencies as it's now handled by fetchChats
+  }, [user?.id, fetchChats, activeChatId, allUsers, navigate]);
 
-  // Active chat messages real-time channel
+  // Add navigate to dependencies
   useEffect(() => {
     if (activeChatId) {
       fetchMessages(activeChatId);
@@ -487,6 +515,25 @@ export function useChat(navigate: NavigateFunction) {
       setMessages([]); // Clear messages if no active chat
     }
   }, [activeChatId, fetchMessages, handleMarkChatAsRead]);
+
+  const handleCreateOrGetChat = useCallback(async (participantIds: string[]) => {
+    return await createOrGetChat(
+      participantIds,
+      user?.id || '',
+      setActiveChatId,
+      handleMarkChatAsRead,
+      fetchChats,
+      navigate
+    );
+  }, [user?.id, handleMarkChatAsRead, fetchChats, navigate]);
+
+  const handleSendMessage = useCallback(async (content: string) => {
+    await sendMessage(content, activeChatId, user?.id || '', handleMarkChatAsRead);
+  }, [activeChatId, user?.id, handleMarkChatAsRead]);
+
+  const handleDeleteChat = useCallback(async (chatId: string) => {
+    await deleteChat(chatId, user?.id || '', activeChatId, setActiveChatId, fetchChats);
+  }, [user?.id, activeChatId, fetchChats]);
 
   // Global message channel for notifications
   useEffect(() => {
@@ -522,8 +569,8 @@ export function useChat(navigate: NavigateFunction) {
             setChats(prevChats => {
               const updatedChats = prevChats.map(chat => {
                 if (chat.id === newMessage.chat_id) {
-                  const newUnreadCount = 1; // Just mark as 1 (unread)
-                  setTotalUnreadCount(prevTotal => prevTotal + 1); // Increment total unread chats
+                  const newUnreadCount = (chat.unread_count || 0) + 1;
+                  setTotalUnreadCount(prevTotal => prevTotal + 1);
                   return {
                     ...chat,
                     last_message_content: newMessage.content,
@@ -596,7 +643,7 @@ export function useChat(navigate: NavigateFunction) {
     loadingMessages,
     activeChatId,
     setActiveChatId,
-    createOrGetChat: handleCreateOrGetChat, // Correctly reference the useCallback function
+    createOrGetChat: handleCreateOrGetChat,
     sendMessage: handleSendMessage,
     deleteChat: handleDeleteChat,
     allUsers,
