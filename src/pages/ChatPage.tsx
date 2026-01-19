@@ -168,21 +168,23 @@ export default function ChatPage() {
                     )}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {chat.name && (
-                          <span className="font-semibold text-sm truncate">
-                            {chat.name}
-                          </span>
-                        )}
-                        {!chat.name && (
-                          <span className="font-semibold text-sm truncate">
-                            {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
-                          </span>
-                        )}
-                        {chat.name && (
-                          <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        )}
-                      </div>
+                      {chat.name ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm truncate">
+                              {chat.name}
+                            </span>
+                            <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Nessun partecipante'}
+                          </p>
+                        </>
+                      ) : (
+                        <span className="font-semibold text-sm truncate">
+                          {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
+                        </span>
+                      )}
                       {chat.last_message_content && (
                         <p className="text-xs text-muted-foreground truncate max-w-[180px]">
                           {chat.last_message_content}
@@ -191,11 +193,6 @@ export default function ChatPage() {
                       {chat.last_message_at && (
                         <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(chat.last_message_at), 'dd MMM HH:mm', { locale: it })}
-                        </p>
-                      )}
-                      {chat.name && (
-                        <p className="text-xs text-muted-foreground truncate mt-1">
-                          {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Nessun partecipante'}
                         </p>
                       )}
                     </div>
@@ -374,7 +371,7 @@ export default function ChatPage() {
               <AlertDialogAction onClick={handleConfirmDeleteChat} className="bg-destructive hover:bg-destructive/90">
                 Elimina
               </AlertDialogAction>
-            </AlertDialogFooter>
+            </DialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </div>
