@@ -186,7 +186,7 @@ export default function ChatPage() {
                         </span>
                       )}
                       {chat.last_message_content && (
-                        <p className="text-xs text-muted-foreground truncate"> {/* Removed max-w-[180px] */}
+                        <p className="text-xs text-muted-foreground truncate">
                           {chat.last_message_content}
                         </p>
                       )}
@@ -272,7 +272,7 @@ export default function ChatPage() {
                         )}
                       >
                         <div className={cn(
-                          "max-w-[80%] p-3 rounded-lg", /* Changed from 70% to 80% */
+                          "max-w-[80%] p-3 rounded-lg",
                           msg.sender_id === user.id 
                             ? "bg-blue-600 text-white rounded-br-none" 
                             : "bg-gray-200 text-gray-800 rounded-bl-none"
@@ -280,7 +280,7 @@ export default function ChatPage() {
                           <p className="font-semibold text-xs mb-1">
                             {msg.sender_username || 'Sconosciuto'}
                           </p>
-                          <p className="text-sm break-words">{msg.content}</p> {/* Added break-words */}
+                          <p className="text-sm break-words">{msg.content}</p>
                           <p className="text-xs mt-1 opacity-75">
                             {format(new Date(msg.created_at), 'HH:mm', { locale: it })}
                           </p>
@@ -354,6 +354,7 @@ export default function ChatPage() {
             currentParticipants={activeChat.participant_ids}
             currentName={activeChat.name}
             onParticipantsUpdated={handleParticipantsUpdated}
+            allUsers={allUsers} {/* NUOVO: Passa allUsers qui */}
           />
         )}
 

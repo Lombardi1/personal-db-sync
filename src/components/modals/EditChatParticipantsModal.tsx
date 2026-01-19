@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MultiSelectUsers } from '@/components/MultiSelectUsers';
-import { useChat } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -16,6 +15,7 @@ interface EditChatParticipantsModalProps {
   currentParticipants: string[];
   currentName?: string;
   onParticipantsUpdated: () => void;
+  allUsers: { id: string; username: string }[]; // NUOVO: allUsers passato come prop
 }
 
 export function EditChatParticipantsModal({ 
@@ -24,9 +24,10 @@ export function EditChatParticipantsModal({
   chatId, 
   currentParticipants,
   currentName,
-  onParticipantsUpdated
+  onParticipantsUpdated,
+  allUsers // NUOVO: Ricevuto come prop
 }: EditChatParticipantsModalProps) {
-  const { allUsers } = useChat(() => {}); // Pass empty function since we don't use navigate here
+  // Rimosso: const { allUsers } = useChat(() => {}); // Questa chiamata è stata rimossa
   const { user } = useAuth();
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(currentParticipants);
   const [chatName, setChatName] = useState<string>(currentName || '');
