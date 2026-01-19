@@ -11,7 +11,6 @@ export function useCartoni() {
   const [esauriti, setEsauriti] = useState<Cartone[]>([]);
   const [storico, setStorico] = useState<StoricoMovimento[]>([]);
   const [loading, setLoading] = useState(true);
-
   const { updateArticleStatusInOrder } = useOrdiniAcquisto();
   const { user } = useAuth();
 
@@ -26,8 +25,10 @@ export function useCartoni() {
         // AGGIUNTO: ddt e data_arrivo
         supabase.from('ordini').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_consegna, data_arrivo, confermato, note, fsc, alimentare, rif_commessa_fsc'),
         // Seleziona esplicitamente le colonne per la tabella 'esauriti'
-        supabase.from('esauriti').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc, data_esaurimento'), // ADDED data_esaurimento
-        supabase.from('storico').select(`*, app_users(username), cliente, lavoro`).order('data', { ascending: false }) // AGGIUNTO: cliente, lavoro
+        supabase.from('esauriti').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc, data_esaurimento'),
+        // ADDED data_esaurimento
+        supabase.from('storico').select(`*, app_users(username), cliente, lavoro`).order('data', { ascending: false })
+        // AGGIUNTO: cliente, lavoro
       ]);
 
       if (giacenzaRes.data) {
@@ -46,13 +47,15 @@ export function useCartoni() {
         } else {
           console.log('[useCartoni - loadData] CTN-132 NOT found in ordiniRes.data.');
         }
+
         ordiniRes.data.forEach(item => {
-          console.log(`  - Ordine ${item.codice}: DDT='${item.ddt}', DataArrivo='${item.data_arrivo}', Magazzino='${item.magazzino}', Fogli=${item.fogli}`); // Keep this for general check
+          console.log(` - Ordine ${item.codice}: DDT='${item.ddt}', DataArrivo='${item.data_arrivo}', Magazzino='${item.magazzino}', Fogli=${item.fogli}`);
+          // Keep this for general check
         });
       } else if (ordiniRes.error) {
         console.error('[useCartoni - loadData] Error loading ordini:', ordiniRes.error);
       }
-      
+
       if (esauritiRes.data) {
         setEsauriti(esauritiRes.data);
         console.log('[useCartoni - loadData] Esauriti data loaded:', esauritiRes.data.length, 'items. Sample:', esauritiRes.data.slice(0, 2));
@@ -84,7 +87,11 @@ export function useCartoni() {
 
     const giacenzaChannel = supabase
       .channel('giacenza-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'giacenza' }, () => {
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'giacenza'
+      }, () => {
         console.log('[useCartoni - Realtime] Change detected in giacenza. Reloading data...');
         loadData();
       })
@@ -92,7 +99,11 @@ export function useCartoni() {
 
     const ordiniChannel = supabase
       .channel('ordini-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini' }, () => {
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'ordini'
+      }, () => {
         console.log('[useCartoni - Realtime] Change detected in ordini. Reloading data...');
         loadData();
       })
@@ -100,7 +111,11 @@ export function useCartoni() {
 
     const esauritiChannel = supabase
       .channel('esauriti-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'esauriti' }, () => {
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'esauriti'
+      }, () => {
         console.log('[useCartoni - Realtime] Change detected in esauriti. Reloading data...');
         loadData();
       })
@@ -108,7 +123,11 @@ export function useCartoni() {
 
     const storicoChannel = supabase
       .channel('storico-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'storico' }, () => {
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'storico'
+      }, () => {
         console.log('[useCartoni - Realtime] Change detected in storico. Reloading data...');
         loadData();
       })
@@ -124,7 +143,8 @@ export function useCartoni() {
   }, []);
 
   const aggiungiOrdine = async (cartone: Cartone) => {
-    const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo' | 'data_esaurimento'> = { // Aggiunto data_esaurimento
+    const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo' | 'data_esaurimento'> = {
+      // Aggiunto data_esaurimento
       codice: cartone.codice,
       fornitore: cartone.fornitore,
       ordine: cartone.ordine,
@@ -143,9 +163,11 @@ export function useCartoni() {
       alimentare: cartone.alimentare,
       rif_commessa_fsc: cartone.rif_commessa_fsc || null,
     };
+
     console.log('[useCartoni - aggiungiOrdine] Inserting into ordini:', JSON.stringify(cartoneForOrdini, null, 2));
 
     const { error } = await supabase.from('ordini').insert([cartoneForOrdini]);
+
     if (!error) {
       const movimento: StoricoMovimento = {
         codice: cartone.codice,
@@ -155,14 +177,17 @@ export function useCartoni() {
         note: `Nuovo ordine in arrivo registrato`,
         user_id: user?.id,
         numero_ordine_acquisto: cartone.ordine,
-        cliente: cartone.cliente, // NUOVO
-        lavoro: cartone.lavoro, // NUOVO
+        cliente: cartone.cliente,
+        // NUOVO
+        lavoro: cartone.lavoro,
+        // NUOVO
       };
       await supabase.from('storico').insert([movimento]);
       // Rimosso: await loadData();
     } else {
       console.error('[useCartoni - aggiungiOrdine] Error inserting into ordini:', error);
     }
+
     return { error };
   };
 
@@ -176,14 +201,15 @@ export function useCartoni() {
       notifications.showError('Ordine non trovato');
       return { error: new Error('Ordine non trovato') };
     }
+
     console.log(`[useCartoni - spostaInGiacenza] Ordine trovato (originale da 'ordini'):`, JSON.stringify(ordine, null, 2));
     console.log(`[useCartoni - spostaInGiacenza] Stato attuale dell'array 'ordini' prima della cancellazione:`, JSON.stringify(ordini.map(o => o.codice), null, 2));
 
-
     const fogliFinali = fogliEffettivi;
-    const magazzinoFinale = magazzino; 
-    
-    const cartoneGiacenza: Omit<Cartone, 'confermato' | 'data_consegna' | 'data_esaurimento'> = { // Aggiunto data_esaurimento
+    const magazzinoFinale = magazzino;
+
+    const cartoneGiacenza: Omit<Cartone, 'confermato' | 'data_consegna' | 'data_esaurimento'> = {
+      // Aggiunto data_esaurimento
       codice: ordine.codice,
       fornitore: ordine.fornitore,
       ordine: ordine.ordine,
@@ -202,25 +228,27 @@ export function useCartoni() {
       data_arrivo: dataArrivo,
       magazzino: magazzinoFinale,
     };
-    
-    console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
 
+    console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di eliminare da 'ordini' il codice: ${codice}`);
+
     const { error: deleteError, count: deletedCount } = await supabase.from('ordini').delete().eq('codice', codice);
     if (deleteError) {
       console.error(`[useCartoni - spostaInGiacenza] Errore eliminazione ordine da 'ordini':`, deleteError);
       notifications.showError(`Errore eliminazione ordine: ${deleteError.message}`);
       return { error: deleteError };
     }
-    console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}. Righe eliminate: ${deletedCount}`);
 
+    console.log(`[useCartoni - spostaInGiacenza] Eliminazione da 'ordini' riuscita per codice: ${codice}. Righe eliminate: ${deletedCount}`);
     console.log(`[useCartoni - spostaInGiacenza] Tentativo di inserire in 'giacenza' il cartone:`, JSON.stringify(cartoneGiacenza, null, 2));
+
     const { error: insertError } = await supabase.from('giacenza').insert([cartoneGiacenza]);
     if (insertError) {
       console.error(`[useCartoni - spostaInGiacenza] Errore inserimento in 'giacenza':`, insertError);
       notifications.showError(`Errore inserimento in giacenza: ${insertError.message}`);
       return { error: insertError };
     }
+
     console.log(`[useCartoni - spostaInGiacenza] Inserimento in 'giacenza' riuscito per codice: ${codice}`);
 
     const movimento: StoricoMovimento = {
@@ -228,16 +256,17 @@ export function useCartoni() {
       tipo: 'carico',
       quantita: fogliFinali,
       data: new Date().toISOString(),
-      note: `${fogliEffettivi !== undefined && fogliEffettivi !== ordine.fogli 
-        ? `Caricato da ordine ${ordine.ordine} - Ordinati: ${ordine.fogli}, Arrivati: ${fogliEffettivi}`
-        : `Caricato da ordine ${ordine.ordine}`
-      }`,
+      note: `${fogliEffettivi !== undefined && fogliEffettivi !== ordine.fogli ? `Caricato da ordine ${ordine.ordine} - Ordinati: ${ordine.fogli}, Arrivati: ${fogliEffettivi}` : `Caricato da ordine ${ordine.ordine}`}`,
       user_id: user?.id,
       numero_ordine_acquisto: ordine.ordine,
-      cliente: ordine.cliente, // NUOVO
-      lavoro: ordine.lavoro, // NUOVO
+      cliente: ordine.cliente,
+      // NUOVO
+      lavoro: ordine.lavoro,
+      // NUOVO
     };
+
     console.log(`[useCartoni - spostaInGiacenza] Registrando movimento storico. User ID:`, user?.id, "Movimento:", movimento);
+
     const { error: storicoError } = await supabase.from('storico').insert([movimento]);
     if (storicoError) {
       console.error(`[useCartoni - spostaInGiacenza] Errore inserimento in 'storico':`, storicoError);
@@ -246,9 +275,9 @@ export function useCartoni() {
       console.log(`[useCartoni - spostaInGiacenza] Registrazione storico riuscita per codice: ${codice}`);
     }
 
-    if (ordine.ordine && codice) { 
+    if (ordine.ordine && codice) {
       console.log(`[useCartoni - spostaInGiacenza] Tentativo di aggiornare lo stato dell'articolo nell'OA: '${ordine.ordine}', Articolo: '${codice}', Nuovo stato: 'ricevuto'`);
-      const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordine.ordine, codice, 'ricevuto'); 
+      const { success: updateSuccess, error: updateArticleError } = await updateArticleStatusInOrder(ordine.ordine, codice, 'ricevuto');
       if (updateArticleError) {
         console.error(`[useCartoni - spostaInGiacenza] Errore durante l'aggiornamento dello stato dell'articolo nell'OA:`, updateArticleError);
         notifications.showError(`Errore durante l'aggiornamento dello stato dell'articolo nell'ordine d'acquisto: ${updateArticleError.message}. Il cartone è stato comunque spostato in magazzino.`);
@@ -282,9 +311,12 @@ export function useCartoni() {
       note,
       user_id: user?.id,
       numero_ordine_acquisto: cartone.ordine,
-      cliente: cartone.cliente, // NUOVO
-      lavoro: cartone.lavoro, // NUOVO
+      cliente: cartone.cliente,
+      // NUOVO
+      lavoro: cartone.lavoro,
+      // NUOVO
     };
+
     const { error: storicoError } = await supabase.from('storico').insert([movimento]);
     if (storicoError) {
       console.error('Errore inserimento storico:', storicoError);
@@ -305,7 +337,8 @@ export function useCartoni() {
         tipologia: cartone.tipologia,
         formato: cartone.formato,
         grammatura: cartone.grammatura,
-        fogli: 0, // Fogli a 0 quando esaurito
+        fogli: 0,
+        // Fogli a 0 quando esaurito
         cliente: cartone.cliente,
         lavoro: cartone.lavoro,
         magazzino: cartone.magazzino,
@@ -316,9 +349,12 @@ export function useCartoni() {
         rif_commessa_fsc: cartone.rif_commessa_fsc || null,
         ddt: cartone.ddt,
         data_arrivo: cartone.data_arrivo,
-        data_esaurimento: new Date().toISOString(), // Set data_esaurimento here
+        data_esaurimento: new Date().toISOString(),
+        // Set data_esaurimento here
       };
+
       console.log('[useCartoni - scaricoFogli] Inserting into esauriti:', JSON.stringify(cartoneEsaurito, null, 2));
+
       const { error: insertEsauritiError } = await supabase.from('esauriti').insert([cartoneEsaurito]);
       if (insertEsauritiError) {
         notifications.showError(`Errore inserimento in esauriti: ${insertEsauritiError.message}`);
@@ -355,15 +391,19 @@ export function useCartoni() {
       fogli: cartoneEsaurito.fogli > 0 ? cartoneEsaurito.fogli : 1,
       cliente: cartoneEsaurito.cliente,
       lavoro: cartoneEsaurito.lavoro,
-      magazzino: cartoneEsaurito.magazzino, // Mantenuto il magazzino esistente
+      magazzino: cartoneEsaurito.magazzino,
+      // Mantenuto il magazzino esistente
       prezzo: cartoneEsaurito.prezzo,
       note: cartoneEsaurito.note,
-      ddt: null, // DDT è null quando riportato da esauriti
-      data_arrivo: new Date().toISOString().split('T')[0], // Data di arrivo odierna
+      ddt: null,
+      // DDT è null quando riportato da esauriti
+      data_arrivo: new Date().toISOString().split('T')[0],
+      // Data di arrivo odierna
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
     };
+
     console.log('[useCartoni - riportaInGiacenza] Inserting into giacenza:', JSON.stringify(cartonePerGiacenza, null, 2));
 
     try {
@@ -387,9 +427,12 @@ export function useCartoni() {
         note: `Riportato in giacenza da esauriti`,
         user_id: user?.id,
         numero_ordine_acquisto: cartoneEsaurito.ordine,
-        cliente: cartoneEsaurito.cliente, // NUOVO
-        lavoro: cartoneEsaurito.lavoro, // NUOVO
+        cliente: cartoneEsaurito.cliente,
+        // NUOVO
+        lavoro: cartoneEsaurito.lavoro,
+        // NUOVO
       };
+
       const { error: storicoError } = await supabase.from('storico').insert([movimento]);
       if (storicoError) {
         notifications.showError(`Errore registrazione storico: ${storicoError.message}`);
@@ -424,18 +467,21 @@ export function useCartoni() {
       notifications.showError('Cartone non trovato');
       return { error: new Error('Cartone non trovato') };
     }
+
     console.log(`[useCartoni - riportaInOrdini] Cartone trovato in giacenza per codice ${codice}:`, JSON.stringify(cartone, null, 2));
     console.log(`[useCartoni - riportaInOrdini] Valori da giacenza: DDT='${cartone.ddt}', DataArrivo='${cartone.data_arrivo}', Magazzino='${cartone.magazzino}', Fogli=${cartone.fogli}`);
 
-
-    const ordinePerOrdini: Cartone = {
+    // Create an object for insertion into 'ordini'
+    // The 'ordini' table does not have 'data_esaurimento'
+    const ordinePerOrdini: Omit<Cartone, 'data_esaurimento'> = {
       codice: cartone.codice,
       fornitore: cartone.fornitore,
       ordine: cartone.ordine,
       tipologia: cartone.tipologia,
       formato: cartone.formato,
       grammatura: cartone.grammatura,
-      fogli: cartone.fogli, // Questo è il valore aggiornato dei fogli dalla giacenza
+      fogli: cartone.fogli,
+      // Questo è il valore aggiornato dei fogli dalla giacenza
       cliente: cartone.cliente,
       lavoro: cartone.lavoro,
       prezzo: cartone.prezzo,
@@ -443,14 +489,18 @@ export function useCartoni() {
       fsc: cartone.fsc,
       alimentare: cartone.alimentare,
       rif_commessa_fsc: cartone.rif_commessa_fsc || null,
-      data_consegna: cartone.data_consegna || new Date().toISOString().split('T')[0], // Usa data_consegna esistente o odierna
-      confermato: true, // Imposta a true quando riportato in ordini
-      ddt: cartone.ddt,
+      data_consegna: cartone.data_consegna || new Date().toISOString().split('T')[0],
+      // Usa data_consegna esistente o odierna
+      confermato: true,
+      // Imposta a true quando riportato in ordini ddt: cartone.ddt,
       data_arrivo: cartone.data_arrivo,
       magazzino: cartone.magazzino,
-      data_esaurimento: null, // Clear data_esaurimento when moving out of esauriti
+      data_esaurimento: null,
+      // Clear data_esaurimento when moving out of esauriti
     };
-    console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini (PRIMA DELL\'INSERT):', JSON.stringify(ordinePerOrdini, null, 2)); // LOG DI DEBUG
+
+    console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini (PRIMA DELL\'INSERT):', JSON.stringify(ordinePerOrdini, null, 2));
+    // LOG DI DEBUG
 
     console.log(`[useCartoni - riportaInOrdini] Tentativo di eliminare da 'ordini' eventuali record precedenti per codice: ${codice}`);
     const { error: deleteExistingError, count: deletedExistingCount } = await supabase.from('ordini').delete().eq('codice', codice);
@@ -459,18 +509,19 @@ export function useCartoni() {
       notifications.showError(`Errore durante la pulizia dei record precedenti in ordini: ${deleteExistingError.message}`);
       return { error: deleteExistingError };
     }
+
     console.log(`[useCartoni - riportaInOrdini] Eliminati ${deletedExistingCount} record esistenti da 'ordini' per codice: ${codice}`);
 
-
     await supabase.from('giacenza').delete().eq('codice', codice);
+
     const { error: insertError, data: insertedData } = await supabase.from('ordini').insert([ordinePerOrdini]).select();
     if (insertError) {
       console.error('[useCartoni - riportaInOrdini] Errore inserimento in ordini:', insertError);
       notifications.showError(`Errore inserimento in ordini: ${insertError.message}`);
       return { error: insertError };
     }
-    console.log('[useCartoni - riportaInOrdini] Inserimento in ordini riuscito. Dati inseriti:', JSON.stringify(insertedData, null, 2));
 
+    console.log('[useCartoni - riportaInOrdini] Inserimento in ordini riuscito. Dati inseriti:', JSON.stringify(insertedData, null, 2));
 
     const movimento: StoricoMovimento = {
       codice,
@@ -480,9 +531,12 @@ export function useCartoni() {
       note: `Riportato in ordini in arrivo da giacenza`,
       user_id: user?.id,
       numero_ordine_acquisto: ordinePerOrdini.ordine,
-      cliente: ordinePerOrdini.cliente, // NUOVO
-      lavoro: ordinePerOrdini.lavoro, // NUOVO
+      cliente: ordinePerOrdini.cliente,
+      // NUOVO
+      lavoro: ordinePerOrdini.lavoro,
+      // NUOVO
     };
+
     const { error: storicoError } = await supabase.from('storico').insert([movimento]);
     if (storicoError) {
       notifications.showError(`Errore registrazione storico: ${storicoError.message}`);
@@ -508,6 +562,7 @@ export function useCartoni() {
 
   const confermaOrdine = async (codice: string, confermato: boolean) => {
     console.log(`[useCartoni - confermaOrdine] Inizio per codice: ${codice}, confermato: ${confermato}`);
+
     const ordineInArrivo = ordini.find(o => o.codice === codice);
     if (!ordineInArrivo) {
       notifications.showError('Ordine in arrivo non trovato.');
@@ -521,11 +576,11 @@ export function useCartoni() {
       console.error(`[useCartoni - confermaOrdine] Errore aggiornamento 'confermato' in tabella 'ordini':`, updateOrdiniError);
       return { error: updateOrdiniError };
     }
+
     console.log(`[useCartoni - confermaOrdine] Campo 'confermato' aggiornato in tabella 'ordini' per codice ${codice} a ${confermato}.`);
 
     if (ordineInArrivo.ordine && codice) {
       let newArticleStatus: ArticoloOrdineAcquisto['stato'];
-
       if (confermato) {
         newArticleStatus = 'confermato';
         console.log(`[useCartoni - confermaOrdine] Impostato newArticleStatus a 'confermato' per articolo ${codice}.`);
@@ -542,19 +597,20 @@ export function useCartoni() {
         } else {
           const articles = purchaseOrder.articoli as ArticoloOrdineAcquisto[];
           const currentArticleInOA = articles.find(art => art.codice_ctn === codice);
-          
+
           if (currentArticleInOA && currentArticleInOA.stato === 'confermato') {
             if (purchaseOrder.stato === 'inviato') {
-                newArticleStatus = 'inviato';
+              newArticleStatus = 'inviato';
             } else if (purchaseOrder.stato === 'in_attesa') {
-                newArticleStatus = 'in_attesa';
+              newArticleStatus = 'in_attesa';
             } else {
-                newArticleStatus = 'inviato';
+              newArticleStatus = 'inviato';
             }
           } else {
             newArticleStatus = currentArticleInOA?.stato || 'in_attesa';
           }
         }
+
         console.log(`[useCartoni - confermaOrdine] Impostato newArticleStatus a '${newArticleStatus}' per articolo ${codice} (unconfirm).`);
       }
 
@@ -570,11 +626,13 @@ export function useCartoni() {
       note: `Ordine in arrivo ${confermato ? 'confermato' : 'non confermato'}`,
       user_id: user?.id,
       numero_ordine_acquisto: ordineInArrivo.ordine,
-      cliente: ordineInArrivo.cliente, // NUOVO
-      lavoro: ordineInArrivo.lavoro, // NUOVO
+      cliente: ordineInArrivo.cliente,
+      // NUOVO
+      lavoro: ordineInArrivo.lavoro,
+      // NUOVO
     };
-    await supabase.from('storico').insert([movimento]);
 
+    await supabase.from('storico').insert([movimento]);
     // Rimosso: await loadData();
     console.log(`[useCartoni - confermaOrdine] Operazione completata per codice: ${codice}.`);
     return { error: null };
@@ -586,6 +644,7 @@ export function useCartoni() {
       if (ordineInArrivo.ordine && codice) {
         await updateArticleStatusInOrder(ordineInArrivo.ordine, codice, 'annullato');
       }
+
       const movimento: StoricoMovimento = {
         codice: codice,
         tipo: 'scarico',
@@ -594,9 +653,12 @@ export function useCartoni() {
         note: `Ordine in arrivo eliminato`,
         user_id: user?.id,
         numero_ordine_acquisto: ordineInArrivo.ordine,
-        cliente: ordineInArrivo.cliente, // NUOVO
-        lavoro: ordineInArrivo.lavoro, // NUOVO
+        cliente: ordineInArrivo.cliente,
+        // NUOVO
+        lavoro: ordineInArrivo.lavoro,
+        // NUOVO
       };
+
       await supabase.from('storico').insert([movimento]);
     }
 
@@ -621,7 +683,8 @@ export function useCartoni() {
       fogli: dati.fogli,
       cliente: dati.cliente,
       lavoro: dati.lavoro,
-      magazzino: dati.magazzino, // Mantiene il magazzino originale
+      magazzino: dati.magazzino,
+      // Mantiene il magazzino originale
       prezzo: dati.prezzo,
       data_consegna: dati.data_consegna,
       confermato: dati.confermato,
@@ -629,10 +692,14 @@ export function useCartoni() {
       fsc: dati.fsc,
       alimentare: dati.alimentare,
       rif_commessa_fsc: dati.rif_commessa_fsc,
-      ddt: dati.ddt, // Mantiene il DDT originale
-      data_arrivo: dati.data_arrivo, // Mantiene la data_arrivo originale
-      data_esaurimento: dati.data_esaurimento, // Mantiene la data_esaurimento originale
+      ddt: dati.ddt,
+      // Mantiene il DDT originale
+      data_arrivo: dati.data_arrivo,
+      // Mantiene la data_arrivo originale
+      data_esaurimento: dati.data_esaurimento,
+      // Mantiene la data_esaurimento originale
     };
+
     console.log('[useCartoni - modificaOrdine] Updating ordini with:', JSON.stringify(datiPerAggiornamento, null, 2));
 
     const { error } = await supabase.from('ordini').update(datiPerAggiornamento).eq('codice', codice);
@@ -645,9 +712,12 @@ export function useCartoni() {
         note: `Modifica dettagli ordine in arrivo`,
         user_id: user?.id,
         numero_ordine_acquisto: ordineInArrivo.ordine,
-        cliente: dati.cliente, // NUOVO
-        lavoro: dati.lavoro, // NUOVO
+        cliente: dati.cliente,
+        // NUOVO
+        lavoro: dati.lavoro,
+        // NUOVO
       };
+
       await supabase.from('storico').insert([movimento]);
       // Rimosso: await loadData();
     } else {
