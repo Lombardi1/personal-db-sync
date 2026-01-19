@@ -160,9 +160,16 @@ export default function ChatPage() {
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" /> Le mie Chat
               </h2>
-              <Button size="sm" onClick={() => setIsNewChatModalOpen(true)} className="gap-1">
-                <PlusCircle className="h-4 w-4" /> Nuova
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => setIsNewChatModalOpen(true)} className="gap-1">
+                  <PlusCircle className="h-4 w-4" /> Nuova
+                </Button>
+                {isMobile && !activeChatId && (
+                  <Button onClick={handleGoToDashboard} variant="outline" size="sm" className="gap-1">
+                    <Home className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
             <ScrollArea className="flex-1">
               {chats.length === 0 ? (
