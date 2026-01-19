@@ -69,15 +69,14 @@ export default function ChatPage() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (urlChatId && urlChatId !== activeChatId) {
+    // Se c'è un chatId nell'URL, impostalo come chat attiva
+    if (urlChatId) {
       setActiveChatId(urlChatId);
-    } else if (!urlChatId && activeChatId) {
-      navigate(`/chat/${activeChatId}`, { replace: true });
-    } else if (!urlChatId && chats.length > 0 && !activeChatId) {
-      setActiveChatId(chats[0].id);
-      navigate(`/chat/${chats[0].id}`, { replace: true });
+    } else {
+      // Se non c'è un chatId nell'URL, significa che vogliamo vedere l'elenco delle chat
+      setActiveChatId(null);
     }
-  }, [urlChatId, activeChatId, setActiveChatId, chats, navigate]);
+  }, [urlChatId, setActiveChatId]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -215,7 +214,10 @@ export default function ChatPage() {
               <h2 className="text-lg font-bold">{chatTitle}</h2>
               <div className="flex items-center gap-2">
                 {isMobile && activeChatId && (
-                  <Button onClick={() => navigate('/chat')} variant="outline" size="sm" className="text-sm">
+                  <Button onClick={() => {
+                    setActiveChatId(null); // Clear the active chat
+                    navigate('/chat'); // Go to the base chat URL
+                  }} variant="outline" size="sm" className="text-sm">
                     <ArrowLeft className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
                     Indietro
                   </Button>
