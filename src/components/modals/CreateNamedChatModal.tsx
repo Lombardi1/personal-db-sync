@@ -23,8 +23,11 @@ export function CreateNamedChatModal({
 }: CreateNamedChatModalProps) {
   const { user } = useAuth();
   const [chatName, setChatName] = useState('');
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]); // This array already excludes the current user
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Determine if it's a group chat (more than one other participant selected)
+  const isGroupChat = selectedParticipants.length > 1;
 
   const handleCreateChat = async () => {
     if (!user?.id) {
@@ -32,13 +35,13 @@ export function CreateNamedChatModal({
       return;
     }
     
-    if (!chatName.trim()) {
-      toast.error('Inserisci un nome per la chat.');
-      return;
-    }
-    
     if (selectedParticipants.length === 0) {
       toast.error('Seleziona almeno un partecipante.');
+      return;
+    }
+
+    if (isGroupChat && !chatName.trim()) { // Only validate chatName if it's a group chat
+      toast.error('Inserisci un nome per la chat di gruppo.');
       return;
     }
     
@@ -52,7 +55,7 @@ export function CreateNamedChatModal({
       const { data, error } = await supabase
         .from('chats')
         .insert({
-          name: chatName.trim(),
+          name: isGroupChat ? chatName.trim() : null, // Only set name if it's a group chat
           participant_ids: allParticipants
         })
         .select()
@@ -81,24 +84,26 @@ export function CreateNamedChatModal({
         <DialogHeader>
           <DialogTitle>Crea Nuova Chat</DialogTitle>
           <DialogDescription>
-            Crea una nuova chat con un nome e aggiungi partecipanti.
+            Crea una nuova chat e aggiungi partecipanti.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="new-chat-name" className="text-right">
-              Nome *
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="new-chat-name"
-                value={chatName}
-                onChange={(e) => setChatName(e.target.value)}
-                placeholder="Nome della chat"
-                className="col-span-3"
-              />
+          {isGroupChat && ( // Conditionally render name input
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-chat-name" className="text-right">
+                Nome *
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="new-chat-name"
+                  value={chatName}
+                  onChange={(e) => setChatName(e.target.value)}
+                  placeholder="Nome della chat"
+                  className="col-span-3"
+                />
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="new-participants" className="text-right">

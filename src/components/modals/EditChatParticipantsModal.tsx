@@ -32,6 +32,10 @@ export function EditChatParticipantsModal({
   const [chatName, setChatName] = useState<string>(currentName || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Filter out the current user from the selectedParticipants to count others
+  const otherSelectedParticipants = selectedParticipants.filter(id => id !== user?.id);
+  const isGroupChat = otherSelectedParticipants.length > 1; // If more than one other participant is selected
+
   useEffect(() => {
     if (isOpen) {
       setSelectedParticipants(currentParticipants);
@@ -62,7 +66,7 @@ export function EditChatParticipantsModal({
         currentSet.size !== newSet.size || 
         ![...currentSet].every(id => newSet.has(id));
       
-      const hasNameChange = currentChat.name !== chatName;
+      const hasNameChange = currentChat.name !== chatName; // Compare with original currentName
       
       if (!hasParticipantChanges && !hasNameChange) {
         toast.info('Nessuna modifica effettuata');
@@ -70,12 +74,14 @@ export function EditChatParticipantsModal({
         return;
       }
       
-      // Update chat participants and name
+      // Determine the name to save: if it's a group chat, use chatName, otherwise null
+      const nameToSave = isGroupChat ? chatName.trim() : null;
+
       const { error: updateError } = await supabase
         .from('chats')
         .update({ 
           participant_ids: selectedParticipants,
-          name: chatName || null
+          name: nameToSave
         })
         .eq('id', chatId);
       
@@ -102,20 +108,22 @@ export function EditChatParticipantsModal({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="chat-name" className="text-right">
-              Nome
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="chat-name"
-                value={chatName}
-                onChange={(e) => setChatName(e.target.value)}
-                placeholder="Nome della chat (opzionale)"
-                className="col-span-3"
-              />
+          {isGroupChat && ( // Conditionally render name input
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="chat-name" className="text-right">
+                Nome
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="chat-name"
+                  value={chatName}
+                  onChange={(e) => setChatName(e.target.value)}
+                  placeholder="Nome della chat (opzionale)"
+                  className="col-span-3"
+                />
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="participants" className="text-right">
