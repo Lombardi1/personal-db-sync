@@ -206,72 +206,6 @@ const markChatAsRead = async (
   }
 };
 
-// Helper function to create or get a chat
-const createOrGetChat = async (
-  participantIds: string[],
-  userId: string,
-  setActiveChatId: React.Dispatch<React.SetStateAction<string | null>>,
-  markChatAsRead: (chatId: string) => Promise<void>,
-  fetchChats: () => Promise<void>,
-  navigate: NavigateFunction
-) => {
-  if (!userId) {
-    toast.error('Devi essere loggato per creare una chat.');
-    return null;
-  }
-  
-  const allParticipants = Array.from(new Set([...participantIds, userId])).sort();
-  
-  try {
-    // Check for existing chat with these participants
-    const { data: existingChats, error: searchError } = await supabase
-      .from('chats')
-      .select('id, participant_ids')
-      .contains('participant_ids', allParticipants)
-      .limit(1);
-    
-    if (searchError) {
-      throw new Error(`Error searching for existing chat: ${searchError.message}`);
-    }
-    
-    if (existingChats && existingChats.length > 0) {
-      const foundChat = existingChats.find(chat => 
-        chat.participant_ids.length === allParticipants.length && 
-        chat.participant_ids.every((id, index) => id === allParticipants[index])
-      );
-      
-      if (foundChat) {
-        setActiveChatId(foundChat.id);
-        toast.info('Chat esistente aperta.');
-        await markChatAsRead(foundChat.id);
-        return foundChat.id;
-      }
-    }
-    
-    // If no existing chat, create a new one
-    console.log('[useChat] createOrGetChat: Attempting to create chat with participants:', allParticipants, 'by user ID:', userId);
-    const { data: newChat, error: createError } = await supabase
-      .from('chats')
-      .insert({ participant_ids: allParticipants })
-      .select()
-      .single();
-    
-    if (createError) {
-      throw new Error(`Error creating new chat: ${createError.message}`);
-    }
-    
-    setActiveChatId(newChat.id);
-    toast.success('Nuova chat creata!');
-    await markChatAsRead(newChat.id);
-    await fetchChats();
-    return newChat.id;
-  } catch (error: any) {
-    console.error('Error in createOrGetChat:', error);
-    toast.error('Errore nella creazione della nuova chat.');
-    return null;
-  }
-};
-
 // Helper function to send a message
 const sendMessage = async (
   content: string,
@@ -387,6 +321,74 @@ export function useChat(navigate: NavigateFunction) {
   const handleMarkChatAsRead = useCallback(async (chatId: string) => {
     await markChatAsRead(chatId, user?.id || '', setChats, setTotalUnreadCount, fetchChats);
   }, [user?.id, fetchChats]);
+
+  // Moved createOrGetChat logic inside the hook as handleCreateOrGetChat
+  const handleCreateOrGetChat = useCallback(async (participantIds: string[]) => {
+    if (!user?.id) {
+      toast.error('Devi essere loggato per creare una chat.');
+      return null;
+    }
+    
+    const allParticipants = Array.from(new Set([...participantIds, user.id])).sort();
+    
+    try {
+      // Check for existing chat with these participants
+      const { data: existingChats, error: searchError } = await supabase
+        .from('chats')
+        .select('id, participant_ids')
+        .contains('participant_ids', allParticipants)
+        .limit(1);
+      
+      if (searchError) {
+        throw new Error(`Error searching for existing chat: ${searchError.message}`);
+      }
+      
+      if (existingChats && existingChats.length > 0) {
+        const foundChat = existingChats.find(chat => 
+          chat.participant_ids.length === allParticipants.length && 
+          chat.participant_ids.every((id, index) => id === allParticipants[index])
+        );
+        
+        if (foundChat) {
+          setActiveChatId(foundChat.id);
+          toast.info('Chat esistente aperta.');
+          await handleMarkChatAsRead(foundChat.id);
+          return foundChat.id;
+        }
+      }
+      
+      // If no existing chat, create a new one
+      console.log('[useChat] handleCreateOrGetChat: Attempting to create chat with participants:', allParticipants, 'by user ID:', user.id);
+      const { data: newChat, error: createError } = await supabase
+        .from('chats')
+        .insert({ participant_ids: allParticipants })
+        .select()
+        .single();
+      
+      if (createError) {
+        throw new Error(`Error creating new chat: ${createError.message}`);
+      }
+      
+      setActiveChatId(newChat.id);
+      toast.success('Nuova chat creata!');
+      await handleMarkChatAsRead(newChat.id);
+      await fetchChats();
+      return newChat.id;
+    } catch (error: any) {
+      console.error('Error in handleCreateOrGetChat:', error);
+      toast.error('Errore nella creazione della nuova chat.');
+      return null;
+    }
+  }, [user?.id, setActiveChatId, handleMarkChatAsRead, fetchChats]);
+
+  const handleSendMessage = useCallback(async (content: string) => {
+    await sendMessage(content, activeChatId, user?.id || '', handleMarkChatAsRead);
+  }, [activeChatId, user?.id, handleMarkChatAsRead]);
+
+  const handleDeleteChat = useCallback(async (chatId: string) => {
+    await deleteChat(chatId, user?.id || '', activeChatId, setActiveChatId, fetchChats);
+  }, [user?.id, activeChatId, setActiveChatId, fetchChats]);
+
 
   useEffect(() => {
     if (user?.id) {
@@ -594,7 +596,7 @@ export function useChat(navigate: NavigateFunction) {
     loadingMessages,
     activeChatId,
     setActiveChatId,
-    createOrGetChat: handleCreateOrGetChat,
+    createOrGetChat: handleCreateOrGetChat, // Correctly reference the useCallback function
     sendMessage: handleSendMessage,
     deleteChat: handleDeleteChat,
     allUsers,
