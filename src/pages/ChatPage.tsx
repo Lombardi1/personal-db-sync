@@ -366,7 +366,7 @@ export default function ChatPage() {
                 Sei sicuro di voler eliminare questa chat? Questa azione non può essere annullata.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
+            <DialogFooter>
               <AlertDialogCancel>Annulla</AlertDialogCancel>
               <AlertDialogAction onClick={handleConfirmDeleteChat} className="bg-destructive hover:bg-destructive/90">
                 Elimina
