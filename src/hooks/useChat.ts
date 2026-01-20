@@ -486,12 +486,9 @@ export function useChat(navigate: NavigateFunction) {
 
   // Add navigate to dependencies
   useEffect(() => {
-    console.log(`[useChat] useEffect for activeChatId. Current activeChatId: ${activeChatId}`);
     if (activeChatId) {
-      console.log(`[useChat] Calling fetchMessages and handleMarkChatAsRead for chat: ${activeChatId}`);
       fetchMessages(activeChatId);
       handleMarkChatAsRead(activeChatId); // Mark as read when active chat changes
-      fetchChats(); // Ensure chats list is up-to-date
       
       const messageChannel = supabase
         .channel(`messages-chat-${activeChatId}`)
@@ -516,9 +513,8 @@ export function useChat(navigate: NavigateFunction) {
       };
     } else {
       setMessages([]); // Clear messages if no active chat
-      console.log(`[useChat] activeChatId is null, clearing messages.`);
     }
-  }, [activeChatId, fetchMessages, handleMarkChatAsRead, fetchChats]);
+  }, [activeChatId, fetchMessages, handleMarkChatAsRead]);
 
   const handleCreateOrGetChat = useCallback(async (participantIds: string[]) => {
     return await createOrGetChat(
