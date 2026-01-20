@@ -170,23 +170,23 @@ export default function ChatPage() {
                     <div className="flex-1 min-w-0">
                       {chat.name ? (
                         <>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm truncate">
+                          <div className="flex items-center gap-2 max-w-full">
+                            <span className="font-semibold text-sm truncate max-w-full">
                               {chat.name}
                             </span>
                             <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-muted-foreground truncate max-w-full">
                             {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Nessun partecipante'}
                           </p>
                         </>
                       ) : (
-                        <span className="font-semibold text-sm truncate">
+                        <span className="font-semibold text-sm truncate max-w-full">
                           {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
                         </span>
                       )}
                       {chat.last_message_content && (
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-xs text-muted-foreground truncate max-w-full">
                           {chat.last_message_content}
                         </p>
                       )}
@@ -197,7 +197,7 @@ export default function ChatPage() {
                       )}
                     </div>
                     {chat.unread_count && chat.unread_count > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-3 w-3 flex items-center justify-center ml-2 flex-shrink-0">
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2 flex-shrink-0">
                         {/* Nessun numero, solo il pallino */}
                       </span>
                     )}
@@ -219,9 +219,9 @@ export default function ChatPage() {
           <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-bold truncate">{chatTitle}</h2>
+                <h2 className="text-lg font-bold truncate max-w-full">{chatTitle}</h2>
                 {activeChat?.name && activeChat.participant_usernames && (
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-sm text-muted-foreground truncate max-w-full">
                     {activeChat.participant_usernames.filter(u => u !== user.username).join(', ')}
                   </p>
                 )}
