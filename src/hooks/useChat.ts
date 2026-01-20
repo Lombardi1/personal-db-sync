@@ -4,51 +4,6 @@ import { Chat, Message } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { NavigateFunction } from 'react-router-dom';
-import { Howl } from 'howler'; // Import Howl for audio playback
-
-// Define the ringtone sound
-const ringtone = new Howl({
-  src: ['/ringtone.mp3'], // Path to your ringtone file in the public folder
-  loop: true,
-  volume: 0.8,
-  html5: true, // Use HTML5 Audio to avoid Web Audio API limitations on some devices
-});
-
-// Add error listeners for debugging
-ringtone.on('loaderror', (id, error) => {
-  console.error('Howler.js Load Error:', error);
-  toast.error('Errore nel caricamento del file audio: ' + error.message);
-});
-
-ringtone.on('playerror', (id, error) => {
-  console.error('Howler.js Play Error:', error);
-  toast.error('Errore nella riproduzione dell\'audio: ' + error.message + '. Potrebbe essere bloccato dalle politiche di autoplay del browser. Interagisci con la pagina per abilitare l\'audio.');
-});
-
-let ringtoneTimeout: NodeJS.Timeout | null = null;
-
-const playRingtone = () => {
-  if (!ringtone.playing()) {
-    try {
-      ringtone.play();
-      ringtoneTimeout = setTimeout(() => {
-        ringtone.stop();
-        toast.info('La chiamata è terminata.');
-      }, 30000); // Stop ringing after 30 seconds
-    } catch (e: any) {
-      console.error('Attempt to play ringtone failed:', e);
-      toast.error('Impossibile riprodurre lo squillo. Potrebbe essere bloccato dalle politiche di autoplay del browser. Interagisci con la pagina per abilitare l\'audio.');
-    }
-  }
-};
-
-const stopRingtone = () => {
-  ringtone.stop();
-  if (ringtoneTimeout) {
-    clearTimeout(ringtoneTimeout);
-    ringtoneTimeout = null;
-  }
-};
 
 // Helper function to fetch all users
 const fetchAllUsers = async (setAllUsers: React.Dispatch<React.SetStateAction<{ id: string; username: string }[]>>) => {
@@ -154,7 +109,7 @@ const fetchUserChats = async (
         const lastReadAt = userChatStatusMap.get(chat.id);
         
         let unreadCount = 0;
-        if (chat.last_message_content !== '__CALL_INITIATED__' && chat.last_message_at) { // Exclude call initiation messages from unread count
+        if (chat.last_message_at) {
           if (lastReadAt) {
             const lastMessageDate = new Date(chat.last_message_at);
             const lastReadDate = new Date(lastReadAt);
@@ -164,8 +119,7 @@ const fetchUserChats = async (
                 .select('id', { count: 'exact' })
                 .eq('chat_id', chat.id)
                 .gt('created_at', lastReadAt)
-                .neq('sender_id', userId)
-                .neq('content', '__CALL_INITIATED__'); // Exclude call initiation messages
+                .neq('sender_id', userId);
               
               if (countError) {
                 console.error('Error counting unread messages:', countError);
@@ -179,8 +133,7 @@ const fetchUserChats = async (
               .from('messages')
               .select('id', { count: 'exact' })
               .eq('chat_id', chat.id)
-              .neq('sender_id', userId)
-              .neq('content', '__CALL_INITIATED__'); // Exclude call initiation messages
+              .neq('sender_id', userId);
             
             if (countError) {
               console.error('Error counting unread messages (no last_read_at):', countError);
@@ -479,7 +432,7 @@ export function useChat(navigate: NavigateFunction) {
     fetchAllUsers(setAllUsers);
   }, []);
 
-  // Global chats real-time channel for new chats or chat updates
+  // Global messages real-time channel for new messages
   useEffect(() => {
     if (!user?.id) {
       console.log('[useChat useEffect] User ID is not available, skipping chat channel setup.');
@@ -582,23 +535,7 @@ export function useChat(navigate: NavigateFunction) {
     await deleteChat(chatId, user?.id || '', activeChatId, setActiveChatId, fetchChats);
   }, [user?.id, activeChatId, fetchChats]);
 
-  // NEW: Function to initiate a "call"
-  const initiateCall = useCallback(async (chatId: string) => {
-    if (!user?.id) {
-      toast.error('Devi essere loggato per avviare una chiamata.');
-      return;
-    }
-    if (!chatId) {
-      toast.error('Seleziona una chat per avviare una chiamata.');
-      return;
-    }
-
-    // Send a special message to indicate a call initiation
-    await sendMessage('__CALL_INITIATED__', chatId, user.id, handleMarkChatAsRead);
-    toast.info('Chiamata avviata. In attesa di risposta...');
-  }, [user?.id, handleMarkChatAsRead, sendMessage]);
-
-  // Global message channel for notifications and call handling
+  // Global message channel for notifications
   useEffect(() => {
     if (!user?.id) return;
     
@@ -619,74 +556,14 @@ export function useChat(navigate: NavigateFunction) {
           const currentChat = chats.find(chat => chat.id === newMessage.chat_id);
           const isCurrentUserParticipant = currentChat?.participant_ids.includes(user.id);
           
-          // Handle call initiation messages
-          if (newMessage.content === '__CALL_INITIATED__' && newMessage.sender_id !== user.id && isCurrentUserParticipant) {
-            if (newMessage.chat_id === activeChatId) {
-              // If already in the chat, just show a subtle toast
-              const sender = allUsers.find(u => u.id === newMessage.sender_id);
-              const senderUsername = sender?.username || 'Sconosciuto';
-              toast.info(`${senderUsername} ti sta chiamando...`, {
-                duration: 5000,
-                position: 'top-center',
-              });
-            } else {
-              // Play ringtone and show notification for incoming call
-              playRingtone();
-              const sender = allUsers.find(u => u.id === newMessage.sender_id);
-              const senderUsername = sender?.username || 'Sconosciuto';
-              
-              const handleAnswer = () => {
-                stopRingtone();
-                navigate(`/chat/${newMessage.chat_id}`);
-                toast.dismiss('incoming-call-toast');
-              };
-
-              const handleDismiss = () => {
-                  stopRingtone();
-                  toast.dismiss('incoming-call-toast');
-              };
-
-              // Desktop Notification
-              if ('Notification' in window && Notification.permission === 'granted') {
-                const notificationTitle = `Chiamata in arrivo da ${senderUsername}`;
-                const notificationOptions: NotificationOptions = {
-                  body: 'Tocca per rispondere',
-                  icon: '/favicon.png',
-                  tag: 'incoming-call',
-                  renotify: true,
-                  silent: true, // Let Howler manage the sound
-                };
-                
-                const notification = new Notification(notificationTitle, notificationOptions);
-                notification.onclick = handleAnswer;
-                
-                // Add a dismiss button to the notification (not directly supported by standard API, but some browsers might offer it)
-                // For more control, a custom notification UI would be needed.
-              }
-
-              // Sonner Toast Notification
-              toast.info(`Chiamata in arrivo da ${senderUsername}`, {
-                id: 'incoming-call-toast',
-                duration: 30000, // Ring for 30 seconds
-                position: 'top-center',
-                action: {
-                  label: 'Rispondi',
-                  onClick: handleAnswer,
-                },
-                cancel: {
-                  label: 'Rifiuta',
-                  onClick: handleDismiss,
-                },
-                onDismiss: handleDismiss, // Ensure ringtone stops if toast is dismissed manually
-                onAutoClose: handleDismiss, // Ensure ringtone stops if toast auto-closes
-              });
-            }
-          } 
-          // Handle regular messages
-          else if (
+          // Only show notification if:
+          // 1. The message is from another user
+          // 2. The current user is a participant in the chat
+          // 3. The chat is not the active chat (to avoid duplicate notifications)
+          if (
             newMessage.sender_id !== user.id &&
             isCurrentUserParticipant &&
-            newMessage.content !== '__CALL_INITIATED__' // Exclude call initiation messages
+            newMessage.chat_id !== activeChatId
           ) {
             // Update unread count for the specific chat
             setChats(prevChats => {
@@ -744,8 +621,7 @@ export function useChat(navigate: NavigateFunction) {
           } else if (
             newMessage.sender_id !== user.id &&
             isCurrentUserParticipant &&
-            newMessage.chat_id === activeChatId &&
-            newMessage.content !== '__CALL_INITIATED__' // Exclude call initiation messages
+            newMessage.chat_id === activeChatId
           ) {
             // If it's for the active chat, update messages and mark as read
             fetchMessages(activeChatId);
@@ -757,7 +633,6 @@ export function useChat(navigate: NavigateFunction) {
     
     return () => {
       supabase.removeChannel(globalMessageChannel);
-      stopRingtone(); // Ensure ringtone stops on unmount
     };
   }, [user?.id, activeChatId, fetchMessages, handleMarkChatAsRead, allUsers, navigate, chats]);
 
@@ -774,7 +649,6 @@ export function useChat(navigate: NavigateFunction) {
     allUsers,
     fetchChats,
     totalUnreadCount,
-    markChatAsRead: handleMarkChatAsRead,
-    initiateCall, // NEW: Expose initiateCall
+    markChatAsRead: handleMarkChatAsRead
   };
 }

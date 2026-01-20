@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users, PhoneCall } from 'lucide-react'; // Import PhoneCall
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { chatId: urlChatId } = useParams<{ chatId?: string }>();
-  const { chats, messages, loadingChats, loadingMessages, activeChatId, setActiveChatId, createOrGetChat, sendMessage, deleteChat, allUsers, fetchChats, markChatAsRead, initiateCall } = useChat(navigate); // Add initiateCall
+  const { chats, messages, loadingChats, loadingMessages, activeChatId, setActiveChatId, createOrGetChat, sendMessage, deleteChat, allUsers, fetchChats, markChatAsRead, } = useChat(navigate);
   const [newMessageContent, setNewMessageContent] = useState('');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isCreateNamedChatModalOpen, setIsCreateNamedChatModalOpen] = useState(false);
@@ -185,7 +185,7 @@ export default function ChatPage() {
                           {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
                         </span>
                       )}
-                      {chat.last_message_content && chat.last_message_content !== '__CALL_INITIATED__' && ( // Hide call initiation message
+                      {chat.last_message_content && (
                         <p className="text-xs text-muted-foreground truncate">
                           {chat.last_message_content}
                         </p>
@@ -228,18 +228,6 @@ export default function ChatPage() {
               </div>
               <div className="flex items-center gap-2">
                 {activeChatId && (
-                  <Button 
-                    onClick={() => initiateCall(activeChatId)} // Call button
-                    variant="outline" 
-                    size="sm" 
-                    className="text-sm gap-1 bg-green-500 text-white hover:bg-green-600"
-                    title="Avvia Chiamata"
-                  >
-                    <PhoneCall className="h-4 w-4" />
-                    <span className="hidden sm:inline">Chiama</span>
-                  </Button>
-                )}
-                {activeChatId && (
                   <Button onClick={handleEditParticipants} variant="outline" size="sm" className="text-sm gap-1">
                     <UserPlus className="h-4 w-4" />
                     <span className="hidden sm:inline">Partecipanti</span>
@@ -275,7 +263,7 @@ export default function ChatPage() {
                   ) : messages.length === 0 ? (
                     <p className="text-center text-muted-foreground">Inizia la conversazione!</p>
                   ) : (
-                    messages.filter(msg => msg.content !== '__CALL_INITIATED__').map(msg => ( // Filter out call initiation messages
+                    messages.map(msg => (
                       <div 
                         key={msg.id} 
                         className={cn(
