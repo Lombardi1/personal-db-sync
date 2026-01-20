@@ -171,27 +171,27 @@ export default function ChatPage() {
                       {chat.name ? (
                         <>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm truncate flex-1 min-w-0">
+                            <span className="font-semibold text-xs sm:text-sm truncate flex-1 min-w-0">
                               {chat.name}
                             </span>
                             <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                           </div>
-                          <p className="text-xs text-muted-foreground truncate max-w-full">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-full">
                             {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Nessun partecipante'}
                           </p>
                         </>
                       ) : (
-                        <span className="font-semibold text-sm truncate max-w-full">
+                        <span className="font-semibold text-xs sm:text-sm truncate max-w-full">
                           {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
                         </span>
                       )}
                       {chat.last_message_content && (
-                        <p className="text-xs text-muted-foreground truncate max-w-full">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-full">
                           {chat.last_message_content}
                         </p>
                       )}
                       {chat.last_message_at && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                           {format(new Date(chat.last_message_at), 'dd MMM HH:mm', { locale: it })}
                         </p>
                       )}
