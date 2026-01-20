@@ -171,33 +171,33 @@ export default function ChatPage() {
                       {chat.name ? (
                         <>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-xs sm:text-sm truncate flex-1 min-w-0">
+                            <span className="font-semibold text-sm truncate">
                               {chat.name}
                             </span>
                             <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                           </div>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-full">
+                          <p className="text-xs text-muted-foreground truncate">
                             {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Nessun partecipante'}
                           </p>
                         </>
                       ) : (
-                        <span className="font-semibold text-xs sm:text-sm truncate max-w-full">
+                        <span className="font-semibold text-sm truncate">
                           {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
                         </span>
                       )}
                       {chat.last_message_content && (
-                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-full">
+                        <p className="text-xs text-muted-foreground truncate">
                           {chat.last_message_content}
                         </p>
                       )}
                       {chat.last_message_at && (
-                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(chat.last_message_at), 'dd MMM HH:mm', { locale: it })}
                         </p>
                       )}
                     </div>
                     {chat.unread_count && chat.unread_count > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2 flex-shrink-0">
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-3 w-3 flex items-center justify-center ml-2 flex-shrink-0">
                         {/* Nessun numero, solo il pallino */}
                       </span>
                     )}
@@ -219,9 +219,9 @@ export default function ChatPage() {
           <div className="flex-1 bg-white rounded-lg shadow-md border border-[hsl(var(--border))] flex flex-col h-full min-h-0">
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-bold truncate max-w-full">{chatTitle}</h2>
+                <h2 className="text-lg font-bold truncate">{chatTitle}</h2>
                 {activeChat?.name && activeChat.participant_usernames && (
-                  <p className="text-sm text-muted-foreground truncate max-w-full">
+                  <p className="text-sm text-muted-foreground truncate">
                     {activeChat.participant_usernames.filter(u => u !== user.username).join(', ')}
                   </p>
                 )}
@@ -295,7 +295,7 @@ export default function ChatPage() {
                     value={newMessageContent} 
                     onChange={(e) => setNewMessageContent(e.target.value)} 
                     placeholder="Scrivi un messaggio..." 
-                    className="flex-1 text-sm" 
+                    className="flex-1" 
                     disabled={loadingMessages}
                   />
                   <Button type="submit" disabled={loadingMessages || !newMessageContent.trim()}>
