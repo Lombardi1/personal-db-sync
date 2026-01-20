@@ -182,7 +182,7 @@ export default function ChatPage() {
                         </>
                       ) : (
                         <span className="font-semibold text-xs sm:text-sm truncate max-w-full">
-                          {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
+                          {chat.participant_usernames?.filter(u => u !== user.username).join(', ') ') || 'Chat'}
                         </span>
                       )}
                       {chat.last_message_content && (
@@ -295,7 +295,7 @@ export default function ChatPage() {
                     value={newMessageContent} 
                     onChange={(e) => setNewMessageContent(e.target.value)} 
                     placeholder="Scrivi un messaggio..." 
-                    className="flex-1" 
+                    className="flex-1 text-sm" 
                     disabled={loadingMessages}
                   />
                   <Button type="submit" disabled={loadingMessages || !newMessageContent.trim()}>
