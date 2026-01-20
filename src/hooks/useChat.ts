@@ -11,17 +11,34 @@ const ringtone = new Howl({
   src: ['/ringtone.mp3'], // Path to your ringtone file in the public folder
   loop: true,
   volume: 0.8,
+  html5: true, // Use HTML5 Audio to avoid Web Audio API limitations on some devices
+});
+
+// Add error listeners for debugging
+ringtone.on('loaderror', (id, error) => {
+  console.error('Howler.js Load Error:', error);
+  toast.error('Errore nel caricamento del file audio: ' + error.message);
+});
+
+ringtone.on('playerror', (id, error) => {
+  console.error('Howler.js Play Error:', error);
+  toast.error('Errore nella riproduzione dell\'audio: ' + error.message + '. Potrebbe essere bloccato dalle politiche di autoplay del browser. Interagisci con la pagina per abilitare l\'audio.');
 });
 
 let ringtoneTimeout: NodeJS.Timeout | null = null;
 
 const playRingtone = () => {
   if (!ringtone.playing()) {
-    ringtone.play();
-    ringtoneTimeout = setTimeout(() => {
-      ringtone.stop();
-      toast.info('La chiamata è terminata.');
-    }, 30000); // Stop ringing after 30 seconds
+    try {
+      ringtone.play();
+      ringtoneTimeout = setTimeout(() => {
+        ringtone.stop();
+        toast.info('La chiamata è terminata.');
+      }, 30000); // Stop ringing after 30 seconds
+    } catch (e: any) {
+      console.error('Attempt to play ringtone failed:', e);
+      toast.error('Impossibile riprodurre lo squillo. Potrebbe essere bloccato dalle politiche di autoplay del browser. Interagisci con la pagina per abilitare l\'audio.');
+    }
   }
 };
 
@@ -625,8 +642,8 @@ export function useChat(navigate: NavigateFunction) {
               };
 
               const handleDismiss = () => {
-                stopRingtone();
-                toast.dismiss('incoming-call-toast');
+                  stopRingtone();
+                  toast.dismiss('incoming-call-toast');
               };
 
               // Desktop Notification
