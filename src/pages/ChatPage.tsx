@@ -125,8 +125,8 @@ export default function ChatPage() {
   
   // Logic for truncated participant list
   const otherParticipants = activeChat?.participant_usernames?.filter(u => u !== user.username) || [];
-  const displayParticipants = otherParticipants.slice(0, 3).join(', ');
-  const remainingParticipantsCount = otherParticipants.length - 3;
+  const displayParticipants = otherParticipants.slice(0, 2).join(', '); // Modificato da 3 a 2
+  const remainingParticipantsCount = otherParticipants.length - 2; // Modificato da 3 a 2
 
   const chatTitle = activeChat 
     ? (activeChat.name || (otherParticipants.length > 0 ? displayParticipants : 'Chat')) 
