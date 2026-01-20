@@ -24,9 +24,9 @@ export function Header({
   showUsersButton
 }: HeaderProps) {
   const { user, logout, isAmministratore } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Ottieni la funzione navigate
   const location = useLocation();
-  const { totalUnreadCount } = useChat(); // Ottieni il conteggio dei messaggi non letti
+  const { totalUnreadCount } = useChat(navigate); // Passa navigate all'hook useChat
   
   const handleLogout = () => {
     logout();
