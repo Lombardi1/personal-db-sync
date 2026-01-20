@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { cn } => '@/lib/utils';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MultiSelectUsers } from '@/components/MultiSelectUsers';
@@ -182,7 +182,7 @@ export default function ChatPage() {
                         </>
                       ) : (
                         <span className="font-semibold text-xs sm:text-sm truncate max-w-full">
-                          {chat.participant_usernames?.filter(u => u !== user.username).join(', ') ') || 'Chat'}
+                          {chat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat'}
                         </span>
                       )}
                       {chat.last_message_content && (
