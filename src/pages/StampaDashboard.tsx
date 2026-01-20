@@ -3,14 +3,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MinusCircle, History } from 'lucide-react'; // Rimosso MessageSquare
-// Rimosso: import { useChat } from '@/hooks/useChat'; // Rimosso l'hook useChat
+import { MinusCircle, History } from 'lucide-react';
+import { useChat } from '@/hooks/useChat';
 
 export default function StampaDashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [currentDateTime, setCurrentDateTime] = useState('');
-  // Rimosso: const { totalUnreadCount } = useChat(); // Rimosso il conteggio dei messaggi non letti
+  const { totalUnreadCount } = useChat(navigate); // Pass navigate here
 
   useEffect(() => {
     const updateDateTime = () => {

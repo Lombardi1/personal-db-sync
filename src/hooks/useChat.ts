@@ -253,7 +253,7 @@ const createOrGetChat = async (
   setActiveChatId: React.Dispatch<React.SetStateAction<string | null>>,
   markChatAsRead: (chatId: string) => Promise<void>,
   fetchChats: () => Promise<void>,
-  navigate: NavigateFunction
+  navigate?: NavigateFunction // Make navigate optional here too
 ) => {
   if (!userId) {
     toast.error('Devi essere loggato per creare una chat.');
@@ -400,7 +400,7 @@ const deleteChat = async (
   }
 };
 
-export function useChat(navigate: NavigateFunction) {
+export function useChat(navigate?: NavigateFunction) { // Make navigate optional
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -602,7 +602,11 @@ export function useChat(navigate: NavigateFunction) {
               const notification = new Notification(notificationTitle, notificationOptions);
               notification.onclick = () => {
                 window.focus(); // Bring the browser window to front
-                navigate(`/chat/${newMessage.chat_id}`); // Navigate to the specific chat
+                if (navigate) { // Check if navigate is available
+                  navigate(`/chat/${newMessage.chat_id}`); // Navigate to the specific chat
+                } else {
+                  window.location.href = `/chat/${newMessage.chat_id}`; // Fallback
+                }
                 notification.close(); // Close the notification
               };
             } else {
@@ -613,7 +617,12 @@ export function useChat(navigate: NavigateFunction) {
                 action: {
                   label: 'Apri Chat',
                   onClick: () => {
-                    navigate(`/chat/${newMessage.chat_id}`);
+                    console.log(`[useChat] Toast action 'Apri Chat' clicked for chat ID: ${newMessage.chat_id}`);
+                    if (navigate) { // Check if navigate is available
+                      navigate(`/chat/${newMessage.chat_id}`);
+                    } else {
+                      window.location.href = `/chat/${newMessage.chat_id}`; // Fallback
+                    }
                   }
                 }
               });

@@ -3,16 +3,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Warehouse, Shapes, Layers } from 'lucide-react'; // Rimosso MessageSquare
+import { ShoppingCart, Warehouse, Shapes, Layers } from 'lucide-react';
 import { useCartoni } from '@/hooks/useCartoni';
-// Rimosso: import { useChat } from '@/hooks/useChat'; // Rimosso l'hook useChat
+import { useChat } from '@/hooks/useChat';
 
 export default function Summary() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [currentDateTime, setCurrentDateTime] = useState('');
   const { loading: cartoniLoading } = useCartoni();
-  // Rimosso: const { totalUnreadCount } = useChat(); // Rimosso il conteggio dei messaggi non letti
+  const { totalUnreadCount } = useChat(navigate); // Pass navigate here
 
   useEffect(() => {
     const updateDateTime = () => {
