@@ -122,8 +122,14 @@ export default function ChatPage() {
   }
 
   const activeChat = chats.find(chat => chat.id === activeChatId);
+  
+  // Logic for truncated participant list
+  const otherParticipants = activeChat?.participant_usernames?.filter(u => u !== user.username) || [];
+  const displayParticipants = otherParticipants.slice(0, 3).join(', ');
+  const remainingParticipantsCount = otherParticipants.length - 3;
+
   const chatTitle = activeChat 
-    ? (activeChat.name || activeChat.participant_usernames?.filter(u => u !== user.username).join(', ') || 'Chat') 
+    ? (activeChat.name || (otherParticipants.length > 0 ? displayParticipants : 'Chat')) 
     : 'Seleziona una chat';
 
   return (
@@ -148,7 +154,7 @@ export default function ChatPage() {
                   Nuova
                 </Button>
                 {isMobile && !activeChatId && (
-                  <Button onClick={handleGoToDashboard} variant="outline" size="sm" className="gap-1">
+                  <Button onClick={handleGoToDashboard} variant="outline" size="icon" className="text-sm">
                     <Home className="h-4 w-4" />
                   </Button>
                 )}
@@ -220,10 +226,24 @@ export default function ChatPage() {
             <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-bold truncate">{chatTitle}</h2>
-                {activeChat?.name && activeChat.participant_usernames && (
-                  <p className="text-sm text-muted-foreground truncate">
-                    {activeChat.participant_usernames.filter(u => u !== user.username).join(', ')}
+                {activeChat?.name ? (
+                  <p 
+                    className="text-sm text-muted-foreground truncate cursor-pointer hover:underline"
+                    onClick={handleEditParticipants}
+                  >
+                    {displayParticipants}
+                    {remainingParticipantsCount > 0 && ` +${remainingParticipantsCount} altri`}
                   </p>
+                ) : (
+                  otherParticipants.length > 0 && (
+                    <p 
+                      className="text-sm text-muted-foreground truncate cursor-pointer hover:underline"
+                      onClick={handleEditParticipants}
+                    >
+                      {displayParticipants}
+                      {remainingParticipantsCount > 0 && ` +${remainingParticipantsCount} altri`}
+                    </p>
+                  )
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -240,16 +260,14 @@ export default function ChatPage() {
                       navigate('/chat'); // Go to the base chat URL
                     }} 
                     variant="outline" 
-                    size="sm" 
+                    size="icon" 
                     className="text-sm"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-1">Indietro</span>
                   </Button>
                 )}
-                <Button onClick={handleGoToDashboard} variant="outline" size="sm" className="text-sm">
+                <Button onClick={handleGoToDashboard} variant="outline" size="icon" className="text-sm">
                   <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-1">Dashboard</span>
                 </Button>
               </div>
             </div>
