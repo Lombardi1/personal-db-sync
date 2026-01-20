@@ -243,13 +243,13 @@ export default function ChatPage() {
                     size="sm" 
                     className="text-sm"
                   >
-                    <ArrowLeft className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-                    Indietro
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1">Indietro</span>
                   </Button>
                 )}
                 <Button onClick={handleGoToDashboard} variant="outline" size="sm" className="text-sm">
-                  <Home className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-                  Dashboard
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1">Dashboard</span>
                 </Button>
               </div>
             </div>
