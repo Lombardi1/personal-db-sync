@@ -203,7 +203,7 @@ export default function ChatPage() {
                       )}
                     </div>
                     {chat.unread_count && chat.unread_count > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-3 w-3 flex items-center justify-center ml-2 flex-shrink-0">
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center ml-2 flex-shrink-0">
                         {/* Nessun numero, solo il pallino */}
                       </span>
                     )}
