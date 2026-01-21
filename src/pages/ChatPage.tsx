@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users, BellRing } from 'lucide-react'; // Importa BellRing
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users, BellRing } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { chatId: urlChatId } = useParams<{ chatId?: string }>();
-  const { chats, messages, loadingChats, loadingMessages, activeChatId, setActiveChatId, createOrGetChat, sendMessage, deleteChat, allUsers, fetchChats, markChatAsRead, sendRing, ringAudioRef } = useChat(navigate); // Aggiungi sendRing e ringAudioRef
+  const { chats, messages, loadingChats, loadingMessages, activeChatId, setActiveChatId, createOrGetChat, sendMessage, deleteChat, allUsers, fetchChats, markChatAsRead, sendRing, ringAudioRef } = useChat(navigate);
   const [newMessageContent, setNewMessageContent] = useState('');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isCreateNamedChatModalOpen, setIsCreateNamedChatModalOpen] = useState(false);
@@ -32,9 +32,12 @@ export default function ChatPage() {
   const [isDeleteChatAlertOpen, setIsDeleteChatAlertOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [isEditParticipantsModalOpen, setIsEditParticipantsModalOpen] = useState(false);
-  const [isRingConfirmOpen, setIsRingConfirmOpen] = useState(false); // NEW: State for ring confirmation
+  const [isRingConfirmOpen, setIsRingConfirmOpen] = useState(false);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+
+  // NEW: State to track if audio has been unlocked by user interaction
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   useEffect(() => {
     // Se c'è un chatId nell'URL, impostalo come chat attiva
@@ -50,7 +53,14 @@ export default function ChatPage() {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, activeChatId]); // Aggiunto activeChatId alle dipendenze
+  }, [messages, activeChatId]);
+
+  // NEW: Effect to check localStorage for audio unlock status on mount
+  useEffect(() => {
+    if (localStorage.getItem('chatAudioUnlocked') === 'true') {
+      setAudioUnlocked(true);
+    }
+  }, []);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,11 +128,35 @@ export default function ChatPage() {
     setIsRingConfirmOpen(true);
   };
 
+  // NEW: Modified handleConfirmSendRing to include audio unlock logic
   const handleConfirmSendRing = async () => {
-    if (activeChatId && user?.id) {
-      await sendRing(activeChatId);
+    if (!activeChatId || !user?.id) {
+      toast.error('Seleziona una chat per inviare uno squillo.');
+      setIsRingConfirmOpen(false);
+      return;
     }
-    setIsRingConfirmOpen(false);
+
+    if (!audioUnlocked && ringAudioRef.current) {
+      try {
+        await ringAudioRef.current.play();
+        ringAudioRef.current.pause();
+        ringAudioRef.current.currentTime = 0; // Reset to start
+        setAudioUnlocked(true);
+        localStorage.setItem('chatAudioUnlocked', 'true');
+        toast.success('Audio sbloccato! Invio squillo...');
+        // Now that audio is unlocked, proceed to send the ring
+        await sendRing(activeChatId);
+      } catch (error) {
+        console.error('Failed to unlock audio:', error);
+        toast.error('Impossibile sbloccare l\'audio. Assicurati di aver interagito con la pagina.');
+      } finally {
+        setIsRingConfirmOpen(false);
+      }
+    } else {
+      // Audio already unlocked, just send the ring
+      await sendRing(activeChatId);
+      setIsRingConfirmOpen(false);
+    }
   };
 
   if (authLoading || loadingChats) {
@@ -269,7 +303,7 @@ export default function ChatPage() {
                     onClick={handleSendRingClick} 
                     variant="outline" 
                     size="sm" 
-                    className="text-sm gap-1 bg-[hsl(var(--ring-color))] hover:bg-[hsl(var(--ring-color-dark))] text-white" // NEW: Ring button style
+                    className="text-sm gap-1 bg-[hsl(var(--ring-color))] hover:bg-[hsl(var(--ring-color-dark))] text-white"
                     title="Fai Squillare"
                   >
                     <BellRing className="h-4 w-4" />
@@ -285,8 +319,8 @@ export default function ChatPage() {
                 {isMobile && activeChatId && (
                   <Button 
                     onClick={() => {
-                      setActiveChatId(null); // Clear the active chat
-                      navigate('/chat'); // Go to the base chat URL
+                      setActiveChatId(null);
+                      navigate('/chat');
                     }} 
                     variant="outline" 
                     size="icon" 
@@ -379,7 +413,7 @@ export default function ChatPage() {
                 currentUser={user}
                 placeholder="Seleziona partecipanti..."
                 disabled={false}
-                checkboxClassName="border-[hsl(var(--chat-color))] data-[state=checked]:bg-[hsl(var(--chat-color))] data-[state=checked]:text-white" // Passa la classe per il colore verde
+                checkboxClassName="border-[hsl(var(--chat-color))] data-[state=checked]:bg-[hsl(var(--chat-color))] data-[state=checked]:text-white"
               />
             </div>
             <DialogFooter>
