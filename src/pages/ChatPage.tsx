@@ -148,7 +148,7 @@ export default function ChatPage() {
                 <Button 
                   size="sm" 
                   onClick={() => setIsCreateNamedChatModalOpen(true)} 
-                  className="gap-1 bg-chat hover:bg-chat-dark text-white"
+                  className="gap-1"
                 >
                   <PlusCircle className="h-4 w-4" />
                   Nuova
@@ -203,8 +203,8 @@ export default function ChatPage() {
                       )}
                     </div>
                     {chat.unread_count && chat.unread_count > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2 flex-shrink-0">
-                        {chat.unread_count}
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center ml-2 flex-shrink-0">
+                        {/* Nessun numero, solo il pallino */}
                       </span>
                     )}
                     <Button variant="ghost" size="icon" onClick={(e) => {
@@ -292,7 +292,7 @@ export default function ChatPage() {
                         <div className={cn(
                           "max-w-[80%] p-3 rounded-lg",
                           msg.sender_id === user.id 
-                            ? "bg-chat text-white rounded-br-none" 
+                            ? "bg-blue-600 text-white rounded-br-none" 
                             : "bg-gray-200 text-gray-800 rounded-bl-none"
                         )}>
                           <p className="font-semibold text-xs mb-1">
@@ -316,7 +316,7 @@ export default function ChatPage() {
                     className="flex-1" 
                     disabled={loadingMessages}
                   />
-                  <Button type="submit" disabled={loadingMessages || !newMessageContent.trim()} className="bg-chat hover:bg-chat-dark text-white">
+                  <Button type="submit" disabled={loadingMessages || !newMessageContent.trim()}>
                     <Send className="h-5 w-5" />
                   </Button>
                 </form>

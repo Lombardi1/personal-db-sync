@@ -85,7 +85,7 @@ export function Header({
       case 'polimeri':
         return 'linear-gradient(135deg, hsl(var(--polimeri-color)), hsl(var(--polimeri-color-dark)))';
       case 'chat': // NUOVO: Colore per la chat
-        return 'linear-gradient(135deg, hsl(var(--chat-color)), hsl(var(--chat-color-dark)))';
+        return 'linear-gradient(135deg, hsl(210, 80%, 40%), hsl(210, 80%, 30%))';
       default:
         return 'linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%))';
     }

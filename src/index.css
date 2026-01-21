@@ -68,8 +68,8 @@ html, body, #root {
     --fustelle-color-dark: 280 80% 30%;
     --polimeri-color: 170 70% 35%; /* NUOVO: Colore per Magazzino Polimeri (verde acqua) */
     --polimeri-color-dark: 170 70% 25%;
-    --chat-color: 120 60% 40%; /* NUOVO: Colore per la Chat (Verde WhatsApp) */
-    --chat-color-dark: 120 60% 30%; /* NUOVO: Colore scuro per la Chat */
+    --chat-color: 210 80% 40%; /* NUOVO: Colore per la Chat */
+    --chat-color-dark: 210 80% 30%;
 
     /* Nuovi colori per gli stati degli ordini d'acquisto */
     --stato-in-attesa: 39 100% 50%; /* Arancione */
