@@ -17,3 +17,10 @@ export interface Message {
   sender_username?: string; // Populated by frontend for display
   content: string;
 }
+
+export interface ChatRing {
+  id: string;
+  created_at: string;
+  chat_id: string;
+  sender_id: string;
+}

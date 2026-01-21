@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react'; // Importa useRef
 import { supabase } from '@/lib/supabase';
-import { Chat, Message } from '@/types';
+import { Chat, Message, ChatRing } from '@/types'; // Importa ChatRing
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { NavigateFunction } from 'react-router-dom';
@@ -400,6 +400,24 @@ const deleteChat = async (
   }
 };
 
+// NEW: Helper function to send a ring
+const sendRing = async (chatId: string, senderId: string) => {
+  if (!chatId || !senderId) {
+    toast.error('Impossibile inviare lo squillo: dati mancanti.');
+    return;
+  }
+  try {
+    const { error } = await supabase.from('chat_rings').insert({ chat_id: chatId, sender_id: senderId });
+    if (error) {
+      throw new Error(`Error sending ring: ${error.message}`);
+    }
+    toast.success('Squillo inviato!');
+  } catch (error: any) {
+    console.error('Error in sendRing:', error);
+    toast.error('Errore nell\'invio dello squillo.');
+  }
+};
+
 export function useChat(navigate?: NavigateFunction) { // Make navigate optional
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
@@ -409,6 +427,14 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<{ id: string; username: string }[]>([]);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
+
+  const ringAudioRef = useRef<HTMLAudioElement>(null); // NEW: Ref for audio element
+
+  const playRingSound = useCallback(() => { // NEW: Function to play sound
+    if (ringAudioRef.current) {
+      ringAudioRef.current.play().catch(e => console.error("Error playing sound:", e));
+    }
+  }, []);
 
   const fetchChats = useCallback(async () => {
     await fetchUserChats(user?.id || '', allUsers, setChats, setTotalUnreadCount, setLoadingChats);
@@ -516,6 +542,56 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
     }
   }, [activeChatId, fetchMessages, handleMarkChatAsRead]);
 
+  // NEW: Realtime listener for chat_rings
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const ringChannel = supabase
+      .channel('chat-rings-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_rings'
+        },
+        async (payload) => {
+          const newRing = (payload as any).new as ChatRing;
+          console.log('--- Real-time ring received! ---', newRing);
+
+          // Check if the current user is a participant in this chat and is not the sender
+          const currentChat = chats.find(chat => chat.id === newRing.chat_id);
+          const isCurrentUserParticipant = currentChat?.participant_ids.includes(user.id);
+
+          if (newRing.sender_id !== user.id && isCurrentUserParticipant) {
+            playRingSound(); // Play the sound
+            const sender = allUsers.find(u => u.id === newRing.sender_id);
+            const senderUsername = sender?.username || 'Sconosciuto';
+            toast.info(`🔔 ${senderUsername} ti sta chiamando in chat!`, {
+              duration: 5000,
+              position: 'top-center',
+              action: {
+                label: 'Apri Chat',
+                onClick: () => {
+                  if (navigate) {
+                    navigate(`/chat/${newRing.chat_id}`);
+                  } else {
+                    window.location.href = `/chat/${newRing.chat_id}`;
+                  }
+                }
+              }
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ringChannel);
+    };
+  }, [user?.id, chats, allUsers, playRingSound, navigate]);
+
+
   const handleCreateOrGetChat = useCallback(async (participantIds: string[]) => {
     return await createOrGetChat(
       participantIds,
@@ -534,6 +610,11 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
   const handleDeleteChat = useCallback(async (chatId: string) => {
     await deleteChat(chatId, user?.id || '', activeChatId, setActiveChatId, fetchChats);
   }, [user?.id, activeChatId, fetchChats]);
+
+  // NEW: Handle sending a ring
+  const handleSendRing = useCallback(async (chatId: string) => {
+    await sendRing(chatId, user?.id || '');
+  }, [user?.id]);
 
   // Global message channel for notifications
   useEffect(() => {
@@ -658,6 +739,8 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
     allUsers,
     fetchChats,
     totalUnreadCount,
-    markChatAsRead: handleMarkChatAsRead
+    markChatAsRead: handleMarkChatAsRead,
+    sendRing: handleSendRing, // NEW: Expose sendRing
+    ringAudioRef, // NEW: Expose audio ref
   };
 }

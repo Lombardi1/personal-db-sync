@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users } from 'lucide-react';
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users, BellRing } from 'lucide-react'; // Importa BellRing
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ export default function ChatPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { chatId: urlChatId } = useParams<{ chatId?: string }>();
-  const { chats, messages, loadingChats, loadingMessages, activeChatId, setActiveChatId, createOrGetChat, sendMessage, deleteChat, allUsers, fetchChats, markChatAsRead, } = useChat(navigate);
+  const { chats, messages, loadingChats, loadingMessages, activeChatId, setActiveChatId, createOrGetChat, sendMessage, deleteChat, allUsers, fetchChats, markChatAsRead, sendRing, ringAudioRef } = useChat(navigate); // Aggiungi sendRing e ringAudioRef
   const [newMessageContent, setNewMessageContent] = useState('');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isCreateNamedChatModalOpen, setIsCreateNamedChatModalOpen] = useState(false);
@@ -32,6 +32,7 @@ export default function ChatPage() {
   const [isDeleteChatAlertOpen, setIsDeleteChatAlertOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [isEditParticipantsModalOpen, setIsEditParticipantsModalOpen] = useState(false);
+  const [isRingConfirmOpen, setIsRingConfirmOpen] = useState(false); // NEW: State for ring confirmation
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
@@ -106,6 +107,22 @@ export default function ChatPage() {
     setActiveChatId(chatId);
     navigate(`/chat/${chatId}`);
     fetchChats();
+  };
+
+  // NEW: Handle sending a ring
+  const handleSendRingClick = () => {
+    if (!activeChatId) {
+      toast.error('Seleziona una chat per inviare uno squillo.');
+      return;
+    }
+    setIsRingConfirmOpen(true);
+  };
+
+  const handleConfirmSendRing = async () => {
+    if (activeChatId && user?.id) {
+      await sendRing(activeChatId);
+    }
+    setIsRingConfirmOpen(false);
   };
 
   if (authLoading || loadingChats) {
@@ -247,6 +264,18 @@ export default function ChatPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {activeChatId && (
+                  <Button 
+                    onClick={handleSendRingClick} 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-sm gap-1 bg-[hsl(var(--ring-color))] hover:bg-[hsl(var(--ring-color-dark))] text-white" // NEW: Ring button style
+                    title="Fai Squillare"
+                  >
+                    <BellRing className="h-4 w-4" />
+                    <span className="hidden sm:inline">Squilla</span>
+                  </Button>
+                )}
                 {activeChatId && (
                   <Button onClick={handleEditParticipants} variant="outline" size="sm" className="text-sm gap-1">
                     <UserPlus className="h-4 w-4" />
@@ -403,6 +432,28 @@ export default function ChatPage() {
             </DialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* NEW: Ring Confirmation Dialog */}
+        <AlertDialog open={isRingConfirmOpen} onOpenChange={setIsRingConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conferma Squillo</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler inviare uno squillo a tutti i partecipanti di questa chat?
+                Il loro dispositivo riprodurrà un suono.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <DialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmSendRing} className="bg-[hsl(var(--ring-color))] hover:bg-[hsl(var(--ring-color-dark))] text-white">
+                Invia Squillo
+              </AlertDialogAction>
+            </DialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* NEW: Hidden Audio Element for Ringtone */}
+        <audio ref={ringAudioRef} src="/sounds/ring.mp3" preload="auto" />
       </div>
     </div>
   );
