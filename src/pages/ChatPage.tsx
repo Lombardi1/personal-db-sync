@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users } from 'lucide-react';
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ export default function ChatPage() {
   const [isDeleteChatAlertOpen, setIsDeleteChatAlertOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [isEditParticipantsModalOpen, setIsEditParticipantsModalOpen] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   
   // Ref for the scroll area viewport
   const scrollViewportRef = useRef<HTMLDivElement>(null);
@@ -53,16 +54,41 @@ export default function ChatPage() {
       requestAnimationFrame(() => {
         if (scrollViewportRef.current) {
           scrollViewportRef.current.scrollTop = scrollViewportRef.current.scrollHeight;
+          setShowScrollButton(false); // Hide scroll button when auto-scrolling to bottom
         }
       });
     }
   }, [messages, activeChatId]); // Depend on messages and activeChatId
+  
+  // Handle scroll events to show/hide scroll to bottom button
+  const handleScroll = () => {
+    if (scrollViewportRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollViewportRef.current;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
+      setShowScrollButton(!isAtBottom);
+    }
+  };
+  
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    if (scrollViewportRef.current) {
+      scrollViewportRef.current.scrollTo({
+        top: scrollViewportRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+      setShowScrollButton(false);
+    }
+  };
   
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessageContent.trim() && activeChatId) {
       await sendMessage(newMessageContent);
       setNewMessageContent('');
+      // Auto-scroll to bottom after sending message
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
     }
   };
   
@@ -278,45 +304,61 @@ export default function ChatPage() {
             
             {activeChatId ? (
               <>
-                <ScrollArea 
-                  ref={scrollViewportRef} 
-                  className="flex-1 p-4 space-y-4"
-                >
-                  {loadingMessages ? (
-                    <div className="flex justify-center items-center h-full">
-                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : messages.length === 0 ? (
-                    <p className="text-center text-muted-foreground">Inizia la conversazione!</p>
-                  ) : (
-                    messages.map(msg => (
-                      <div 
-                        key={msg.id} 
-                        className={cn(
-                          "flex",
-                          msg.sender_id === user.id ? "justify-end" : "justify-start"
-                        )}
-                      >
+                <div className="relative flex-1">
+                  <ScrollArea 
+                    ref={scrollViewportRef} 
+                    className="h-full p-4 space-y-4"
+                    onScroll={handleScroll}
+                  >
+                    {loadingMessages ? (
+                      <div className="flex justify-center items-center h-full">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <p className="text-center text-muted-foreground">Inizia la conversazione!</p>
+                    ) : (
+                      messages.map(msg => (
                         <div 
+                          key={msg.id} 
                           className={cn(
-                            "max-w-[80%] p-3 rounded-lg",
-                            msg.sender_id === user.id 
-                              ? "bg-blue-600 text-white rounded-br-none" 
-                              : "bg-gray-200 text-gray-800 rounded-bl-none"
+                            "flex",
+                            msg.sender_id === user.id ? "justify-end" : "justify-start"
                           )}
                         >
-                          <p className="font-semibold text-xs mb-1">
-                            {msg.sender_username || 'Sconosciuto'}
-                          </p>
-                          <p className="text-sm break-words">{msg.content}</p>
-                          <p className="text-xs mt-1 opacity-75">
-                            {format(new Date(msg.created_at), 'dd MMM HH:mm', { locale: it })}
-                          </p>
+                          <div 
+                            className={cn(
+                              "max-w-[80%] p-3 rounded-lg",
+                              msg.sender_id === user.id 
+                                ? "bg-blue-600 text-white rounded-br-none" 
+                                : "bg-gray-200 text-gray-800 rounded-bl-none"
+                            )}
+                          >
+                            <p className="font-semibold text-xs mb-1">
+                              {msg.sender_username || 'Sconosciuto'}
+                            </p>
+                            <p className="text-sm break-words">{msg.content}</p>
+                            <p className="text-xs mt-1 opacity-75">
+                              {format(new Date(msg.created_at), 'dd MMM HH:mm', { locale: it })}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))
+                    )}
+                  </ScrollArea>
+                  
+                  {/* Scroll to bottom button */}
+                  {showScrollButton && (
+                    <Button
+                      onClick={scrollToBottom}
+                      className="absolute bottom-4 right-4 rounded-full p-3 shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+                      size="icon"
+                      title="Scorri in basso"
+                    >
+                      <ArrowDown className="h-5 w-5" />
+                    </Button>
                   )}
-                </ScrollArea>
+                </div>
+                
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
                   <Input
                     value={newMessageContent}
