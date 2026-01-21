@@ -300,7 +300,7 @@ export default function ChatPage() {
                           </p>
                           <p className="text-sm break-words">{msg.content}</p>
                           <p className="text-xs mt-1 opacity-75">
-                            {format(new Date(msg.created_at), 'HH:mm', { locale: it })}
+                            {format(new Date(msg.created_at), 'dd MMM HH:mm', { locale: it })}
                           </p>
                         </div>
                       </div>
