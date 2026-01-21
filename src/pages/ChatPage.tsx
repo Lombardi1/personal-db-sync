@@ -148,7 +148,7 @@ export default function ChatPage() {
                 <Button 
                   size="sm" 
                   onClick={() => setIsCreateNamedChatModalOpen(true)} 
-                  className="gap-1"
+                  className="gap-1 bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white"
                 >
                   <PlusCircle className="h-4 w-4" />
                   Nuova
@@ -316,7 +316,11 @@ export default function ChatPage() {
                     className="flex-1" 
                     disabled={loadingMessages}
                   />
-                  <Button type="submit" disabled={loadingMessages || !newMessageContent.trim()}>
+                  <Button 
+                    type="submit" 
+                    disabled={loadingMessages || !newMessageContent.trim()}
+                    className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white"
+                  >
                     <Send className="h-5 w-5" />
                   </Button>
                 </form>
