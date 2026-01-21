@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react'; // Importa useRef
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Chat, Message, ChatRing } from '@/types'; // Importa ChatRing
+import { Chat, Message, ChatRing } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { NavigateFunction } from 'react-router-dom';
@@ -10,13 +10,13 @@ const fetchAllUsers = async (setAllUsers: React.Dispatch<React.SetStateAction<{ 
   const { data, error } = await supabase
     .from('app_users')
     .select('id, username');
-  
+
   if (error) {
     console.error('Error fetching all users:', error);
     toast.error('Errore nel caricamento degli utenti per la chat.');
     return [];
   }
-  
+
   setAllUsers(data || []);
   return data || [];
 };
@@ -27,7 +27,7 @@ const requestNotificationPermission = async () => {
     console.warn('Browser does not support desktop notifications.');
     return;
   }
-  
+
   if (Notification.permission === 'default') {
     try {
       const permission = await Notification.requestPermission();
@@ -54,9 +54,9 @@ const fetchUserChats = async (
   setLoadingChats: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   if (!userId) return;
-  
+
   setLoadingChats(true);
-  
+
   try {
     // 1. Fetch chats relevant to the current user
     const { data: chatsData, error: chatsError } = await supabase
@@ -64,11 +64,11 @@ const fetchUserChats = async (
       .select(`id, created_at, participant_ids, last_message_content, last_message_at, name`)
       .contains('participant_ids', [userId])
       .order('last_message_at', { ascending: false, nullsFirst: false });
-    
+
     if (chatsError) {
       throw new Error(`Error fetching chats: ${chatsError.message}`);
     }
-    
+
     // 2. Fetch user_chat_status for the current user for all fetched chats
     const chatIds = (chatsData || []).map(chat => chat.id);
     const { data: userChatStatusData, error: statusError } = await supabase
@@ -76,38 +76,38 @@ const fetchUserChats = async (
       .select('chat_id, last_read_at')
       .eq('user_id', userId)
       .in('chat_id', chatIds);
-    
+
     if (statusError) {
       console.error('Error fetching user chat status:', statusError);
       // Don't block, proceed with potentially missing status
     }
-    
+
     const userChatStatusMap = new Map(
       (userChatStatusData || []).map(status => [status.chat_id, status.last_read_at])
     );
-    
+
     let currentTotalUnread = 0;
-    
+
     const chatsWithUsernames: Chat[] = await Promise.all(
       (chatsData || []).map(async (chat) => {
         const participantUsernames = await Promise.all(
           chat.participant_ids.map(async (pId: string) => {
             const foundUser = allUsers.find(u => u.id === pId);
             if (foundUser) return foundUser.username;
-            
+
             const { data: userData, error: userError } = await supabase
               .from('app_users')
               .select('username')
               .eq('id', pId)
               .single();
-            
+
             return userData?.username || 'Sconosciuto';
           })
         );
-        
+
         // Get last_read_at for the current user from the map
         const lastReadAt = userChatStatusMap.get(chat.id);
-        
+
         let unreadCount = 0;
         if (chat.last_message_at) {
           if (lastReadAt) {
@@ -120,7 +120,7 @@ const fetchUserChats = async (
                 .eq('chat_id', chat.id)
                 .gt('created_at', lastReadAt)
                 .neq('sender_id', userId);
-              
+
               if (countError) {
                 console.error('Error counting unread messages:', countError);
               } else {
@@ -134,7 +134,7 @@ const fetchUserChats = async (
               .select('id', { count: 'exact' })
               .eq('chat_id', chat.id)
               .neq('sender_id', userId);
-            
+
             if (countError) {
               console.error('Error counting unread messages (no last_read_at):', countError);
             } else {
@@ -142,11 +142,11 @@ const fetchUserChats = async (
             }
           }
         }
-        
+
         if (unreadCount > 0) {
           currentTotalUnread += unreadCount;
         }
-        
+
         return {
           ...chat,
           participant_usernames: participantUsernames,
@@ -154,7 +154,7 @@ const fetchUserChats = async (
         };
       })
     );
-    
+
     setChats(chatsWithUsernames);
     setTotalUnreadCount(currentTotalUnread);
   } catch (error: any) {
@@ -172,23 +172,23 @@ const fetchChatMessages = async (
   setLoadingMessages: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   setLoadingMessages(true);
-  
+
   try {
     const { data, error } = await supabase
       .from('messages')
       .select(`*, app_users(username)`)
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
-    
+
     if (error) {
       throw new Error(`Error fetching messages: ${error.message}`);
     }
-    
+
     const messagesWithUsernames: Message[] = (data || []).map(msg => ({
       ...msg,
       sender_username: (msg as any).app_users?.username || 'Sconosciuto'
     }));
-    
+
     setMessages(messagesWithUsernames);
   } catch (error: any) {
     console.error('Error in fetchChatMessages:', error);
@@ -207,7 +207,7 @@ const markChatAsRead = async (
   fetchChats: () => Promise<void>
 ) => {
   if (!userId) return;
-  
+
   // Optimistic UI update
   setChats(prevChats => {
     const updatedChats = prevChats.map(chat => {
@@ -222,7 +222,7 @@ const markChatAsRead = async (
     });
     return updatedChats;
   });
-  
+
   try {
     const { error } = await supabase
       .from('user_chat_status')
@@ -234,7 +234,7 @@ const markChatAsRead = async (
         },
         { onConflict: 'user_id,chat_id' }
       );
-    
+
     if (error) {
       throw new Error(`Error marking chat as read: ${error.message}`);
     }
@@ -253,15 +253,15 @@ const createOrGetChat = async (
   setActiveChatId: React.Dispatch<React.SetStateAction<string | null>>,
   markChatAsRead: (chatId: string) => Promise<void>,
   fetchChats: () => Promise<void>,
-  navigate?: NavigateFunction // Make navigate optional here too
+  navigate?: NavigateFunction
 ) => {
   if (!userId) {
     toast.error('Devi essere loggato per creare una chat.');
     return null;
   }
-  
+
   const allParticipants = Array.from(new Set([...participantIds, userId])).sort();
-  
+
   try {
     // Check for existing chat with these participants
     const { data: existingChats, error: searchError } = await supabase
@@ -269,17 +269,17 @@ const createOrGetChat = async (
       .select('id, participant_ids')
       .contains('participant_ids', allParticipants)
       .limit(1);
-    
+
     if (searchError) {
       throw new Error(`Error searching for existing chat: ${searchError.message}`);
     }
-    
+
     if (existingChats && existingChats.length > 0) {
-      const foundChat = existingChats.find(chat => 
-        chat.participant_ids.length === allParticipants.length && 
+      const foundChat = existingChats.find(chat =>
+        chat.participant_ids.length === allParticipants.length &&
         chat.participant_ids.every((id, index) => id === allParticipants[index])
       );
-      
+
       if (foundChat) {
         setActiveChatId(foundChat.id);
         toast.info('Chat esistente aperta.');
@@ -287,7 +287,7 @@ const createOrGetChat = async (
         return foundChat.id;
       }
     }
-    
+
     // If no existing chat, create a new one
     console.log('[useChat] createOrGetChat: Attempting to create chat with participants:', allParticipants, 'by user ID:', userId);
     const { data: newChat, error: createError } = await supabase
@@ -295,11 +295,11 @@ const createOrGetChat = async (
       .insert({ participant_ids: allParticipants })
       .select()
       .single();
-    
+
     if (createError) {
       throw new Error(`Error creating new chat: ${createError.message}`);
     }
-    
+
     setActiveChatId(newChat.id);
     toast.success('Nuova chat creata!');
     await markChatAsRead(newChat.id);
@@ -323,14 +323,14 @@ const sendMessage = async (
     toast.error('Impossibile inviare un messaggio vuoto o senza chat attiva.');
     return;
   }
-  
+
   try {
     console.log('[useChat] sendMessage: Attempting to send message:', {
       chat_id: chatId,
       sender_id: userId,
       content: content.trim()
     });
-    
+
     const { error: insertMessageError } = await supabase
       .from('messages')
       .insert({
@@ -338,11 +338,11 @@ const sendMessage = async (
         sender_id: userId,
         content: content.trim()
       });
-    
+
     if (insertMessageError) {
       throw new Error(`Error sending message: ${insertMessageError.message}`);
     }
-    
+
     // Update last_message_content and last_message_at in the chat
     const { error: updateChatError } = await supabase
       .from('chats')
@@ -351,11 +351,11 @@ const sendMessage = async (
         last_message_at: new Date().toISOString()
       })
       .eq('id', chatId);
-    
+
     if (updateChatError) {
       throw new Error(`Error updating chat last message: ${updateChatError.message}`);
     }
-    
+
     // Messages will be re-fetched by the real-time subscription
     // Also mark as read since the user just sent a message
     await markChatAsRead(chatId);
@@ -377,21 +377,21 @@ const deleteChat = async (
     toast.error('Devi essere loggato per eliminare una chat.');
     return;
   }
-  
+
   try {
     const { error } = await supabase
       .from('chats')
       .delete()
       .eq('id', chatId);
-    
+
     if (error) {
       throw new Error(`Error deleting chat: ${error.message}`);
     }
-    
+
     if (activeChatId === chatId) {
       setActiveChatId(null);
     }
-    
+
     toast.success('Chat eliminata con successo!');
     await fetchChats();
   } catch (error: any) {
@@ -418,7 +418,7 @@ const sendRing = async (chatId: string, senderId: string) => {
   }
 };
 
-export function useChat(navigate?: NavigateFunction) { // Make navigate optional
+export function useChat(navigate?: NavigateFunction) {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -428,9 +428,9 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
   const [allUsers, setAllUsers] = useState<{ id: string; username: string }[]>([]);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
-  const ringAudioRef = useRef<HTMLAudioElement>(null); // NEW: Ref for audio element
+  const ringAudioRef = useRef<HTMLAudioElement>(null);
 
-  const playRingSound = useCallback(() => { // NEW: Function to play sound
+  const playRingSound = useCallback(() => {
     if (ringAudioRef.current) {
       ringAudioRef.current.play().catch(e => console.error("Error playing sound:", e));
     }
@@ -464,10 +464,10 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
       console.log('[useChat useEffect] User ID is not available, skipping chat channel setup.');
       return;
     }
-    
+
     console.log(`[useChat useEffect] Setting up chat channel for user: ${user.id}`);
     fetchChats(); // Initial fetch
-    
+
     const chatChannel = supabase
       .channel('chats-realtime')
       .on(
@@ -480,12 +480,12 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
         },
         async (payload) => {
           console.log('--- Real-time chat change received! ---', payload);
-          
+
           // If a chat is inserted or deleted, or participants change, re-fetch all chats
           if (
             payload.eventType === 'INSERT' ||
             payload.eventType === 'DELETE' ||
-            (payload.eventType === 'UPDATE' && 
+            (payload.eventType === 'UPDATE' &&
               ((payload as any).old as Chat).participant_ids !== ((payload as any).new as Chat).participant_ids)
           ) {
             fetchChats();
@@ -493,7 +493,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
             // For updates that are just last_message_content/last_message_at,
             // update the chat list's last message content/time locally.
             const updatedChat = (payload as any).new as Chat;
-            setChats(prevChats => prevChats.map(chat => 
+            setChats(prevChats => prevChats.map(chat =>
               chat.id === updatedChat.id ? {
                 ...chat,
                 last_message_content: updatedChat.last_message_content,
@@ -504,7 +504,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
         }
       )
       .subscribe();
-    
+
     return () => {
       supabase.removeChannel(chatChannel);
     };
@@ -515,7 +515,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
     if (activeChatId) {
       fetchMessages(activeChatId);
       handleMarkChatAsRead(activeChatId); // Mark as read when active chat changes
-      
+
       const messageChannel = supabase
         .channel(`messages-chat-${activeChatId}`)
         .on(
@@ -533,7 +533,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
           }
         )
         .subscribe();
-      
+
       return () => {
         supabase.removeChannel(messageChannel);
       };
@@ -591,7 +591,6 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
     };
   }, [user?.id, chats, allUsers, playRingSound, navigate]);
 
-
   const handleCreateOrGetChat = useCallback(async (participantIds: string[]) => {
     return await createOrGetChat(
       participantIds,
@@ -619,7 +618,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
   // Global message channel for notifications
   useEffect(() => {
     if (!user?.id) return;
-    
+
     const globalMessageChannel = supabase
       .channel('global-messages-realtime')
       .on(
@@ -632,11 +631,11 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
         async (payload) => {
           const newMessage = (payload as any).new as Message;
           console.log('Global message INSERT received:', newMessage);
-          
+
           // Check if the message is for the current user
           const currentChat = chats.find(chat => chat.id === newMessage.chat_id);
           const isCurrentUserParticipant = currentChat?.participant_ids.includes(user.id);
-          
+
           // Only show notification if:
           // 1. The message is from another user
           // 2. The current user is a participant in the chat
@@ -661,15 +660,15 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
                 }
                 return chat;
               });
-              
+
               // If the chat is not in the current list (e.g., new chat created by other user)
               // We might need to re-fetch chats fully. For now, assume it's in the list.
               return updatedChats;
             });
-            
+
             const sender = allUsers.find(u => u.id === newMessage.sender_id);
             const senderUsername = sender?.username || 'Sconosciuto';
-            
+
             // --- NEW: Desktop Notification Logic ---
             if ('Notification' in window && Notification.permission === 'granted') {
               const notificationTitle = `Nuovo messaggio da ${senderUsername}`;
@@ -679,7 +678,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
                 tag: newMessage.chat_id, // Group notifications by chat
                 renotify: true // Show new notification even if one exists for this tag
               };
-              
+
               const notification = new Notification(notificationTitle, notificationOptions);
               notification.onclick = () => {
                 window.focus(); // Bring the browser window to front
@@ -720,7 +719,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
         }
       )
       .subscribe();
-    
+
     return () => {
       supabase.removeChannel(globalMessageChannel);
     };
@@ -740,7 +739,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
     fetchChats,
     totalUnreadCount,
     markChatAsRead: handleMarkChatAsRead,
-    sendRing: handleSendRing, // NEW: Expose sendRing
-    ringAudioRef, // NEW: Expose audio ref
+    sendRing: handleSendRing,
+    ringAudioRef,
   };
 }

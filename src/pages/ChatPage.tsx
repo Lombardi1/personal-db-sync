@@ -173,14 +173,14 @@ export default function ChatPage() {
   }
 
   const activeChat = chats.find(chat => chat.id === activeChatId);
-  
+
   // Logic for truncated participant list
   const otherParticipants = activeChat?.participant_usernames?.filter(u => u !== user.username) || [];
   const displayParticipants = otherParticipants.slice(0, 2).join(', ');
   const remainingParticipantsCount = otherParticipants.length - 2;
 
-  const chatTitle = activeChat 
-    ? (activeChat.name || (otherParticipants.length > 0 ? displayParticipants : 'Chat')) 
+  const chatTitle = activeChat
+    ? (activeChat.name || (otherParticipants.length > 0 ? displayParticipants : 'Chat'))
     : 'Seleziona una chat';
 
   return (
@@ -196,9 +196,9 @@ export default function ChatPage() {
                 Le mie Chat
               </h2>
               <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => setIsCreateNamedChatModalOpen(true)} 
+                <Button
+                  size="sm"
+                  onClick={() => setIsCreateNamedChatModalOpen(true)}
                   className="gap-1 bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white"
                 >
                   <PlusCircle className="h-4 w-4" />
@@ -216,8 +216,8 @@ export default function ChatPage() {
                 <p className="text-center text-sm text-muted-foreground p-4">Nessuna chat. Inizia una nuova!</p>
               ) : (
                 chats.map(chat => (
-                  <div 
-                    key={chat.id} 
+                  <div
+                    key={chat.id}
                     onClick={() => navigate(`/chat/${chat.id}`)}
                     className={cn(
                       "flex items-center justify-between p-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-gray-50 transition-colors",
@@ -278,7 +278,7 @@ export default function ChatPage() {
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-bold truncate">{chatTitle}</h2>
                 {activeChat?.name ? (
-                  <p 
+                  <p
                     className="text-sm text-muted-foreground truncate cursor-pointer hover:underline"
                     onClick={handleEditParticipants}
                   >
@@ -287,7 +287,7 @@ export default function ChatPage() {
                   </p>
                 ) : (
                   otherParticipants.length > 0 && (
-                    <p 
+                    <p
                       className="text-sm text-muted-foreground truncate cursor-pointer hover:underline"
                       onClick={handleEditParticipants}
                     >
@@ -299,10 +299,10 @@ export default function ChatPage() {
               </div>
               <div className="flex items-center gap-2">
                 {activeChatId && (
-                  <Button 
-                    onClick={handleSendRingClick} 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    onClick={handleSendRingClick}
+                    variant="outline"
+                    size="sm"
                     className="text-sm gap-1 bg-[hsl(var(--ring-color))] hover:bg-[hsl(var(--ring-color-dark))] text-white"
                     title="Fai Squillare"
                   >
@@ -317,13 +317,13 @@ export default function ChatPage() {
                   </Button>
                 )}
                 {isMobile && activeChatId && (
-                  <Button 
+                  <Button
                     onClick={() => {
                       setActiveChatId(null);
                       navigate('/chat');
-                    }} 
-                    variant="outline" 
-                    size="icon" 
+                    }}
+                    variant="outline"
+                    size="icon"
                     className="text-sm"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -345,8 +345,8 @@ export default function ChatPage() {
                     <p className="text-center text-muted-foreground">Inizia la conversazione!</p>
                   ) : (
                     messages.map(msg => (
-                      <div 
-                        key={msg.id} 
+                      <div
+                        key={msg.id}
                         className={cn(
                           "flex",
                           msg.sender_id === user.id ? "justify-end" : "justify-start"
@@ -354,8 +354,8 @@ export default function ChatPage() {
                       >
                         <div className={cn(
                           "max-w-[80%] p-3 rounded-lg",
-                          msg.sender_id === user.id 
-                            ? "bg-green-600 text-white rounded-br-none" 
+                          msg.sender_id === user.id
+                            ? "bg-green-600 text-white rounded-br-none"
                             : "bg-gray-200 text-gray-800 rounded-bl-none"
                         )}>
                           <p className="font-semibold text-xs mb-1">
@@ -372,15 +372,15 @@ export default function ChatPage() {
                   <div ref={messagesEndRef} />
                 </ScrollArea>
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-                  <Input 
-                    value={newMessageContent} 
-                    onChange={(e) => setNewMessageContent(e.target.value)} 
-                    placeholder="Scrivi un messaggio..." 
-                    className="flex-1" 
+                  <Input
+                    value={newMessageContent}
+                    onChange={(e) => setNewMessageContent(e.target.value)}
+                    placeholder="Scrivi un messaggio..."
+                    className="flex-1"
                     disabled={loadingMessages}
                   />
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={loadingMessages || !newMessageContent.trim()}
                     className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white"
                   >
@@ -395,100 +395,100 @@ export default function ChatPage() {
             )}
           </div>
         )}
-
-        {/* New Chat Modal (Legacy) */}
-        <Dialog open={isNewChatModalOpen} onOpenChange={setIsNewChatModalOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Crea Nuova Chat</DialogTitle>
-              <DialogDescription>
-                Seleziona gli utenti con cui vuoi iniziare una nuova chat.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <MultiSelectUsers 
-                options={allUsers} 
-                selected={selectedParticipants} 
-                onSelectionChange={setSelectedParticipants}
-                currentUser={user}
-                placeholder="Seleziona partecipanti..."
-                disabled={false}
-                checkboxClassName="border-[hsl(var(--chat-color))] data-[state=checked]:bg-[hsl(var(--chat-color))] data-[state=checked]:text-white"
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsNewChatModalOpen(false)}>Annulla</Button>
-              <Button 
-                onClick={handleCreateNewChat}
-                className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white"
-              >
-                Crea Chat
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Create Named Chat Modal */}
-        <CreateNamedChatModal
-          isOpen={isCreateNamedChatModalOpen}
-          onClose={() => setIsCreateNamedChatModalOpen(false)}
-          allUsers={allUsers}
-          onCreateChat={handleCreateNamedChat}
-        />
-
-        {/* Edit Participants Modal */}
-        {activeChat && (
-          <EditChatParticipantsModal
-            isOpen={isEditParticipantsModalOpen}
-            onClose={() => setIsEditParticipantsModalOpen(false)}
-            chatId={activeChat.id}
-            currentParticipants={activeChat.participant_ids}
-            currentName={activeChat.name}
-            onParticipantsUpdated={handleParticipantsUpdated}
-            allUsers={allUsers} 
-          />
-        )}
-
-        {/* Delete Chat Alert Dialog */}
-        <AlertDialog open={isDeleteChatAlertOpen} onOpenChange={setIsDeleteChatAlertOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Conferma Eliminazione Chat</AlertDialogTitle>
-              <AlertDialogDescription>
-                Sei sicuro di voler eliminare questa chat? Questa azione non può essere annullata.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <DialogFooter>
-              <AlertDialogCancel>Annulla</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmDeleteChat} className="bg-destructive hover:bg-destructive/90">
-                Elimina
-              </AlertDialogAction>
-            </DialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* NEW: Ring Confirmation Dialog */}
-        <AlertDialog open={isRingConfirmOpen} onOpenChange={setIsRingConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Conferma Squillo</AlertDialogTitle>
-              <AlertDialogDescription>
-                Sei sicuro di voler inviare uno squillo a tutti i partecipanti di questa chat?
-                Il loro dispositivo riprodurrà un suono.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <DialogFooter>
-              <AlertDialogCancel>Annulla</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmSendRing} className="bg-[hsl(var(--ring-color))] hover:bg-[hsl(var(--ring-color-dark))] text-white">
-                Invia Squillo
-              </AlertDialogAction>
-            </DialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* NEW: Hidden Audio Element for Ringtone */}
-        <audio ref={ringAudioRef} src="/sounds/ring.mp3" preload="auto" />
       </div>
+
+      {/* New Chat Modal (Legacy) */}
+      <Dialog open={isNewChatModalOpen} onOpenChange={setIsNewChatModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Crea Nuova Chat</DialogTitle>
+            <DialogDescription>
+              Seleziona gli utenti con cui vuoi iniziare una nuova chat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <MultiSelectUsers
+              options={allUsers}
+              selected={selectedParticipants}
+              onSelectionChange={setSelectedParticipants}
+              currentUser={user}
+              placeholder="Seleziona partecipanti..."
+              disabled={false}
+              checkboxClassName="border-[hsl(var(--chat-color))] data-[state=checked]:bg-[hsl(var(--chat-color))] data-[state=checked]:text-white"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewChatModalOpen(false)}>Annulla</Button>
+            <Button
+              onClick={handleCreateNewChat}
+              className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white"
+            >
+              Crea Chat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Named Chat Modal */}
+      <CreateNamedChatModal
+        isOpen={isCreateNamedChatModalOpen}
+        onClose={() => setIsCreateNamedChatModalOpen(false)}
+        allUsers={allUsers}
+        onCreateChat={handleCreateNamedChat}
+      />
+
+      {/* Edit Participants Modal */}
+      {activeChat && (
+        <EditChatParticipantsModal
+          isOpen={isEditParticipantsModalOpen}
+          onClose={() => setIsEditParticipantsModalOpen(false)}
+          chatId={activeChat.id}
+          currentParticipants={activeChat.participant_ids}
+          currentName={activeChat.name}
+          onParticipantsUpdated={handleParticipantsUpdated}
+          allUsers={allUsers}
+        />
+      )}
+
+      {/* Delete Chat Alert Dialog */}
+      <AlertDialog open={isDeleteChatAlertOpen} onOpenChange={setIsDeleteChatAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Eliminazione Chat</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questa chat? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <DialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeleteChat} className="bg-destructive hover:bg-destructive/90">
+              Elimina
+            </AlertDialogAction>
+          </DialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* NEW: Ring Confirmation Dialog */}
+      <AlertDialog open={isRingConfirmOpen} onOpenChange={setIsRingConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Squillo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler inviare uno squillo a tutti i partecipanti di questa chat?
+              Il loro dispositivo riprodurrà un suono.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <DialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSendRing} className="bg-[hsl(var(--ring-color))] hover:bg-[hsl(var(--ring-color-dark))] text-white">
+              Invia Squillo
+            </AlertDialogAction>
+          </DialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* NEW: Hidden Audio Element for Ringtone */}
+      <audio ref={ringAudioRef} src="/sounds/ring.mp3" preload="auto" />
     </div>
   );
 }
