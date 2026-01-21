@@ -153,7 +153,11 @@ export function EditChatParticipantsModal({
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Annulla
           </Button>
-          <Button onClick={handleSave} disabled={isSubmitting}>
+          <Button 
+            onClick={handleSave} 
+            disabled={isSubmitting}
+            className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white"
+          >
             {isSubmitting ? 'Salvataggio...' : 'Salva'}
           </Button>
         </DialogFooter>

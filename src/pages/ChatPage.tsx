@@ -354,7 +354,12 @@ export default function ChatPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsNewChatModalOpen(false)}>Annulla</Button>
-              <Button onClick={handleCreateNewChat}>Crea Chat</Button>
+              <Button 
+                onClick={handleCreateNewChat}
+                className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white"
+              >
+                Crea Chat
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
