@@ -464,16 +464,25 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
           ) {
             fetchChats();
           } else if (payload.eventType === 'UPDATE') {
-            // For updates that are just last_message_content/last_message_at,
-            // update the chat list's last message content/time locally.
-            const updatedChat = (payload as any).new as Chat;
-            setChats(prevChats => prevChats.map(chat => 
-              chat.id === updatedChat.id ? {
-                ...chat,
-                last_message_content: updatedChat.last_message_content,
-                last_message_at: updatedChat.last_message_at
-              } : chat
-            ));
+            const oldChat = (payload as any).old as Chat;
+            const newChat = (payload as any).new as Chat;
+
+            // If last_message_at has changed, it means a new message was sent (or last message was updated)
+            // In this case, we need to re-fetch chats to correctly re-calculate unread counts.
+            if (oldChat.last_message_at !== newChat.last_message_at) {
+              console.log(`[chats-realtime] UPDATE: last_message_at changed for chat ${newChat.id}. Re-fetching all chats.`);
+              fetchChats();
+            } else {
+              // For other updates (e.g., chat name change), just update locally
+              setChats(prevChats => prevChats.map(chat => 
+                chat.id === newChat.id ? {
+                  ...chat,
+                  last_message_content: newChat.last_message_content,
+                  last_message_at: newChat.last_message_at,
+                  name: newChat.name // Also update name locally
+                } : chat
+              ));
+            }
           }
         }
       )
