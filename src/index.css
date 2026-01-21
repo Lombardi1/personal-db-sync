@@ -70,8 +70,6 @@ html, body, #root {
     --polimeri-color-dark: 170 70% 25%;
     --chat-color: 142 71% 39%; /* AGGIORNATO: Colore per la Chat (verde) */
     --chat-color-dark: 142 71% 30%;
-    --ring-color: 340 80% 50%; /* NUOVO: Colore per il pulsante di squillo (rosso/rosa) */
-    --ring-color-dark: 340 80% 40%;
 
     /* Nuovi colori per gli stati degli ordini d'acquisto */
     --stato-in-attesa: 39 100% 50%; /* Arancione */
