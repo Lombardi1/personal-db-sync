@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
@@ -32,7 +32,9 @@ export default function ChatPage() {
   const [isDeleteChatAlertOpen, setIsDeleteChatAlertOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [isEditParticipantsModalOpen, setIsEditParticipantsModalOpen] = useState(false);
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  
+  // Ref per l'elemento radice della ScrollArea
+  const chatScrollAreaRootRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -46,10 +48,21 @@ export default function ChatPage() {
   }, [urlChatId, setActiveChatId]);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, activeChatId]); // Aggiunto activeChatId alle dipendenze
+    const scrollToBottom = () => {
+      if (chatScrollAreaRootRef.current) {
+        const viewport = chatScrollAreaRootRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+          // Scorri fino in fondo con un comportamento fluido
+          viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+        }
+      }
+    };
+
+    // Usa un piccolo timeout per assicurarti che il DOM abbia renderizzato i nuovi messaggi
+    const timeoutId = setTimeout(scrollToBottom, 50); 
+
+    return () => clearTimeout(timeoutId);
+  }, [messages, activeChatId]); // Scorri quando i messaggi o la chat attiva cambiano
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,7 +286,7 @@ export default function ChatPage() {
             </div>
             {activeChatId ? (
               <>
-                <ScrollArea className="flex-1 p-4 space-y-4">
+                <ScrollArea ref={chatScrollAreaRootRef} className="flex-1 p-4 space-y-4">
                   {loadingMessages ? (
                     <div className="flex justify-center items-center h-full">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -306,7 +319,6 @@ export default function ChatPage() {
                       </div>
                     ))
                   )}
-                  <div ref={messagesEndRef} />
                 </ScrollArea>
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
                   <Input 
