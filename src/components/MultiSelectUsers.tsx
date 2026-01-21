@@ -30,6 +30,7 @@ interface MultiSelectUsersProps {
   placeholder?: string;
   disabled?: boolean;
   currentUser?: UserOption; // To exclude current user from selection
+  checkboxClassName?: string; // NUOVO: Prop per personalizzare lo stile del checkbox
 }
 
 export function MultiSelectUsers({
@@ -39,6 +40,7 @@ export function MultiSelectUsers({
   placeholder = "Seleziona partecipanti...",
   disabled = false,
   currentUser,
+  checkboxClassName, // Destruttura la nuova prop
 }: MultiSelectUsersProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -87,7 +89,7 @@ export function MultiSelectUsers({
                   <Checkbox
                     checked={selected.includes(userOption.id)}
                     onCheckedChange={() => handleSelect(userOption.id)}
-                    className="mr-2"
+                    className={cn("mr-2", checkboxClassName)} {/* Applica la classe personalizzata qui */}
                   />
                   {userOption.username}
                 </CommandItem>

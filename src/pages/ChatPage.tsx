@@ -350,6 +350,7 @@ export default function ChatPage() {
                 currentUser={user}
                 placeholder="Seleziona partecipanti..."
                 disabled={false}
+                checkboxClassName="border-[hsl(var(--chat-color))] data-[state=checked]:bg-[hsl(var(--chat-color))] data-[state=checked]:text-white" // Passa la classe per il colore verde
               />
             </div>
             <DialogFooter>

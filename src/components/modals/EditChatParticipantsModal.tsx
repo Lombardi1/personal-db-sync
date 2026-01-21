@@ -141,6 +141,7 @@ export function EditChatParticipantsModal({
                 }}
                 currentUser={user}
                 placeholder="Seleziona partecipanti..."
+                checkboxClassName="border-[hsl(var(--chat-color))] data-[state=checked]:bg-[hsl(var(--chat-color))] data-[state=checked]:text-white" // Passa la classe per il colore verde
               />
             </div>
           </div>
