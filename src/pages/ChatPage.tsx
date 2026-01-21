@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users, BellRing, Volume2 } from 'lucide-react';
+import { Home, MessageSquare, PlusCircle, Trash2, Send, Loader2, ArrowLeft, UserPlus, Users, BellRing } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -156,23 +156,6 @@ export default function ChatPage() {
       // Audio already unlocked, just send the ring
       await sendRing(activeChatId);
       setIsRingConfirmOpen(false);
-    }
-  };
-
-  // NEW: Handle unlocking audio
-  const handleUnlockAudio = async () => {
-    if (ringAudioRef.current) {
-      try {
-        await ringAudioRef.current.play();
-        ringAudioRef.current.pause();
-        ringAudioRef.current.currentTime = 0; // Reset to start
-        setAudioUnlocked(true);
-        localStorage.setItem('chatAudioUnlocked', 'true');
-        toast.success('Audio sbloccato! Ora puoi inviare squilli.');
-      } catch (error) {
-        console.error('Failed to unlock audio:', error);
-        toast.error('Impossibile sbloccare l\'audio. Assicurati di aver interagito con la pagina.');
-      }
     }
   };
 
@@ -502,19 +485,6 @@ export default function ChatPage() {
             </DialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {/* NEW: Audio Unlock Button */}
-        {!audioUnlocked && (
-          <div className="fixed bottom-4 right-4 z-50">
-            <Button
-              onClick={handleUnlockAudio}
-              className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white gap-2"
-            >
-              <Volume2 className="h-4 w-4" />
-              <span>Sblocca Audio</span>
-            </Button>
-          </div>
-        )}
 
         {/* NEW: Hidden Audio Element for Ringtone */}
         <audio ref={ringAudioRef} src="/sounds/ring.mp3" preload="auto" />
