@@ -86,10 +86,11 @@ export function MultiSelectUsers({
                   value={userOption.username}
                   onSelect={() => handleSelect(userOption.id)}
                 >
+                  {/* Applica la classe personalizzata qui */}
                   <Checkbox
                     checked={selected.includes(userOption.id)}
                     onCheckedChange={() => handleSelect(userOption.id)}
-                    className={cn("mr-2", checkboxClassName)} {/* Applica la classe personalizzata qui */}
+                    className={cn("mr-2", checkboxClassName)} 
                   />
                   {userOption.username}
                 </CommandItem>
