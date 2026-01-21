@@ -23,9 +23,9 @@ html, body, #root {
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 222 47% 39%;
+    --primary: 142 71% 39%; /* Cambiato da blu a verde */
     --primary-foreground: 210 40% 98%;
-    --primary-dark: 223 56% 48%;
+    --primary-dark: 142 71% 30%; /* Cambiato da blu scuro a verde scuro */
 
     --secondary: 199 89% 48%;
     --secondary-foreground: 210 40% 98%;
@@ -55,7 +55,7 @@ html, body, #root {
     --radius: 0.5rem;
 
     /* Section colors */
-    --dashboard-color: 217 91% 60%;
+    --dashboard-color: 142 71% 39%; /* Cambiato da blu a verde */
     --ordini-color: 0 72% 51%;
     --esauriti-color: 142 71% 39%;
     --carico-color: 262 66% 52%;
@@ -73,8 +73,8 @@ html, body, #root {
 
     /* Nuovi colori per gli stati degli ordini d'acquisto */
     --stato-in-attesa: 39 100% 50%; /* Arancione */
-    --stato-inviato-bg: 210 80% 90%; /* Blu chiaro per sfondo */
-    --stato-inviato-fg: 210 80% 30%; /* Blu scuro per testo */
+    --stato-inviato-bg: 142 71% 90%; /* Cambiato da blu chiaro a verde chiaro */
+    --stato-inviato-fg: 142 71% 30%; /* Cambiato da blu scuro a verde scuro */
     --stato-confermato: 142 71% 39%; /* Verde (come success) */
     --stato-ricevuto: 142 76% 80%; /* Verde più scuro e visibile */
     --stato-annullato: 0 72% 51%; /* Rosso (come danger) */
@@ -84,7 +84,7 @@ html, body, #root {
 @layer components {
   /* Header */
   .app-header {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-dark))); /* Usa i nuovi colori primari */
     color: white;
     padding: 16px 0; /* Adjusted padding for smaller screens */
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
