@@ -432,7 +432,7 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
     fetchAllUsers(setAllUsers);
   }, []);
 
-  // Global messages real-time channel for new messages
+  // Global chats real-time channel for any change in chats table
   useEffect(() => {
     if (!user?.id) {
       console.log('[useChat useEffect] User ID is not available, skipping chat channel setup.');
@@ -447,34 +447,16 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'chats',
-          filter: `participant_ids.ov.{"${user.id}"}`
+          filter: `participant_ids.ov.{"${user.id}"}` // Filter for chats involving the current user
         },
         async (payload) => {
           console.log('--- Real-time chat change received! ---', payload);
-          
-          // If a chat is inserted or deleted, or participants change, re-fetch all chats
-          if (
-            payload.eventType === 'INSERT' ||
-            payload.eventType === 'DELETE' ||
-            (payload.eventType === 'UPDATE' && 
-              ((payload as any).old as Chat).participant_ids !== ((payload as any).new as Chat).participant_ids)
-          ) {
-            fetchChats();
-          } else if (payload.eventType === 'UPDATE') {
-            // For updates that are just last_message_content/last_message_at,
-            // update the chat list's last message content/time locally.
-            const updatedChat = (payload as any).new as Chat;
-            setChats(prevChats => prevChats.map(chat => 
-              chat.id === updatedChat.id ? {
-                ...chat,
-                last_message_content: updatedChat.last_message_content,
-                last_message_at: updatedChat.last_message_at
-              } : chat
-            ));
-          }
+          // On any change to a chat, re-fetch all chats to ensure consistency
+          // This will correctly re-calculate unread counts and update chat details.
+          fetchChats(); 
         }
       )
       .subscribe();
@@ -565,26 +547,9 @@ export function useChat(navigate?: NavigateFunction) { // Make navigate optional
             isCurrentUserParticipant &&
             newMessage.chat_id !== activeChatId
           ) {
-            // Update unread count for the specific chat
-            setChats(prevChats => {
-              const updatedChats = prevChats.map(chat => {
-                if (chat.id === newMessage.chat_id) {
-                  const newUnreadCount = (chat.unread_count || 0) + 1;
-                  setTotalUnreadCount(prevTotal => prevTotal + 1);
-                  return {
-                    ...chat,
-                    last_message_content: newMessage.content,
-                    last_message_at: newMessage.created_at,
-                    unread_count: newUnreadCount
-                  };
-                }
-                return chat;
-              });
-              
-              // If the chat is not in the current list (e.g., new chat created by other user)
-              // We might need to re-fetch chats fully. For now, assume it's in the list.
-              return updatedChats;
-            });
+            // The full fetchChats() triggered by the 'chats-realtime' channel
+            // will handle the unread count update.
+            // We only need to trigger desktop notifications here.
             
             const sender = allUsers.find(u => u.id === newMessage.sender_id);
             const senderUsername = sender?.username || 'Sconosciuto';
