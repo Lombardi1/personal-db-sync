@@ -42,7 +42,7 @@ export function SummaryHeader() {
                   onClick={() => navigate('/chat')}
                   variant="outline"
                   size="sm"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex-shrink-0"
+                  className="bg-[hsl(var(--chat-color))] hover:bg-[hsl(var(--chat-color-dark))] text-white flex-shrink-0"
                   title="Chat"
                 >
                   <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
