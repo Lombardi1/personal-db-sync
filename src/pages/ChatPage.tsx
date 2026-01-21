@@ -169,7 +169,7 @@ export default function ChatPage() {
                     key={chat.id} 
                     onClick={() => navigate(`/chat/${chat.id}`)}
                     className={cn(
-                      "flex items-center justify-between p-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-gray-50 transition-colors",
+                      "flex items-center p-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-gray-50 transition-colors",
                       activeChatId === chat.id && "bg-blue-50 border-l-4 border-blue-600"
                     )}
                   >
@@ -202,17 +202,20 @@ export default function ChatPage() {
                         </p>
                       )}
                     </div>
-                    {chat.unread_count && chat.unread_count > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center ml-2 flex-shrink-0">
-                        {chat.unread_count}
-                      </span>
-                    )}
-                    <Button variant="ghost" size="icon" onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteChatClick(chat.id);
-                    }} className="flex-shrink-0">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {/* Raggruppa badge e pulsante di eliminazione */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {chat.unread_count && chat.unread_count > 0 && (
+                        <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0">
+                          {chat.unread_count}
+                        </span>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteChatClick(chat.id);
+                      }} className="flex-shrink-0">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}
