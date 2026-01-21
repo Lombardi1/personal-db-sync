@@ -170,7 +170,7 @@ export default function ChatPage() {
                     onClick={() => navigate(`/chat/${chat.id}`)}
                     className={cn(
                       "flex items-center justify-between p-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-gray-50 transition-colors",
-                      activeChatId === chat.id && "bg-blue-50 border-l-4 border-blue-600"
+                      activeChatId === chat.id && "bg-green-50 border-l-4 border-green-600"
                     )}
                   >
                     <div className="flex-1 min-w-0">
@@ -292,7 +292,7 @@ export default function ChatPage() {
                         <div className={cn(
                           "max-w-[80%] p-3 rounded-lg",
                           msg.sender_id === user.id 
-                            ? "bg-blue-600 text-white rounded-br-none" 
+                            ? "bg-green-600 text-white rounded-br-none" 
                             : "bg-gray-200 text-gray-800 rounded-bl-none"
                         )}>
                           <p className="font-semibold text-xs mb-1">
