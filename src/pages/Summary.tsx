@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Warehouse, Shapes, Layers } from 'lucide-react';
+import { ShoppingCart, Warehouse, Shapes, Layers, Factory } from 'lucide-react'; // Importa Factory
 import { useCartoni } from '@/hooks/useCartoni';
 import { useChat } from '@/hooks/useChat';
 
@@ -96,6 +96,14 @@ export default function Summary() {
               >
                 <Layers className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Gestione Magazzino Polimeri</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/produzione-dashboard')}
+                size="lg" 
+                className="bg-[hsl(var(--produzione-color))] hover:bg-[hsl(var(--produzione-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
+              >
+                <Factory className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
+                <span className="leading-none">Gestione Produzione</span>
               </Button>
               {/* Rimosso: Pulsante Chat con badge */}
             </div>

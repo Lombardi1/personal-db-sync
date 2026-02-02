@@ -18,6 +18,7 @@ import FustelleDashboard from "./pages/FustelleDashboard";
 import PolimeriDashboard from "./pages/PolimeriDashboard";
 import GestioneFustelle from "./pages/GestioneFustelle"; // Importa la nuova pagina GestioneFustelle
 import ChatPage from "./pages/ChatPage"; // NUOVO: Importa la pagina ChatPage
+import ProduzioneDashboard from "./pages/ProduzioneDashboard"; // NUOVO: Importa la pagina ProduzioneDashboard
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -118,6 +119,12 @@ const App = () => {
             <Route
               path="/chat/:chatId"
               element={renderProtectedRoute(<ChatPage />, ['amministratore', 'stampa'])}
+            />
+
+            {/* NUOVO: Rotta per la Produzione Dashboard */}
+            <Route
+              path="/produzione-dashboard"
+              element={renderProtectedRoute(<ProduzioneDashboard />, ['amministratore'])}
             />
             
             <Route path="*" element={<NotFound />} />

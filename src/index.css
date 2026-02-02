@@ -70,6 +70,8 @@ html, body, #root {
     --polimeri-color-dark: 170 70% 25%;
     --chat-color: 142 71% 39%; /* AGGIORNATO: Colore per la Chat (verde) */
     --chat-color-dark: 142 71% 30%;
+    --produzione-color: 240 50% 40%; /* NUOVO: Colore per Produzione (blu scuro) */
+    --produzione-color-dark: 240 50% 30%;
 
     /* Nuovi colori per gli stati degli ordini d'acquisto */
     --stato-in-attesa: 39 100% 50%; /* Arancione */
@@ -189,6 +191,33 @@ html, body, #root {
     background: hsla(var(--secondary), 0.08);
     color: hsl(var(--secondary));
     border-bottom-color: hsl(var(--secondary));
+  }
+
+  /* New styles for Fustelle tabs */
+  .tab-btn.active[data-tab="fustelle-giacenza"],
+  .tab-btn.active[data-tab="fustelle-carico"],
+  .tab-btn.active[data-tab="fustelle-storico"] {
+    background: hsla(var(--fustelle-color), 0.08);
+    color: hsl(var(--fustelle-color));
+    border-bottom-color: hsl(var(--fustelle-color));
+  }
+
+  /* New styles for Polimeri tabs */
+  .tab-btn.active[data-tab="polimeri-giacenza"],
+  .tab-btn.active[data-tab="polimeri-carico"],
+  .tab-btn.active[data-tab="polimeri-storico"] {
+    background: hsla(var(--polimeri-color), 0.08);
+    color: hsl(var(--polimeri-color));
+    border-bottom-color: hsl(var(--polimeri-color));
+  }
+
+  /* New styles for Produzione tabs */
+  .tab-btn.active[data-tab="produzione-stato"],
+  .tab-btn.active[data-tab="produzione-storico"],
+  .tab-btn.active[data-tab="produzione-macchine"] {
+    background: hsla(var(--produzione-color), 0.08);
+    color: hsl(var(--produzione-color));
+    border-bottom-color: hsl(var(--produzione-color));
   }
 
   .tab-count {

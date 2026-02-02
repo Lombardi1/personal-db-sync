@@ -65,6 +65,10 @@ export default {
           DEFAULT: "hsl(var(--polimeri-color))",
           dark: "hsl(var(--polimeri-color-dark))",
         },
+        produzione: { // NUOVO: Colore per Produzione
+          DEFAULT: "hsl(var(--produzione-color))",
+          dark: "hsl(var(--produzione-color-dark))",
+        },
         /* Rimosso: pulitori: { // NUOVO: Colore per Magazzino Pulitori
           DEFAULT: "hsl(var(--pulitori-color))",
           dark: "hsl(var(--pulitori-color-dark))",
