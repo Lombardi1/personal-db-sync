@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MacchinaProduzione } from '@/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, Factory } from 'lucide-react';
 import { TabellaGestioneMacchine } from '@/components/tables/TabellaGestioneMacchine';
 import { ModalAddMacchina } from '@/components/modals/ModalAddMacchina';
 import { ModalEditMacchina } from '@/components/modals/ModalEditMacchina';
