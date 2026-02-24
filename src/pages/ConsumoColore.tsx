@@ -39,7 +39,7 @@ const ConsumoColore = () => {
   return (
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
       <Header
-        title="Consumo Colore"
+        title="Magazzino Colore"
         activeTab="colori"
         showUsersButton={isAmministratore}
       />

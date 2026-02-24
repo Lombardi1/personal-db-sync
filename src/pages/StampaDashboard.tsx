@@ -83,7 +83,7 @@ export default function StampaDashboard() {
             className="bg-[hsl(var(--colori-color))] hover:bg-[hsl(var(--colori-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12"
           >
             <Palette className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
-            <span className="leading-none text-sm sm:text-base whitespace-nowrap">Consumo Colore</span>
+            <span className="leading-none text-sm sm:text-base whitespace-nowrap">Magazzino Colore</span>
           </Button>
           <Button
             onClick={() => navigate('/consumo-colore?tab=colori-calcolo')}

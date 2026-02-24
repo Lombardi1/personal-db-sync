@@ -111,7 +111,7 @@ export default function Summary() {
                 className="bg-[hsl(var(--colori-color))] hover:bg-[hsl(var(--colori-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
               >
                 <Palette className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
-                <span className="leading-none">Consumo Colore</span>
+                <span className="leading-none">Magazzino Colore</span>
               </Button>
               <Button
                 onClick={() => navigate('/consumo-colore?tab=colori-calcolo')}
