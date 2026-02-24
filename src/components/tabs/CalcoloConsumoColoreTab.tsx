@@ -8,7 +8,7 @@ const LS_KEY = 'consumo_base_g_m2';
 const DEFAULT_BASE = 1.5;
 
 function formatGrammi(g: number): string {
-  if (g >= 1000) return `${(g / 1000).toFixed(3)} kg`;
+  if (g >= 1000) return `${(g / 1000).toFixed(1)} kg`;
   return `${g.toFixed(1)} g`;
 }
 
@@ -225,7 +225,7 @@ export function CalcoloConsumoColoreTab() {
                 <p className="text-sm opacity-80 mb-1">CONSUMO TOTALE STIMATO</p>
                 <p className="text-5xl font-extrabold">{formatGrammi(totaleG)}</p>
                 <p className="text-sm opacity-70 mt-2">
-                  {totaleG.toFixed(1)} g &nbsp;·&nbsp; {(totaleG / 1000).toFixed(4)} kg
+                  {totaleG.toFixed(1)} g &nbsp;·&nbsp; {(totaleG / 1000).toFixed(1)} kg
                 </p>
               </div>
             </div>
