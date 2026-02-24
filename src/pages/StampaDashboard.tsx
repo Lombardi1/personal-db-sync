@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MinusCircle, History, Palette } from 'lucide-react';
+import { MinusCircle, History, Palette, Calculator } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 
 export default function StampaDashboard() {
@@ -84,6 +84,14 @@ export default function StampaDashboard() {
           >
             <Palette className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
             <span className="leading-none text-sm sm:text-base whitespace-nowrap">Magazzino Colore</span>
+          </Button>
+          <Button
+            onClick={() => navigate('/consumo-colore?tab=colori-calcolo')}
+            size="lg"
+            className="bg-[hsl(var(--colori-color-dark))] hover:bg-[hsl(330,80%,28%)] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12"
+          >
+            <Calculator className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
+            <span className="leading-none text-sm sm:text-base whitespace-nowrap">Calcolo Consumo</span>
           </Button>
         </div>
       </div>

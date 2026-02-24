@@ -20,7 +20,7 @@ const ConsumoColore = () => {
   const queryParams = new URLSearchParams(location.search);
   const initialTab = queryParams.get('tab') || 'colori-giacenza';
 
-  const adminOnlyTabs = ['colori-storico', 'colori-calcolo'];
+  const adminOnlyTabs = ['colori-storico'];
   const safeInitialTab = (!isAmministratore && adminOnlyTabs.includes(initialTab))
     ? 'colori-giacenza'
     : initialTab;
