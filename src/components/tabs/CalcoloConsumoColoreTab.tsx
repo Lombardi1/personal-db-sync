@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { Settings, Calculator, RotateCcw } from 'lucide-react';
 
 const LS_KEY = 'consumo_base_g_m2';
@@ -179,13 +178,14 @@ export function CalcoloConsumoColoreTab() {
                 {copertura}%
               </span>
             </div>
-            <Slider
+            <input
+              type="range"
               min={1}
               max={100}
               step={1}
-              value={[copertura]}
-              onValueChange={([v]) => setCopertura(v)}
-              className="w-full"
+              value={copertura}
+              onChange={e => setCopertura(Number(e.target.value))}
+              className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-[hsl(var(--colori-color))]"
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>1% — Minima</span>
