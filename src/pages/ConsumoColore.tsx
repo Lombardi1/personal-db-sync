@@ -20,7 +20,12 @@ const ConsumoColore = () => {
   const queryParams = new URLSearchParams(location.search);
   const initialTab = queryParams.get('tab') || 'colori-giacenza';
 
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const adminOnlyTabs = ['colori-storico', 'colori-calcolo'];
+  const safeInitialTab = (!isAmministratore && adminOnlyTabs.includes(initialTab))
+    ? 'colori-giacenza'
+    : initialTab;
+
+  const [activeTab, setActiveTab] = useState(safeInitialTab);
   const coloriData = useColori();
 
   useEffect(() => {
@@ -32,7 +37,10 @@ const ConsumoColore = () => {
   useEffect(() => {
     const tabFromUrl = queryParams.get('tab');
     if (tabFromUrl && tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
+      const safeTab = (!isAmministratore && adminOnlyTabs.includes(tabFromUrl))
+        ? 'colori-giacenza'
+        : tabFromUrl;
+      setActiveTab(safeTab);
     }
   }, [location.search]);
 
@@ -64,6 +72,7 @@ const ConsumoColore = () => {
             giacenza: coloriData.colori.length,
             storico: coloriData.storicoColori.length,
           }}
+          isAmministratore={isAmministratore}
         />
 
         <div className="bg-white border border-[hsl(214,32%,91%)] rounded-b-lg rounded-tr-lg shadow-sm p-6">
