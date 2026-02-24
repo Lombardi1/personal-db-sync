@@ -226,7 +226,8 @@ html, body, #root {
   .tab-btn.active[data-tab="colori-giacenza"],
   .tab-btn.active[data-tab="colori-carico"],
   .tab-btn.active[data-tab="colori-scarico"],
-  .tab-btn.active[data-tab="colori-storico"] {
+  .tab-btn.active[data-tab="colori-storico"],
+  .tab-btn.active[data-tab="colori-calcolo"] {
     background: hsla(var(--colori-color), 0.08);
     color: hsl(var(--colori-color));
     border-bottom-color: hsl(var(--colori-color));
