@@ -78,7 +78,11 @@ const ConsumoColore = () => {
             />
           )}
           {activeTab === 'colori-carico' && (
-            <CaricoColoreTab aggiungiColore={coloriData.aggiungiColore} />
+            <CaricoColoreTab
+              colori={coloriData.colori}
+              nomiPantoneEsistenti={coloriData.nomiPantoneEsistenti}
+              aggiungiColore={coloriData.aggiungiColore}
+            />
           )}
           {activeTab === 'colori-scarico' && (
             <ScaricoColoreTab

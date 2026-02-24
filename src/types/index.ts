@@ -216,7 +216,6 @@ export interface Colore {
   nome: string;
   tipo: 'CMYK' | 'Pantone' | 'Custom';
   marca?: string | null;
-  colore_hex?: string | null;
   quantita_disponibile: number;
   unita_misura: 'g' | 'kg' | 'l' | 'ml';
   soglia_minima?: number | null;
@@ -238,6 +237,9 @@ export interface StoricoMovimentoColore {
   username?: string;
   macchina?: string | null;
   lavoro?: string | null;
+  numero_ddt?: string | null;
+  data_ddt?: string | null;
+  lotto?: string | null;
 }
 
 // NUOVI TIPI PER PRODUZIONE

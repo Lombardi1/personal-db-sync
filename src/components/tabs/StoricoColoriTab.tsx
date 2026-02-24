@@ -26,6 +26,8 @@ export function StoricoColoriTab({ storico }: StoricoColoriTabProps) {
           (s.username || '').toLowerCase().includes(search.toLowerCase()) ||
           (s.macchina || '').toLowerCase().includes(search.toLowerCase()) ||
           (s.lavoro || '').toLowerCase().includes(search.toLowerCase()) ||
+          (s.numero_ddt || '').toLowerCase().includes(search.toLowerCase()) ||
+          (s.lotto || '').toLowerCase().includes(search.toLowerCase()) ||
           (s.note || '').toLowerCase().includes(search.toLowerCase())
       )
     : storico;
@@ -39,7 +41,7 @@ export function StoricoColoriTab({ storico }: StoricoColoriTabProps) {
       <div className="mb-4 relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
-          placeholder="Cerca per codice, operatore, macchina..."
+          placeholder="Cerca per colore, DDT, lotto, macchina..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="pl-9"
@@ -47,9 +49,7 @@ export function StoricoColoriTab({ storico }: StoricoColoriTabProps) {
       </div>
 
       {storicoFiltrato.length === 0 ? (
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Nessun movimento trovato.
-        </p>
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">Nessun movimento trovato.</p>
       ) : (
         <div className="overflow-x-auto">
           <Table>
@@ -57,8 +57,11 @@ export function StoricoColoriTab({ storico }: StoricoColoriTabProps) {
               <TableRow>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Data</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Tipo</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-gray-600">Codice Colore</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Colore</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Quantità</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">DDT</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Data DDT</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Lotto</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Macchina</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Lavoro</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Operatore</TableHead>
@@ -82,16 +85,21 @@ export function StoricoColoriTab({ storico }: StoricoColoriTabProps) {
                       className={
                         mov.tipo === 'carico'
                           ? 'bg-green-100 text-green-800 border-green-200'
-                          : 'bg-[hsl(var(--colori-color))]/10 text-[hsl(var(--colori-color))] border-[hsl(var(--colori-color))]/30'
+                          : 'bg-[hsl(330,80%,45%)]/10 text-[hsl(330,80%,45%)] border-[hsl(330,80%,45%)]/30'
                       }
                     >
                       {mov.tipo === 'carico' ? '📦 Carico' : '🖨️ Scarico'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-sm font-medium">
-                    {mov.codice_colore}
-                  </TableCell>
+                  <TableCell className="font-semibold text-sm">{mov.codice_colore}</TableCell>
                   <TableCell className="text-sm font-semibold">{mov.quantita}</TableCell>
+                  <TableCell className="text-sm text-gray-600">{mov.numero_ddt || '—'}</TableCell>
+                  <TableCell className="text-sm text-gray-600 whitespace-nowrap">
+                    {mov.data_ddt
+                      ? new Date(mov.data_ddt).toLocaleDateString('it-IT')
+                      : '—'}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600">{mov.lotto || '—'}</TableCell>
                   <TableCell className="text-sm text-gray-600">{mov.macchina || '—'}</TableCell>
                   <TableCell className="text-sm text-gray-600">{mov.lavoro || '—'}</TableCell>
                   <TableCell className="text-sm text-gray-600">{mov.username || '—'}</TableCell>

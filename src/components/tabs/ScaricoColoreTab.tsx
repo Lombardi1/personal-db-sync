@@ -121,8 +121,8 @@ export function ScaricoColoreTab({ colori, scaricoColore }: ScaricoColoreTabProp
           colore={coloreSelezionato}
           tipo="scarico"
           onClose={() => setColoreSelezionato(null)}
-          onConfirma={async (codice, quantita, macchina, lavoro, note) => {
-            const result = await scaricoColore(codice, quantita, macchina, lavoro, note);
+          onConfirma={async (codice, quantita, extra) => {
+            const result = await scaricoColore(codice, quantita, extra.macchina, extra.lavoro, extra.note);
             if (!result.error) setColoreSelezionato(null);
             return result;
           }}

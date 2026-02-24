@@ -4,6 +4,20 @@ import { Colore, StoricoMovimentoColore } from '@/types';
 import * as notifications from '@/utils/notifications';
 import { useAuth } from '@/hooks/useAuth';
 
+// Ordine fisso CMYK in cima
+const CMYK_ORDER = ['CYAN', 'MAGENTA', 'YELLOW', 'BLACK'];
+
+function sortColori(colori: Colore[]): Colore[] {
+  return [...colori].sort((a, b) => {
+    const aIdx = CMYK_ORDER.indexOf(a.nome.toUpperCase());
+    const bIdx = CMYK_ORDER.indexOf(b.nome.toUpperCase());
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return a.nome.localeCompare(b.nome);
+  });
+}
+
 export function useColori() {
   const [colori, setColori] = useState<Colore[]>([]);
   const [storicoColori, setStoricoColori] = useState<StoricoMovimentoColore[]>([]);
@@ -14,7 +28,7 @@ export function useColori() {
     setLoading(true);
     try {
       const [coloriRes, storicoRes] = await Promise.all([
-        supabase.from('colori').select('*').order('codice', { ascending: true }),
+        supabase.from('colori').select('*'),
         supabase
           .from('storico_colori')
           .select(`*, app_users(username)`)
@@ -23,7 +37,7 @@ export function useColori() {
       ]);
 
       if (coloriRes.data) {
-        setColori(coloriRes.data);
+        setColori(sortColori(coloriRes.data));
       } else if (coloriRes.error) {
         console.error('[useColori] Error loading colori:', coloriRes.error);
       }
@@ -68,7 +82,10 @@ export function useColori() {
     };
   }, []);
 
-  const aggiungiColore = async (colore: Omit<Colore, 'data_creazione' | 'ultima_modifica'>) => {
+  const aggiungiColore = async (
+    colore: Omit<Colore, 'data_creazione' | 'ultima_modifica'>,
+    caricoInfo?: { numero_ddt?: string; data_ddt?: string; lotto?: string; note?: string }
+  ) => {
     const coloreToInsert = {
       ...colore,
       data_creazione: new Date().toISOString(),
@@ -76,14 +93,16 @@ export function useColori() {
     };
     const { error } = await supabase.from('colori').insert([coloreToInsert]);
     if (!error) {
-      // Registra nel storico
       await supabase.from('storico_colori').insert([{
         codice_colore: colore.codice,
         tipo: 'carico',
         quantita: colore.quantita_disponibile,
         data: new Date().toISOString(),
-        note: 'Colore aggiunto al magazzino',
+        note: caricoInfo?.note || 'Colore aggiunto al magazzino',
         user_id: user?.id,
+        numero_ddt: caricoInfo?.numero_ddt || null,
+        data_ddt: caricoInfo?.data_ddt || null,
+        lotto: caricoInfo?.lotto || null,
       }]);
       await loadData();
       notifications.showSuccess(`✅ Colore '${colore.nome}' aggiunto con successo!`);
@@ -126,7 +145,14 @@ export function useColori() {
     return { error };
   };
 
-  const caricoColore = async (codice: string, quantita: number, note?: string) => {
+  const caricoColore = async (
+    codice: string,
+    quantita: number,
+    numero_ddt?: string,
+    data_ddt?: string,
+    lotto?: string,
+    note?: string
+  ) => {
     const coloreEsistente = colori.find(c => c.codice === codice);
     if (!coloreEsistente) {
       notifications.showError('Colore non trovato.');
@@ -147,6 +173,9 @@ export function useColori() {
         data: new Date().toISOString(),
         note: note || null,
         user_id: user?.id,
+        numero_ddt: numero_ddt || null,
+        data_ddt: data_ddt || null,
+        lotto: lotto || null,
       }]);
       await loadData();
       notifications.showSuccess(`✅ Carico di ${quantita} ${coloreEsistente.unita_misura} per '${coloreEsistente.nome}' registrato!`);
@@ -187,7 +216,6 @@ export function useColori() {
       }]);
       await loadData();
 
-      // Avvisa se sotto soglia minima
       if (coloreEsistente.soglia_minima && nuovaQuantita <= coloreEsistente.soglia_minima) {
         notifications.showWarning(`⚠️ Attenzione: '${coloreEsistente.nome}' è sotto la soglia minima (${coloreEsistente.soglia_minima} ${coloreEsistente.unita_misura})!`);
       } else {
@@ -213,10 +241,16 @@ export function useColori() {
     return { error };
   };
 
+  // Lista nomi colori esistenti (per suggerimenti Pantone)
+  const nomiPantoneEsistenti = colori
+    .filter(c => c.tipo === 'Pantone' || c.tipo === 'Custom')
+    .map(c => c.nome);
+
   return {
     colori,
     storicoColori,
     loading,
+    nomiPantoneEsistenti,
     aggiungiColore,
     modificaColore,
     eliminaColore,

@@ -24,7 +24,7 @@ interface GiacenzaColoriTabProps {
   modificaColore: (codice: string, dati: Partial<Colore>) => Promise<{ error: any }>;
   eliminaColore: (codice: string) => Promise<{ error: any }>;
   cambiaDisponibilitaColore: (codice: string, disponibile: boolean) => Promise<{ error: any }>;
-  caricoColore: (codice: string, quantita: number, note?: string) => Promise<{ error: any }>;
+  caricoColore: (codice: string, quantita: number, numero_ddt?: string, data_ddt?: string, lotto?: string, note?: string) => Promise<{ error: any }>;
   scaricoColore: (codice: string, quantita: number, macchina?: string, lavoro?: string, note?: string) => Promise<{ error: any }>;
 }
 
@@ -186,11 +186,11 @@ export function GiacenzaColoriTab({
           colore={movimentoModal.colore}
           tipo={movimentoModal.tipo}
           onClose={() => setMovimentoModal(null)}
-          onConfirma={async (codice, quantita, macchina, lavoro, note) => {
+          onConfirma={async (codice, quantita, extra) => {
             if (movimentoModal.tipo === 'carico') {
-              return caricoColore(codice, quantita, note);
+              return caricoColore(codice, quantita, extra.numero_ddt, extra.data_ddt, extra.lotto, extra.note);
             } else {
-              return scaricoColore(codice, quantita, macchina, lavoro, note);
+              return scaricoColore(codice, quantita, extra.macchina, extra.lavoro, extra.note);
             }
           }}
         />

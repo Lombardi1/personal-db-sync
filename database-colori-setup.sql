@@ -9,9 +9,8 @@ CREATE TABLE IF NOT EXISTS public.colori (
   nome TEXT NOT NULL,
   tipo TEXT NOT NULL CHECK (tipo IN ('CMYK', 'Pantone', 'Custom')),
   marca TEXT,
-  colore_hex TEXT,
   quantita_disponibile NUMERIC(10, 3) NOT NULL DEFAULT 0,
-  unita_misura TEXT NOT NULL DEFAULT 'g' CHECK (unita_misura IN ('g', 'kg', 'l', 'ml')),
+  unita_misura TEXT NOT NULL DEFAULT 'kg' CHECK (unita_misura IN ('g', 'kg', 'l', 'ml')),
   soglia_minima NUMERIC(10, 3),
   fornitore TEXT,
   note TEXT,
@@ -29,6 +28,11 @@ CREATE TABLE IF NOT EXISTS public.storico_colori (
   data TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   note TEXT,
   user_id UUID REFERENCES public.app_users(id) ON DELETE SET NULL,
+  -- Campi specifici carico (DDT + lotto)
+  numero_ddt TEXT,
+  data_ddt DATE,
+  lotto TEXT,
+  -- Campi specifici scarico
   macchina TEXT,
   lavoro TEXT
 );
@@ -42,21 +46,16 @@ CREATE INDEX IF NOT EXISTS idx_storico_colori_user ON public.storico_colori(user
 ALTER PUBLICATION supabase_realtime ADD TABLE public.colori;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.storico_colori;
 
--- Row Level Security (opzionale, in base alla configurazione attuale del progetto)
--- Se il progetto usa RLS, decommentare le righe seguenti e adattarle:
--- ALTER TABLE public.colori ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE public.storico_colori ENABLE ROW LEVEL SECURITY;
--- CREATE POLICY "Allow all for authenticated" ON public.colori FOR ALL TO authenticated USING (true);
--- CREATE POLICY "Allow all for authenticated" ON public.storico_colori FOR ALL TO authenticated USING (true);
-
 -- ============================================================
--- DATI DI ESEMPIO (opzionale - rimuovere se non necessari)
+-- COLORI CMYK PRE-CARICATI (opzionale)
+-- Decommenta per inserire i 4 colori CMYK di base
 -- ============================================================
 /*
-INSERT INTO public.colori (codice, nome, tipo, marca, colore_hex, quantita_disponibile, unita_misura, soglia_minima, fornitore, disponibile)
+INSERT INTO public.colori (codice, nome, tipo, quantita_disponibile, unita_misura, disponibile)
 VALUES
-  ('COL-C', 'Ciano Process', 'CMYK', 'Sun Chemical', '#00AEEF', 5000, 'g', 500, 'Sun Chemical Italia', TRUE),
-  ('COL-M', 'Magenta Process', 'CMYK', 'Sun Chemical', '#EC008C', 5000, 'g', 500, 'Sun Chemical Italia', TRUE),
-  ('COL-Y', 'Giallo Process', 'CMYK', 'Sun Chemical', '#FFF200', 5000, 'g', 500, 'Sun Chemical Italia', TRUE),
-  ('COL-K', 'Nero Process', 'CMYK', 'Sun Chemical', '#231F20', 10000, 'g', 1000, 'Sun Chemical Italia', TRUE);
+  ('CYAN',    'CYAN',    'CMYK', 0, 'kg', TRUE),
+  ('MAGENTA', 'MAGENTA', 'CMYK', 0, 'kg', TRUE),
+  ('YELLOW',  'YELLOW',  'CMYK', 0, 'kg', TRUE),
+  ('BLACK',   'BLACK',   'CMYK', 0, 'kg', TRUE)
+ON CONFLICT (codice) DO NOTHING;
 */

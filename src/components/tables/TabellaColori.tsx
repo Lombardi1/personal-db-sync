@@ -36,13 +36,20 @@ function getBadgeTipo(tipo: Colore['tipo']) {
 }
 
 function getQuantitaStyle(colore: Colore) {
-  if (colore.soglia_minima && colore.quantita_disponibile <= colore.soglia_minima) {
-    return 'text-red-600 font-bold';
-  }
-  if (colore.quantita_disponibile === 0) {
-    return 'text-red-700 font-bold';
-  }
+  if (colore.quantita_disponibile === 0) return 'text-red-700 font-bold';
+  if (colore.soglia_minima && colore.quantita_disponibile <= colore.soglia_minima) return 'text-orange-600 font-bold';
   return 'text-green-700 font-semibold';
+}
+
+// Badge colore nome per CMYK
+function getNomeBadgeStyle(nome: string) {
+  switch (nome.toUpperCase()) {
+    case 'CYAN': return 'bg-cyan-100 text-cyan-800 border-cyan-300';
+    case 'MAGENTA': return 'bg-pink-100 text-pink-800 border-pink-300';
+    case 'YELLOW': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    case 'BLACK': return 'bg-gray-200 text-gray-900 border-gray-400';
+    default: return null;
+  }
 }
 
 export function TabellaColori({
@@ -60,11 +67,9 @@ export function TabellaColori({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Codice</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Nome</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600">Colore</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Tipo</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Marca</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Colore</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Quantità</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Fornitore</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Stato</TableHead>
@@ -72,94 +77,92 @@ export function TabellaColori({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {colori.map(colore => (
-            <TableRow key={colore.codice} className={!colore.disponibile ? 'opacity-50' : ''}>
-              <TableCell className="font-mono text-sm font-medium">{colore.codice}</TableCell>
-              <TableCell className="font-medium">{colore.nome}</TableCell>
-              <TableCell>{getBadgeTipo(colore.tipo)}</TableCell>
-              <TableCell className="text-sm text-gray-600">{colore.marca || '—'}</TableCell>
-              <TableCell>
-                {colore.colore_hex ? (
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-6 h-6 rounded-full border border-gray-300 flex-shrink-0"
-                      style={{ backgroundColor: colore.colore_hex }}
-                    />
-                    <span className="text-xs text-gray-500 font-mono hidden sm:inline">
-                      {colore.colore_hex}
-                    </span>
+          {colori.map(colore => {
+            const cmykStyle = getNomeBadgeStyle(colore.nome);
+            return (
+              <TableRow key={colore.codice} className={!colore.disponibile ? 'opacity-50' : ''}>
+                <TableCell>
+                  <div>
+                    {cmykStyle ? (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-bold border ${cmykStyle}`}>
+                        {colore.nome}
+                      </span>
+                    ) : (
+                      <span className="font-medium text-gray-800">{colore.nome}</span>
+                    )}
+                    <p className="text-xs text-gray-400 font-mono mt-0.5">{colore.codice}</p>
                   </div>
-                ) : (
-                  '—'
-                )}
-              </TableCell>
-              <TableCell>
-                <span className={getQuantitaStyle(colore)}>
-                  {colore.quantita_disponibile} {colore.unita_misura}
-                </span>
-                {colore.soglia_minima && colore.quantita_disponibile <= colore.soglia_minima && (
-                  <span className="ml-1 text-xs text-red-500">⚠️ Sotto soglia</span>
-                )}
-              </TableCell>
-              <TableCell className="text-sm text-gray-600">{colore.fornitore || '—'}</TableCell>
-              <TableCell>
-                <Badge
-                  className={
-                    colore.disponibile
-                      ? 'bg-green-100 text-green-800 border-green-200 cursor-pointer hover:bg-green-200'
-                      : 'bg-red-100 text-red-800 border-red-200 cursor-pointer hover:bg-red-200'
-                  }
-                  onClick={() => onChangeDisponibilita(colore.codice, !colore.disponibile)}
-                >
-                  {colore.disponibile ? 'Disponibile' : 'Non Disponibile'}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 p-1 h-7 w-7"
-                    onClick={() => onCarico(colore)}
-                    title="Carico"
-                  >
-                    <PlusCircle className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 p-1 h-7 w-7"
-                    onClick={() => onScarico(colore)}
-                    title="Scarico / Consumo"
-                  >
-                    <MinusCircle className="h-3.5 w-3.5" />
-                  </Button>
-                  {isAmministratore && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 p-1 h-7 w-7"
-                        onClick={() => onEdit(colore)}
-                        title="Modifica"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 p-1 h-7 w-7"
-                        onClick={() => onDelete(colore.codice)}
-                        title="Elimina"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
+                </TableCell>
+                <TableCell>{getBadgeTipo(colore.tipo)}</TableCell>
+                <TableCell className="text-sm text-gray-600">{colore.marca || '—'}</TableCell>
+                <TableCell>
+                  <span className={getQuantitaStyle(colore)}>
+                    {colore.quantita_disponibile} {colore.unita_misura}
+                  </span>
+                  {colore.soglia_minima && colore.quantita_disponibile <= colore.soglia_minima && (
+                    <span className="ml-1 text-xs text-orange-500">⚠️ Sotto soglia</span>
                   )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                </TableCell>
+                <TableCell className="text-sm text-gray-600">{colore.fornitore || '—'}</TableCell>
+                <TableCell>
+                  <Badge
+                    className={
+                      colore.disponibile
+                        ? 'bg-green-100 text-green-800 border-green-200 cursor-pointer hover:bg-green-200'
+                        : 'bg-red-100 text-red-800 border-red-200 cursor-pointer hover:bg-red-200'
+                    }
+                    onClick={() => onChangeDisponibilita(colore.codice, !colore.disponibile)}
+                  >
+                    {colore.disponibile ? 'Disponibile' : 'Non Disponibile'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 p-1 h-7 w-7"
+                      onClick={() => onCarico(colore)}
+                      title="Carico"
+                    >
+                      <PlusCircle className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 p-1 h-7 w-7"
+                      onClick={() => onScarico(colore)}
+                      title="Scarico / Consumo"
+                    >
+                      <MinusCircle className="h-3.5 w-3.5" />
+                    </Button>
+                    {isAmministratore && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 p-1 h-7 w-7"
+                          onClick={() => onEdit(colore)}
+                          title="Modifica"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 p-1 h-7 w-7"
+                          onClick={() => onDelete(colore.codice)}
+                          title="Elimina"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
