@@ -19,6 +19,7 @@ import PolimeriDashboard from "./pages/PolimeriDashboard";
 import GestioneFustelle from "./pages/GestioneFustelle"; // Importa la nuova pagina GestioneFustelle
 import ChatPage from "./pages/ChatPage"; // NUOVO: Importa la pagina ChatPage
 import ProduzioneDashboard from "./pages/ProduzioneDashboard"; // NUOVO: Importa la pagina ProduzioneDashboard
+import ConsumoColore from "./pages/ConsumoColore"; // NUOVO: Importa la pagina Consumo Colore
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -126,7 +127,13 @@ const App = () => {
               path="/produzione-dashboard"
               element={renderProtectedRoute(<ProduzioneDashboard />, ['amministratore'])}
             />
-            
+
+            {/* NUOVO: Rotta per Consumo Colore */}
+            <Route
+              path="/consumo-colore"
+              element={renderProtectedRoute(<ConsumoColore />, ['amministratore', 'stampa'])}
+            />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -210,6 +210,36 @@ export interface StoricoMovimentoPolimero {
   username?: string;
 }
 
+// TIPI PER CONSUMO COLORE
+export interface Colore {
+  codice: string;
+  nome: string;
+  tipo: 'CMYK' | 'Pantone' | 'Custom';
+  marca?: string | null;
+  colore_hex?: string | null;
+  quantita_disponibile: number;
+  unita_misura: 'g' | 'kg' | 'l' | 'ml';
+  soglia_minima?: number | null;
+  fornitore?: string | null;
+  note?: string | null;
+  disponibile: boolean;
+  data_creazione: string;
+  ultima_modifica: string;
+}
+
+export interface StoricoMovimentoColore {
+  id?: string;
+  codice_colore: string;
+  tipo: 'carico' | 'scarico';
+  quantita: number;
+  data: string;
+  note?: string | null;
+  user_id?: string | null;
+  username?: string;
+  macchina?: string | null;
+  lavoro?: string | null;
+}
+
 // NUOVI TIPI PER PRODUZIONE
 export interface MacchinaProduzione {
   id: string;

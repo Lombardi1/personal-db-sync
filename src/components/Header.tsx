@@ -54,6 +54,8 @@ export function Header({
       currentSection = 'polimeri';
     } else if (location.pathname.startsWith('/chat')) { // NUOVO: Colore per la chat
       currentSection = 'chat';
+    } else if (location.pathname === '/consumo-colore') { // NUOVO: Colore per Consumo Colore
+      currentSection = 'colori';
     } else if (location.pathname === '/gestione-magazzino') {
       const queryParams = new URLSearchParams(location.search);
       currentSection = queryParams.get('tab') || 'giacenza';
@@ -86,6 +88,8 @@ export function Header({
         return 'linear-gradient(135deg, hsl(var(--polimeri-color)), hsl(var(--polimeri-color-dark)))';
       case 'chat': // AGGIORNATO: Colore per la chat
         return 'linear-gradient(135deg, hsl(var(--chat-color)), hsl(var(--chat-color-dark)))';
+      case 'colori': // NUOVO: Colore per Consumo Colore
+        return 'linear-gradient(135deg, hsl(var(--colori-color)), hsl(var(--colori-color-dark)))';
       default:
         return 'linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%))';
     }

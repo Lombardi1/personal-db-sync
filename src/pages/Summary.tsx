@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Warehouse, Shapes, Layers, Factory } from 'lucide-react'; // Importa Factory
+import { ShoppingCart, Warehouse, Shapes, Layers, Factory, Palette } from 'lucide-react'; // Importa Factory
 import { useCartoni } from '@/hooks/useCartoni';
 import { useChat } from '@/hooks/useChat';
 
@@ -105,7 +105,14 @@ export default function Summary() {
                 <Factory className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Gestione Produzione</span>
               </Button>
-              {/* Rimosso: Pulsante Chat con badge */}
+              <Button
+                onClick={() => navigate('/consumo-colore')}
+                size="lg"
+                className="bg-[hsl(var(--colori-color))] hover:bg-[hsl(var(--colori-color-dark))] text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
+              >
+                <Palette className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
+                <span className="leading-none">Consumo Colore</span>
+              </Button>
             </div>
           </div>
         )}

@@ -72,6 +72,8 @@ html, body, #root {
     --chat-color-dark: 142 71% 30%;
     --produzione-color: 240 50% 40%; /* NUOVO: Colore per Produzione (blu scuro) */
     --produzione-color-dark: 240 50% 30%;
+    --colori-color: 330 80% 45%; /* NUOVO: Colore per Consumo Colore (magenta/rosa) */
+    --colori-color-dark: 330 80% 35%;
 
     /* Nuovi colori per gli stati degli ordini d'acquisto */
     --stato-in-attesa: 39 100% 50%; /* Arancione */
@@ -218,6 +220,16 @@ html, body, #root {
     background: hsla(var(--produzione-color), 0.08);
     color: hsl(var(--produzione-color));
     border-bottom-color: hsl(var(--produzione-color));
+  }
+
+  /* Stili per tab Consumo Colore */
+  .tab-btn.active[data-tab="colori-giacenza"],
+  .tab-btn.active[data-tab="colori-carico"],
+  .tab-btn.active[data-tab="colori-scarico"],
+  .tab-btn.active[data-tab="colori-storico"] {
+    background: hsla(var(--colori-color), 0.08);
+    color: hsl(var(--colori-color));
+    border-bottom-color: hsl(var(--colori-color));
   }
 
   .tab-count {
