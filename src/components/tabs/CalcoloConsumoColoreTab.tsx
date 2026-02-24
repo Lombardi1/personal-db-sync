@@ -46,7 +46,7 @@ export function CalcoloConsumoColoreTab() {
     const n = parseFloat(nFogli);
 
     if (w > 0 && h > 0 && n > 0) {
-      const area = (w * h) / 1_000_000;
+      const area = (w * h) / 10_000;
       setAreaM2(area);
       setTotaleG(area * n * (copertura / 100) * consumoBase);
     } else {
@@ -116,7 +116,7 @@ export function CalcoloConsumoColoreTab() {
 
           {/* Formato */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Formato cartone (mm)</Label>
+            <Label className="text-sm font-medium mb-2 block">Formato cartone (cm)</Label>
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <Input
@@ -143,7 +143,7 @@ export function CalcoloConsumoColoreTab() {
             {larghezza && altezza && (
               <p className="text-xs text-gray-500 mt-1.5">
                 Area foglio:{' '}
-                <strong>{((parseFloat(larghezza) * parseFloat(altezza)) / 1_000_000).toFixed(4)} m²</strong>
+                <strong>{((parseFloat(larghezza) * parseFloat(altezza)) / 10_000).toFixed(4)} m²</strong>
               </p>
             )}
           </div>
@@ -207,7 +207,7 @@ export function CalcoloConsumoColoreTab() {
               {/* Riepilogo parametri */}
               <div className="bg-white border border-gray-200 rounded-xl p-4 text-sm text-gray-600 space-y-1">
                 <p>
-                  📐 Formato: <strong>{larghezza} × {altezza} mm</strong>
+                  📐 Formato: <strong>{larghezza} × {altezza} cm</strong>
                   {areaM2 !== null && (
                     <span className="ml-2 text-gray-400">({areaM2.toFixed(4)} m²/foglio)</span>
                   )}
