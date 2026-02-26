@@ -20,6 +20,9 @@ import GestioneFustelle from "./pages/GestioneFustelle"; // Importa la nuova pag
 import ChatPage from "./pages/ChatPage"; // NUOVO: Importa la pagina ChatPage
 import ProduzioneDashboard from "./pages/ProduzioneDashboard"; // NUOVO: Importa la pagina ProduzioneDashboard
 import ConsumoColore from "./pages/ConsumoColore"; // NUOVO: Importa la pagina Consumo Colore
+import LavoriStampa from "./pages/LavoriStampa"; // NUOVO: Importa la pagina LavoriStampa
+import DBArticoliProduzione from "./pages/DBArticoliProduzione"; // NUOVO: DB Articoli - Produzione
+import GeneraDocumenti from "./pages/GeneraDocumenti"; // NUOVO: Genera Scheda / Etichette
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -132,6 +135,24 @@ const App = () => {
             <Route
               path="/consumo-colore"
               element={renderProtectedRoute(<ConsumoColore />, ['amministratore', 'stampa'])}
+            />
+
+            {/* NUOVO: Rotta per Lavori Stampa */}
+            <Route
+              path="/lavori-stampa"
+              element={renderProtectedRoute(<LavoriStampa />, ['amministratore', 'stampa'])}
+            />
+
+            {/* NUOVO: Rotta per DB Articoli - Produzione */}
+            <Route
+              path="/db-articoli-produzione"
+              element={renderProtectedRoute(<DBArticoliProduzione />, ['amministratore', 'stampa'])}
+            />
+
+            {/* NUOVO: Rotta per Genera Scheda / Etichette */}
+            <Route
+              path="/genera-documenti"
+              element={renderProtectedRoute(<GeneraDocumenti />, ['amministratore', 'stampa'])}
             />
 
             <Route path="*" element={<NotFound />} />

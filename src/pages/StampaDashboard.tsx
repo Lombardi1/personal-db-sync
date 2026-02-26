@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MinusCircle, History, Palette, Calculator } from 'lucide-react';
+import { MinusCircle, History, Palette, Calculator, FileText, Database, Printer } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 
 export default function StampaDashboard() {
@@ -92,6 +92,30 @@ export default function StampaDashboard() {
           >
             <Calculator className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
             <span className="leading-none text-sm sm:text-base whitespace-nowrap">Calcolo Consumo</span>
+          </Button>
+          <Button
+            onClick={() => navigate('/lavori-stampa')}
+            size="lg"
+            className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12"
+          >
+            <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
+            <span className="leading-none text-sm sm:text-base whitespace-nowrap">Lavori Stampa</span>
+          </Button>
+          <Button
+            onClick={() => navigate('/db-articoli-produzione')}
+            size="lg"
+            className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12"
+          >
+            <Database className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
+            <span className="leading-none text-sm sm:text-base whitespace-nowrap">DB ARTICOLI</span>
+          </Button>
+          <Button
+            onClick={() => navigate('/genera-documenti')}
+            size="lg"
+            className="bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12"
+          >
+            <Printer className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
+            <span className="leading-none text-sm sm:text-base whitespace-nowrap">Genera Scheda / Etichette</span>
           </Button>
         </div>
       </div>

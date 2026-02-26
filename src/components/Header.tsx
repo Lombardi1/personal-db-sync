@@ -56,6 +56,12 @@ export function Header({
       currentSection = 'chat';
     } else if (location.pathname === '/consumo-colore') { // NUOVO: Colore per Consumo Colore
       currentSection = 'colori';
+    } else if (location.pathname === '/lavori-stampa') { // NUOVO: Colore per Lavori Stampa
+      currentSection = 'lavori-stampa';
+    } else if (location.pathname === '/db-articoli-produzione') { // NUOVO: Colore per DB Articoli
+      currentSection = 'db-articoli';
+    } else if (location.pathname === '/genera-documenti') { // NUOVO: Colore per Genera Documenti
+      currentSection = 'genera-documenti';
     } else if (location.pathname === '/gestione-magazzino') {
       const queryParams = new URLSearchParams(location.search);
       currentSection = queryParams.get('tab') || 'giacenza';
@@ -90,6 +96,12 @@ export function Header({
         return 'linear-gradient(135deg, hsl(var(--chat-color)), hsl(var(--chat-color-dark)))';
       case 'colori': // NUOVO: Colore per Consumo Colore
         return 'linear-gradient(135deg, hsl(var(--colori-color)), hsl(var(--colori-color-dark)))';
+      case 'lavori-stampa': // NUOVO: Colore per Lavori Stampa
+        return 'linear-gradient(135deg, #9333ea, #7e22ce)'; // Purple gradient
+      case 'db-articoli': // NUOVO: Colore per DB Articoli
+        return 'linear-gradient(135deg, #ea580c, #c2410c)'; // Orange gradient
+      case 'genera-documenti': // NUOVO: Colore per Genera Documenti
+        return 'linear-gradient(135deg, #16a34a, #15803d)'; // Green gradient
       default:
         return 'linear-gradient(135deg, hsl(var(--primary)), hsl(223 73% 27%))';
     }

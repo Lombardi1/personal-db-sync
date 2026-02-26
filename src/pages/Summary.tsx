@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Warehouse, Shapes, Layers, Factory, Palette, Calculator } from 'lucide-react'; // Importa Factory
+import { ShoppingCart, Warehouse, Shapes, Layers, Factory, Palette, Calculator, FileText, Database, Printer } from 'lucide-react'; // Importa Factory
 import { useCartoni } from '@/hooks/useCartoni';
 import { useChat } from '@/hooks/useChat';
 
@@ -120,6 +120,30 @@ export default function Summary() {
               >
                 <Calculator className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">Calcolo Consumo Colore</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/lavori-stampa')}
+                size="lg"
+                className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
+              >
+                <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
+                <span className="leading-none">Lavori Stampa</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/db-articoli-produzione')}
+                size="lg"
+                className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
+              >
+                <Database className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
+                <span className="leading-none">DB ARTICOLI</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/genera-documenti')}
+                size="lg"
+                className="bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
+              >
+                <Printer className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
+                <span className="leading-none">Genera Scheda / Etichette</span>
               </Button>
             </div>
           </div>
