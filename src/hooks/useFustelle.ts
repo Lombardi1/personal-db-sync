@@ -16,17 +16,35 @@ export function useFustelle() {
     setLoading(true);
     console.log('[useFustelle] Attempting to load data...');
     try {
-      const [fustelleRes] = await Promise.all([ // Rimosso storicoRes
-        supabase.from('fustelle').select('*'),
-        // Rimosso: supabase.from('storico_fustelle').select(`*, app_users(username)`).order('data', { ascending: false })
-      ]);
+      // Paginazione per superare il limite di 1000 righe di Supabase
+      const PAGE_SIZE = 1000;
+      let allFustelle: Fustella[] = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (fustelleRes.data) {
-        setFustelle(fustelleRes.data);
-        console.log('[useFustelle] Fustelle data loaded:', fustelleRes.data.length, 'items');
-      } else if (fustelleRes.error) {
-        console.error('[useFustelle] Error loading fustelle:', fustelleRes.error);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('fustelle')
+          .select('*')
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) {
+          console.error('[useFustelle] Error loading fustelle:', error);
+          notifications.showError('Errore nel caricamento dei dati del magazzino fustelle.');
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allFustelle = [...allFustelle, ...data];
+          from += PAGE_SIZE;
+          hasMore = data.length === PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
       }
+
+      setFustelle(allFustelle);
+      console.log('[useFustelle] Fustelle data loaded:', allFustelle.length, 'items');
 
       // Rimosso: if (storicoRes.data) {
       //   const storicoWithUsernames: StoricoMovimentoFustella[] = storicoRes.data.map(mov => ({
