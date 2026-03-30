@@ -1,29 +1,42 @@
 import { supabase } from '@/lib/supabase';
 
 /**
- * Trova il prossimo codice Fustella disponibile, riempiendo eventuali lacune.
- * @returns Il prossimo codice FST disponibile (es. 'FST-001', 'FST-002' se 001 è stato eliminato).
+ * Trova il prossimo codice Fustella disponibile.
+ * Priorità:
+ * 1. Fustelle già presenti in tabella ma senza codice_fornitore (da riempire prima)
+ * 2. Prossimo numero libero dopo il MAX esistente
  */
 export async function findNextAvailableFustellaCode(): Promise<string> {
   const { data, error } = await supabase
     .from('fustelle')
-    .select('codice')
-    .order('codice', { ascending: true }); // Ordina in modo crescente per trovare le lacune
+    .select('codice, codice_fornitore')
+    .order('codice', { ascending: true });
 
   if (error) {
-    console.error('Error fetching fustella codes for gap-filling:', error);
-    return 'FST-001'; // Fallback
+    console.error('Error fetching fustella codes:', error);
+    return 'FST-001';
   }
 
-  const existingNumbers: number[] = [];
-  if (data && data.length > 0) {
-    data.forEach(fustella => {
-      const num = parseInt(fustella.codice.replace('FST-', ''));
-      if (!isNaN(num)) {
-        existingNumbers.push(num);
-      }
-    });
+  if (!data || data.length === 0) {
+    return 'FST-001';
   }
+
+  // 1. Cerca la fustella con numero più basso che ha codice_fornitore null o vuoto
+  const fustelleVuote = data.filter(f => !f.codice_fornitore || f.codice_fornitore.trim() === '');
+  if (fustelleVuote.length > 0) {
+    const codice = fustelleVuote[0].codice; // già ordinato ascending
+    console.log('✂️ Riutilizzo fustella senza codice_fornitore:', codice);
+    return codice;
+  }
+
+  // 2. Nessuna fustella vuota: genera il prossimo numero libero
+  const existingNumbers: number[] = [];
+  data.forEach(fustella => {
+    const num = parseInt(fustella.codice.replace('FST-', ''));
+    if (!isNaN(num)) {
+      existingNumbers.push(num);
+    }
+  });
 
   existingNumbers.sort((a, b) => a - b);
 
@@ -32,15 +45,11 @@ export async function findNextAvailableFustellaCode(): Promise<string> {
     if (num === nextAvailableNum) {
       nextAvailableNum++;
     } else if (num > nextAvailableNum) {
-      // Trovata una lacuna
-      break;
+      break; // trovato un buco
     }
   }
 
   const formattedCode = `FST-${String(nextAvailableNum).padStart(3, '0')}`;
-  console.log('✂️ Trovato prossimo codice Fustella disponibile:', formattedCode);
+  console.log('✂️ Prossimo codice Fustella disponibile:', formattedCode);
   return formattedCode;
 }
-
-// Le funzioni generateNextFustellaCode e resetFustellaCodeGenerator non sono più necessarie
-// e vengono rimosse in favore di findNextAvailableFustellaCode.
