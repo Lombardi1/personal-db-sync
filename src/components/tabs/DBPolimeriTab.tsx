@@ -17,31 +17,34 @@ export function DBPolimeriTab() {
   const [polimeri, setPolimeri] = useState<Polimero[]>([]);
   const [filtro, setFiltro] = useState('');
   const [loading, setLoading] = useState(true);
+  const [errore, setErrore] = useState<string | null>(null);
 
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true);
-      let all: Polimero[] = [];
-      let from = 0;
-      const pageSize = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from('polimeri')
-          .select('codice, nr_fustella, codice_fornitore, cliente, lavoro, resa, note')
-          .order('codice', { ascending: true })
-          .range(from, from + pageSize - 1);
-        if (error || !data || data.length === 0) break;
-        all = all.concat(data);
-        if (data.length < pageSize) break;
-        from += pageSize;
+      setErrore(null);
+
+      const { data, error } = await supabase
+        .from('polimeri')
+        .select('codice, nr_fustella, codice_fornitore, cliente, lavoro, resa, note')
+        .order('codice', { ascending: true })
+        .limit(2000);
+
+      if (error) {
+        setErrore(error.message);
+        setLoading(false);
+        return;
       }
-      setPolimeri(all);
+
+      setPolimeri(data || []);
       setLoading(false);
     };
+
     loadAll();
   }, []);
 
   const filtrati = polimeri.filter(p => {
+    if (!filtro) return true;
     const q = filtro.toLowerCase();
     return (
       p.codice?.toLowerCase().includes(q) ||
@@ -54,12 +57,16 @@ export function DBPolimeriTab() {
   });
 
   if (loading) return <div className="text-center py-8 text-gray-500">Caricamento DB Polimeri...</div>;
+  if (errore) return <div className="text-center py-8 text-red-500">Errore: {errore}</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-700">
-          Archivio Polimeri <span className="text-sm font-normal text-gray-400">({filtrati.length} / {polimeri.length})</span>
+          Archivio Polimeri{' '}
+          <span className="text-sm font-normal text-gray-400">
+            ({filtro ? `${filtrati.length} / ` : ''}{polimeri.length} polimeri)
+          </span>
         </h2>
         <div className="relative w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -88,7 +95,9 @@ export function DBPolimeriTab() {
           <tbody>
             {filtrati.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-gray-400">Nessun polimero trovato</td>
+                <td colSpan={7} className="px-3 py-8 text-center text-gray-400">
+                  {filtro ? 'Nessun risultato per la ricerca' : 'Nessun polimero trovato'}
+                </td>
               </tr>
             ) : (
               filtrati.map(p => (
