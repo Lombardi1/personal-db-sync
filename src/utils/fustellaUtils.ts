@@ -2,62 +2,45 @@ import { supabase } from '@/lib/supabase';
 
 /**
  * Trova il prossimo codice Fustella disponibile.
- * Priorità:
- * 1. Fustelle già presenti in tabella ma senza codice_fornitore E senza fornitore (da riempire prima)
- * → restituisce il codice con numero più basso tra quelle
- * 2. Prossimo numero libero dopo il MAX esistente (gap-filling + incremento)
+ * Strategia:
+ * 1. Cerca fustelle senza codice_fornitore E senza fornitore (da riutilizzare prima)
+ * 2. Prende il MAX codice esistente e aggiunge 1
  * Formato codice: FU0001, FU0002, ...
  */
 export async function findNextAvailableFustellaCode(): Promise<string> {
-  const { data, error } = await supabase
+  // 1. Cerca fustelle vuote (senza fornitore e senza codice_fornitore)
+  const { data: vuote, error: errVuote } = await supabase
     .from('fustelle')
-    .select('codice, codice_fornitore, fornitore')
+    .select('codice')
+    .or('codice_fornitore.is.null,codice_fornitore.eq.')
+    .or('fornitore.is.null,fornitore.eq.')
     .order('codice', { ascending: true })
-    .limit(10000);
+    .limit(1);
 
-  if (error) {
-    console.error('Error fetching fustella codes:', error);
+  if (!errVuote && vuote && vuote.length > 0) {
+    console.log('✂️ Riutilizzo fustella senza codice_fornitore e senza fornitore:', vuote[0].codice);
+    return vuote[0].codice;
+  }
+
+  // 2. Prende il codice più alto esistente e incrementa
+  const { data: maxData, error: errMax } = await supabase
+    .from('fustelle')
+    .select('codice')
+    .order('codice', { ascending: false })
+    .limit(1);
+
+  if (errMax || !maxData || maxData.length === 0) {
     return 'FU0001';
   }
 
-  if (!data || data.length === 0) {
+  const lastCode = maxData[0].codice;
+  const match = lastCode.match(/^(?:FU|FST-?)(\d+)$/);
+  if (!match) {
     return 'FU0001';
   }
 
-  // 1. Cerca la fustella con numero più basso che ha codice_fornitore null o vuoto E fornitore null o vuoto
-  const fustelleVuote = data.filter(f =>
-    (!f.codice_fornitore || f.codice_fornitore.trim() === '') &&
-    (!f.fornitore || f.fornitore.trim() === '')
-  );
-
-  if (fustelleVuote.length > 0) {
-    const codice = fustelleVuote[0].codice; // già ordinato ascending
-    console.log('✂️ Riutilizzo fustella senza codice_fornitore e senza fornitore:', codice);
-    return codice;
-  }
-
-  // 2. Nessuna fustella vuota: genera il prossimo numero libero (gap-fill poi MAX+1)
-  const existingNumbers: number[] = [];
-  data.forEach(fustella => {
-    // Supporta sia formato FU0001 che FST-001
-    const match = fustella.codice.match(/^(?:FU|FST-?)(\d+)$/);
-    if (match) {
-      existingNumbers.push(parseInt(match[1], 10));
-    }
-  });
-
-  existingNumbers.sort((a, b) => a - b);
-
-  let nextAvailableNum = 1;
-  for (const num of existingNumbers) {
-    if (num === nextAvailableNum) {
-      nextAvailableNum++;
-    } else if (num > nextAvailableNum) {
-      break; // trovato un buco
-    }
-  }
-
-  const formattedCode = `FU${String(nextAvailableNum).padStart(4, '0')}`;
+  const nextNum = parseInt(match[1], 10) + 1;
+  const formattedCode = `FU${String(nextNum).padStart(4, '0')}`;
   console.log('✂️ Prossimo codice Fustella disponibile:', formattedCode);
   return formattedCode;
 }
