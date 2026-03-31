@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 /**
  * Trova il prossimo codice Fustella disponibile.
  * Priorità:
- * 1. Fustelle già presenti in tabella ma senza codice_fornitore (da riempire prima)
+ * 1. Fustelle già presenti in tabella ma senza codice_fornitore E senza fornitore (da riempire prima)
  *    → restituisce il codice con numero più basso tra quelle
  * 2. Prossimo numero libero dopo il MAX esistente (gap-filling + incremento)
  * Formato codice: FU0001, FU0002, ...
@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 export async function findNextAvailableFustellaCode(): Promise<string> {
   const { data, error } = await supabase
     .from('fustelle')
-    .select('codice, codice_fornitore')
+    .select('codice, codice_fornitore, fornitore')
     .order('codice', { ascending: true });
 
   if (error) {
@@ -23,11 +23,15 @@ export async function findNextAvailableFustellaCode(): Promise<string> {
     return 'FU0001';
   }
 
-  // 1. Cerca la fustella con numero più basso che ha codice_fornitore null o vuoto
-  const fustelleVuote = data.filter(f => !f.codice_fornitore || f.codice_fornitore.trim() === '');
+  // 1. Cerca la fustella con numero più basso che ha codice_fornitore null o vuoto E fornitore null o vuoto
+  const fustelleVuote = data.filter(f =>
+    (!f.codice_fornitore || f.codice_fornitore.trim() === '') &&
+    (!f.fornitore || f.fornitore.trim() === '')
+  );
+
   if (fustelleVuote.length > 0) {
     const codice = fustelleVuote[0].codice; // già ordinato ascending
-    console.log('✂️ Riutilizzo fustella senza codice_fornitore:', codice);
+    console.log('✂️ Riutilizzo fustella senza codice_fornitore e senza fornitore:', codice);
     return codice;
   }
 
@@ -35,7 +39,7 @@ export async function findNextAvailableFustellaCode(): Promise<string> {
   const existingNumbers: number[] = [];
   data.forEach(fustella => {
     // Supporta sia formato FU0001 che FST-001
-    const match = fustella.codice.match(/^(?:FU|FST-?)(d+)$/);
+    const match = fustella.codice.match(/^(?:FU|FST-?)(\d+)$/);
     if (match) {
       existingNumbers.push(parseInt(match[1], 10));
     }
