@@ -1,12 +1,10 @@
 import { useState, useMemo } from 'react';
 import { LavoroProduzione, MacchinaProduzione, StoricoLavoroProduzione, LottoStampaInfo } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Plus, Search, LayoutGrid, List, X, ChevronDown,
   Factory, Clock, CheckCircle2, XCircle, Package,
-  User, Layers, CalendarDays, StickyNote, AlertCircle
+  CalendarDays, Layers
 } from 'lucide-react';
 
 // ─── tipi props ───────────────────────────────────────────────────────────────
@@ -25,10 +23,10 @@ interface Props {
 type Stato = 'in_attesa' | 'in_produzione' | 'completato' | 'annullato';
 
 const STATI: { key: Stato; label: string; color: string; bg: string; icon: any }[] = [
-  { key: 'in_attesa',     label: 'In Attesa',     color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200',   icon: Clock },
-  { key: 'in_produzione', label: 'In Produzione', color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200',     icon: Factory },
-  { key: 'completato',    label: 'Completato',    color: 'text-green-700',  bg: 'bg-green-50 border-green-200',   icon: CheckCircle2 },
-  { key: 'annullato',     label: 'Annullato',     color: 'text-red-700',    bg: 'bg-red-50 border-red-200',       icon: XCircle },
+  { key: 'in_attesa',     label: 'In Attesa',     color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200',  icon: Clock },
+  { key: 'in_produzione', label: 'In Produzione', color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200',    icon: Factory },
+  { key: 'completato',    label: 'Completato',    color: 'text-green-700',  bg: 'bg-green-50 border-green-200',  icon: CheckCircle2 },
+  { key: 'annullato',     label: 'Annullato',     color: 'text-red-700',    bg: 'bg-red-50 border-red-200',      icon: XCircle },
 ];
 
 const STATO_BADGE: Record<Stato, string> = {
@@ -38,19 +36,25 @@ const STATO_BADGE: Record<Stato, string> = {
   annullato:     'bg-red-100 text-red-800 border border-red-300',
 };
 
-const STATO_LABEL: Record<Stato, string> = {
-  in_attesa: 'In Attesa', in_produzione: 'In Produzione',
-  completato: 'Completato', annullato: 'Annullato',
-};
-
-const FASI = ['Stampa', 'Fustellatura', 'Incollatura', 'Confezionamento', 'Controllo Qualità', 'Altro'];
+// Fasi reali del processo produttivo con le macchine associate
+const FASI_PRODUZIONE: { label: string; tipiMacchina: string[]; colore: string }[] = [
+  { label: 'Programma di Stampa', tipiMacchina: ['Pianificazione'],             colore: 'bg-slate-100 text-slate-700 border-slate-300' },
+  { label: 'Montaggio Lavoro',    tipiMacchina: ['Premontaggio'],               colore: 'bg-violet-100 text-violet-700 border-violet-300' },
+  { label: 'Stampa',              tipiMacchina: ['Stampa'],                     colore: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { label: 'Verniciatura UV',     tipiMacchina: ['Verniciatura UV'],            colore: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
+  { label: 'Oro a Caldo',         tipiMacchina: ['Oro a Caldo'],               colore: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+  { label: 'Terzista',            tipiMacchina: ['Esterno'],                   colore: 'bg-orange-100 text-orange-700 border-orange-300' },
+  { label: 'Fustellatura',        tipiMacchina: ['Fustellatura'],              colore: 'bg-red-100 text-red-700 border-red-300' },
+  { label: 'Incollatura',         tipiMacchina: ['Incollatura'],               colore: 'bg-pink-100 text-pink-700 border-pink-300' },
+  { label: 'Impacchettamento',    tipiMacchina: ['Fine'],                      colore: 'bg-green-100 text-green-700 border-green-300' },
+];
 
 // ─── form nuovo lavoro ────────────────────────────────────────────────────────
 interface FormState {
   lotto_query: string;
   lotto_selezionato: LottoStampaInfo | null;
-  macchina_id: string;
   fase: string;
+  macchina_id: string;
   stato: Stato;
   data_inizio_prevista: string;
   data_fine_prevista: string;
@@ -67,14 +71,29 @@ function FormNuovoLavoro({
 }) {
   const [form, setForm] = useState<FormState>({
     lotto_query: '', lotto_selezionato: null,
-    macchina_id: macchine[0]?.id || '',
-    fase: FASI[0], stato: 'in_attesa',
+    fase: FASI_PRODUZIONE[0].label,
+    macchina_id: '',
+    stato: 'in_attesa',
     data_inizio_prevista: '', data_fine_prevista: '', note: '',
   });
   const [saving, setSaving] = useState(false);
   const [showSuggerimenti, setShowSuggerimenti] = useState(false);
 
-  // Deduplica lotti per numero (tieni il primo)
+  // Macchine disponibili per la fase selezionata
+  const faseDef = FASI_PRODUZIONE.find(f => f.label === form.fase);
+  const macchineFase = useMemo(() => {
+    if (!faseDef) return macchine;
+    return macchine.filter(m => faseDef.tipiMacchina.includes(m.tipo));
+  }, [form.fase, macchine, faseDef]);
+
+  // Se cambia fase, reset macchina_id alla prima disponibile
+  const setFase = (fase: string) => {
+    const def = FASI_PRODUZIONE.find(f => f.label === fase);
+    const disponibili = def ? macchine.filter(m => def.tipiMacchina.includes(m.tipo)) : macchine;
+    setForm(f => ({ ...f, fase, macchina_id: disponibili[0]?.id || '' }));
+  };
+
+  // Deduplica lotti per numero
   const lottiUnici = useMemo(() => {
     const seen = new Set<number>();
     return lottiStampa.filter(l => { if (seen.has(l.lotto)) return false; seen.add(l.lotto); return true; });
@@ -111,7 +130,7 @@ function FormNuovoLavoro({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
             <Plus className="h-5 w-5 text-blue-600" /> Nuovo Lavoro in Produzione
@@ -128,6 +147,9 @@ function FormNuovoLavoro({
                 <span className="font-bold text-blue-800 text-sm">Lotto {form.lotto_selezionato.lotto}</span>
                 <span className="text-gray-600 text-sm ml-2">– {form.lotto_selezionato.cliente}</span>
                 <div className="text-xs text-gray-500 mt-0.5">{form.lotto_selezionato.lavoro}</div>
+                {form.lotto_selezionato.quantita && (
+                  <div className="text-xs text-gray-400">Qtà: {form.lotto_selezionato.quantita.toLocaleString()} pz</div>
+                )}
               </div>
               <button onClick={() => set('lotto_selezionato', null)} className="text-blue-400 hover:text-blue-600 ml-2">
                 <X className="h-4 w-4" />
@@ -142,12 +164,12 @@ function FormNuovoLavoro({
                 value={form.lotto_query}
                 onChange={e => { set('lotto_query', e.target.value); setShowSuggerimenti(true); }}
                 onFocus={() => setShowSuggerimenti(true)}
+                autoFocus
               />
               {showSuggerimenti && suggerimenti.length > 0 && (
                 <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-56 overflow-y-auto">
                   {suggerimenti.map(l => (
-                    <button
-                      key={l.id}
+                    <button key={l.id}
                       className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-0"
                       onClick={() => { set('lotto_selezionato', l); set('lotto_query', ''); setShowSuggerimenti(false); }}
                     >
@@ -172,32 +194,50 @@ function FormNuovoLavoro({
 
         {/* Fase */}
         <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Fase *</label>
-          <div className="flex flex-wrap gap-2">
-            {FASI.map(f => (
-              <button
-                key={f}
-                onClick={() => set('fase', f)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  form.fase === f
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Fase *</label>
+          <div className="flex flex-wrap gap-1.5">
+            {FASI_PRODUZIONE.map(f => (
+              <button key={f.label} onClick={() => setFase(f.label)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                  form.fase === f.label
+                    ? f.colore + ' font-bold shadow-sm'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
                 }`}
-              >{f}</button>
+              >{f.label}</button>
             ))}
           </div>
         </div>
 
-        {/* Macchina */}
+        {/* Macchina (filtrata per fase) */}
         <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Macchina *</label>
-          <select
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={form.macchina_id}
-            onChange={e => set('macchina_id', e.target.value)}
-          >
-            {macchine.map(m => <option key={m.id} value={m.id}>{m.nome} ({m.tipo})</option>)}
-          </select>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Macchina *
+            <span className="ml-1 text-xs font-normal text-gray-400">
+              ({macchineFase.length} disponibil{macchineFase.length === 1 ? 'e' : 'i'} per questa fase)
+            </span>
+          </label>
+          {macchineFase.length === 0 ? (
+            <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Nessuna macchina configurata per questa fase. Aggiungila in "Gestione Macchine".
+            </div>
+          ) : macchineFase.length === 1 ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700">
+              <span className="font-medium">{macchineFase[0].nome}</span>
+              <span className="text-gray-400 ml-1">({macchineFase[0].tipo})</span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {macchineFase.map(m => (
+                <button key={m.id} onClick={() => set('macchina_id', m.id)}
+                  className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
+                    form.macchina_id === m.id
+                      ? 'bg-blue-600 text-white border-blue-600 font-medium'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                  }`}
+                >{m.nome}</button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Stato */}
@@ -205,9 +245,7 @@ function FormNuovoLavoro({
           <label className="block text-sm font-semibold text-gray-700 mb-1">Stato iniziale</label>
           <div className="flex gap-2">
             {STATI.slice(0, 2).map(s => (
-              <button
-                key={s.key}
-                onClick={() => set('stato', s.key)}
+              <button key={s.key} onClick={() => set('stato', s.key)}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                   form.stato === s.key ? `${s.bg} ${s.color} font-bold` : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
                 }`}
@@ -239,8 +277,7 @@ function FormNuovoLavoro({
 
         <div className="flex gap-3">
           <Button variant="outline" onClick={onClose} className="flex-1">Annulla</Button>
-          <Button
-            onClick={handleSave}
+          <Button onClick={handleSave}
             disabled={!form.lotto_selezionato || !form.macchina_id || saving}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           >{saving ? 'Salvataggio...' : 'Aggiungi Lavoro'}</Button>
@@ -259,19 +296,19 @@ function KanbanCard({ lavoro, onChangeStato, onDelete }: {
   const [showMenu, setShowMenu] = useState(false);
   const lotto = lavoro.lotto_info;
   const fase = lavoro.nome_lavoro.match(/^\[(.+?)\]/)?.[1];
+  const faseDef = FASI_PRODUZIONE.find(f => f.label === fase);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3 hover:shadow-md transition-shadow">
-      {/* Header */}
       <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {lotto && (
             <span className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5">
               #{lotto.lotto}
             </span>
           )}
           {fase && (
-            <span className="text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded px-1.5 py-0.5">
+            <span className={`text-xs font-medium rounded px-1.5 py-0.5 border ${faseDef?.colore || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
               {fase}
             </span>
           )}
@@ -300,7 +337,6 @@ function KanbanCard({ lavoro, onChangeStato, onDelete }: {
         </div>
       </div>
 
-      {/* Cliente / Lavoro */}
       {lotto && (
         <div className="mb-2">
           <div className="text-sm font-semibold text-gray-800 truncate">{lotto.cliente}</div>
@@ -308,13 +344,11 @@ function KanbanCard({ lavoro, onChangeStato, onDelete }: {
         </div>
       )}
 
-      {/* Macchina */}
       <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
         <Factory className="h-3 w-3" />
         <span className="truncate">{lavoro.macchina_nome}</span>
       </div>
 
-      {/* Quantità */}
       {lotto?.quantita && (
         <div className="flex items-center gap-1 text-xs text-gray-400">
           <Package className="h-3 w-3" />
@@ -322,7 +356,6 @@ function KanbanCard({ lavoro, onChangeStato, onDelete }: {
         </div>
       )}
 
-      {/* Data fine prevista */}
       {lavoro.data_fine_prevista && (
         <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
           <CalendarDays className="h-3 w-3" />
@@ -330,7 +363,6 @@ function KanbanCard({ lavoro, onChangeStato, onDelete }: {
         </div>
       )}
 
-      {/* Note */}
       {lavoro.note && (
         <div className="mt-2 text-xs text-gray-500 bg-gray-50 rounded p-1.5 truncate" title={lavoro.note}>
           {lavoro.note}
@@ -348,13 +380,12 @@ function ListaRiga({ lavoro, onChangeStato, onDelete }: {
 }) {
   const lotto = lavoro.lotto_info;
   const fase = lavoro.nome_lavoro.match(/^\[(.+?)\]/)?.[1] || '–';
+  const faseDef = FASI_PRODUZIONE.find(f => f.label === fase);
 
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
       <td className="px-3 py-2.5 text-sm">
-        {lotto
-          ? <span className="font-bold text-blue-700">#{lotto.lotto}</span>
-          : <span className="text-gray-400">–</span>}
+        {lotto ? <span className="font-bold text-blue-700">#{lotto.lotto}</span> : <span className="text-gray-400">–</span>}
       </td>
       <td className="px-3 py-2.5 text-sm">
         {lotto
@@ -363,12 +394,10 @@ function ListaRiga({ lavoro, onChangeStato, onDelete }: {
           : <span className="text-gray-400">–</span>}
       </td>
       <td className="px-3 py-2.5 text-xs">
-        <span className="bg-purple-50 text-purple-700 border border-purple-200 rounded px-2 py-0.5">{fase}</span>
+        <span className={`rounded-full px-2 py-0.5 border text-xs font-medium ${faseDef?.colore || 'bg-gray-100 text-gray-600 border-gray-200'}`}>{fase}</span>
       </td>
       <td className="px-3 py-2.5 text-sm text-gray-600">{lavoro.macchina_nome}</td>
-      <td className="px-3 py-2.5 text-sm">
-        {lotto?.quantita ? lotto.quantita.toLocaleString() : '–'}
-      </td>
+      <td className="px-3 py-2.5 text-sm">{lotto?.quantita ? lotto.quantita.toLocaleString() : '–'}</td>
       <td className="px-3 py-2.5">
         <select
           className={`text-xs font-medium rounded-full px-2 py-0.5 border cursor-pointer ${STATO_BADGE[lavoro.stato as Stato]}`}
@@ -379,9 +408,7 @@ function ListaRiga({ lavoro, onChangeStato, onDelete }: {
         </select>
       </td>
       <td className="px-3 py-2.5 text-xs text-gray-400">
-        {lavoro.data_fine_prevista
-          ? new Date(lavoro.data_fine_prevista).toLocaleDateString('it-IT')
-          : '–'}
+        {lavoro.data_fine_prevista ? new Date(lavoro.data_fine_prevista).toLocaleDateString('it-IT') : '–'}
       </td>
       <td className="px-3 py-2.5">
         <button onClick={() => onDelete(lavoro.id)} className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50">
@@ -393,9 +420,7 @@ function ListaRiga({ lavoro, onChangeStato, onDelete }: {
 }
 
 // ─── componente principale ────────────────────────────────────────────────────
-export function StatoLavoriTab({
-  macchine, lavori, storicoLavori, lottiStampa, addLavoro, updateLavoro, deleteLavoro
-}: Props) {
+export function StatoLavoriTab({ macchine, lavori, storicoLavori, lottiStampa, addLavoro, updateLavoro, deleteLavoro }: Props) {
   const [vista, setVista] = useState<'kanban' | 'lista'>('kanban');
   const [showForm, setShowForm] = useState(false);
   const [filtroTesto, setFiltroTesto] = useState('');
@@ -408,38 +433,30 @@ export function StatoLavoriTab({
       if (filtroMacchina !== 'tutti' && l.macchina_id !== filtroMacchina) return false;
       if (filtroTesto) {
         const q = filtroTesto.toLowerCase();
-        const matchLotto = String(l.lotto_stampa || '').includes(q);
-        const matchCliente = l.lotto_info?.cliente?.toLowerCase().includes(q);
-        const matchLavoro = l.lotto_info?.lavoro?.toLowerCase().includes(q);
-        const matchMacchina = l.macchina_nome?.toLowerCase().includes(q);
-        if (!matchLotto && !matchCliente && !matchLavoro && !matchMacchina) return false;
+        if (
+          !String(l.lotto_stampa || '').includes(q) &&
+          !l.lotto_info?.cliente?.toLowerCase().includes(q) &&
+          !l.lotto_info?.lavoro?.toLowerCase().includes(q) &&
+          !l.macchina_nome?.toLowerCase().includes(q) &&
+          !l.nome_lavoro?.toLowerCase().includes(q)
+        ) return false;
       }
       return true;
     });
   }, [lavori, filtroStato, filtroMacchina, filtroTesto]);
 
-  const handleChangeStato = async (id: string, stato: Stato) => {
-    await updateLavoro(id, { stato });
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm('Eliminare questo lavoro?')) await deleteLavoro(id);
-  };
-
-  const handleSave = async (dati: any) => {
-    await addLavoro(dati);
-  };
-
-  // Contatori per colonna kanban
   const contatori = useMemo(() => {
     const c: Record<string, number> = {};
     STATI.forEach(s => { c[s.key] = lavoriVisibili.filter(l => l.stato === s.key).length; });
     return c;
   }, [lavoriVisibili]);
 
+  const handleChangeStato = async (id: string, stato: Stato) => { await updateLavoro(id, { stato }); };
+  const handleDelete = async (id: string) => { if (confirm('Eliminare questo lavoro?')) await deleteLavoro(id); };
+  const handleSave = async (dati: any) => { await addLavoro(dati); };
+
   return (
     <div>
-      {/* Header + pulsante nuovo */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -459,40 +476,32 @@ export function StatoLavoriTab({
           <input
             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Cerca lotto, cliente, lavoro..."
-            value={filtroTesto}
-            onChange={e => setFiltroTesto(e.target.value)}
+            value={filtroTesto} onChange={e => setFiltroTesto(e.target.value)}
           />
         </div>
-        <select
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          value={filtroStato}
-          onChange={e => setFiltroStato(e.target.value as any)}
-        >
+        <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          value={filtroStato} onChange={e => setFiltroStato(e.target.value as any)}>
           <option value="tutti">Tutti gli stati</option>
           {STATI.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
         </select>
-        <select
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          value={filtroMacchina}
-          onChange={e => setFiltroMacchina(e.target.value)}
-        >
+        <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          value={filtroMacchina} onChange={e => setFiltroMacchina(e.target.value)}>
           <option value="tutti">Tutte le macchine</option>
           {macchine.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
         </select>
-        {/* Toggle vista */}
         <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-          <button
-            onClick={() => setVista('kanban')}
-            className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${vista === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-          ><LayoutGrid className="h-4 w-4" /> Kanban</button>
-          <button
-            onClick={() => setVista('lista')}
-            className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${vista === 'lista' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-          ><List className="h-4 w-4" /> Lista</button>
+          <button onClick={() => setVista('kanban')}
+            className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${vista === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+            <LayoutGrid className="h-4 w-4" /> Kanban
+          </button>
+          <button onClick={() => setVista('lista')}
+            className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${vista === 'lista' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+            <List className="h-4 w-4" /> Lista
+          </button>
         </div>
       </div>
 
-      {/* ── VISTA KANBAN ─────────────────────────────────────────────────────── */}
+      {/* Kanban */}
       {vista === 'kanban' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {STATI.map(s => {
@@ -500,27 +509,16 @@ export function StatoLavoriTab({
             const col = lavoriVisibili.filter(l => l.stato === s.key);
             return (
               <div key={s.key} className={`rounded-xl border-2 ${s.bg} p-3 min-h-[200px]`}>
-                {/* Intestazione colonna */}
                 <div className={`flex items-center justify-between mb-3`}>
                   <div className={`flex items-center gap-1.5 font-semibold text-sm ${s.color}`}>
-                    <Icon className="h-4 w-4" />
-                    {s.label}
+                    <Icon className="h-4 w-4" />{s.label}
                   </div>
-                  <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${s.bg} ${s.color} border`}>
-                    {contatori[s.key]}
-                  </span>
+                  <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${s.bg} ${s.color} border`}>{contatori[s.key]}</span>
                 </div>
-                {/* Card */}
                 <div className="flex flex-col gap-2">
-                  {col.length === 0 && (
-                    <div className="text-center py-6 text-xs text-gray-400">Nessun lavoro</div>
-                  )}
+                  {col.length === 0 && <div className="text-center py-6 text-xs text-gray-400">Nessun lavoro</div>}
                   {col.map(l => (
-                    <KanbanCard
-                      key={l.id} lavoro={l}
-                      onChangeStato={handleChangeStato}
-                      onDelete={handleDelete}
-                    />
+                    <KanbanCard key={l.id} lavoro={l} onChangeStato={handleChangeStato} onDelete={handleDelete} />
                   ))}
                 </div>
               </div>
@@ -529,46 +527,33 @@ export function StatoLavoriTab({
         </div>
       )}
 
-      {/* ── VISTA LISTA ──────────────────────────────────────────────────────── */}
+      {/* Lista */}
       {vista === 'lista' && (
         <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Lotto</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Cliente / Lavoro</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Fase</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Macchina</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Qtà</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Stato</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Fine Prevista</th>
-                <th className="px-3 py-3"></th>
+                {['Lotto','Cliente / Lavoro','Fase','Macchina','Qtà','Stato','Fine Prevista',''].map(h => (
+                  <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {lavoriVisibili.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-400 text-sm">
-                  Nessun lavoro trovato
-                </td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-gray-400 text-sm">Nessun lavoro trovato</td></tr>
               )}
               {lavoriVisibili.map(l => (
-                <ListaRiga key={l.id} lavoro={l}
-                  onChangeStato={handleChangeStato}
-                  onDelete={handleDelete}
-                />
+                <ListaRiga key={l.id} lavoro={l} onChangeStato={handleChangeStato} onDelete={handleDelete} />
               ))}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Modal form */}
       {showForm && (
         <FormNuovoLavoro
-          macchine={macchine}
-          lottiStampa={lottiStampa}
-          onSave={handleSave}
-          onClose={() => setShowForm(false)}
+          macchine={macchine} lottiStampa={lottiStampa}
+          onSave={handleSave} onClose={() => setShowForm(false)}
         />
       )}
     </div>
