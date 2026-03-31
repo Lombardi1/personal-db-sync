@@ -8,25 +8,23 @@ import { Home, Factory } from 'lucide-react';
 import { ProduzioneTabs } from '@/components/ProduzioneTabs';
 import { StatoLavoriTab } from '@/components/tabs/StatoLavoriTab';
 import { StoricoLavoriTab } from '@/components/tabs/StoricoLavoriTab';
-import { GestioneMacchineTab } from '@/components/tabs/GestioneMacchineTab'; // Importa la nuova tab
+import { GestioneMacchineTab } from '@/components/tabs/GestioneMacchineTab';
 
 const ProduzioneDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get('tab') || 'stato-lavori'; // Default a 'stato-lavori'
+  const initialTab = queryParams.get('tab') || 'stato-lavori';
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const produzioneData = useProduzione();
 
-  // Update URL query param when activeTab changes
   useEffect(() => {
     if (activeTab !== queryParams.get('tab')) {
       navigate(`?tab=${activeTab}`, { replace: true });
     }
   }, [activeTab, navigate, queryParams]);
 
-  // Update activeTab when URL query param changes
   useEffect(() => {
     const tabFromUrl = queryParams.get('tab');
     if (tabFromUrl && tabFromUrl !== activeTab) {
@@ -44,12 +42,12 @@ const ProduzioneDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
-      <Header 
-        title="Gestione Produzione" 
-        activeTab="produzione" 
-        showUsersButton={true} 
+      <Header
+        title="Gestione Produzione"
+        activeTab="produzione"
+        showUsersButton={true}
       />
-      
+
       <div className="mx-auto p-3 sm:p-5 md:px-8">
         <div className="flex justify-end mb-4">
           <Button onClick={() => navigate('/summary')} variant="outline" size="sm" className="text-sm">
@@ -62,18 +60,29 @@ const ProduzioneDashboard = () => {
           <Factory className="h-7 w-7 sm:h-8 sm:w-8" /> Gestione Produzione
         </h2>
 
-        <ProduzioneTabs 
-          activeTab={activeTab} 
+        <ProduzioneTabs
+          activeTab={activeTab}
           setActiveTab={setActiveTab}
           counts={{
             macchine: produzioneData.macchine.length,
             lavori: produzioneData.lavori.length,
-            storico: produzioneData.storicoLavori.length
+            storico: produzioneData.storicoLavori.length,
           }}
         />
 
         <div className="bg-white border border-[hsl(214,32%,91%)] rounded-b-lg rounded-tr-lg shadow-sm p-6">
-          {activeTab === 'stato-lavori' && <StatoLavoriTab {...produzioneData} />}
+          {activeTab === 'stato-lavori' && (
+            <StatoLavoriTab
+              macchine={produzioneData.macchine}
+              lavori={produzioneData.lavori}
+              storicoLavori={produzioneData.storicoLavori}
+              lottiStampa={produzioneData.lottiStampa}
+              addLavoro={produzioneData.addLavoro}
+              updateLavoro={produzioneData.updateLavoro}
+              deleteLavoro={produzioneData.deleteLavoro}
+              loadData={produzioneData.loadData}
+            />
+          )}
           {activeTab === 'storico-lavori' && <StoricoLavoriTab {...produzioneData} />}
           {activeTab === 'gestione-macchine' && <GestioneMacchineTab {...produzioneData} />}
         </div>
