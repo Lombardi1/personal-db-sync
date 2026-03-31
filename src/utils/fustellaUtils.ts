@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
  * Trova il prossimo codice Fustella disponibile.
  * Priorità:
  * 1. Fustelle già presenti in tabella ma senza codice_fornitore E senza fornitore (da riempire prima)
- *    → restituisce il codice con numero più basso tra quelle
+ * → restituisce il codice con numero più basso tra quelle
  * 2. Prossimo numero libero dopo il MAX esistente (gap-filling + incremento)
  * Formato codice: FU0001, FU0002, ...
  */
@@ -12,7 +12,8 @@ export async function findNextAvailableFustellaCode(): Promise<string> {
   const { data, error } = await supabase
     .from('fustelle')
     .select('codice, codice_fornitore, fornitore')
-    .order('codice', { ascending: true });
+    .order('codice', { ascending: true })
+    .limit(10000);
 
   if (error) {
     console.error('Error fetching fustella codes:', error);
