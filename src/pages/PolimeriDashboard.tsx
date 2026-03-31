@@ -7,28 +7,25 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Home } from 'lucide-react';
 
-// Importa i componenti delle schede
 import { GiacenzaPolimeriTab } from '@/components/tabs/GiacenzaPolimeriTab';
 import { CaricoPolimeroTab } from '@/components/tabs/CaricoPolimeroTab';
-// Rimosso: import { StoricoPolimeriTab } from '@/components/tabs/StoricoPolimeriTab';
+import { DBPolimeriTab } from '@/components/tabs/DBPolimeriTab';
 
 const GestionePolimeri = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get('tab') || 'giacenza'; // Default a 'giacenza'
+  const initialTab = queryParams.get('tab') || 'giacenza';
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const polimeriData = usePolimeri();
 
-  // Update URL query param when activeTab changes
   useEffect(() => {
     if (activeTab !== queryParams.get('tab')) {
       navigate(`?tab=${activeTab}`, { replace: true });
     }
   }, [activeTab, navigate, queryParams]);
 
-  // Update activeTab when URL query param changes
   useEffect(() => {
     const tabFromUrl = queryParams.get('tab');
     if (tabFromUrl && tabFromUrl !== activeTab) {
@@ -38,12 +35,12 @@ const GestionePolimeri = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
-      <Header 
-        title="Gestione Magazzino Polimeri" 
-        activeTab="polimeri" 
-        showUsersButton={true} 
+      <Header
+        title="Gestione Magazzino Polimeri"
+        activeTab="polimeri"
+        showUsersButton={true}
       />
-      
+
       <div className="mx-auto p-3 sm:p-5 md:px-8">
         <div className="flex justify-end mb-4">
           <Button onClick={() => navigate('/summary')} variant="outline" size="sm" className="text-sm">
@@ -52,19 +49,18 @@ const GestionePolimeri = () => {
           </Button>
         </div>
 
-        <PolimeriTabs 
-          activeTab={activeTab} 
+        <PolimeriTabs
+          activeTab={activeTab}
           setActiveTab={setActiveTab}
           counts={{
             giacenza: polimeriData.polimeri.length,
-            // Rimosso: storico: polimeriData.storicoPolimeri.length
           }}
         />
 
         <div className="bg-white border border-[hsl(214,32%,91%)] rounded-b-lg rounded-tr-lg shadow-sm p-6">
           {activeTab === 'giacenza' && <GiacenzaPolimeriTab {...polimeriData} />}
           {activeTab === 'carico' && <CaricoPolimeroTab aggiungiPolimero={polimeriData.aggiungiPolimero} />}
-          {/* Rimosso: {activeTab === 'storico' && <StoricoPolimeriTab storico={polimeriData.storicoPolimeri} />} */}
+          {activeTab === 'database' && <DBPolimeriTab />}
         </div>
       </div>
 
