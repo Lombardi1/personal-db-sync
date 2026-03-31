@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Home, Factory } from 'lucide-react';
 import { ProduzioneTabs } from '@/components/ProduzioneTabs';
+import { ProgrammaStampaTab } from '@/components/tabs/ProgrammaStampaTab';
 import { StatoLavoriTab } from '@/components/tabs/StatoLavoriTab';
 import { StoricoLavoriTab } from '@/components/tabs/StoricoLavoriTab';
 import { GestioneMacchineTab } from '@/components/tabs/GestioneMacchineTab';
@@ -14,7 +15,7 @@ const ProduzioneDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get('tab') || 'stato-lavori';
+  const initialTab = queryParams.get('tab') || 'programma-stampa';
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const produzioneData = useProduzione();
@@ -42,11 +43,7 @@ const ProduzioneDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
-      <Header
-        title="Gestione Produzione"
-        activeTab="produzione"
-        showUsersButton={true}
-      />
+      <Header title="Gestione Produzione" activeTab="produzione" showUsersButton={true} />
 
       <div className="mx-auto p-3 sm:p-5 md:px-8">
         <div className="flex justify-end mb-4">
@@ -71,6 +68,9 @@ const ProduzioneDashboard = () => {
         />
 
         <div className="bg-white border border-[hsl(214,32%,91%)] rounded-b-lg rounded-tr-lg shadow-sm p-6">
+          {activeTab === 'programma-stampa' && (
+            <ProgrammaStampaTab lottiStampa={produzioneData.lottiStampa} />
+          )}
           {activeTab === 'stato-lavori' && (
             <StatoLavoriTab
               macchine={produzioneData.macchine}
