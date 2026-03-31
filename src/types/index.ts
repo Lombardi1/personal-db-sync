@@ -1,12 +1,12 @@
 export interface Chat {
   id: string;
   created_at: string;
-  participant_ids: string[]; // Array of UUIDs of participants
-  participant_usernames?: string[]; // Populated by frontend for display
+  participant_ids: string[];
+  participant_usernames?: string[];
   last_message_content?: string | null;
   last_message_at?: string | null;
-  unread_count?: number; // NUOVO: Conteggio messaggi non letti per l'utente corrente
-  name?: string; // NEW: Optional name for the chat
+  unread_count?: number;
+  name?: string;
 }
 
 export interface Message {
@@ -14,7 +14,7 @@ export interface Message {
   created_at: string;
   chat_id: string;
   sender_id: string;
-  sender_username?: string; // Populated by frontend for display
+  sender_username?: string;
   content: string;
 }
 
@@ -44,7 +44,7 @@ export interface Cliente extends AnagraficaBase {
 export interface Fornitore extends AnagraficaBase {
   tipo_fornitore: 'Cartone' | 'Inchiostro' | 'Colla' | 'Fustelle' | 'Altro' | '';
   considera_iva: boolean;
-  banca?: string | null; // NUOVO: Aggiunto campo banca
+  banca?: string | null;
 }
 
 export interface Cartone {
@@ -65,9 +65,9 @@ export interface Cartone {
   confermato?: boolean;
   note?: string | null;
   data_esaurimento?: string | null;
-  fsc?: boolean; // NUOVO: Aggiunto campo FSC
-  alimentare?: boolean; // NUOVO: Aggiunto campo Alimentare
-  rif_commessa_fsc?: string | null; // NUOVO: Riferimento commessa FSC
+  fsc?: boolean;
+  alimentare?: boolean;
+  rif_commessa_fsc?: string | null;
 }
 
 export interface StoricoMovimento {
@@ -78,17 +78,17 @@ export interface StoricoMovimento {
   data: string;
   note: string;
   user_id?: string | null;
-  username?: string; // Popolato dal frontend
-  numero_ordine_acquisto?: string | null; // NUOVO: Aggiunto per collegare allo storico
-  cliente?: string | null; // NUOVO: Aggiunto per storico
-  lavoro?: string | null; // NUOVO: Aggiunto per storico
+  username?: string;
+  numero_ordine_acquisto?: string | null;
+  cliente?: string | null;
+  lavoro?: string | null;
 }
 
 export interface OrdineAcquisto {
   id?: string;
   fornitore_id: string;
-  fornitore_nome?: string; // Popolato dal frontend
-  fornitore_tipo?: Fornitore['tipo_fornitore']; // Popolato dal frontend
+  fornitore_nome?: string;
+  fornitore_tipo?: Fornitore['tipo_fornitore'];
   data_ordine: string;
   numero_ordine: string;
   stato: 'in_attesa' | 'inviato' | 'confermato' | 'ricevuto' | 'annullato';
@@ -101,18 +101,15 @@ export interface OrdineAcquisto {
 
 export interface ArticoloOrdineAcquisto {
   id?: string;
-  // Campi per Cartone
   codice_ctn?: string | null;
   tipologia_cartone?: string | null;
   formato?: string | null;
   grammatura?: string | null;
   numero_fogli?: number | null;
-  peso_cartone_kg?: number | null; // Calcolato, non salvato direttamente
+  peso_cartone_kg?: number | null;
   fsc?: boolean;
   alimentare?: boolean;
   rif_commessa_fsc?: string | null;
-
-  // Campi per Fustelle
   fustella_codice?: string | null;
   codice_fornitore_fustella?: string | null;
   fustellatrice?: string | null;
@@ -126,10 +123,8 @@ export interface ArticoloOrdineAcquisto {
   incollatura?: boolean;
   incollatrice?: string | null;
   tipo_incollatura?: string | null;
-
-  // Campi comuni a tutti gli articoli
-  descrizione?: string | null; // Usato per Inchiostro, Colla, Altro, o come fallback
-  quantita?: number | null; // Quantità in kg per cartone, in pezzi per altri
+  descrizione?: string | null;
+  quantita?: number | null;
   prezzo_unitario?: number | null;
   cliente?: string | null;
   lavoro?: string | null;
@@ -174,7 +169,7 @@ export interface Fustella {
   disponibile: boolean;
   data_creazione: string;
   ultima_modifica: string;
-  ordine_acquisto_numero?: string | null; // Collega alla tabella ordini_acquisto
+  ordine_acquisto_numero?: string | null;
 }
 
 export interface StoricoMovimentoFustella {
@@ -189,8 +184,8 @@ export interface StoricoMovimentoFustella {
 
 export interface Polimero {
   codice: string;
-  nr_fustella?: string | null; // Riferimento alla fustella
-  codice_fornitore?: string | null; // Codice fornitore della fustella
+  nr_fustella?: string | null;
+  codice_fornitore?: string | null;
   cliente?: string | null;
   lavoro?: string | null;
   resa?: string | null;
@@ -210,7 +205,6 @@ export interface StoricoMovimentoPolimero {
   username?: string;
 }
 
-// TIPI PER CONSUMO COLORE
 export interface Colore {
   codice: string;
   nome: string;
@@ -242,14 +236,33 @@ export interface StoricoMovimentoColore {
   lotto?: string | null;
 }
 
-// NUOVI TIPI PER PRODUZIONE
 export interface MacchinaProduzione {
   id: string;
   nome: string;
-  tipo: string; // Es. 'Fustellatrice', 'Incollatrice', 'Stampa'
+  tipo: string;
   descrizione?: string | null;
   created_at?: string;
   updated_at?: string;
+}
+
+// Info del lotto stampa collegato
+export interface LottoStampaInfo {
+  id: string;
+  lotto: number;
+  cliente: string;
+  lavoro: string;
+  identificativo?: string | null;
+  ordine_nr?: string | null;
+  data_ordine?: string | null;
+  formato?: string | null;
+  quantita?: number | null;
+  cartone?: string | null;
+  stampato?: string | null;
+  parzialmente?: string | null;
+  conf?: string | null;
+  mag?: string | null;
+  cons?: string | null;
+  note?: string | null;
 }
 
 export interface LavoroProduzione {
@@ -263,6 +276,8 @@ export interface LavoroProduzione {
   data_inizio_effettiva?: string | null;
   data_fine_effettiva?: string | null;
   note?: string | null;
+  lotto_stampa?: number | null; // Riferimento al lotto in lavori_stampa
+  lotto_info?: LottoStampaInfo | null; // Popolato dal frontend tramite join
   created_at?: string;
   updated_at?: string;
 }
@@ -276,7 +291,7 @@ export interface StoricoLavoroProduzione {
   tipo: 'creazione' | 'aggiornamento_stato' | 'modifica_dettagli' | 'eliminazione';
   vecchio_stato?: string | null;
   nuovo_stato?: string | null;
-  dettagli_modifica?: string | null; // JSONB per dettagli specifici
+  dettagli_modifica?: string | null;
   data: string;
   user_id?: string | null;
   username?: string;
