@@ -6,7 +6,6 @@ export interface AppUser {
   id: string;
   username: string;
   role: 'stampa' | 'amministratore';
-  ruolo: 'mastro' | 'operatore';
   macchineIds: string[];
   macchineNomi: string[];
 }
@@ -39,7 +38,6 @@ export function useAuth() {
         id: userRecord.user_id,
         username: userRecord.username,
         role: userRecord.user_role as 'stampa' | 'amministratore',
-        ruolo: (userRecord.ruolo || 'operatore') as 'mastro' | 'operatore',
         macchineIds: userRecord.macchine_ids || [],
         macchineNomi: userRecord.macchine_nomi || [],
       };
@@ -63,8 +61,8 @@ export function useAuth() {
     login,
     logout,
     isAuthenticated: !!user,
-    isMastro: user?.ruolo === 'mastro',
-    isOperatore: user?.ruolo === 'operatore',
+    isMastro: user?.role === 'amministratore',
+    isOperatore: user?.role === 'stampa',
     isStampa: user?.role === 'stampa',
     isAmministratore: user?.role === 'amministratore',
   };
