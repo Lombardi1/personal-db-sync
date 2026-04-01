@@ -1,39 +1,35 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { LottoStampaInfo } from '@/types';
 import { Button } from '@/components/ui/button';
 import * as notifications from '@/utils/notifications';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  Plus, Search, X, GripVertical, Archive,
-  CalendarDays, ChevronRight, CheckCircle2,
-  Package, PlayCircle, Loader2, AlertCircle
+  Plus, Search, X, GripVertical, Archive, CalendarDays,
+  ChevronRight, CheckCircle2, Package, PlayCircle, Loader2,
+  AlertCircle, Settings2, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface Programma {
-  id: string;
-  nome: string;
-  data_creazione: string;
-  note: string | null;
-  stato: 'attivo' | 'archiviato';
-  avviato: boolean;
-  avviato_at?: string | null;
+  id: string; nome: string; data_creazione: string;
+  note: string | null; stato: 'attivo' | 'archiviato';
+  avviato: boolean; avviato_at?: string | null;
 }
-
 interface RigaProgramma {
-  id: string;
-  programma_id: string;
-  lotto_stampa: number;
-  posizione: number;
-  note: string | null;
+  id: string; programma_id: string; lotto_stampa: number;
+  posizione: number; note: string | null;
   lotto_info?: LottoStampaInfo | null;
-  lavoro_montaggio_id?: string | null;
-  lavoro_stampa_id?: string | null;
+  lavoro_montaggio_id?: string | null; lavoro_stampa_id?: string | null;
 }
+interface MacchinaProduzione { id: string; nome: string; tipo: string; }
 
-interface Props {
-  lottiStampa: LottoStampaInfo[];
-}
+// Ordine fisso delle fasi
+const ORDINE_FASI = [
+  'Premontaggio','Stampa','Verniciatura UV','Oro a Caldo',
+  'Fustellatura','Incollatura','Fine','Esterno'
+];
+
+interface Props { lottiStampa: LottoStampaInfo[]; }
 
 function useLottiMap(lottiStampa: LottoStampaInfo[]) {
   return useMemo(() => {
@@ -43,12 +39,13 @@ function useLottiMap(lottiStampa: LottoStampaInfo[]) {
   }, [lottiStampa]);
 }
 
-// ─── form nuovo programma ──────────────────────────────────────────────────────
-function FormNuovoProgramma({ onSave, onClose }: { onSave: (nome: string, note: string) => Promise<void>; onClose: () => void }) {
+// ─── form nuovo programma ─────────────────────────────────────────────────────
+function FormNuovoProgramma({ onSave, onClose }: {
+  onSave: (nome: string, note: string) => Promise<void>; onClose: () => void;
+}) {
   const [nome, setNome] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
-
   const handleSave = async () => {
     if (!nome.trim()) return;
     setSaving(true);
@@ -56,7 +53,6 @@ function FormNuovoProgramma({ onSave, onClose }: { onSave: (nome: string, note: 
     setSaving(false);
     onClose();
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
@@ -67,8 +63,8 @@ function FormNuovoProgramma({ onSave, onClose }: { onSave: (nome: string, note: 
         <div className="mb-4">
           <label className="block text-sm font-semibold text-gray-700 mb-1">Nome *</label>
           <input autoFocus className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Es. Settimana 1 Aprile" value={nome} onChange={e => setNome(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSave()} />
+            placeholder="Es. Settimana 1 Aprile" value={nome}
+            onChange={e => setNome(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave()} />
         </div>
         <div className="mb-5">
           <label className="block text-sm font-semibold text-gray-700 mb-1">Note</label>
@@ -77,7 +73,8 @@ function FormNuovoProgramma({ onSave, onClose }: { onSave: (nome: string, note: 
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={onClose} className="flex-1">Annulla</Button>
-          <Button onClick={handleSave} disabled={!nome.trim() || saving} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+          <Button onClick={handleSave} disabled={!nome.trim() || saving}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
             {saving ? 'Creazione...' : 'Crea Programma'}
           </Button>
         </div>
@@ -86,40 +83,30 @@ function FormNuovoProgramma({ onSave, onClose }: { onSave: (nome: string, note: 
   );
 }
 
-// ─── picker lotto ──────────────────────────────────────────────────────────────
+// ─── picker lotto ─────────────────────────────────────────────────────────────
 function PickerLotto({ lottiStampa, lottiUsati, onAdd }: {
-  lottiStampa: LottoStampaInfo[];
-  lottiUsati: Set<number>;
-  onAdd: (lotto: LottoStampaInfo) => void;
+  lottiStampa: LottoStampaInfo[]; lottiUsati: Set<number>; onAdd: (lotto: LottoStampaInfo) => void;
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-
   const lottiUnici = useMemo(() => {
     const seen = new Set<number>();
     return lottiStampa.filter(l => { if (seen.has(l.lotto)) return false; seen.add(l.lotto); return true; });
   }, [lottiStampa]);
-
   const suggerimenti = useMemo(() => {
     if (!query) return [];
     const q = query.toLowerCase();
-    return lottiUnici
-      .filter(l => !lottiUsati.has(l.lotto))
+    return lottiUnici.filter(l => !lottiUsati.has(l.lotto))
       .filter(l => String(l.lotto).includes(q) || l.cliente?.toLowerCase().includes(q) || l.lavoro?.toLowerCase().includes(q))
       .slice(0, 10);
   }, [query, lottiUnici, lottiUsati]);
-
   return (
     <div className="relative">
       <div className="relative">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-        <input
-          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        <input className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           placeholder="Cerca lotto, cliente o lavoro da aggiungere..."
-          value={query}
-          onChange={e => { setQuery(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-        />
+          value={query} onChange={e => { setQuery(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} />
       </div>
       {open && suggerimenti.length > 0 && (
         <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-64 overflow-y-auto">
@@ -148,52 +135,114 @@ function PickerLotto({ lottiStampa, lottiUsati, onAdd }: {
   );
 }
 
-// ─── riga ordinabile ───────────────────────────────────────────────────────────
-function RigaOrdinabile({ riga, index, onRemove, onDragStart, onDragOver, onDrop, isDragging, bloccato }: {
-  riga: RigaProgramma; index: number;
-  onRemove: (id: string) => void;
-  onDragStart: (i: number) => void;
-  onDragOver: (e: React.DragEvent, i: number) => void;
-  onDrop: (i: number) => void;
-  isDragging: boolean; bloccato: boolean;
+// ─── selettore fasi per lotto ─────────────────────────────────────────────────
+function FasiSelector({ riga, macchine, fasiSelezionate, onChange }: {
+  riga: RigaProgramma; macchine: MacchinaProduzione[];
+  fasiSelezionate: string[]; onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  // Macchine ordinate per tipo secondo ORDINE_FASI (escluso Pianificazione che è sempre prima)
+  const macchineOrdinate = useMemo(() => {
+    return [...macchine]
+      .filter(m => m.tipo !== 'Pianificazione')
+      .sort((a, b) => {
+        const ia = ORDINE_FASI.indexOf(a.tipo);
+        const ib = ORDINE_FASI.indexOf(b.tipo);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      });
+  }, [macchine]);
+
+  const toggle = (id: string) => {
+    const next = fasiSelezionate.includes(id)
+      ? fasiSelezionate.filter(x => x !== id)
+      : [...fasiSelezionate, id];
+    // Mantieni ordinamento per tipo
+    const ordered = macchineOrdinate.filter(m => next.includes(m.id)).map(m => m.id);
+    onChange(ordered);
+  };
+
+  const nomiSelezionate = macchineOrdinate
+    .filter(m => fasiSelezionate.includes(m.id))
+    .map(m => m.nome);
+
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border border-gray-200 bg-white hover:border-blue-400 transition-colors">
+        <Settings2 className="h-3 w-3 text-gray-400" />
+        {nomiSelezionate.length === 0
+          ? <span className="text-gray-400">Seleziona fasi</span>
+          : <span className="text-blue-700 font-medium">{nomiSelezionate.join(' → ')}</span>
+        }
+        {open ? <ChevronUp className="h-3 w-3 text-gray-400" /> : <ChevronDown className="h-3 w-3 text-gray-400" />}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-8 z-20 bg-white border border-gray-200 rounded-xl shadow-xl p-3 min-w-[260px]"
+          onMouseLeave={() => setOpen(false)}>
+          <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Fasi di lavorazione</p>
+          <div className="flex flex-col gap-1.5">
+            {macchineOrdinate.map(m => (
+              <label key={m.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-2 py-1">
+                <input type="checkbox" checked={fasiSelezionate.includes(m.id)}
+                  onChange={() => toggle(m.id)}
+                  className="rounded border-gray-300 text-blue-600" />
+                <span className="text-sm text-gray-700">{m.nome}</span>
+                <span className="text-xs text-gray-400 ml-auto">{m.tipo}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── riga ordinabile ──────────────────────────────────────────────────────────
+function RigaOrdinabile({ riga, index, macchine, fasiLotto, onRemove, onDragStart, onDragOver, onDrop, isDragging, bloccato, onFasiChange }: {
+  riga: RigaProgramma; index: number; macchine: MacchinaProduzione[];
+  fasiLotto: Record<string, string[]>; onRemove: (id: string) => void;
+  onDragStart: (i: number) => void; onDragOver: (e: React.DragEvent, i: number) => void;
+  onDrop: (i: number) => void; isDragging: boolean; bloccato: boolean;
+  onFasiChange: (rigaId: string, ids: string[]) => void;
 }) {
   const lotto = riga.lotto_info;
+  const fasiSelezionate = fasiLotto[riga.id] || [];
   return (
-    <div
-      draggable={!bloccato}
-      onDragStart={() => !bloccato && onDragStart(index)}
-      onDragOver={e => { e.preventDefault(); onDragOver(e, index); }}
-      onDrop={() => onDrop(index)}
-      className={`flex items-center gap-3 bg-white border rounded-lg px-3 py-2.5 transition-all select-none ${
+    <div draggable={!bloccato} onDragStart={() => !bloccato && onDragStart(index)}
+      onDragOver={e => { e.preventDefault(); onDragOver(e, index); }} onDrop={() => onDrop(index)}
+      className={`flex items-start gap-3 bg-white border rounded-lg px-3 py-2.5 transition-all select-none ${
         isDragging ? 'opacity-40 scale-95' : bloccato ? 'border-gray-100 bg-gray-50' : 'hover:border-blue-300 hover:shadow-sm'
-      }`}
-    >
-      <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+      }`}>
+      <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
         {index + 1}
       </div>
-      <GripVertical className={`h-4 w-4 flex-shrink-0 ${bloccato ? 'text-gray-200' : 'text-gray-300 cursor-grab'}`} />
-      <span className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 flex-shrink-0">
+      <GripVertical className={`h-4 w-4 flex-shrink-0 mt-1 ${bloccato ? 'text-gray-200' : 'text-gray-300 cursor-grab'}`} />
+      <span className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 flex-shrink-0 mt-0.5">
         #{riga.lotto_stampa}
       </span>
       <div className="flex-1 min-w-0">
         {lotto ? (
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-800 text-sm truncate">{lotto.cliente}</span>
-              {lotto.quantita && <span className="text-xs text-gray-400 flex-shrink-0">{lotto.quantita.toLocaleString()} pz</span>}
+          <div className="mb-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-gray-800 text-sm">{lotto.cliente}</span>
+              {lotto.quantita && <span className="text-xs text-gray-400">{lotto.quantita.toLocaleString()} pz</span>}
             </div>
             <div className="text-xs text-gray-500 truncate">{lotto.lavoro}</div>
           </div>
-        ) : <span className="text-sm text-gray-400">Lotto {riga.lotto_stampa}</span>}
+        ) : <span className="text-sm text-gray-400 block mb-1.5">Lotto {riga.lotto_stampa}</span>}
+        {!bloccato && (
+          <FasiSelector riga={riga} macchine={macchine}
+            fasiSelezionate={fasiSelezionate}
+            onChange={ids => onFasiChange(riga.id, ids)} />
+        )}
+        {bloccato && riga.lavoro_montaggio_id && (
+          <span className="text-xs bg-green-100 text-green-700 border border-green-200 rounded-full px-2 py-0.5 inline-flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" /> Avviato
+          </span>
+        )}
       </div>
-      {/* Badge stato avvio */}
-      {riga.lavoro_montaggio_id && (
-        <span className="text-xs bg-green-100 text-green-700 border border-green-200 rounded-full px-2 py-0.5 flex-shrink-0 flex items-center gap-1">
-          <CheckCircle2 className="h-3 w-3" /> Avviato
-        </span>
-      )}
       {!bloccato && (
-        <button onClick={() => onRemove(riga.id)} className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 flex-shrink-0">
+        <button onClick={() => onRemove(riga.id)} className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 flex-shrink-0 mt-0.5">
           <X className="h-4 w-4" />
         </button>
       )}
@@ -201,47 +250,58 @@ function RigaOrdinabile({ riga, index, onRemove, onDragStart, onDragOver, onDrop
   );
 }
 
-// ─── dettaglio programma ───────────────────────────────────────────────────────
+// ─── dettaglio programma ──────────────────────────────────────────────────────
 function DettaglioProgramma({ programma, lottiStampa, lottiMap, onBack, onUpdate }: {
-  programma: Programma;
-  lottiStampa: LottoStampaInfo[];
-  lottiMap: Map<number, LottoStampaInfo>;
-  onBack: () => void;
-  onUpdate: () => void;
+  programma: Programma; lottiStampa: LottoStampaInfo[];
+  lottiMap: Map<number, LottoStampaInfo>; onBack: () => void; onUpdate: () => void;
 }) {
   const { user, isMastro } = useAuth();
   const [righe, setRighe] = useState<RigaProgramma[]>([]);
+  const [macchine, setMacchine] = useState<MacchinaProduzione[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avviando, setAvviando] = useState(false);
   const [prog, setProg] = useState<Programma>(programma);
+  // fasiLotto: { [rigaId]: [macchinaId, ...] } in ordine
+  const [fasiLotto, setFasiLotto] = useState<Record<string, string[]>>({});
   const dragIndex = useRef<number | null>(null);
 
   const loadRighe = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('programma_stampa_righe').select('*')
-      .eq('programma_id', programma.id).order('posizione', { ascending: true });
-    if (data) setRighe(data.map(r => ({ ...r, lotto_info: lottiMap.get(r.lotto_stampa) || null })));
+    const [righeRes, macchineRes] = await Promise.all([
+      supabase.from('programma_stampa_righe').select('*')
+        .eq('programma_id', programma.id).order('posizione', { ascending: true }),
+      supabase.from('macchine_produzione').select('*').order('nome'),
+    ]);
+    if (righeRes.data) setRighe(righeRes.data.map(r => ({ ...r, lotto_info: lottiMap.get(r.lotto_stampa) || null })));
+    if (macchineRes.data) setMacchine(macchineRes.data);
     setLoading(false);
   };
 
-  useState(() => { loadRighe(); });
+  useEffect(() => { loadRighe(); }, []);
 
   const handleAdd = async (lotto: LottoStampaInfo) => {
     if (prog.avviato) return;
     const maxPos = righe.length > 0 ? Math.max(...righe.map(r => r.posizione)) : 0;
-    const { data, error } = await supabase
-      .from('programma_stampa_righe')
+    const { data, error } = await supabase.from('programma_stampa_righe')
       .insert([{ programma_id: programma.id, lotto_stampa: lotto.lotto, posizione: maxPos + 1 }])
       .select().single();
-    if (!error && data) setRighe(prev => [...prev, { ...data, lotto_info: lottiMap.get(data.lotto_stampa) || null }]);
+    if (!error && data) {
+      const nuovaRiga = { ...data, lotto_info: lottiMap.get(data.lotto_stampa) || null };
+      setRighe(prev => [...prev, nuovaRiga]);
+      // Default: pre-seleziona Montaggio e Stampa
+      const montaggio = macchine.find(m => m.tipo === 'Premontaggio');
+      const stampa = macchine.find(m => m.tipo === 'Stampa');
+      const defaults = [montaggio?.id, stampa?.id].filter(Boolean) as string[];
+      setFasiLotto(prev => ({ ...prev, [data.id]: defaults }));
+    }
   };
 
   const handleRemove = async (id: string) => {
     if (prog.avviato) return;
     await supabase.from('programma_stampa_righe').delete().eq('id', id);
     setRighe(prev => prev.filter(r => r.id !== id));
+    setFasiLotto(prev => { const n = { ...prev }; delete n[id]; return n; });
   };
 
   const handleDrop = (dropIndex: number) => {
@@ -263,54 +323,46 @@ function DettaglioProgramma({ programma, lottiStampa, lottiMap, onBack, onUpdate
   // ── AVVIA PROGRAMMA ────────────────────────────────────────────────────────
   const handleAvvia = async () => {
     if (!righe.length) { notifications.showError('Aggiungi almeno un lotto prima di avviare.'); return; }
-    if (!confirm(`Avviare il programma "${prog.nome}"?\nVerranno creati ${righe.length} lavori in produzione.`)) return;
+    // Verifica che ogni riga abbia almeno una fase selezionata
+    const righeSenzaFasi = righe.filter(r => !fasiLotto[r.id] || fasiLotto[r.id].length === 0);
+    if (righeSenzaFasi.length > 0) {
+      notifications.showError(`Seleziona almeno una fase per ogni lotto. Lotti senza fasi: ${righeSenzaFasi.map(r => '#' + r.lotto_stampa).join(', ')}`);
+      return;
+    }
+    if (!confirm(`Avviare il programma "${prog.nome}"?\nVerranno create le fasi di lavorazione per ${righe.length} lotti.`)) return;
 
     setAvviando(true);
     try {
-      // Recupera gli ID delle macchine Montaggio e KBA
-      const { data: macchine } = await supabase
-        .from('macchine_produzione').select('id, nome, tipo')
-        .in('tipo', ['Premontaggio', 'Stampa']);
-
-      const macMontaggio = macchine?.find(m => m.tipo === 'Premontaggio');
-      const macKBA = macchine?.find(m => m.tipo === 'Stampa');
-
-      if (!macMontaggio || !macKBA) {
-        notifications.showError('Macchine Montaggio o KBA non trovate.');
-        setAvviando(false);
-        return;
-      }
-
-      // Per ogni riga crea: 1 lavoro Montaggio (in_produzione) + 1 lavoro KBA (in_attesa)
+      // Per ogni riga, crea le fasi_lotto in ordine
+      const faseDa_inserire: any[] = [];
       for (const riga of righe) {
-        const lotto = riga.lotto_info;
-        const nomeBase = lotto ? `Lotto ${riga.lotto_stampa} – ${lotto.cliente}` : `Lotto ${riga.lotto_stampa}`;
+        const macchineIds = fasiLotto[riga.id] || [];
+        // Ordina le macchine secondo ORDINE_FASI
+        const macchineOrdinateRiga = macchineIds
+          .map(id => macchine.find(m => m.id === id))
+          .filter(Boolean)
+          .sort((a: any, b: any) => {
+            const ia = ORDINE_FASI.indexOf(a.tipo);
+            const ib = ORDINE_FASI.indexOf(b.tipo);
+            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+          });
 
-        const [{ data: lavMontaggio }, { data: lavStampa }] = await Promise.all([
-          supabase.from('lavori_produzione').insert([{
-            macchina_id: macMontaggio.id,
-            nome_lavoro: `[Montaggio Lavoro] ${nomeBase}`,
-            stato: 'in_produzione',
+        macchineOrdinateRiga.forEach((m: any, idx) => {
+          faseDa_inserire.push({
+            programma_id: prog.id,
+            programma_nome: prog.nome,
             lotto_stampa: riga.lotto_stampa,
-            note: `Programma: ${prog.nome}`,
-          }]).select().single(),
-          supabase.from('lavori_produzione').insert([{
-            macchina_id: macKBA.id,
-            nome_lavoro: `[Stampa] ${nomeBase}`,
-            stato: 'in_attesa',
-            lotto_stampa: riga.lotto_stampa,
-            note: `Programma: ${prog.nome}`,
-          }]).select().single(),
-        ]);
-
-        // Aggiorna la riga con i riferimenti ai lavori creati
-        if (lavMontaggio && lavStampa) {
-          await supabase.from('programma_stampa_righe').update({
-            lavoro_montaggio_id: lavMontaggio.id,
-            lavoro_stampa_id: lavStampa.id,
-          }).eq('id', riga.id);
-        }
+            macchina_id: m.id,
+            macchina_nome: m.nome,
+            ordine_fase: idx + 1,
+            // Solo la prima fase parte come 'pronto', le altre 'in_attesa'
+            stato: idx === 0 ? 'pronto' : 'in_attesa',
+          });
+        });
       }
+
+      const { error: fasError } = await supabase.from('fasi_lotto').insert(faseDa_inserire);
+      if (fasError) throw fasError;
 
       // Segna programma come avviato
       await supabase.from('programma_stampa').update({
@@ -321,10 +373,10 @@ function DettaglioProgramma({ programma, lottiStampa, lottiMap, onBack, onUpdate
 
       setProg(p => ({ ...p, avviato: true }));
       await loadRighe();
-      notifications.showSuccess(`🚀 Programma avviato! ${righe.length} lavori creati in produzione.`);
+      notifications.showSuccess(`🚀 Programma avviato! Fasi create per ${righe.length} lotti.`);
       onUpdate();
-    } catch (err) {
-      notifications.showError('Errore durante l\'avvio del programma.');
+    } catch (err: any) {
+      notifications.showError('Errore durante l\'avvio: ' + err.message);
     }
     setAvviando(false);
   };
@@ -340,13 +392,12 @@ function DettaglioProgramma({ programma, lottiStampa, lottiMap, onBack, onUpdate
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onBack} className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
           <ChevronRight className="h-5 w-5 rotate-180" />
         </button>
         <div className="flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-xl font-bold text-gray-800">{prog.nome}</h3>
             {prog.avviato && (
               <span className="text-xs bg-green-100 text-green-700 border border-green-200 rounded-full px-2 py-0.5 flex items-center gap-1">
@@ -377,23 +428,25 @@ function DettaglioProgramma({ programma, lottiStampa, lottiMap, onBack, onUpdate
         </div>
       </div>
 
-      {/* Banner avviato */}
       {prog.avviato && (
         <div className="mb-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3 flex items-center gap-2 text-green-800 text-sm">
           <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-          <span>Programma avviato — i lavori sono stati creati in produzione per ogni lotto. L'ordine non è più modificabile.</span>
+          <span>Programma avviato — le fasi di lavorazione sono state create per ogni lotto.</span>
         </div>
       )}
-
-      {/* Alert nessuna macchina / solo MASTRO può modificare */}
       {!prog.avviato && !isMastro && (
         <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-center gap-2 text-amber-800 text-sm">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          <span>Solo il MASTRO può modificare l'ordine e avviare il programma.</span>
+          <span>Solo l'ufficio può modificare l'ordine e avviare il programma.</span>
+        </div>
+      )}
+      {!prog.avviato && isMastro && (
+        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-blue-800 text-sm">
+          <p className="font-semibold mb-1 flex items-center gap-1.5"><Settings2 className="h-4 w-4" /> Seleziona le fasi per ogni lotto</p>
+          <p className="text-xs text-blue-600">Per ogni lotto clicca su "Seleziona fasi" e scegli le macchine che deve attraversare, nell'ordine corretto.</p>
         </div>
       )}
 
-      {/* Picker (solo se non avviato e MASTRO) */}
       {!prog.avviato && isMastro && (
         <div className="mb-4">
           <PickerLotto lottiStampa={lottiStampa} lottiUsati={lottiUsati} onAdd={handleAdd} />
@@ -419,12 +472,14 @@ function DettaglioProgramma({ programma, lottiStampa, lottiMap, onBack, onUpdate
         <div className="flex flex-col gap-2">
           {righe.map((riga, i) => (
             <RigaOrdinabile key={riga.id} riga={riga} index={i}
+              macchine={macchine} fasiLotto={fasiLotto}
               onRemove={handleRemove}
               onDragStart={idx => { dragIndex.current = idx; }}
               onDragOver={(e, idx) => { e.preventDefault(); }}
               onDrop={handleDrop}
               isDragging={dragIndex.current === i}
               bloccato={prog.avviato || !isMastro}
+              onFasiChange={(rigaId, ids) => setFasiLotto(prev => ({ ...prev, [rigaId]: ids }))}
             />
           ))}
         </div>
@@ -433,7 +488,7 @@ function DettaglioProgramma({ programma, lottiStampa, lottiMap, onBack, onUpdate
   );
 }
 
-// ─── componente principale ─────────────────────────────────────────────────────
+// ─── componente principale ────────────────────────────────────────────────────
 export function ProgrammaStampaTab({ lottiStampa }: Props) {
   const { isMastro } = useAuth();
   const [programmi, setProgrammi] = useState<Programma[]>([]);
@@ -450,7 +505,7 @@ export function ProgrammaStampaTab({ lottiStampa }: Props) {
     setLoading(false);
   };
 
-  useState(() => { loadProgrammi(); });
+  useEffect(() => { loadProgrammi(); }, []);
 
   const handleCreate = async (nome: string, note: string) => {
     const { data, error } = await supabase.from('programma_stampa')
@@ -466,11 +521,8 @@ export function ProgrammaStampaTab({ lottiStampa }: Props) {
 
   if (selected) {
     return (
-      <DettaglioProgramma
-        programma={selected} lottiStampa={lottiStampa} lottiMap={lottiMap}
-        onBack={() => { setSelected(null); loadProgrammi(); }}
-        onUpdate={loadProgrammi}
-      />
+      <DettaglioProgramma programma={selected} lottiStampa={lottiStampa} lottiMap={lottiMap}
+        onBack={() => { setSelected(null); loadProgrammi(); }} onUpdate={loadProgrammi} />
     );
   }
 
@@ -489,7 +541,6 @@ export function ProgrammaStampaTab({ lottiStampa }: Props) {
           </Button>
         )}
       </div>
-
       <div className="flex gap-2 mb-4">
         {['attivo', 'archiviato'].map(s => (
           <button key={s} onClick={() => setMostraArchiviati(s === 'archiviato')}
@@ -497,12 +548,10 @@ export function ProgrammaStampaTab({ lottiStampa }: Props) {
               (s === 'archiviato') === mostraArchiviati
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'bg-white text-gray-500 border-gray-300 hover:border-blue-400'
-            }`}>
-            {s === 'attivo' ? 'Attivi' : 'Archiviati'}
+            }`}>{s === 'attivo' ? 'Attivi' : 'Archiviati'}
           </button>
         ))}
       </div>
-
       {loading ? (
         <div className="text-center py-10 text-gray-400">Caricamento...</div>
       ) : programmiVisibili.length === 0 ? (
@@ -539,7 +588,6 @@ export function ProgrammaStampaTab({ lottiStampa }: Props) {
           ))}
         </div>
       )}
-
       {showForm && isMastro && <FormNuovoProgramma onSave={handleCreate} onClose={() => setShowForm(false)} />}
     </div>
   );
