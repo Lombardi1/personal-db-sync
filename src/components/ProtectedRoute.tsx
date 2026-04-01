@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ('stampa' | 'amministratore')[]; // Ruolo aggiornato
+  allowedRoles?: ('stampa' | 'amministratore' | 'macchina')[];
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -17,16 +17,17 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Redirect in base al ruolo
-    if (user.role === 'stampa') { // Ruolo aggiornato
-      return <Navigate to="/produzione" replace />;
+    // Redirect alla home corretta per ruolo
+    if (user.role === 'macchina' && user.macchina_id) {
+      return <Navigate to={`/macchina/${user.macchina_id}`} replace />;
     }
-    return <Navigate to="/" replace />;
+    if (user.role === 'stampa') {
+      return <Navigate to="/stampa-dashboard" replace />;
+    }
+    return <Navigate to="/summary" replace />;
   }
 
   return <>{children}</>;
