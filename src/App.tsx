@@ -24,6 +24,7 @@ import LavoriStampa from "./pages/LavoriStampa";
 import DBArticoliProduzione from "./pages/DBArticoliProduzione";
 import GeneraDocumenti from "./pages/GeneraDocumenti";
 import MacchinaView from "./pages/MacchinaView";
+import SelezioneMacchina from "./pages/SelezioneMacchina";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -71,8 +72,8 @@ const App = () => {
             <Route path="/lavori-stampa" element={renderProtectedRoute(<LavoriStampa />, ['amministratore', 'stampa'])} />
             <Route path="/db-articoli-produzione" element={renderProtectedRoute(<DBArticoliProduzione />, ['amministratore', 'stampa'])} />
             <Route path="/genera-documenti" element={renderProtectedRoute(<GeneraDocumenti />, ['amministratore', 'stampa'])} />
-            {/* Vista macchina — accessibile da tutti */}
             <Route path="/macchina/:macchinaId" element={renderProtectedRoute(<MacchinaView />, ['amministratore', 'stampa'])} />
+            <Route path="/selezione-macchina" element={renderProtectedRoute(<SelezioneMacchina />, ['amministratore', 'stampa'])} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
