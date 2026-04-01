@@ -5,7 +5,8 @@ import bcrypt from 'bcryptjs';
 export interface AppUser {
   id: string;
   username: string;
-  role: 'stampa' | 'amministratore';
+  role: 'stampa' | 'amministratore' | 'macchina';
+  macchina_id: string | null; // popolato solo per ruolo 'macchina'
   macchineIds: string[];
   macchineNomi: string[];
 }
@@ -26,7 +27,6 @@ export function useAuth() {
   const login = async (username: string, password: string) => {
     try {
       const { data: authData, error: authError } = await supabase.rpc('get_user_auth_data', { p_username: username });
-
       if (authError) throw new Error('Errore di comunicazione con il server. Riprova più tardi.');
       if (!authData || authData.length === 0) throw new Error('Username o password non corretti');
 
@@ -37,7 +37,8 @@ export function useAuth() {
       const loggedUser: AppUser = {
         id: userRecord.user_id,
         username: userRecord.username,
-        role: userRecord.user_role as 'stampa' | 'amministratore',
+        role: userRecord.user_role as 'stampa' | 'amministratore' | 'macchina',
+        macchina_id: userRecord.macchina_id || null,
         macchineIds: userRecord.macchine_ids || [],
         macchineNomi: userRecord.macchine_nomi || [],
       };
@@ -65,5 +66,6 @@ export function useAuth() {
     isOperatore: user?.role === 'stampa',
     isStampa: user?.role === 'stampa',
     isAmministratore: user?.role === 'amministratore',
+    isMacchina: user?.role === 'macchina',
   };
 }
