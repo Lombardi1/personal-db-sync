@@ -29,51 +29,60 @@ import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+// Redirect iniziale basato sul ruolo
+function HomeRedirect() {
   const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[hsl(210,40%,96%)] flex items-center justify-center">
+        <div className="text-lg text-[hsl(var(--muted-foreground))]">Caricamento...</div>
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'amministratore') return <Navigate to="/summary" replace />;
+  if (user.role === 'macchina' && user.macchina_id) return <Navigate to={`/macchina/${user.macchina_id}`} replace />;
+  return <Navigate to="/stampa-dashboard" replace />;
+}
 
-  const renderProtectedRoute = (element: React.ReactNode, allowedRoles: ('stampa' | 'amministratore')[]) => {
-    return <ProtectedRoute allowedRoles={allowedRoles}>{element}</ProtectedRoute>;
-  };
-
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={
-              loading ? (
-                <div className="min-h-screen bg-[hsl(210,40%,96%)] flex items-center justify-center">
-                  <div className="text-lg text-[hsl(var(--muted-foreground))]">Caricamento...</div>
-                </div>
-              ) : user ? (
-                user.role === 'amministratore' ? <Navigate to="/summary" replace /> : <Navigate to="/stampa-dashboard" replace />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            } />
-            <Route path="/summary" element={renderProtectedRoute(<Summary />, ['amministratore'])} />
-            <Route path="/stampa-dashboard" element={renderProtectedRoute(<StampaDashboard />, ['stampa'])} />
-            <Route path="/gestione-magazzino" element={renderProtectedRoute(<Index />, ['amministratore', 'stampa'])} />
-            <Route path="/scarico-magazzino-stampa" element={renderProtectedRoute(<Produzione />, ['stampa'])} />
-            <Route path="/gestione-utenti" element={renderProtectedRoute(<GestioneUtenti />, ['amministratore'])} />
-            <Route path="/anagrafica" element={renderProtectedRoute(<Anagrafica />, ['amministratore'])} />
-            <Route path="/ordini-acquisto" element={renderProtectedRoute(<OrdiniAcquisto />, ['amministratore', 'stampa'])} />
-            <Route path="/storico-stampa" element={renderProtectedRoute(<StoricoStampa />, ['stampa'])} />
-            <Route path="/azienda-info" element={renderProtectedRoute(<AziendaInfoPage />, ['amministratore'])} />
-            <Route path="/gestione-fustelle" element={renderProtectedRoute(<GestioneFustelle />, ['amministratore'])} />
-            <Route path="/gestione-polimeri" element={renderProtectedRoute(<PolimeriDashboard />, ['amministratore'])} />
-            <Route path="/chat" element={renderProtectedRoute(<ChatPage />, ['amministratore', 'stampa'])} />
-            <Route path="/chat/:chatId" element={renderProtectedRoute(<ChatPage />, ['amministratore', 'stampa'])} />
-            <Route path="/produzione-dashboard" element={renderProtectedRoute(<ProduzioneDashboard />, ['amministratore'])} />
-            <Route path="/gestione-produzione" element={renderProtectedRoute(<ProduzioneDashboard />, ['amministratore'])} />
-            <Route path="/consumo-colore" element={renderProtectedRoute(<ConsumoColore />, ['amministratore', 'stampa'])} />
-            <Route path="/lavori-stampa" element={renderProtectedRoute(<LavoriStampa />, ['amministratore', 'stampa'])} />
-            <Route path="/db-articoli-produzione" element={renderProtectedRoute(<DBArticoliProduzione />, ['amministratore', 'stampa'])} />
-            <Route path="/genera-documenti" element={renderProtectedRoute(<GeneraDocumenti />, ['amministratore', 'stampa'])} />
-            <Route path="/macchina/:macchinaId" element={renderProtectedRoute(<MacchinaView />, ['amministratore', 'stampa'])} />
-            <Route path="/selezione-macchina" element={renderProtectedRoute(<SelezioneMacchina />, ['amministratore', 'stampa'])} />
+            <Route path="/" element={<HomeRedirect />} />
+
+            {/* Admin */}
+            <Route path="/summary" element={<ProtectedRoute allowedRoles={['amministratore']}><Summary /></ProtectedRoute>} />
+            <Route path="/gestione-magazzino" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><Index /></ProtectedRoute>} />
+            <Route path="/gestione-utenti" element={<ProtectedRoute allowedRoles={['amministratore']}><GestioneUtenti /></ProtectedRoute>} />
+            <Route path="/anagrafica" element={<ProtectedRoute allowedRoles={['amministratore']}><Anagrafica /></ProtectedRoute>} />
+            <Route path="/ordini-acquisto" element={<ProtectedRoute allowedRoles={['amministratore']}><OrdiniAcquisto /></ProtectedRoute>} />
+            <Route path="/azienda-info" element={<ProtectedRoute allowedRoles={['amministratore']}><AziendaInfoPage /></ProtectedRoute>} />
+            <Route path="/gestione-fustelle" element={<ProtectedRoute allowedRoles={['amministratore']}><GestioneFustelle /></ProtectedRoute>} />
+            <Route path="/gestione-polimeri" element={<ProtectedRoute allowedRoles={['amministratore']}><PolimeriDashboard /></ProtectedRoute>} />
+            <Route path="/produzione-dashboard" element={<ProtectedRoute allowedRoles={['amministratore']}><ProduzioneDashboard /></ProtectedRoute>} />
+            <Route path="/gestione-produzione" element={<ProtectedRoute allowedRoles={['amministratore']}><ProduzioneDashboard /></ProtectedRoute>} />
+
+            {/* Stampa (KBA) */}
+            <Route path="/stampa-dashboard" element={<ProtectedRoute allowedRoles={['stampa']}><StampaDashboard /></ProtectedRoute>} />
+            <Route path="/scarico-magazzino-stampa" element={<ProtectedRoute allowedRoles={['stampa']}><Produzione /></ProtectedRoute>} />
+            <Route path="/storico-stampa" element={<ProtectedRoute allowedRoles={['stampa']}><StoricoStampa /></ProtectedRoute>} />
+            <Route path="/consumo-colore" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore']}><ConsumoColore /></ProtectedRoute>} />
+            <Route path="/lavori-stampa" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore']}><LavoriStampa /></ProtectedRoute>} />
+            <Route path="/db-articoli-produzione" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore']}><DBArticoliProduzione /></ProtectedRoute>} />
+            <Route path="/genera-documenti" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore']}><GeneraDocumenti /></ProtectedRoute>} />
+
+            {/* Chat — tutti */}
+            <Route path="/chat" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><ChatPage /></ProtectedRoute>} />
+            <Route path="/chat/:chatId" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><ChatPage /></ProtectedRoute>} />
+
+            {/* Macchine — ruolo macchina + admin */}
+            <Route path="/macchina/:macchinaId" element={<ProtectedRoute allowedRoles={['macchina', 'amministratore']}><MacchinaView /></ProtectedRoute>} />
+            <Route path="/selezione-macchina" element={<ProtectedRoute allowedRoles={['amministratore']}><SelezioneMacchina /></ProtectedRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
