@@ -18,7 +18,6 @@ import { ModalModificaPolimero } from '@/components/modals/ModalModificaPolimero
 
 interface GiacenzaPolimeriTabProps {
   polimeri: Polimero[];
-  // Rimosso: storicoPolimeri: StoricoMovimentoPolimero[];
   loading: boolean;
   modificaPolimero: (codice: string, dati: Partial<Polimero>) => Promise<{ error: any }>;
   eliminaPolimero: (codice: string) => Promise<{ error: any }>;
@@ -27,7 +26,6 @@ interface GiacenzaPolimeriTabProps {
 
 export function GiacenzaPolimeriTab({
   polimeri,
-  // Rimosso: storicoPolimeri,
   loading,
   modificaPolimero,
   eliminaPolimero,
@@ -40,6 +38,7 @@ export function GiacenzaPolimeriTab({
     cliente: '',
     lavoro: '',
     resa: '',
+    note: '',
   });
   const [polimeriFiltered, setPolimeriFiltered] = useState<Polimero[]>([]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -75,6 +74,7 @@ export function GiacenzaPolimeriTab({
       cliente: '',
       lavoro: '',
       resa: '',
+      note: '',
     };
     setFiltri(emptyFiltri);
     setPolimeriFiltered(polimeri);
@@ -124,22 +124,6 @@ export function GiacenzaPolimeriTab({
       <h2 className="text-xl sm:text-2xl font-bold text-[hsl(var(--polimeri-color))] mb-4 sm:mb-5 flex items-center gap-2">
         <i className="fas fa-layer-group"></i> Giacenza Polimeri
       </h2>
-
-      {/* RIMOSSI I PULSANTI DI ESPORTAZIONE */}
-      {/* <div className="mb-3 flex flex-wrap gap-2">
-        <Button
-          onClick={() => notifications.showInfo('Funzionalità di esportazione XLS in costruzione.')}
-          className="bg-[hsl(var(--polimeri-color))] text-white hover:bg-[hsl(var(--polimeri-color-dark))] text-sm py-2 px-3"
-        >
-          <i className="fas fa-file-excel mr-1 sm:mr-2"></i> <span className="hidden sm:inline">Esporta</span> XLS
-        </Button>
-        <Button
-          onClick={() => notifications.showInfo('Funzionalità di esportazione PDF in costruzione.')}
-          className="bg-[hsl(var(--polimeri-color))] text-white hover:bg-[hsl(var(--polimeri-color-dark))] text-sm py-2 px-3"
-        >
-          <i className="fas fa-file-pdf mr-1 sm:mr-2"></i> <span className="hidden sm:inline">Esporta</span> PDF
-        </Button>
-      </div> */}
 
       {polimeriFiltered.length === 0 ? (
         <p className="text-sm sm:text-base text-[hsl(var(--muted-foreground))]">Nessun polimero in giacenza.</p>
