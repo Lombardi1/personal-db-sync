@@ -39,6 +39,7 @@ interface FiltersProps {
     username?: string; // Nuovo filtro per Storico Fustelle
     // Nuovi filtri per Polimeri
     nr_fustella?: string; // Nuovo filtro per Polimeri (corrisponde a NR. Fustella)
+    note?: string; // Nuovo filtro per Polimeri
     // Rimosso: codice_polimero?: string; // Nuovo filtro per Storico Polimeri
   };
   onFilter: (filtri: any) => void;
@@ -322,13 +323,13 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
-                    <i className="fas fa-city"></i> Città
+                    <i className="fas fa-city"></i> CittÃ 
                   </label>
                   <input
                     type="text"
                     value={filtri.citta || ''}
                     onChange={(e) => handleChange('citta', e.target.value)}
-                    placeholder="Città"
+                    placeholder="CittÃ "
                     className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/10"
                   />
                 </div>
@@ -621,6 +622,18 @@ export function Filters({ filtri, onFilter, onReset, matchCount, sezione }: Filt
                     value={filtri.resa || ''}
                     onChange={(e) => handleChange('resa', e.target.value)}
                     placeholder="1/1"
+                    className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                    <i className="fas fa-sticky-note"></i> Note
+                  </label>
+                  <input
+                    type="text"
+                    value={filtri.note || ''}
+                    onChange={(e) => handleChange('note', e.target.value)}
+                    placeholder="Cerca nelle note..."
                     className="px-3 py-1.5 sm:py-2 border border-[hsl(var(--border))] rounded-md text-xs sm:text-sm focus:outline-none focus:border-[hsl(var(--polimeri-color))] focus:ring-2 focus:ring-[hsl(var(--polimeri-color))]/10"
                   />
                 </div>
