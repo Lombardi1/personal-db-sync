@@ -95,7 +95,7 @@ export function useFustelle() {
       ordine_acquisto_numero: null,
     };
     console.log('[aggiungiFustella] Attempting to insert:', fustellaToInsert); // Add logging
-    const { error } = await supabase.from('fustelle').insert([fustellaToInsert]);
+    const { error } = await supabase.from('fustelle').upsert([fustellaToInsert], { onConflict: 'codice' });
     if (!error) {
       // Rimosso: const movimento: StoricoMovimentoFustella = {
       //   codice_fustella: fustella.codice,
