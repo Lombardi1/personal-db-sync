@@ -37,13 +37,13 @@ interface AppUser {
   id: string;
   username: string;
   created_at: string;
-  role?: 'stampa' | 'amministratore'; // Ruolo aggiornato
+  role?: 'stampa' | 'amministratore' | 'macchina';
 }
 
 const userSchema = z.object({
   username: z.string().trim().min(3, 'Username deve essere almeno 3 caratteri').max(50, 'Username troppo lungo'),
   password: z.string().min(6, 'Password deve essere almeno 6 caratteri').max(100, 'Password troppo lunga'),
-  role: z.enum(['stampa', 'amministratore'], { required_error: 'Seleziona un ruolo' }), // Ruolo aggiornato
+  role: z.enum(['stampa', 'amministratore', 'macchina'], { required_error: 'Seleziona un ruolo' }), // Ruolo aggiornato
 });
 
 export default function GestioneUtenti() {
@@ -59,7 +59,7 @@ export default function GestioneUtenti() {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    role: '' as 'stampa' | 'amministratore' | '', // Ruolo aggiornato
+    role: '' as 'stampa' | 'amministratore' | 'macchina' | '',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setLoadingSubmit] = useState(false);
@@ -88,7 +88,7 @@ export default function GestioneUtenti() {
 
           return {
             ...u,
-            role: roleData?.role as 'stampa' | 'amministratore' | undefined, // Ruolo aggiornato
+            role: roleData?.role as 'stampa' | 'amministratore' | 'macchina' | undefined,
           };
         })
       );
@@ -329,7 +329,7 @@ export default function GestioneUtenti() {
                             : 'bg-secondary text-secondary-foreground'
                         }`}
                       >
-                        {utente.role === 'amministratore' ? 'Amministratore' : 'Stampa'} {/* Testo aggiornato */}
+                        {utente.role === 'amministratore' ? 'Amministratore' : utente.role === 'macchina' ? 'Macchina' : 'Stampa'}
                       </span>
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm">
@@ -415,7 +415,7 @@ export default function GestioneUtenti() {
               <Label htmlFor="role" className="text-sm">Ruolo</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value: 'stampa' | 'amministratore') => // Ruolo aggiornato
+                onValueChange={(value: 'stampa' | 'amministratore' | 'macchina') =>
                   setFormData({ ...formData, role: value })
                 }
                 disabled={submitting}
@@ -426,6 +426,7 @@ export default function GestioneUtenti() {
                 <SelectContent>
                   <SelectItem value="stampa" className="text-sm">Stampa</SelectItem> {/* Testo aggiornato */}
                   <SelectItem value="amministratore" className="text-sm">Amministratore</SelectItem>
+                <SelectItem value="macchina" className="text-sm">Macchina</SelectItem>
                 </SelectContent>
               </Select>
               {formErrors.role && (
