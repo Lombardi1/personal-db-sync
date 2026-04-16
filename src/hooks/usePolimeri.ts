@@ -55,7 +55,7 @@ export function usePolimeri() {
       ultima_modifica: new Date().toISOString(),
     };
     console.log('[aggiungiPolimero] Attempting to insert:', polimeroToInsert);
-    const { error } = await supabase.from('polimeri').insert([polimeroToInsert]);
+    const { error } = await supabase.from('polimeri').upsert([polimeroToInsert], { onConflict: 'codice' });
     if (!error) {
       await loadData();
       notifications.showSuccess(`✅ Polimero '${polimero.codice}' aggiunto con successo!`);
