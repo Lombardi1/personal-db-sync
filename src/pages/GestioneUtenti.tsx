@@ -60,6 +60,7 @@ export default function GestioneUtenti() {
     username: '',
     password: '',
     role: '' as 'stampa' | 'amministratore' | 'macchina' | '',
+    macchina_id: '',
   macchina_id: '' as string,
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -426,7 +427,7 @@ export default function GestioneUtenti() {
               <Select
                 value={formData.role}
                 onValueChange={(value: 'stampa' | 'amministratore' | 'macchina') =>
-                  setFormData({ ...formData, role: value })
+                  setFormData(p => ({ ...p, role: value, macchina_id: '' }))
                 }
                 disabled={submitting}
               >
