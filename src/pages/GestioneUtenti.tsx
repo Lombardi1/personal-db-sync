@@ -61,7 +61,6 @@ export default function GestioneUtenti() {
     password: '',
     role: '' as 'stampa' | 'amministratore' | 'macchina' | '',
     macchina_id: '',
-  macchina_id: '' as string,
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setLoadingSubmit] = useState(false);
@@ -78,7 +77,7 @@ export default function GestioneUtenti() {
       setLoading(true);
       const { data: usersData, error: usersError } = await supabase
         .from('app_users')
-        .select('id, username, created_at')
+        .select('id, username, created_at, macchina_id')
         .order('created_at', { ascending: false });
 
       if (usersError) throw usersError;
@@ -94,7 +93,7 @@ export default function GestioneUtenti() {
           return {
             ...u,
             role: roleData?.role as 'stampa' | 'amministratore' | 'macchina' | undefined,
-        macchina_id: userData?.macchina_id || '',
+        macchina_id: u.macchina_id || '',
           };
         })
       );
