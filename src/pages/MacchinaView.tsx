@@ -150,47 +150,109 @@ function PannelloQuantita({ fase, tipoReparto, onSalva }: { fase: FaseLotto; tip
 }
 
 // --- Scheda tecnica per fustellatura ---
-function SchedaFustellatura({ lotto }: { lotto: FaseLotto['lotto_info'] }) {
+function SchedaFustellatura({ fase, lotto }: { fase: FaseLotto; lotto: FaseLotto['lotto_info'] }) {
+  const [expanded, setExpanded] = useState(true);
   if (!lotto) return null;
   return (
-    <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2">
-      {lotto.fustella && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
-          <div className="flex items-center gap-1 text-orange-600 mb-1">
-            <Scissors className="h-3 w-3" /><span className="text-xs font-bold uppercase">Fustella</span>
-          </div>
-          <p className="text-sm font-black text-orange-800">{lotto.fustella}</p>
+    <div className="mt-3 pt-3 border-t-2 border-orange-200">
+      <button onClick={() => setExpanded(e => !e)} className="w-full flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center"><Scissors className="h-4 w-4 text-white" /></div>
+          <span className="font-black text-orange-800 text-sm uppercase tracking-wide">Scheda Fustellatura</span>
         </div>
-      )}
-      {lotto.cartone && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-          <div className="flex items-center gap-1 text-yellow-700 mb-1">
-            <Layers className="h-3 w-3" /><span className="text-xs font-bold uppercase">Cartone</span>
+        <span className="text-orange-400 text-xs">{expanded ? '▲' : '▼ Apri'}</span>
+      </button>
+      {expanded && (
+        <div className="space-y-3">
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <div><p className="text-[10px] font-bold text-orange-400 uppercase">Lotto</p><p className="text-2xl font-black text-orange-700">#{fase.lotto_stampa}</p></div>
+              <div className="col-span-2"><p className="text-[10px] font-bold text-orange-400 uppercase">Cliente</p><p className="text-base font-black text-gray-800 leading-tight">{lotto.cliente}</p></div>
+            </div>
+            <div><p className="text-[10px] font-bold text-orange-400 uppercase">Lavoro</p><p className="text-sm font-semibold text-gray-700">{lotto.lavoro}</p></div>
+            {lotto.identificativo && <div className="mt-1 inline-block bg-orange-100 border border-orange-300 rounded px-2 py-0.5"><p className="text-xs font-mono font-bold text-orange-700">{lotto.identificativo}</p></div>}
           </div>
-          <p className="text-sm font-black text-yellow-800">{lotto.cartone}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold text-emerald-500 uppercase mb-1">Quantità</p>
+              <p className="text-xl font-black text-emerald-700">{lotto.quantita?.toLocaleString() || '—'}</p>
+              <p className="text-[10px] text-emerald-400">pezzi</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold text-amber-500 uppercase mb-1">Cartone</p>
+              <p className="text-xs font-black text-amber-700 break-words">{lotto.cartone || '—'}</p>
+            </div>
+          </div>
+          <div className="bg-orange-50 border-2 border-orange-400 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2"><Scissors className="h-5 w-5 text-orange-500" /><p className="text-[10px] font-bold text-orange-500 uppercase">Fustella da Montare</p></div>
+            <p className="text-3xl font-black text-orange-700">{lotto.fustella || '—'}</p>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-2"><AlertTriangle className="h-4 w-4 text-red-500" /><p className="text-[10px] font-bold text-red-500 uppercase">Protocollo Qualità</p></div>
+            <div className="space-y-1.5">
+              {["Uso guanti obbligatorio","Lavaggio con liquido Food prima dell'inizio","Utilizzo materiale dedicato"].map(n => (
+                <div key={n} className="flex items-center gap-2"><div className="w-4 h-4 rounded border-2 border-red-300 bg-white flex-shrink-0" /><p className="text-xs text-red-700 font-medium">{n}</p></div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
 // --- Scheda tecnica per incollatura ---
-function SchedaIncollatura({ lotto }: { lotto: FaseLotto['lotto_info'] }) {
+function SchedaIncollatura({ fase, lotto }: { fase: FaseLotto; lotto: FaseLotto['lotto_info'] }) {
+  const [expanded, setExpanded] = useState(true);
   if (!lotto) return null;
   return (
-    <div className="mt-3 pt-3 border-t border-gray-100">
-      {lotto.fustella && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 mb-2">
-          <div className="flex items-center gap-1 text-purple-600 mb-1">
-            <Layers className="h-3 w-3" /><span className="text-xs font-bold uppercase">Fustella</span>
+    <div className="mt-3 pt-3 border-t-2 border-purple-200">
+      <button onClick={() => setExpanded(e => !e)} className="w-full flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center"><Droplets className="h-4 w-4 text-white" /></div>
+          <span className="font-black text-purple-800 text-sm uppercase tracking-wide">Scheda Incollatura</span>
+        </div>
+        <span className="text-purple-400 text-xs">{expanded ? '▲' : '▼ Apri'}</span>
+      </button>
+      {expanded && (
+        <div className="space-y-3">
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <div><p className="text-[10px] font-bold text-purple-400 uppercase">Lotto</p><p className="text-2xl font-black text-purple-700">#{fase.lotto_stampa}</p></div>
+              <div className="col-span-2"><p className="text-[10px] font-bold text-purple-400 uppercase">Cliente</p><p className="text-base font-black text-gray-800 leading-tight">{lotto.cliente}</p></div>
+            </div>
+            <div><p className="text-[10px] font-bold text-purple-400 uppercase">Lavoro</p><p className="text-sm font-semibold text-gray-700">{lotto.lavoro}</p></div>
+            {lotto.identificativo && <div className="mt-1 inline-block bg-purple-100 border border-purple-300 rounded px-2 py-0.5"><p className="text-xs font-mono font-bold text-purple-700">{lotto.identificativo}</p></div>}
           </div>
-          <p className="text-sm font-black text-purple-800">{lotto.fustella}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold text-emerald-500 uppercase mb-1">Quantità</p>
+              <p className="text-xl font-black text-emerald-700">{lotto.quantita?.toLocaleString() || '—'}</p>
+              <p className="text-[10px] text-emerald-400">pezzi</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold text-amber-500 uppercase mb-1">Cartone</p>
+              <p className="text-xs font-black text-amber-700 break-words">{lotto.cartone || '—'}</p>
+            </div>
+          </div>
+          {lotto.fustella && (
+            <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1"><Layers className="h-4 w-4 text-purple-500" /><p className="text-[10px] font-bold text-purple-500 uppercase">Fustella</p></div>
+              <p className="text-2xl font-black text-purple-700">{lotto.fustella}</p>
+            </div>
+          )}
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-2"><AlertTriangle className="h-4 w-4 text-red-500" /><p className="text-[10px] font-bold text-red-500 uppercase">Protocollo Qualità</p></div>
+            <div className="space-y-1.5">
+              {["Uso guanti obbligatorio","Lavaggio con liquido Food prima dell'inizio","Utilizzo materiale dedicato","Polipropilene certificato contatto alimenti","Colla certificata alimenti"].map(n => (
+                <div key={n} className="flex items-center gap-2"><div className="w-4 h-4 rounded border-2 border-red-300 bg-white flex-shrink-0" /><p className="text-xs text-red-700 font-medium">{n}</p></div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
 // --- Mini chat con ufficio ---
 function MiniChat({ macchinaId, macchinaId: _mid, userId, userName }: { macchinaId: string; userId: string; userName: string; }) {
   const [open, setOpen] = useState(false);
@@ -517,12 +579,12 @@ export default function MacchinaView() {
 
                         {/* Scheda tecnica per fustellatura */}
                         {tipoReparto === 'Fustellatura' && lotto && (
-                          <SchedaFustellatura lotto={lotto} />
+                          <SchedaFustellatura fase={fase} lotto={lotto} />
                         )}
 
                         {/* Scheda tecnica per incollatura */}
                         {tipoReparto === 'Incollatura' && lotto && (
-                          <SchedaIncollatura lotto={lotto} />
+                          <SchedaIncollatura fase={fase} lotto={lotto} />
                         )}
 
                         {/* Scheda produzione per Montaggio */}
