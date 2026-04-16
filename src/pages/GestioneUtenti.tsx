@@ -60,12 +60,16 @@ export default function GestioneUtenti() {
     username: '',
     password: '',
     role: '' as 'stampa' | 'amministratore' | 'macchina' | '',
+  macchina_id: '' as string,
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setLoadingSubmit] = useState(false);
 
+  const [macchineDisponibili, setMacchineDisponibili] = useState<{id:string,nome:string,tipo:string}[]>([]);
+
   useEffect(() => {
     caricaUtenti();
+    caricaMacchine();
   }, []);
 
   const caricaUtenti = async () => {
@@ -89,6 +93,7 @@ export default function GestioneUtenti() {
           return {
             ...u,
             role: roleData?.role as 'stampa' | 'amministratore' | 'macchina' | undefined,
+        macchina_id: userData?.macchina_id || '',
           };
         })
       );
@@ -157,6 +162,11 @@ export default function GestioneUtenti() {
     }
   };
 
+  const caricaMacchine = async () => {
+    const { data } = await supabase.from('macchine_produzione').select('id,nome,tipo').order('tipo').order('nome');
+    if (data) setMacchineDisponibili(data);
+  };
+
   const creaUtente = async () => {
     try {
       const bcrypt = await import('bcryptjs');
@@ -164,7 +174,7 @@ export default function GestioneUtenti() {
 
       const { data: newUser, error: userError } = await supabase
         .from('app_users')
-        .insert({ username: formData.username, password_hash: passwordHash })
+        .insert({ username: formData.username, password_hash: passwordHash, macchina_id: formData.macchina_id || null })
         .select()
         .single();
 
@@ -197,7 +207,7 @@ export default function GestioneUtenti() {
       if (formData.username !== editingUser.username) {
         const { error: updateError } = await supabase
           .from('app_users')
-          .update({ username: formData.username })
+          .update({ username: formData.username, macchina_id: formData.macchina_id || null })
           .eq('id', editingUser.id);
 
         if (updateError) {
@@ -429,6 +439,21 @@ export default function GestioneUtenti() {
                 <SelectItem value="macchina" className="text-sm">Macchina</SelectItem>
                 </SelectContent>
               </Select>
+                {formData.role === 'macchina' && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">Macchina assegnata *</label>
+                    <select
+                      value={formData.macchina_id || ''}
+                      onChange={e => setFormData(p => ({ ...p, macchina_id: e.target.value }))}
+                      className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Seleziona macchina...</option>
+                      {macchineDisponibili.map(m => (
+                        <option key={m.id} value={m.id}>{m.nome} ({m.tipo})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               {formErrors.role && (
                 <p className="text-xs text-destructive mt-1">{formErrors.role}</p>
               )}
