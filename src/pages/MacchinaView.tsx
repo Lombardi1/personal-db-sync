@@ -29,6 +29,79 @@ const STATO_CONFIG = {
 };
 
 // --- Pannello quantità per reparto ---
+// --- Scheda Produzione Montaggio ---
+function SchedaMontaggio({ fase, lotto }: { fase: FaseLotto; lotto: FaseLotto['lotto_info'] }) {
+  const [expanded, setExpanded] = useState(true);
+  if (!lotto) return null;
+  return (
+    <div className="mt-3 pt-3 border-t-2 border-indigo-200">
+      <button onClick={() => setExpanded(e => !e)} className="w-full flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"><Layers className="h-4 w-4 text-white" /></div>
+          <span className="font-black text-indigo-800 text-sm uppercase tracking-wide">Scheda Produzione</span>
+        </div>
+        <span className="text-indigo-400 text-xs">{expanded ? '▲' : '▼ Apri'}</span>
+      </button>
+      {expanded && (
+        <div className="space-y-3">
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <div><p className="text-[10px] font-bold text-indigo-400 uppercase">Lotto</p><p className="text-2xl font-black text-indigo-700">#{fase.lotto_stampa}</p></div>
+              <div className="col-span-2"><p className="text-[10px] font-bold text-indigo-400 uppercase">Cliente</p><p className="text-base font-black text-gray-800 leading-tight">{lotto.cliente}</p></div>
+            </div>
+            <div><p className="text-[10px] font-bold text-indigo-400 uppercase">Lavoro</p><p className="text-sm font-semibold text-gray-700">{lotto.lavoro}</p></div>
+            {lotto.identificativo && <div className="mt-1 inline-block bg-indigo-100 border border-indigo-300 rounded px-2 py-0.5"><p className="text-xs font-mono font-bold text-indigo-700">{lotto.identificativo}</p></div>}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold text-emerald-500 uppercase mb-1">Quantità</p>
+              <p className="text-xl font-black text-emerald-700">{lotto.quantita?.toLocaleString() || '—'}</p>
+              <p className="text-[10px] text-emerald-400">pezzi</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold text-amber-500 uppercase mb-1">Cartone</p>
+              <p className="text-xs font-black text-amber-700 break-words">{lotto.cartone || '—'}</p>
+            </div>
+            <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 text-center">
+              <p className="text-[10px] font-bold text-violet-500 uppercase mb-1">Polimero</p>
+              <p className="text-xs font-black text-violet-700">{lotto.polimero || '—'}</p>
+            </div>
+          </div>
+          {lotto.colori && (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Colori di Stampa</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {['C','M','Y','K'].map((c,i) => (<div key={c} className={`w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-black ${['bg-cyan-500','bg-pink-500','bg-yellow-400','bg-gray-800'][i]}`}>{c}</div>))}
+                <span className="text-sm text-gray-600 font-medium ml-1">{lotto.colori}</span>
+              </div>
+            </div>
+          )}
+          {lotto.fustella && (
+            <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1"><Scissors className="h-4 w-4 text-orange-500" /><p className="text-[10px] font-bold text-orange-500 uppercase">Fustella da Montare</p></div>
+              <p className="text-2xl font-black text-orange-700">{lotto.fustella}</p>
+            </div>
+          )}
+          {lotto.finitura && (
+            <div className="bg-pink-50 border border-pink-200 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-pink-500 uppercase mb-1">Finitura</p>
+              <p className="text-sm font-bold text-pink-700">{lotto.finitura}</p>
+            </div>
+          )}
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-2"><AlertTriangle className="h-4 w-4 text-red-500" /><p className="text-[10px] font-bold text-red-500 uppercase">Protocollo Qualità</p></div>
+            <div className="space-y-1.5">
+              {["Uso guanti obbligatorio","Lavaggio con liquido Food prima dell'inizio","Utilizzo materiale dedicato"].map(n => (
+                <div key={n} className="flex items-center gap-2"><div className="w-4 h-4 rounded border-2 border-red-300 bg-white flex-shrink-0" /><p className="text-xs text-red-700 font-medium">{n}</p></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PannelloQuantita({ fase, tipoReparto, onSalva }: { fase: FaseLotto; tipoReparto: string; onSalva: (q: number, s: number, note: string) => Promise<void>; }) {
   const [qta, setQta] = useState('');
   const [scarti, setScarti] = useState('');
@@ -450,6 +523,11 @@ export default function MacchinaView() {
                         {/* Scheda tecnica per incollatura */}
                         {tipoReparto === 'Incollatura' && lotto && (
                           <SchedaIncollatura lotto={lotto} />
+                        )}
+
+                        {/* Scheda produzione per Montaggio */}
+                        {tipoReparto === 'Premontaggio' && (
+                          <SchedaMontaggio fase={fase} lotto={lotto} />
                         )}
 
                         {/* Pannello quantità (fustellatura, incollatura, impacchettamento) */}
