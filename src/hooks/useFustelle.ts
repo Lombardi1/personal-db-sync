@@ -26,7 +26,8 @@ export function useFustelle() {
         const { data, error } = await supabase
           .from('fustelle')
           .select('*')
-          .range(from, from + PAGE_SIZE - 1);
+          .order('codice', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
 
         if (error) {
           console.error('[useFustelle] Error loading fustelle:', error);
