@@ -25,6 +25,7 @@ import DBArticoliProduzione from "./pages/DBArticoliProduzione";
 import GeneraDocumenti from "./pages/GeneraDocumenti";
 import MacchinaView from "./pages/MacchinaView";
 import SelezioneMacchina from "./pages/SelezioneMacchina";
+import OrdiniCartone from "./pages/OrdiniCartone";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,8 @@ const App = () => {
             <Route path="/gestione-polimeri" element={<ProtectedRoute allowedRoles={['amministratore']}><PolimeriDashboard /></ProtectedRoute>} />
             <Route path="/produzione-dashboard" element={<ProtectedRoute allowedRoles={['amministratore']}><ProduzioneDashboard /></ProtectedRoute>} />
             <Route path="/gestione-produzione" element={<ProtectedRoute allowedRoles={['amministratore']}><ProduzioneDashboard /></ProtectedRoute>} />
+            <Route path="/ordini-cartone" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><OrdiniCartone /></ProtectedRoute>} />
+
 
             {/* Stampa (KBA) */}
             <Route path="/stampa-dashboard" element={<ProtectedRoute allowedRoles={['stampa']}><StampaDashboard /></ProtectedRoute>} />
