@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Warehouse, Shapes, Layers, Factory, Palette, Calculator, FileText, Database, Printer } from 'lucide-react'; // Importa Factory
+import { ShoppingCart, Warehouse, Shapes, Layers, Factory, Palette, Calculator, FileText, Database, Printer, PackageOpen } from 'lucide-react'; // Importa Factory
 import { useCartoni } from '@/hooks/useCartoni';
 import { useChat } from '@/hooks/useChat';
 
@@ -136,6 +136,14 @@ export default function Summary() {
               >
                 <Database className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
                 <span className="leading-none">DB ARTICOLI</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/ordini-cartone')}
+                size="lg"
+                className="bg-teal-600 hover:bg-teal-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-3 sm:gap-4 text-sm sm:text-base py-3 sm:py-4 h-auto text-center"
+              >
+                <PackageOpen className="h-6 w-6 sm:h-8 sm:w-8 text-white leading-none" />
+                <span className="leading-none">Ordini Cartone</span>
               </Button>
               <Button
                 onClick={() => navigate('/genera-documenti')}
