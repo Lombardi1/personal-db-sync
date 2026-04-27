@@ -94,16 +94,16 @@ export default function OrdiniCartone() {
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
       <Header title="Ordini Cartone" activeTab="ordini-cartone" />
       <div className="max-w-[1600px] mx-auto p-3 sm:p-5">
-        <div className="mb-3">
-          <Button variant="outline" size="sm" onClick={() => navigate('/')} className="flex items-center gap-2">
-            <Home className="h-4 w-4" />
-            Torna alla Dashboard
-          </Button>
-        </div>
         <div className="flex items-center justify-between mb-4">
-          <Button variant="outline" size="sm" onClick={mesePrecedente}><ChevronLeft className="h-4 w-4" /></Button>
-          <h2 className="text-xl font-bold text-center">{mese} {anno}</h2>
-          <Button variant="outline" size="sm" onClick={meseSuccessivo}><ChevronRight className="h-4 w-4" /></Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={mesePrecedente}><ChevronLeft className="h-4 w-4" /></Button>
+            <h2 className="text-xl font-bold text-center">{mese} {anno}</h2>
+            <Button variant="outline" size="sm" onClick={meseSuccessivo}><ChevronRight className="h-4 w-4" /></Button>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+            <Home className="h-4 w-4 mr-2" />
+            Dashboard
+          </Button>
         </div>
         <div className="overflow-x-auto rounded-lg shadow bg-white">
           <table className="w-full text-xs border-collapse min-w-[1200px]">
