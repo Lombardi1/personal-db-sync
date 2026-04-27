@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface OrdineCartone {
@@ -94,6 +94,12 @@ export default function OrdiniCartone() {
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
       <Header title="Ordini Cartone" activeTab="ordini-cartone" />
       <div className="max-w-[1600px] mx-auto p-3 sm:p-5">
+        <div className="mb-3">
+          <Button variant="outline" size="sm" onClick={() => navigate('/')} className="flex items-center gap-2">
+            <Home className="h-4 w-4" />
+            Torna alla Dashboard
+          </Button>
+        </div>
         <div className="flex items-center justify-between mb-4">
           <Button variant="outline" size="sm" onClick={mesePrecedente}><ChevronLeft className="h-4 w-4" /></Button>
           <h2 className="text-xl font-bold text-center">{mese} {anno}</h2>
