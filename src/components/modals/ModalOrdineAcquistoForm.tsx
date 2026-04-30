@@ -329,6 +329,7 @@ export function ModalOrdineAcquistoForm({
   const selectedFornitore = fornitori.find((f) => f.id === watchedFornitoreId);
   const isCartoneFornitore = selectedFornitore?.tipo_fornitore === 'Cartone';
   const isFustelleFornitore = selectedFornitore?.tipo_fornitore === 'Fustelle';
+  const isInchiostroFornitore = selectedFornitore?.tipo_fornitore === 'Inchiostro';
   const watchedArticles = watch('articoli');
   const isCancelled = watch('stato') === 'annullato';
   const isNewOrder = !initialData?.id;
@@ -849,6 +850,7 @@ export function ModalOrdineAcquistoForm({
                   isSubmitting={isSubmitting}
                   isCartoneFornitore={isCartoneFornitore}
                   isFustelleFornitore={isFustelleFornitore}
+                  isInchiostroFornitore={isInchiostroFornitore}
                   remove={remove}
                   fieldsLength={fields.length}
                   clienti={clienti}
