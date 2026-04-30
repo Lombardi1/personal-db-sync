@@ -40,7 +40,7 @@ export function useOrdiniAcquisto() {
     // Step 2: Delete all articles of this order from 'ordini', 'giacenza', and 'fustelle'
     await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
     await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine);
-    await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
+    // Le fustelle NON vengono cancellate: il codice resta come buco disponibile
 
     // Step 3: Re-insert/update based on the current state of ordineAcquisto.articoli
     for (const articolo of validArticles) { // Itera solo sugli articoli validi
@@ -599,7 +599,14 @@ export function useOrdiniAcquisto() {
 
       await supabase.from('ordini').delete().eq('ordine', numeroOrdine);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
-      await supabase.from('fustelle').delete().eq('ordine_acquisto_numero', numeroOrdine);
+      // Le fustelle non vengono cancellate: azzera i dati ma preserva il codice
+      await supabase.from('fustelle').update({
+        fornitore: null, codice_fornitore: null, cliente: null, lavoro: null,
+        fustellatrice: null, resa: null, pulitore_codice: null,
+        pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null,
+        incollatura: false, incollatrice: null, tipo_incollatura: null,
+        disponibile: false, ordine_acquisto_numero: null, ultima_modifica: new Date().toISOString()
+      }).eq('ordine_acquisto_numero', numeroOrdine);
 
       const { error } = await supabase
         .from('ordini_acquisto')
