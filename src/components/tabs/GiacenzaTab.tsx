@@ -12,9 +12,10 @@ interface GiacenzaTabProps {
   scaricoFogli: (codice: string, quantita: number, note: string) => Promise<{ error: any }>;
   riportaInOrdini: (codice: string) => Promise<{ error: any }>;
   storico: any[];
+  modificaGiacenza: (codice: string, dati: Partial<Cartone>) => Promise<{ error: any }>;
 }
 
-export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }: GiacenzaTabProps) {
+export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico, modificaGiacenza }: GiacenzaTabProps) {
   const [filtri, setFiltri] = useState({
     codice: '',
     fornitore: '',
@@ -30,7 +31,6 @@ export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }
   const [showModalScarico, setShowModalScarico] = useState(false);
   const [showModalStorico, setShowModalStorico] = useState(false);
 
-  // Update filtered giacenza whenever giacenza changes
   useEffect(() => {
     handleFilter(filtri);
   }, [giacenza]);
@@ -41,18 +41,14 @@ export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }
 
     Object.entries(newFiltri).forEach(([key, value]) => {
       if (value) {
-        // Gestione speciale per il campo formato: rimuove tutti i caratteri non numerici
         if (key === 'formato') {
           filtered = filtered.filter(c => {
             const field = c[key as keyof Cartone];
-            // Rimuovi tutti i caratteri non numerici (spazi, x, cm, etc.)
             const normalizedField = String(field).replace(/[^\d]/g, '');
             const normalizedValue = value.replace(/[^\d]/g, '');
             return normalizedField.includes(normalizedValue);
           });
-        }
-        // Gestione normale per gli altri campi
-        else {
+        } else {
           filtered = filtered.filter(c => {
             const field = c[key as keyof Cartone];
             return String(field).toLowerCase().includes(value.toLowerCase());
@@ -61,7 +57,6 @@ export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }
       }
     });
 
-    // Ordina per grammatura in modo crescente
     filtered.sort((a, b) => {
       const grammA = parseInt(String(a.grammatura)) || 0;
       const grammB = parseInt(String(b.grammatura)) || 0;
@@ -88,9 +83,9 @@ export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }
 
   return (
     <div>
-      <Filters 
-        filtri={filtri} 
-        onFilter={handleFilter} 
+      <Filters
+        filtri={filtri}
+        onFilter={handleFilter}
         onReset={resetFiltri}
         matchCount={cartoniFiltered.length}
         sezione="dashboard"
@@ -115,7 +110,7 @@ export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }
         </Button>
       </div>
 
-      <TabellaGiacenza 
+      <TabellaGiacenza
         cartoni={cartoniFiltered}
         onScarico={(codice) => {
           setSelectedCodice(codice);
@@ -126,6 +121,7 @@ export function GiacenzaTab({ giacenza, scaricoFogli, riportaInOrdini, storico }
           setShowModalStorico(true);
         }}
         onRiportaOrdini={riportaInOrdini}
+        onModifica={modificaGiacenza}
       />
 
       {showModalScarico && selectedCodice && (
