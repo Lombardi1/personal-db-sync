@@ -35,6 +35,7 @@ interface OrdineAcquistoArticoloFormRowProps {
   isSubmitting: boolean;
   isCartoneFornitore: boolean;
   isFustelleFornitore: boolean;
+  isInchiostroFornitore: boolean;
   remove: (index?: number | number[]) => void;
   fieldsLength: number;
   clienti: Cliente[];
@@ -72,6 +73,7 @@ export function OrdineAcquistoArticoloFormRow({
   isSubmitting,
   isCartoneFornitore,
   isFustelleFornitore,
+  isInchiostroFornitore,
   remove,
   fieldsLength,
   clienti,
@@ -1105,21 +1107,43 @@ export function OrdineAcquistoArticoloFormRow({
           </>
         ) : ( // Fornitori di altro tipo (Inchiostro, Colla, Altro)
           <>
-            {/* Section: Dettagli Articolo (Non-Cartone/Non-Fustelle) */}
+            {/* Section: Dettagli Articolo */}
             <div className="p-2 bg-gray-50 rounded-lg border">
-              <h5 className="text-sm font-semibold mb-2 text-gray-700">Dettagli Articolo</h5>
+              <h5 className="text-sm font-semibold mb-2 text-gray-700">{isInchiostroFornitore ? 'Dettagli Colore' : 'Dettagli Articolo'}</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {isInchiostroFornitore ? (
+                  <>
+                    <div>
+                      <Label htmlFor={`articoli.${index}.colore_nome`} className="text-xs">Nome Colore *</Label>
+                      <Input id={`articoli.${index}.colore_nome`} {...register(`articoli.${index}.colore_nome`)} placeholder="Es. Pantone 485 C" disabled={isSubmitting || isOrderCancelled} className="text-sm" />
+                    </div>
+                    <div>
+                      <Label htmlFor={`articoli.${index}.colore_codice`} className="text-xs">Codice Colore *</Label>
+                      <Input id={`articoli.${index}.colore_codice`} {...register(`articoli.${index}.colore_codice`)} placeholder="Es. P485C" disabled={isSubmitting || isOrderCancelled} className="text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Tipo *</Label>
+                      <Select onValueChange={(v) => setValue(`articoli.${index}.colore_tipo`, v, { shouldValidate: true })} value={watch(`articoli.${index}.colore_tipo`) || ''} disabled={isSubmitting || isOrderCancelled}>
+                        <SelectTrigger className="w-full text-sm"><SelectValue placeholder="Seleziona tipo" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CMYK">CMYK</SelectItem>
+                          <SelectItem value="Pantone">Pantone</SelectItem>
+                          <SelectItem value="Custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor={`articoli.${index}.colore_marca`} className="text-xs">Marca</Label>
+                      <Input id={`articoli.${index}.colore_marca`} {...register(`articoli.${index}.colore_marca`)} placeholder="Es. Sun Chemical" disabled={isSubmitting || isOrderCancelled} className="text-sm" />
+                    </div>
+                  </>
+                ) : (
                 <div>
                   <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione *</Label>
-                  <Input
-                    id={`articoli.${index}.descrizione`}
-                    {...register(`articoli.${index}.descrizione`)}
-                    placeholder="Descrizione articolo"
-                    disabled={isSubmitting || isOrderCancelled}
-                    className="text-sm"
-                  />
+                  <Input id={`articoli.${index}.descrizione`} {...register(`articoli.${index}.descrizione`)} placeholder="Descrizione articolo" disabled={isSubmitting || isOrderCancelled} className="text-sm" />
                   {errors.articoli?.[index]?.descrizione && <p className="text-destructive text-xs mt-1">{errors.articoli[index]?.descrizione?.message}</p>}
                 </div>
+                )}
                 <div>
                   <Label htmlFor={`articoli.${index}.quantita`} className="text-xs">Quantità *</Label>
                   <Input
