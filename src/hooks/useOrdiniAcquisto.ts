@@ -156,10 +156,10 @@ export function useOrdiniAcquisto() {
               ordine_acquisto_numero: ordineAcquisto.numero_ordine,
             };
 
-            const { error: insertError } = await supabase.from('fustelle').insert([fustellaBase]);
+            const { error: insertError } = await supabase.from('fustelle').upsert([fustellaBase], { onConflict: 'codice' });
             if (insertError) {
-              console.error(`[syncArticleInventoryStatus] Errore inserimento fustella '${fustellaCodice}':`, insertError);
-              toast.error(`Errore inserimento fustella: ${insertError.message}`);
+              console.error(`[syncArticleInventoryStatus] Errore upsert fustella '${fustellaCodice}':`, insertError);
+              toast.error(`Errore salvataggio fustella: ${insertError.message}`);
             }
           } 
           // Case 2: Article is a Standalone Pulitore (has pulitore_codice_fustella but NO fustella_codice)
