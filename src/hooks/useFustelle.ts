@@ -150,18 +150,18 @@ export function useFustelle() {
       return { error: new Error('Fustella non trovata.') };
     }
 
-    const { error } = await supabase.from('fustelle').delete().eq('codice', codice);
+    // Non eliminiamo la riga: azzeriamo i dati ma lasciamo il codice come buco disponibile
+    const { error } = await supabase.from('fustelle').update({
+      fornitore: null, codice_fornitore: null, cliente: null, lavoro: null,
+      fustellatrice: null, resa: null, pulitore_codice: null,
+      pinza_tagliata: false, tasselli_intercambiabili: false, nr_tasselli: null,
+      incollatura: false, incollatrice: null, tipo_incollatura: null,
+      disponibile: false, ordine_acquisto_numero: null,
+      ultima_modifica: new Date().toISOString()
+    }).eq('codice', codice);
     if (!error) {
-      // Rimosso: const movimento: StoricoMovimentoFustella = {
-      //   codice_fustella: codice,
-      //   tipo: 'scarico', // Consideriamo l'eliminazione come uno scarico definitivo
-      //   data: new Date().toISOString(),
-      //   note: `Fustella eliminata dal magazzino`,
-      //   user_id: user?.id,
-      // };
-      // Rimosso: await supabase.from('storico_fustelle').insert([movimento]);
       await loadData();
-      notifications.showSuccess(`🗑️ Fustella '${codice}' eliminata con successo!`);
+      notifications.showSuccess(`🗑️ Fustella '${codice}' svuotata (codice preservato come buco)`);
     } else {
       notifications.showError(`Errore eliminazione fustella: ${error.message}`);
     }
