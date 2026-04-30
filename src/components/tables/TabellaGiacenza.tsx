@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Cartone } from '@/types';
 import { formatFormato, formatPrezzo, formatFogli, formatData } from '@/utils/formatters';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Copy } from 'lucide-react';
-import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
+import { Copy, Pencil } from 'lucide-react';
+import * as notifications from '@/utils/notifications';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,16 +16,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface TabellaGiacenzaProps {
   cartoni: Cartone[];
   onScarico: (codice: string) => void;
   onStorico: (codice: string) => void;
   onRiportaOrdini: (codice: string) => void;
+  onModifica: (codice: string, dati: Partial<Cartone>) => Promise<{ error: any }>;
 }
 
-export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini }: TabellaGiacenzaProps) {
+export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini, onModifica }: TabellaGiacenzaProps) {
   const [codiceRiporto, setCodiceRiporto] = useState<string | null>(null);
+  const [cartoneModifica, setCartoneModifica] = useState<Cartone | null>(null);
+  const [formModifica, setFormModifica] = useState<Partial<Cartone>>({});
+  const [salvando, setSalvando] = useState(false);
 
   const copiaRiga = (cartone: Cartone) => {
     const testo = `${cartone.codice}\t${cartone.fornitore}\t${cartone.ordine}\t${cartone.ddt || '-'}\t${cartone.tipologia}\t${formatFormato(cartone.formato)}\t${cartone.grammatura}\t${formatFogli(cartone.fogli)}\t${cartone.cliente}\t${cartone.lavoro}\t${cartone.magazzino}\t${formatPrezzo(cartone.prezzo)}\t${formatData(cartone.data_arrivo || '')}`;
@@ -33,6 +46,33 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
       notifications.showError('❌ Errore durante la copia');
     });
   };
+
+  const apriModifica = (cartone: Cartone) => {
+    setCartoneModifica(cartone);
+    setFormModifica({ ...cartone });
+  };
+
+  const salvaModifica = async () => {
+    if (!cartoneModifica) return;
+    setSalvando(true);
+    const { error } = await onModifica(cartoneModifica.codice, formModifica);
+    setSalvando(false);
+    if (!error) {
+      setCartoneModifica(null);
+    }
+  };
+
+  const campo = (label: string, field: keyof Cartone, type: string = 'text') => (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs font-semibold text-muted-foreground">{label}</label>
+      <Input
+        type={type}
+        value={formModifica[field] as string ?? ''}
+        onChange={e => setFormModifica(prev => ({ ...prev, [field]: type === 'number' ? Number(e.target.value) : e.target.value }))}
+        className="h-8 text-sm"
+      />
+    </div>
+  );
 
   return (
     <ScrollArea className="w-full rounded-md">
@@ -53,7 +93,7 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
             <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Mag.</th>
             <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">€/kg</th>
             <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Arrivo</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[150px]">Azioni</th>
+            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[170px]">Azioni</th>
           </tr>
         </thead>
         <tbody id="dashboard-body">
@@ -74,35 +114,22 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
               <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.magazzino}</td>
               <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{formatPrezzo(cartone.prezzo)}</td>
               <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">{formatData(cartone.data_arrivo || '')}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[150px]">
+              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[170px]">
                 <div className="flex gap-0.5">
-                  <button
-                    onClick={() => onScarico(cartone.codice)}
-                    className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] hover:bg-[hsl(0,100%,90%)] transition-colors"
-                    title="Scarica fogli"
-                  >
+                  <button onClick={() => onScarico(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] hover:bg-[hsl(0,100%,90%)] transition-colors" title="Scarica fogli">
                     <i className="fas fa-minus text-[10px] sm:text-xs"></i>
                   </button>
-                  <button
-                    onClick={() => onStorico(cartone.codice)}
-                    className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(199,89%,94%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(199,89%,88%)] transition-colors"
-                    title="Vedi storico"
-                  >
+                  <button onClick={() => onStorico(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(199,89%,94%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(199,89%,88%)] transition-colors" title="Vedi storico">
                     <i className="fas fa-chart-line text-[10px] sm:text-xs"></i>
                   </button>
-                  <button
-                    onClick={() => setCodiceRiporto(cartone.codice)}
-                    className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(217,91%,88%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(217,91%,78%)] transition-colors"
-                    title="Riporta in ordini"
-                  >
+                  <button onClick={() => setCodiceRiporto(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(217,91%,88%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(217,91%,78%)] transition-colors" title="Riporta in ordini">
                     <i className="fas fa-undo text-[10px] sm:text-xs"></i>
                   </button>
-                  <button
-                    onClick={() => copiaRiga(cartone)}
-                    className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(142,76%,94%)] text-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,88%)] transition-colors"
-                    title="Copia riga"
-                  >
+                  <button onClick={() => copiaRiga(cartone)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(142,76%,94%)] text-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,88%)] transition-colors" title="Copia riga">
                     <Copy size={12} className="h-3 w-3 sm:h-4 sm:w-4" />
+                  </button>
+                  <button onClick={() => apriModifica(cartone)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(45,100%,94%)] text-[hsl(45,100%,35%)] hover:bg-[hsl(45,100%,85%)] transition-colors" title="Modifica riga">
+                    <Pencil size={12} className="h-3 w-3 sm:h-4 sm:w-4" />
                   </button>
                 </div>
               </td>
@@ -112,6 +139,42 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
       </table>
       </div>
       <ScrollBar orientation="horizontal" />
+
+      <Dialog open={!!cartoneModifica} onOpenChange={() => setCartoneModifica(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg">✏️ Modifica Giacenza — {cartoneModifica?.codice}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 py-2">
+            {campo('Fornitore', 'fornitore')}
+            {campo('Ordine', 'ordine')}
+            {campo('DDT', 'ddt')}
+            {campo('Tipologia', 'tipologia')}
+            {campo('Formato', 'formato')}
+            {campo('Grammatura', 'grammatura')}
+            {campo('Fogli', 'fogli', 'number')}
+            {campo('Cliente', 'cliente')}
+            {campo('Lavoro', 'lavoro')}
+            {campo('Magazzino', 'magazzino')}
+            {campo('Prezzo (€/kg)', 'prezzo', 'number')}
+            {campo('Data arrivo', 'data_arrivo', 'date')}
+            <div className="col-span-2 flex flex-col gap-1">
+              <label className="text-xs font-semibold text-muted-foreground">Note</label>
+              <Input
+                value={formModifica.note ?? ''}
+                onChange={e => setFormModifica(prev => ({ ...prev, note: e.target.value }))}
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCartoneModifica(null)}>Annulla</Button>
+            <Button onClick={salvaModifica} disabled={salvando}>
+              {salvando ? 'Salvataggio...' : 'Salva modifiche'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!codiceRiporto} onOpenChange={() => setCodiceRiporto(null)}>
         <AlertDialogContent className="sm:max-w-[425px]">
