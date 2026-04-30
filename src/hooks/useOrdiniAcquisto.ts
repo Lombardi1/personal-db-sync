@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone, Fustella } from '@/types';
+import { OrdineAcquisto, ArticoloOrdineAcquisto, Cartone, Fustella, ColoreInArrivo } from '@/types';
 import { toast } from 'sonner';
 import { generateNextCartoneCode } from '@/utils/cartoneUtils';
 import { formatFormato, formatGrammatura } from '@/utils/formatters'; // Importa le funzioni di formattazione
@@ -27,8 +27,10 @@ export function useOrdiniAcquisto() {
     const validArticles = ordineAcquisto.articoli.filter(art => art !== null && art !== undefined);
     console.log(`[syncArticleInventoryStatus] Articoli validi dopo il filtro (${validArticles.length} di ${ordineAcquisto.articoli.length}):`, JSON.stringify(validArticles, null, 2));
 
-    if (!isCartoneFornitore && !isFustelleFornitore) {
-      console.log(`[syncArticleInventoryStatus] Fornitore non è Cartone o Fustelle. Nessuna sincronizzazione inventario necessaria.`);
+    const isInchiostroFornitore = ordineAcquisto.fornitore_tipo === 'Inchiostro';
+
+    if (!isCartoneFornitore && !isFustelleFornitore && !isInchiostroFornitore) {
+      console.log(`[syncArticleInventoryStatus] Fornitore non è Cartone, Fustelle o Inchiostro. Nessuna sincronizzazione inventario necessaria.`);
       return;
     }
 
@@ -197,6 +199,31 @@ export function useOrdiniAcquisto() {
             }
           } else {
             console.log(`[syncArticleInventoryStatus] Articolo Fustelle generico o incompleto. Descrizione: '${articolo.descrizione}'. Nessuna azione di inventario specifica.`);
+          }
+        } else if (isInchiostroFornitore) {
+          const coloreNome = articolo.colore_nome || articolo.descrizione;
+          const coloreCodice = articolo.colore_codice;
+          if (!coloreNome || !coloreCodice) {
+            console.warn(`[syncArticleInventoryStatus] Articolo Inchiostro senza nome o codice. Saltato.`);
+            continue;
+          }
+          const coloreInArrivo: ColoreInArrivo = {
+            codice: coloreCodice,
+            nome: coloreNome,
+            tipo: articolo.colore_tipo || 'Custom',
+            marca: articolo.colore_marca || null,
+            quantita: articolo.quantita || 0,
+            unita_misura: articolo.colore_unita_misura || 'kg',
+            prezzo_unitario: articolo.prezzo_unitario || null,
+            fornitore: fornitoreNome,
+            ordine_acquisto_numero: ordineAcquisto.numero_ordine,
+            data_consegna_prevista: articolo.data_consegna_prevista || null,
+            stato: articolo.stato || 'in_attesa',
+          };
+          const { error: insertError } = await supabase.from('colori_in_arrivo').insert([coloreInArrivo]);
+          if (insertError) {
+            console.error(`[syncArticleInventoryStatus] Errore inserimento colore in arrivo:`, insertError);
+            toast.error(`Errore colore in arrivo: ${insertError.message}`);
           }
         }
       } catch (e: any) {
@@ -599,6 +626,7 @@ export function useOrdiniAcquisto() {
 
       await supabase.from('ordini').delete().eq('ordine', numeroOrdine);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
+      await supabase.from('colori_in_arrivo').delete().eq('ordine_acquisto_numero', numeroOrdine);
       // Le fustelle non vengono cancellate: azzera i dati ma preserva il codice
       await supabase.from('fustelle').update({
         fornitore: null, codice_fornitore: null, cliente: null, lavoro: null,
