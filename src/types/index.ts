@@ -124,6 +124,11 @@ export interface ArticoloOrdineAcquisto {
   incollatrice?: string | null;
   tipo_incollatura?: string | null;
   descrizione?: string | null;
+  colore_codice?: string | null;
+  colore_nome?: string | null;
+  colore_tipo?: string | null;
+  colore_marca?: string | null;
+  colore_unita_misura?: string | null;
   quantita?: number | null;
   prezzo_unitario?: number | null;
   cliente?: string | null;
@@ -218,6 +223,24 @@ export interface Colore {
   disponibile: boolean;
   data_creazione: string;
   ultima_modifica: string;
+}
+
+export interface ColoreInArrivo {
+  id?: string;
+  codice: string;
+  nome: string;
+  tipo: string;
+  marca?: string | null;
+  quantita: number;
+  unita_misura: string;
+  prezzo_unitario?: number | null;
+  fornitore?: string | null;
+  ordine_acquisto_numero?: string | null;
+  data_consegna_prevista?: string | null;
+  note?: string | null;
+  stato: string;
+  data_creazione?: string;
+  ultima_modifica?: string;
 }
 
 export interface StoricoMovimentoColore {
