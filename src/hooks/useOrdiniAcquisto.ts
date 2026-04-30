@@ -150,7 +150,7 @@ export function useOrdiniAcquisto() {
               incollatura: articolo.incollatura || false,
               incollatrice: articolo.incollatrice || null,
               tipo_incollatura: articolo.tipo_incollatura || null,
-              disponibile: articolo.stato === 'ricevuto',
+              disponibile: previousFustellaState?.disponibile ?? false,
               data_creazione: previousFustellaState?.data_creazione || new Date().toISOString(),
               ultima_modifica: new Date().toISOString(),
               ordine_acquisto_numero: ordineAcquisto.numero_ordine,
