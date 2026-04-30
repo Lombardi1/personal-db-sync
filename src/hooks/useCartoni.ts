@@ -681,6 +681,53 @@ export function useCartoni() {
     }
   };
 
+  const modificaGiacenza = async (codice: string, dati: Partial<Cartone>) => {
+    const cartoneInGiacenza = giacenza.find(c => c.codice === codice);
+    if (!cartoneInGiacenza) {
+      notifications.showError('Cartone non trovato in giacenza.');
+      return { error: new Error('Cartone non trovato in giacenza.') };
+    }
+
+    const datiPerAggiornamento: Partial<Cartone> = {
+      fornitore: dati.fornitore,
+      ordine: dati.ordine,
+      ddt: dati.ddt,
+      tipologia: dati.tipologia,
+      formato: dati.formato,
+      grammatura: dati.grammatura,
+      fogli: dati.fogli,
+      cliente: dati.cliente,
+      lavoro: dati.lavoro,
+      magazzino: dati.magazzino,
+      prezzo: dati.prezzo,
+      note: dati.note,
+      fsc: dati.fsc,
+      alimentare: dati.alimentare,
+      rif_commessa_fsc: dati.rif_commessa_fsc,
+      data_arrivo: dati.data_arrivo,
+    };
+
+    const { error } = await supabase.from('giacenza').update(datiPerAggiornamento).eq('codice', codice);
+    if (!error) {
+      const movimento: StoricoMovimento = {
+        codice: codice,
+        tipo: 'modifica',
+        quantita: dati.fogli || 0,
+        data: new Date().toISOString(),
+        note: `Modifica manuale giacenza (check magazzino)`,
+        user_id: user?.id,
+        numero_ordine_acquisto: cartoneInGiacenza.ordine,
+        cliente: dati.cliente,
+        lavoro: dati.lavoro,
+      };
+      await supabase.from('storico').insert([movimento]);
+      notifications.showSuccess(`✅ Cartone '${codice}' aggiornato con successo!`);
+    } else {
+      notifications.showError(`Errore modifica giacenza: ${error.message}`);
+    }
+    return { error };
+  };
+
   return {
     giacenza,
     ordini,
@@ -694,6 +741,7 @@ export function useCartoni() {
     riportaInOrdini,
     confermaOrdine,
     eliminaOrdine,
-    modificaOrdine
+    modificaOrdine,
+    modificaGiacenza
   };
 }
