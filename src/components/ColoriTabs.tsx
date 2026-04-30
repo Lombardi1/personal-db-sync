@@ -7,12 +7,14 @@ interface ColoriTabsProps {
   counts: {
     giacenza: number;
     storico: number;
+    inArrivo: number;
   };
   isAmministratore: boolean;
 }
 
 export function ColoriTabs({ activeTab, setActiveTab, counts, isAmministratore }: ColoriTabsProps) {
   const allTabs = [
+    { id: 'colori-arrivo', label: 'In Arrivo', count: counts.inArrivo, icon: 'fa-truck' },
     { id: 'colori-giacenza', label: 'Giacenza Colori', count: counts.giacenza, icon: 'fa-palette' },
     { id: 'colori-carico', label: 'Carico Colore', icon: 'fa-plus-square' },
     { id: 'colori-scarico', label: 'Scarico / Consumo', icon: 'fa-minus-square' },
