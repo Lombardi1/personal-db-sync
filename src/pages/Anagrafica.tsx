@@ -18,12 +18,12 @@ export default function Anagrafica() {
   const initialTab = queryParams.get('tab') || 'clienti';
 
   const [activeTab, setActiveTab] = useState(initialTab);
-  const { 
+  const {
     clienti, fornitori, loading: anagraficheLoading,
     addCliente, updateCliente, deleteCliente,
     addFornitore, updateFornitore, deleteFornitore,
   } = useAnagrafiche();
-  const { aziendaInfo, loading: aziendaInfoLoading } = useAziendaInfo(); // Recupera aziendaInfo
+  const { aziendaInfo, loading: aziendaInfoLoading } = useAziendaInfo();
 
   useEffect(() => {
     if (activeTab !== queryParams.get('tab')) {
@@ -46,17 +46,13 @@ export default function Anagrafica() {
     );
   }
 
-  if (!user || user.role !== 'amministratore') {
+  if (!user || (user.role !== 'amministratore' && user.role !== 'visualizzatore')) {
     return <Navigate to="/login" replace />;
   }
 
   return (
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
-      <Header 
-        title="Gestione Anagrafiche" 
-        activeTab="anagrafica" 
-        showUsersButton={true}
-      />
+      <Header title="Gestione Anagrafiche" activeTab="anagrafica" showUsersButton={true} />
       <div className="max-w-[1400px] mx-auto p-3 sm:p-5 md:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
           <h2 className="text-2xl sm:text-3xl font-bold text-[hsl(var(--anagrafica-color))] flex items-center gap-2 sm:gap-3 text-center sm:text-left">
@@ -69,25 +65,25 @@ export default function Anagrafica() {
             </Button>
           </div>
         </div>
-        
+
         <AnagraficaTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <div className="bg-white border border-[hsl(214,32%,91%)] rounded-b-lg rounded-tr-lg shadow-sm p-4 sm:p-6">
           {activeTab === 'clienti' && (
-            <ClientiTab 
-              clienti={clienti} 
-              addCliente={addCliente} 
-              updateCliente={updateCliente} 
-              deleteCliente={deleteCliente} 
+            <ClientiTab
+              clienti={clienti}
+              addCliente={addCliente}
+              updateCliente={updateCliente}
+              deleteCliente={deleteCliente}
             />
           )}
           {activeTab === 'fornitori' && (
-            <FornitoriTab 
-              fornitori={fornitori} 
-              addFornitore={addFornitore} 
-              updateFornitore={updateFornitore} 
-              deleteFornitore={deleteFornitore} 
-              aziendaInfo={aziendaInfo} // Passo aziendaInfo al FornitoriTab
+            <FornitoriTab
+              fornitori={fornitori}
+              addFornitore={addFornitore}
+              updateFornitore={updateFornitore}
+              deleteFornitore={deleteFornitore}
+              aziendaInfo={aziendaInfo}
             />
           )}
         </div>
