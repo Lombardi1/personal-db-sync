@@ -6,6 +6,7 @@ import { Copy, Pencil } from 'lucide-react';
 import * as notifications from '@/utils/notifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/useAuth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ interface TabellaGiacenzaProps {
 }
 
 export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini, onModifica }: TabellaGiacenzaProps) {
+  const { isVisualizzatore } = useAuth();
   const [codiceRiporto, setCodiceRiporto] = useState<string | null>(null);
   const [cartoneModifica, setCartoneModifica] = useState<Cartone | null>(null);
   const [formModifica, setFormModifica] = useState<Partial<Cartone>>({});
@@ -78,128 +80,138 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
     <ScrollArea className="w-full rounded-md">
       <div className="w-full min-w-max">
         <table id="tab-dashboard" className="w-full border-collapse text-xs table-auto">
-        <thead>
-          <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Codice</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Fornitore</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Ordine</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">DDT</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Tipologia</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Formato</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Gramm.</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Fogli</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Cliente</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Lavoro</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Mag.</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">€/kg</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Arrivo</th>
-            <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[170px]">Azioni</th>
-          </tr>
-        </thead>
-        <tbody id="dashboard-body">
-          {cartoni.map((cartone) => (
-            <tr key={cartone.codice} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)] transition-colors">
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">
-                <span className="codice">{cartone.codice}</span>
-              </td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{cartone.fornitore}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.ordine}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.ddt || '-'}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">{cartone.tipologia}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{formatFormato(cartone.formato)}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.grammatura}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs font-semibold whitespace-nowrap w-[80px]">{formatFogli(cartone.fogli)}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{cartone.cliente}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{cartone.lavoro}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.magazzino}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{formatPrezzo(cartone.prezzo)}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">{formatData(cartone.data_arrivo || '')}</td>
-              <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[170px]">
-                <div className="flex gap-0.5">
-                  <button onClick={() => onScarico(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] hover:bg-[hsl(0,100%,90%)] transition-colors" title="Scarica fogli">
-                    <i className="fas fa-minus text-[10px] sm:text-xs"></i>
-                  </button>
-                  <button onClick={() => onStorico(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(199,89%,94%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(199,89%,88%)] transition-colors" title="Vedi storico">
-                    <i className="fas fa-chart-line text-[10px] sm:text-xs"></i>
-                  </button>
-                  <button onClick={() => setCodiceRiporto(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(217,91%,88%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(217,91%,78%)] transition-colors" title="Riporta in ordini">
-                    <i className="fas fa-undo text-[10px] sm:text-xs"></i>
-                  </button>
-                  <button onClick={() => copiaRiga(cartone)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(142,76%,94%)] text-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,88%)] transition-colors" title="Copia riga">
-                    <Copy size={12} className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </button>
-                  <button onClick={() => apriModifica(cartone)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(45,100%,94%)] text-[hsl(45,100%,35%)] hover:bg-[hsl(45,100%,85%)] transition-colors" title="Modifica riga">
-                    <Pencil size={12} className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </button>
-                </div>
-              </td>
+          <thead>
+            <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Codice</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Fornitore</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Ordine</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">DDT</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Tipologia</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Formato</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Gramm.</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Fogli</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Cliente</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Lavoro</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Mag.</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">€/kg</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Arrivo</th>
+              <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[170px]">Azioni</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody id="dashboard-body">
+            {cartoni.map((cartone) => (
+              <tr key={cartone.codice} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)] transition-colors">
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">
+                  <span className="codice">{cartone.codice}</span>
+                </td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{cartone.fornitore}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.ordine}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.ddt || '-'}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">{cartone.tipologia}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{formatFormato(cartone.formato)}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.grammatura}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs font-semibold whitespace-nowrap w-[80px]">{formatFogli(cartone.fogli)}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{cartone.cliente}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[120px]">{cartone.lavoro}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{cartone.magazzino}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[80px]">{formatPrezzo(cartone.prezzo)}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">{formatData(cartone.data_arrivo || '')}</td>
+                <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[170px]">
+                  <div className="flex gap-0.5">
+                    {!isVisualizzatore && (
+                      <button onClick={() => onScarico(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] hover:bg-[hsl(0,100%,90%)] transition-colors" title="Scarica fogli">
+                        <i className="fas fa-minus text-[10px] sm:text-xs"></i>
+                      </button>
+                    )}
+                    <button onClick={() => onStorico(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(199,89%,94%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(199,89%,88%)] transition-colors" title="Vedi storico">
+                      <i className="fas fa-chart-line text-[10px] sm:text-xs"></i>
+                    </button>
+                    {!isVisualizzatore && (
+                      <button onClick={() => setCodiceRiporto(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(217,91%,88%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(217,91%,78%)] transition-colors" title="Riporta in ordini">
+                        <i className="fas fa-undo text-[10px] sm:text-xs"></i>
+                      </button>
+                    )}
+                    <button onClick={() => copiaRiga(cartone)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(142,76%,94%)] text-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,88%)] transition-colors" title="Copia riga">
+                      <Copy size={12} className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </button>
+                    {!isVisualizzatore && (
+                      <button onClick={() => apriModifica(cartone)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(45,100%,94%)] text-[hsl(45,100%,35%)] hover:bg-[hsl(45,100%,85%)] transition-colors" title="Modifica riga">
+                        <Pencil size={12} className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       <ScrollBar orientation="horizontal" />
 
-      <Dialog open={!!cartoneModifica} onOpenChange={() => setCartoneModifica(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg">✏️ Modifica Giacenza — {cartoneModifica?.codice}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 py-2">
-            {campo('Fornitore', 'fornitore')}
-            {campo('Ordine', 'ordine')}
-            {campo('DDT', 'ddt')}
-            {campo('Tipologia', 'tipologia')}
-            {campo('Formato', 'formato')}
-            {campo('Grammatura', 'grammatura')}
-            {campo('Fogli', 'fogli', 'number')}
-            {campo('Cliente', 'cliente')}
-            {campo('Lavoro', 'lavoro')}
-            {campo('Magazzino', 'magazzino')}
-            {campo('Prezzo (€/kg)', 'prezzo', 'number')}
-            {campo('Data arrivo', 'data_arrivo', 'date')}
-            <div className="col-span-2 flex flex-col gap-1">
-              <label className="text-xs font-semibold text-muted-foreground">Note</label>
-              <Input
-                value={formModifica.note ?? ''}
-                onChange={e => setFormModifica(prev => ({ ...prev, note: e.target.value }))}
-                className="h-8 text-sm"
-              />
+      {!isVisualizzatore && (
+        <Dialog open={!!cartoneModifica} onOpenChange={() => setCartoneModifica(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-lg">✏️ Modifica Giacenza — {cartoneModifica?.codice}</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-3 py-2">
+              {campo('Fornitore', 'fornitore')}
+              {campo('Ordine', 'ordine')}
+              {campo('DDT', 'ddt')}
+              {campo('Tipologia', 'tipologia')}
+              {campo('Formato', 'formato')}
+              {campo('Grammatura', 'grammatura')}
+              {campo('Fogli', 'fogli', 'number')}
+              {campo('Cliente', 'cliente')}
+              {campo('Lavoro', 'lavoro')}
+              {campo('Magazzino', 'magazzino')}
+              {campo('Prezzo (€/kg)', 'prezzo', 'number')}
+              {campo('Data arrivo', 'data_arrivo', 'date')}
+              <div className="col-span-2 flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground">Note</label>
+                <Input
+                  value={formModifica.note ?? ''}
+                  onChange={e => setFormModifica(prev => ({ ...prev, note: e.target.value }))}
+                  className="h-8 text-sm"
+                />
+              </div>
             </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setCartoneModifica(null)}>Annulla</Button>
-            <Button onClick={salvaModifica} disabled={salvando}>
-              {salvando ? 'Salvataggio...' : 'Salva modifiche'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setCartoneModifica(null)}>Annulla</Button>
+              <Button onClick={salvaModifica} disabled={salvando}>
+                {salvando ? 'Salvataggio...' : 'Salva modifiche'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      <AlertDialog open={!!codiceRiporto} onOpenChange={() => setCodiceRiporto(null)}>
-        <AlertDialogContent className="sm:max-w-[425px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg sm:text-xl">Conferma riporto in ordini</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm sm:text-base">
-              Sei sicuro di voler riportare il cartone <strong>{codiceRiporto}</strong> in ordini in arrivo?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
-            <AlertDialogCancel className="w-full sm:w-auto text-sm">Annulla</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (codiceRiporto) {
-                  onRiportaOrdini(codiceRiporto);
-                  setCodiceRiporto(null);
-                }
-              }}
-              className="w-full sm:w-auto text-sm"
-            >
-              Conferma
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {!isVisualizzatore && (
+        <AlertDialog open={!!codiceRiporto} onOpenChange={() => setCodiceRiporto(null)}>
+          <AlertDialogContent className="sm:max-w-[425px]">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-lg sm:text-xl">Conferma riporto in ordini</AlertDialogTitle>
+              <AlertDialogDescription className="text-sm sm:text-base">
+                Sei sicuro di voler riportare il cartone <strong>{codiceRiporto}</strong> in ordini in arrivo?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
+              <AlertDialogCancel className="w-full sm:w-auto text-sm">Annulla</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (codiceRiporto) {
+                    onRiportaOrdini(codiceRiporto);
+                    setCodiceRiporto(null);
+                  }
+                }}
+                className="w-full sm:w-auto text-sm"
+              >
+                Conferma
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </ScrollArea>
   );
 }
