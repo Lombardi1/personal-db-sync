@@ -42,6 +42,7 @@ function HomeRedirect() {
   }
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'amministratore') return <Navigate to="/summary" replace />;
+  if (user.role === 'visualizzatore') return <Navigate to="/summary" replace />;
   if (user.role === 'macchina' && user.macchina_id) return <Navigate to={`/macchina/${user.macchina_id}`} replace />;
   return <Navigate to="/stampa-dashboard" replace />;
 }
@@ -55,30 +56,29 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<HomeRedirect />} />
 
-            {/* Admin */}
-            <Route path="/summary" element={<ProtectedRoute allowedRoles={['amministratore']}><Summary /></ProtectedRoute>} />
-            <Route path="/gestione-magazzino" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><Index /></ProtectedRoute>} />
+            {/* Admin + Visualizzatore */}
+            <Route path="/summary" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><Summary /></ProtectedRoute>} />
+            <Route path="/gestione-magazzino" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa', 'visualizzatore']}><Index /></ProtectedRoute>} />
             <Route path="/gestione-utenti" element={<ProtectedRoute allowedRoles={['amministratore']}><GestioneUtenti /></ProtectedRoute>} />
-            <Route path="/anagrafica" element={<ProtectedRoute allowedRoles={['amministratore']}><Anagrafica /></ProtectedRoute>} />
-            <Route path="/ordini-acquisto" element={<ProtectedRoute allowedRoles={['amministratore']}><OrdiniAcquisto /></ProtectedRoute>} />
-            <Route path="/azienda-info" element={<ProtectedRoute allowedRoles={['amministratore']}><AziendaInfoPage /></ProtectedRoute>} />
-            <Route path="/gestione-fustelle" element={<ProtectedRoute allowedRoles={['amministratore']}><GestioneFustelle /></ProtectedRoute>} />
-            <Route path="/gestione-polimeri" element={<ProtectedRoute allowedRoles={['amministratore']}><PolimeriDashboard /></ProtectedRoute>} />
-            <Route path="/produzione-dashboard" element={<ProtectedRoute allowedRoles={['amministratore']}><ProduzioneDashboard /></ProtectedRoute>} />
-            <Route path="/gestione-produzione" element={<ProtectedRoute allowedRoles={['amministratore']}><ProduzioneDashboard /></ProtectedRoute>} />
-            <Route path="/ordini-cartone" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><OrdiniCartone /></ProtectedRoute>} />
-
+            <Route path="/anagrafica" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><Anagrafica /></ProtectedRoute>} />
+            <Route path="/ordini-acquisto" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><OrdiniAcquisto /></ProtectedRoute>} />
+            <Route path="/azienda-info" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><AziendaInfoPage /></ProtectedRoute>} />
+            <Route path="/gestione-fustelle" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><GestioneFustelle /></ProtectedRoute>} />
+            <Route path="/gestione-polimeri" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><PolimeriDashboard /></ProtectedRoute>} />
+            <Route path="/produzione-dashboard" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><ProduzioneDashboard /></ProtectedRoute>} />
+            <Route path="/gestione-produzione" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><ProduzioneDashboard /></ProtectedRoute>} />
+            <Route path="/ordini-cartone" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa', 'visualizzatore']}><OrdiniCartone /></ProtectedRoute>} />
 
             {/* Stampa (KBA) */}
             <Route path="/stampa-dashboard" element={<ProtectedRoute allowedRoles={['stampa']}><StampaDashboard /></ProtectedRoute>} />
             <Route path="/scarico-magazzino-stampa" element={<ProtectedRoute allowedRoles={['stampa']}><Produzione /></ProtectedRoute>} />
             <Route path="/storico-stampa" element={<ProtectedRoute allowedRoles={['stampa']}><StoricoStampa /></ProtectedRoute>} />
-            <Route path="/consumo-colore" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore']}><ConsumoColore /></ProtectedRoute>} />
-            <Route path="/lavori-stampa" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore']}><LavoriStampa /></ProtectedRoute>} />
-            <Route path="/db-articoli-produzione" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore']}><DBArticoliProduzione /></ProtectedRoute>} />
-            <Route path="/genera-documenti" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore']}><GeneraDocumenti /></ProtectedRoute>} />
+            <Route path="/consumo-colore" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore', 'visualizzatore']}><ConsumoColore /></ProtectedRoute>} />
+            <Route path="/lavori-stampa" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore', 'visualizzatore']}><LavoriStampa /></ProtectedRoute>} />
+            <Route path="/db-articoli-produzione" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore', 'visualizzatore']}><DBArticoliProduzione /></ProtectedRoute>} />
+            <Route path="/genera-documenti" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore', 'visualizzatore']}><GeneraDocumenti /></ProtectedRoute>} />
 
-            {/* Chat — tutti */}
+            {/* Chat — tutti tranne macchina e visualizzatore */}
             <Route path="/chat" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><ChatPage /></ProtectedRoute>} />
             <Route path="/chat/:chatId" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><ChatPage /></ProtectedRoute>} />
 
