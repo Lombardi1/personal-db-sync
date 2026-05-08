@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ('stampa' | 'amministratore' | 'macchina')[];
+  allowedRoles?: ('stampa' | 'amministratore' | 'macchina' | 'visualizzatore')[];
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -26,6 +26,9 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     }
     if (user.role === 'stampa') {
       return <Navigate to="/stampa-dashboard" replace />;
+    }
+    if (user.role === 'visualizzatore') {
+      return <Navigate to="/summary" replace />;
     }
     return <Navigate to="/summary" replace />;
   }
