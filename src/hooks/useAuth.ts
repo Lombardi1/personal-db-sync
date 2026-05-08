@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 export interface AppUser {
   id: string;
   username: string;
-  role: 'stampa' | 'amministratore' | 'macchina';
+  role: 'stampa' | 'amministratore' | 'macchina' | 'visualizzatore';
   macchina_id: string | null; // popolato solo per ruolo 'macchina'
   macchineIds: string[];
   macchineNomi: string[];
@@ -37,7 +37,7 @@ export function useAuth() {
       const loggedUser: AppUser = {
         id: userRecord.user_id,
         username: userRecord.username,
-        role: userRecord.user_role as 'stampa' | 'amministratore' | 'macchina',
+        role: userRecord.user_role as 'stampa' | 'amministratore' | 'macchina' | 'visualizzatore',
         macchina_id: userRecord.macchina_id || null,
         macchineIds: userRecord.macchine_ids || [],
         macchineNomi: userRecord.macchine_nomi || [],
@@ -67,5 +67,6 @@ export function useAuth() {
     isStampa: user?.role === 'stampa',
     isAmministratore: user?.role === 'amministratore',
     isMacchina: user?.role === 'macchina',
+    isVisualizzatore: user?.role === 'visualizzatore',
   };
 }
