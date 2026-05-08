@@ -63,9 +63,9 @@ export default function Summary() {
       borderColor: 'border-blue-300',
       titleColor: 'text-blue-700',
       items: [
-        { label: 'Gestione Magazzino Cartoni', route: '/gestione-magazzino', icon: <Warehouse className="h-5 w-5" />, color: 'bg-blue-500 hover:bg-blue-600' },
-        { label: 'Gestione Magazzino Fustelle', route: '/gestione-fustelle', icon: <Shapes className="h-5 w-5" />, color: 'bg-indigo-500 hover:bg-indigo-600' },
-        { label: 'Gestione Magazzino Polimeri', route: '/gestione-polimeri', icon: <Layers className="h-5 w-5" />, color: 'bg-violet-500 hover:bg-violet-600' },
+        { label: 'Magazzino Cartoni', route: '/gestione-magazzino', icon: <Warehouse className="h-5 w-5" />, color: 'bg-blue-500 hover:bg-blue-600' },
+        { label: 'Magazzino Fustelle', route: '/gestione-fustelle', icon: <Shapes className="h-5 w-5" />, color: 'bg-indigo-500 hover:bg-indigo-600' },
+        { label: 'Magazzino Polimeri', route: '/gestione-polimeri', icon: <Layers className="h-5 w-5" />, color: 'bg-violet-500 hover:bg-violet-600' },
         { label: 'Magazzino Colore', route: '/consumo-colore', icon: <Palette className="h-5 w-5" />, color: 'bg-pink-500 hover:bg-pink-600' },
       ],
     },
@@ -99,7 +99,6 @@ export default function Summary() {
     <div className="min-h-screen bg-[hsl(210,40%,96%)]">
       <SummaryHeader />
       <div className="mx-auto p-4 sm:p-6 md:px-10 pt-10 max-w-5xl">
-        {/* Intestazione */}
         <div className="text-center mb-10">
           <h2 className="text-3xl sm:text-4xl font-bold text-[hsl(var(--foreground))] mb-2">
             Ciao, <span style={{ color: 'hsl(30, 100%, 50%)' }}>{user.username}</span>!
@@ -107,20 +106,13 @@ export default function Summary() {
           <p className="text-lg text-[hsl(var(--muted-foreground))]">{currentDateTime}</p>
         </div>
 
-        {/* Macro Cards */}
         <div className="grid grid-cols-1 gap-6">
           {macroCards.map((card) => (
-            <div
-              key={card.title}
-              className={`bg-white rounded-2xl shadow-lg border-2 ${card.borderColor} overflow-hidden`}
-            >
-              {/* Header della card */}
+            <div key={card.title} className={`bg-white rounded-2xl shadow-lg border-2 ${card.borderColor} overflow-hidden`}>
               <div className={`bg-gradient-to-r ${card.gradient} px-6 py-5 flex items-center gap-4`}>
                 <div className="text-white opacity-90">{card.icon}</div>
                 <h3 className="text-2xl sm:text-3xl font-black text-white tracking-wide">{card.title}</h3>
               </div>
-
-              {/* Sub-bottoni */}
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {card.items.map((item) => (
                   <button
