@@ -5,46 +5,52 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
+import * as notifications from '@/utils/notifications';
 import { UserPlus, Edit, Trash2, Home } from 'lucide-react';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 
+type AppRole = 'stampa' | 'amministratore' | 'macchina' | 'visualizzatore';
+
 interface AppUser {
   id: string;
   username: string;
   created_at: string;
-  role?: 'stampa' | 'amministratore' | 'macchina';
+  role?: AppRole;
 }
 
 const userSchema = z.object({
   username: z.string().trim().min(3, 'Username deve essere almeno 3 caratteri').max(50, 'Username troppo lungo'),
   password: z.string().min(6, 'Password deve essere almeno 6 caratteri').max(100, 'Password troppo lunga'),
-  role: z.enum(['stampa', 'amministratore', 'macchina'], { required_error: 'Seleziona un ruolo' }), // Ruolo aggiornato
+  role: z.enum(['stampa', 'amministratore', 'macchina', 'visualizzatore'], { required_error: 'Seleziona un ruolo' }),
 });
+
+const roleLabel = (role?: AppRole) => {
+  switch (role) {
+    case 'amministratore': return 'Amministratore';
+    case 'visualizzatore': return 'Visualizzatore';
+    case 'macchina': return 'Macchina';
+    default: return 'Stampa';
+  }
+};
+
+const roleBadgeClass = (role?: AppRole) => {
+  switch (role) {
+    case 'amministratore': return 'bg-primary/10 text-primary';
+    case 'visualizzatore': return 'bg-blue-100 text-blue-700';
+    case 'macchina': return 'bg-orange-100 text-orange-700';
+    default: return 'bg-secondary text-secondary-foreground';
+  }
+};
 
 export default function GestioneUtenti() {
   const { user, logout } = useAuth();
@@ -55,16 +61,15 @@ export default function GestioneUtenti() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
-  
+
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    role: '' as 'stampa' | 'amministratore' | 'macchina' | '',
+    role: '' as AppRole | '',
     macchina_id: '',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setLoadingSubmit] = useState(false);
-
   const [macchineDisponibili, setMacchineDisponibili] = useState<{id:string,nome:string,tipo:string}[]>([]);
 
   useEffect(() => {
@@ -92,8 +97,8 @@ export default function GestioneUtenti() {
 
           return {
             ...u,
-            role: roleData?.role as 'stampa' | 'amministratore' | 'macchina' | undefined,
-        macchina_id: u.macchina_id || '',
+            role: roleData?.role as AppRole | undefined,
+            macchina_id: u.macchina_id || '',
           };
         })
       );
@@ -107,16 +112,21 @@ export default function GestioneUtenti() {
     }
   };
 
+  const caricaMacchine = async () => {
+    const { data } = await supabase.from('macchine_produzione').select('id,nome,tipo').order('tipo').order('nome');
+    if (data) setMacchineDisponibili(data);
+  };
+
   const apriModalNuovo = () => {
     setEditingUser(null);
-    setFormData({ username: '', password: '', role: '' });
+    setFormData({ username: '', password: '', role: '', macchina_id: '' });
     setFormErrors({});
     setModalOpen(true);
   };
 
   const apriModalModifica = (utente: AppUser) => {
     setEditingUser(utente);
-    setFormData({ username: utente.username, password: '', role: utente.role || '' });
+    setFormData({ username: utente.username, password: '', role: utente.role || '', macchina_id: '' });
     setFormErrors({});
     setModalOpen(true);
   };
@@ -124,7 +134,7 @@ export default function GestioneUtenti() {
   const chiudiModal = () => {
     setModalOpen(false);
     setEditingUser(null);
-    setFormData({ username: '', password: '', role: '' });
+    setFormData({ username: '', password: '', role: '', macchina_id: '' });
     setFormErrors({});
   };
 
@@ -147,24 +157,18 @@ export default function GestioneUtenti() {
     }
 
     setLoadingSubmit(true);
-
     try {
       if (editingUser) {
         await modificaUtente();
       } else {
         await creaUtente();
       }
-    } catch (error: any) { // Cattura l'errore per loggarlo
+    } catch (error: any) {
       console.error('Errore salvataggio utente:', error);
       notifications.showError(`Errore nel salvataggio dell'utente: ${error.message || 'Errore sconosciuto'}`);
     } finally {
       setLoadingSubmit(false);
     }
-  };
-
-  const caricaMacchine = async () => {
-    const { data } = await supabase.from('macchine_produzione').select('id,nome,tipo').order('tipo').order('nome');
-    if (data) setMacchineDisponibili(data);
   };
 
   const creaUtente = async () => {
@@ -181,7 +185,7 @@ export default function GestioneUtenti() {
       if (userError) {
         if (userError.code === '23505') {
           notifications.showError('Username già esistente');
-          throw new Error('Username già esistente'); // Rilancia un errore con messaggio specifico
+          throw new Error('Username già esistente');
         }
         throw userError;
       }
@@ -202,7 +206,6 @@ export default function GestioneUtenti() {
 
   const modificaUtente = async () => {
     if (!editingUser) return;
-
     try {
       if (formData.username !== editingUser.username) {
         const { error: updateError } = await supabase
@@ -213,7 +216,7 @@ export default function GestioneUtenti() {
         if (updateError) {
           if (updateError.code === '23505') {
             notifications.showError('Username già esistente');
-            throw new Error('Username già esistente'); // Rilancia un errore con messaggio specifico
+            throw new Error('Username già esistente');
           }
           throw updateError;
         }
@@ -222,25 +225,18 @@ export default function GestioneUtenti() {
       if (formData.password) {
         const bcrypt = await import('bcryptjs');
         const passwordHash = await bcrypt.hash(formData.password, 10);
-
         const { error: passwordError } = await supabase
           .from('app_users')
           .update({ password_hash: passwordHash })
           .eq('id', editingUser.id);
-
         if (passwordError) throw passwordError;
       }
 
       if (formData.role !== editingUser.role) {
-        await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', editingUser.id);
-
+        await supabase.from('user_roles').delete().eq('user_id', editingUser.id);
         const { error: roleError } = await supabase
           .from('user_roles')
           .insert({ user_id: editingUser.id, role: formData.role });
-
         if (roleError) throw roleError;
       }
 
@@ -259,37 +255,26 @@ export default function GestioneUtenti() {
 
   const eliminaUtente = async () => {
     if (!userToDelete) return;
-
     try {
       if (userToDelete.id === user?.id) {
         notifications.showError('Non puoi eliminare il tuo account mentre sei loggato');
         return;
       }
-
-      const { error } = await supabase
-        .from('app_users')
-        .delete()
-        .eq('id', userToDelete.id);
-
+      const { error } = await supabase.from('app_users').delete().eq('id', userToDelete.id);
       if (error) throw error;
-
       notifications.showSuccess('Utente eliminato con successo');
       setDeleteModalOpen(false);
       setUserToDelete(null);
       caricaUtenti();
     } catch (error) {
       console.error('Errore eliminazione utente:', error);
-      notifications.showError('Errore nell\'eliminazione dell\'utente');
+      notifications.showError("Errore nell'eliminazione dell'utente");
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        title="Gestione Utenti" 
-        activeTab="gestione-utenti" 
-        showUsersButton={true}
-      />
+      <Header title="Gestione Utenti" activeTab="gestione-utenti" showUsersButton={true} />
 
       <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="flex justify-end mb-4">
@@ -302,11 +287,8 @@ export default function GestioneUtenti() {
           <p className="text-sm sm:text-base text-muted-foreground text-center sm:text-left">
             Gestisci gli utenti del sistema: crea, modifica ed elimina account.
           </p>
-          <Button 
-            onClick={apriModalNuovo} 
-            size="sm" 
-            className="gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-[hsl(var(--summary-header-color))] hover:bg-[hsl(30,100%,40%)] text-white"
-          >
+          <Button onClick={apriModalNuovo} size="sm"
+            className="gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base bg-[hsl(var(--summary-header-color))] hover:bg-[hsl(30,100%,40%)] text-white">
             <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
             Nuovo Utente
           </Button>
@@ -332,14 +314,8 @@ export default function GestioneUtenti() {
                   <TableRow key={utente.id}>
                     <TableCell className="font-medium text-xs sm:text-sm">{utente.username}</TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          utente.role === 'amministratore'
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-secondary text-secondary-foreground'
-                        }`}
-                      >
-                        {utente.role === 'amministratore' ? 'Amministratore' : utente.role === 'macchina' ? 'Macchina' : 'Stampa'}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleBadgeClass(utente.role)}`}>
+                        {roleLabel(utente.role)}
                       </span>
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm">
@@ -347,21 +323,11 @@ export default function GestioneUtenti() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1 sm:gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => apriModalModifica(utente)}
-                          className="h-7 w-7 sm:h-8 sm:w-8"
-                        >
+                        <Button variant="outline" size="icon" onClick={() => apriModalModifica(utente)} className="h-7 w-7 sm:h-8 sm:w-8">
                           <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => confermaEliminazione(utente)}
-                          disabled={utente.id === user?.id}
-                          className="h-7 w-7 sm:h-8 sm:w-8"
-                        >
+                        <Button variant="destructive" size="icon" onClick={() => confermaEliminazione(utente)}
+                          disabled={utente.id === user?.id} className="h-7 w-7 sm:h-8 sm:w-8">
                           <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
@@ -382,7 +348,7 @@ export default function GestioneUtenti() {
             </DialogTitle>
             <DialogDescription className="text-sm sm:text-base">
               {editingUser
-                ? 'Modifica i dati dell\'utente. Lascia la password vuota per non cambiarla.'
+                ? "Modifica i dati dell'utente. Lascia la password vuota per non cambiarla."
                 : 'Inserisci i dati del nuovo utente.'}
             </DialogDescription>
           </DialogHeader>
@@ -390,73 +356,56 @@ export default function GestioneUtenti() {
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div>
               <Label htmlFor="username" className="text-sm">Username</Label>
-              <Input
-                id="username"
-                value={formData.username}
+              <Input id="username" value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder="Inserisci username"
-                disabled={submitting}
-                className="text-sm"
-              />
-              {formErrors.username && (
-                <p className="text-xs text-destructive mt-1">{formErrors.username}</p>
-              )}
+                placeholder="Inserisci username" disabled={submitting} className="text-sm" />
+              {formErrors.username && <p className="text-xs text-destructive mt-1">{formErrors.username}</p>}
             </div>
 
             <div>
               <Label htmlFor="password" className="text-sm">
                 Password {editingUser && '(lascia vuoto per non cambiare)'}
               </Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
+              <Input id="password" type="password" value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder={editingUser ? 'Nuova password (opzionale)' : 'Inserisci password'}
-                disabled={submitting}
-                className="text-sm"
-              />
-              {formErrors.password && (
-                <p className="text-xs text-destructive mt-1">{formErrors.password}</p>
-              )}
+                disabled={submitting} className="text-sm" />
+              {formErrors.password && <p className="text-xs text-destructive mt-1">{formErrors.password}</p>}
             </div>
 
             <div>
               <Label htmlFor="role" className="text-sm">Ruolo</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value: 'stampa' | 'amministratore' | 'macchina') =>
-                  setFormData(p => ({ ...p, role: value, macchina_id: '' }))
-                }
+                onValueChange={(value: AppRole) => setFormData(p => ({ ...p, role: value, macchina_id: '' }))}
                 disabled={submitting}
               >
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Seleziona ruolo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="stampa" className="text-sm">Stampa</SelectItem> {/* Testo aggiornato */}
                   <SelectItem value="amministratore" className="text-sm">Amministratore</SelectItem>
-                <SelectItem value="macchina" className="text-sm">Macchina</SelectItem>
+                  <SelectItem value="visualizzatore" className="text-sm">Visualizzatore</SelectItem>
+                  <SelectItem value="stampa" className="text-sm">Stampa</SelectItem>
+                  <SelectItem value="macchina" className="text-sm">Macchina</SelectItem>
                 </SelectContent>
               </Select>
-                {formData.role === 'macchina' && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">Macchina assegnata *</label>
-                    <select
-                      value={formData.macchina_id || ''}
-                      onChange={e => setFormData(p => ({ ...p, macchina_id: e.target.value }))}
-                      className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Seleziona macchina...</option>
-                      {macchineDisponibili.map(m => (
-                        <option key={m.id} value={m.id}>{m.nome} ({m.tipo})</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              {formErrors.role && (
-                <p className="text-xs text-destructive mt-1">{formErrors.role}</p>
+              {formData.role === 'macchina' && (
+                <div className="mt-2">
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Macchina assegnata *</label>
+                  <select
+                    value={formData.macchina_id || ''}
+                    onChange={e => setFormData(p => ({ ...p, macchina_id: e.target.value }))}
+                    className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleziona macchina...</option>
+                    {macchineDisponibili.map(m => (
+                      <option key={m.id} value={m.id}>{m.nome} ({m.tipo})</option>
+                    ))}
+                  </select>
+                </div>
               )}
+              {formErrors.role && <p className="text-xs text-destructive mt-1">{formErrors.role}</p>}
             </div>
 
             <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
