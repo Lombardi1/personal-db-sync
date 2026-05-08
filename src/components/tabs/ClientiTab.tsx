@@ -3,23 +3,13 @@ import { Cliente, AnagraficaBase } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { ModalAnagraficaForm } from '@/components/modals/ModalAnagraficaForm';
+import { useAuth } from '@/hooks/useAuth';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Filters } from '@/components/Filters';
 
@@ -31,79 +21,45 @@ interface ClientiTabProps {
 }
 
 export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }: ClientiTabProps) {
+  const { isVisualizzatore } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [clienteToDelete, setClienteToDelete] = useState<Cliente | null>(null);
-
-  const [filtri, setFiltri] = useState({
-    codice: '',
-    nome: '',
-    citta: '',
-    partita_iva: '',
-    email: '',
-    telefono: '',
-  });
+  const [filtri, setFiltri] = useState({ codice: '', nome: '', citta: '', partita_iva: '', email: '', telefono: '' });
   const [clientiFiltered, setClientiFiltered] = useState<Cliente[]>([]);
 
-  useEffect(() => {
-    handleFilter(filtri);
-  }, [clienti]); // Dipendenza aggiunta: clienti
+  useEffect(() => { handleFilter(filtri); }, [clienti]);
 
   const handleFilter = (newFiltri: typeof filtri) => {
     setFiltri(newFiltri);
     let filtered = clienti;
-
     Object.entries(newFiltri).forEach(([key, value]) => {
       if (value) {
         filtered = filtered.filter(c => {
           const field = c[key as keyof Cliente];
-          // Gestione speciale per partita_iva che può essere anche codice_fiscale
           if (key === 'partita_iva') {
             return (String(c.partita_iva || '').toLowerCase().includes(value.toLowerCase()) ||
-                    String(c.codice_fiscale || '').toLowerCase().includes(value.toLowerCase()));
+              String(c.codice_fiscale || '').toLowerCase().includes(value.toLowerCase()));
           }
           return String(field || '').toLowerCase().includes(value.toLowerCase());
         });
       }
     });
-
     setClientiFiltered(filtered);
   };
 
   const resetFiltri = () => {
-    const emptyFiltri = {
-      codice: '',
-      nome: '',
-      citta: '',
-      partita_iva: '',
-      email: '',
-      telefono: '',
-    };
+    const emptyFiltri = { codice: '', nome: '', citta: '', partita_iva: '', email: '', telefono: '' };
     setFiltri(emptyFiltri);
-    handleFilter(emptyFiltri); // Applica i filtri vuoti per mostrare tutti i clienti
-  };
-
-  const handleAddClick = () => {
-    setEditingCliente(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEditClick = (cliente: Cliente) => {
-    setEditingCliente(cliente);
-    setIsModalOpen(true);
-  };
-
-  const handleDeleteClick = (cliente: Cliente) => {
-    setClienteToDelete(cliente);
-    setIsDeleteAlertOpen(true);
+    handleFilter(emptyFiltri);
   };
 
   const handleFormSubmit = async (data: AnagraficaBase) => {
     if (editingCliente) {
-      await updateCliente(editingCliente.id!, data as Partial<Omit<Cliente, 'id' | 'created_at'>>); // Cast a Partial<Omit<Cliente, ...>>
+      await updateCliente(editingCliente.id!, data as Partial<Omit<Cliente, 'id' | 'created_at'>>);
     } else {
-      await addCliente(data as Omit<Cliente, 'id' | 'created_at'>); // Cast a Omit<Cliente, ...>
+      await addCliente(data as Omit<Cliente, 'id' | 'created_at'>);
     }
   };
 
@@ -121,26 +77,20 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
         <h3 className="text-xl sm:text-2xl font-bold text-[hsl(var(--primary))] flex items-center gap-2">
           <i className="fas fa-users"></i> Gestione Clienti
         </h3>
-        <Button onClick={handleAddClick} size="sm" className="gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base">
-          <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-          Nuovo Cliente
-        </Button>
+        {!isVisualizzatore && (
+          <Button onClick={() => { setEditingCliente(null); setIsModalOpen(true); }} size="sm" className="gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base">
+            <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            Nuovo Cliente
+          </Button>
+        )}
       </div>
-      <p className="text-sm sm:text-base text-[hsl(var(--muted-foreground))] mb-4">
-        Gestisci l'anagrafica dei clienti.
-      </p>
+      <p className="text-sm sm:text-base text-[hsl(var(--muted-foreground))] mb-4">Gestisci l'anagrafica dei clienti.</p>
 
-      <Filters 
-        filtri={filtri} 
-        onFilter={handleFilter} 
-        onReset={resetFiltri}
-        matchCount={clientiFiltered.length}
-        sezione="clienti"
-      />
+      <Filters filtri={filtri} onFilter={handleFilter} onReset={resetFiltri} matchCount={clientiFiltered.length} sezione="clienti" />
 
       {clienti.length === 0 ? (
         <p className="text-center text-sm sm:text-base text-[hsl(var(--muted-foreground))] py-6 sm:py-8">
-          Nessun cliente registrato. Clicca "Nuovo Cliente" per aggiungerne uno.
+          Nessun cliente registrato.{!isVisualizzatore && ' Clicca "Nuovo Cliente" per aggiungerne uno.'}
         </p>
       ) : (
         <div className="w-full rounded-md border overflow-x-auto">
@@ -155,40 +105,32 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
                 <TableHead className="text-xs sm:text-sm min-w-[80px] whitespace-normal">Email</TableHead>
                 <TableHead className="text-xs sm:text-sm min-w-[70px] whitespace-normal">Cond. Pagamento</TableHead>
                 <TableHead className="text-xs sm:text-sm min-w-[30px]">IVA</TableHead>
-                <TableHead className="text-right text-xs sm:text-sm min-w-[60px]">Azioni</TableHead>
+                {!isVisualizzatore && <TableHead className="text-right text-xs sm:text-sm min-w-[60px]">Azioni</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {clientiFiltered.map((cliente) => (
                 <TableRow key={cliente.id}>
-                  <TableCell className="font-medium text-xs sm:text-sm min-w-[50px]">{cliente.codice_anagrafica || '-'}</TableCell>
-                  <TableCell className="font-medium text-xs sm:text-sm min-w-[90px] whitespace-normal">{cliente.nome}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[70px] whitespace-normal">{cliente.partita_iva || cliente.codice_fiscale || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[50px] whitespace-normal">{cliente.citta || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[60px] whitespace-normal">{cliente.telefono || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[80px] whitespace-normal">{cliente.email || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[70px] whitespace-normal">{cliente.condizione_pagamento || '-'}</TableCell>
-                  <TableCell className="text-xs sm:text-sm min-w-[30px]">{cliente.considera_iva ? 'Sì' : 'No'}</TableCell>
-                  <TableCell className="text-right min-w-[60px]">
-                    <div className="flex justify-end gap-1 sm:gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleEditClick(cliente)}
-                        className="h-7 w-7 sm:h-8 sm:w-8"
-                      >
-                        <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => handleDeleteClick(cliente)}
-                        className="h-7 w-7 sm:h-8 sm:w-8"
-                      >
-                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  <TableCell className="font-medium text-xs sm:text-sm">{cliente.codice_anagrafica || '-'}</TableCell>
+                  <TableCell className="font-medium text-xs sm:text-sm whitespace-normal">{cliente.nome}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-normal">{cliente.partita_iva || cliente.codice_fiscale || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-normal">{cliente.citta || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-normal">{cliente.telefono || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-normal">{cliente.email || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-normal">{cliente.condizione_pagamento || '-'}</TableCell>
+                  <TableCell className="text-xs sm:text-sm">{cliente.considera_iva ? 'Sì' : 'No'}</TableCell>
+                  {!isVisualizzatore && (
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1 sm:gap-2">
+                        <Button variant="outline" size="icon" onClick={() => { setEditingCliente(cliente); setIsModalOpen(true); }} className="h-7 w-7 sm:h-8 sm:w-8">
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                        <Button variant="destructive" size="icon" onClick={() => { setClienteToDelete(cliente); setIsDeleteAlertOpen(true); }} className="h-7 w-7 sm:h-8 sm:w-8">
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -196,31 +138,25 @@ export function ClientiTab({ clienti, addCliente, updateCliente, deleteCliente }
         </div>
       )}
 
-      <ModalAnagraficaForm
-        type="cliente"
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleFormSubmit}
-        initialData={editingCliente}
-      />
-
-      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Conferma Eliminazione Cliente</AlertDialogTitle>
-            <AlertDialogDescription>
-              Sei sicuro di voler eliminare il cliente <strong>{clienteToDelete?.nome}</strong>?
-              Questa azione non può essere annullata.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">
-              Elimina
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {!isVisualizzatore && (
+        <>
+          <ModalAnagraficaForm type="cliente" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleFormSubmit} initialData={editingCliente} />
+          <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Conferma Eliminazione Cliente</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Sei sicuro di voler eliminare il cliente <strong>{clienteToDelete?.nome}</strong>? Questa azione non può essere annullata.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Elimina</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
     </div>
   );
 }
