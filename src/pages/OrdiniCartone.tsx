@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
@@ -33,6 +33,81 @@ interface OrdineCartone {
 
 const MESI = ['GENNAIO','FEBBRAIO','MARZO','APRILE','MAGGIO','GIUGNO','LUGLIO','AGOSTO','SETTEMBRE','OTTOBRE','NOVEMBRE','DICEMBRE'];
 
+
+interface AnagraficaItem { id: string; nome: string; }
+
+function AutocompleteInput({
+  value, onChange, fetchFn, placeholder, className
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  fetchFn: (q: string) => Promise<AnagraficaItem[]>;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [suggestions, setSuggestions] = useState<AnagraficaItem[]>([]);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value;
+    onChange(q);
+    if (q.length >= 1) {
+      const results = await fetchFn(q);
+      setSuggestions(results);
+      setOpen(results.length > 0);
+    } else {
+      setSuggestions([]);
+      setOpen(false);
+    }
+  };
+
+  const select = (nome: string) => {
+    onChange(nome);
+    setOpen(false);
+    setSuggestions([]);
+  };
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <Input
+        value={value}
+        onChange={handleChange}
+        onFocus={async () => {
+          if (value.length >= 1) {
+            const results = await fetchFn(value);
+            setSuggestions(results);
+            setOpen(results.length > 0);
+          }
+        }}
+        placeholder={placeholder}
+        className={className}
+      />
+      {open && (
+        <ul className="absolute z-50 top-full left-0 w-full bg-white border border-gray-200 rounded shadow-lg max-h-40 overflow-y-auto text-xs">
+          {suggestions.map(s => (
+            <li
+              key={s.id}
+              className="px-2 py-1 hover:bg-blue-50 cursor-pointer"
+              onMouseDown={() => select(s.nome)}
+            >
+              {s.nome}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function OrdiniCartone() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -43,6 +118,17 @@ export default function OrdiniCartone() {
   const [loading, setLoading] = useState(false);
   const [convertingIdx, setConvertingIdx] = useState<number | null>(null);
   const mese = MESI[meseIdx];
+
+  const fetchFornitori = async (q: string): Promise<AnagraficaItem[]> => {
+    const { data } = await supabase.from('fornitori').select('id, nome').ilike('nome', `%${q}%`).limit(8);
+    return data || [];
+  };
+
+  const fetchClienti = async (q: string): Promise<AnagraficaItem[]> => {
+    const { data } = await supabase.from('clienti').select('id, nome').ilike('nome', `%${q}%`).limit(8);
+    return data || [];
+  };
+
 
   const loadRighe = useCallback(async () => {
     setLoading(true);
@@ -116,7 +202,7 @@ export default function OrdiniCartone() {
   const convertiInOrdine = async (idx: number) => {
     const riga = righe[idx];
 
-    // 1. Salva prima se ÃÂ¨ dirty
+    // 1. Salva prima se e dirty
     if (riga.isDirty || riga.isNew) {
       toast.error('Salva la riga prima di convertirla in ordine');
       return;
@@ -170,7 +256,7 @@ export default function OrdiniCartone() {
         ? parseInt(nrFogliMatch[0].replace('.', '').replace(',', ''))
         : 0;
 
-      // 6. Parse prezzo unitario (Ã¢ÂÂ¬/kg -> valore numerico)
+      // 6. Parse prezzo unitario (EUR/kg -> valore numerico)
       const prezzoRaw = riga.prezzo || '';
       const prezzoMatch = prezzoRaw.replace(',', '.').match(/[\d.]+/);
       const prezzoUnitario = prezzoMatch ? parseFloat(prezzoMatch[0]) : 0;
@@ -193,7 +279,7 @@ export default function OrdiniCartone() {
         grammatura: riga.grammatura || '',
         numero_fogli: nrFogli,
         prezzo_unitario: prezzoUnitario,
-        quantita: nrFogli, // kg da calcolare, usiamo fogli come quantitÃÂ  base
+        quantita: nrFogli, // kg da calcolare, usiamo fogli come quantita base
         cliente: riga.cliente || '',
         lavoro: riga.lavoro || '',
         data_consegna_prevista: dataConsegna || null,
@@ -252,7 +338,7 @@ export default function OrdiniCartone() {
         i === idx ? { ...r, ordine_acquisto_id: newOrdine.id, ordine_acquisto_numero: numeroOrdine, isDirty: false } : r
       ));
 
-      toast.success(`Ã¢ÂÂ Ordine d'acquisto ${numeroOrdine} creato! Clicca "Apri" per modificarlo.`);
+      toast.success(` Ordine d'acquisto ${numeroOrdine} creato! Clicca "Apri" per modificarlo.`);
     } catch (e: any) {
       toast.error(`Errore: ${e.message}`);
     } finally {
@@ -326,7 +412,17 @@ export default function OrdiniCartone() {
                       className="h-6 text-xs p-1 w-12 border-0 bg-transparent"
                     />
                   </td>
-                  {(['fornitore','cartone','grammatura','formato','nr_fogli_peso','prezzo','lavoro','cliente','data_consegna_richiesta'] as (keyof OrdineCartone)[]).map(field => (
+                  {/* Fornitore con autocomplete */}
+                  <td className={colStyle}>
+                    <AutocompleteInput
+                      value={(riga.fornitore as string) ?? ''}
+                      onChange={v => aggiornaRiga(idx, 'fornitore', v)}
+                      fetchFn={fetchFornitori}
+                      className="h-6 text-xs p-1 border-0 bg-transparent w-full"
+                    />
+                  </td>
+                  {/* Campi testo normali */}
+                  {(['cartone','grammatura','formato','nr_fogli_peso','prezzo','lavoro'] as (keyof OrdineCartone)[]).map(field => (
                     <td key={field} className={colStyle}>
                       <Input
                         value={(riga[field] as string) ?? ''}
@@ -335,6 +431,23 @@ export default function OrdiniCartone() {
                       />
                     </td>
                   ))}
+                  {/* Cliente con autocomplete */}
+                  <td className={colStyle}>
+                    <AutocompleteInput
+                      value={(riga.cliente as string) ?? ''}
+                      onChange={v => aggiornaRiga(idx, 'cliente', v)}
+                      fetchFn={fetchClienti}
+                      className="h-6 text-xs p-1 border-0 bg-transparent w-full"
+                    />
+                  </td>
+                  {/* Data consegna */}
+                  <td className={colStyle}>
+                    <Input
+                      value={(riga.data_consegna_richiesta as string) ?? ''}
+                      onChange={e => aggiornaRiga(idx, 'data_consegna_richiesta', e.target.value)}
+                      className="h-6 text-xs p-1 border-0 bg-transparent w-full"
+                    />
+                  </td>
                   <td className={`${colStyle} text-center`}>
                     <input
                       type="checkbox"
@@ -373,7 +486,7 @@ export default function OrdiniCartone() {
                           }
                         </Button>
                       )}
-                      {/* Link all'ordine giÃÂ  creato */}
+                      {/* Link all'ordine gia creato */}
                       {riga.ordine_acquisto_id && (
                         <Button
                           size="sm"
