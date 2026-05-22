@@ -23,6 +23,7 @@ interface OrdineCartone {
   lavoro?: string;
   data_consegna_richiesta?: string;
   ordine_effettuato?: boolean;
+  cliente?: string;
   data_consegna_confermata?: string;
   ordine_acquisto_id?: string | null;
   ordine_acquisto_numero?: string | null;
@@ -67,7 +68,7 @@ export default function OrdiniCartone() {
       mese, anno, nr: maxNr + 1, isNew: true, isDirty: true,
       fornitore: '', cartone: '', grammatura: '', formato: '',
       nr_fogli_peso: '', prezzo: '', lavoro: '',
-      data_consegna_richiesta: '', ordine_effettuato: false,
+      data_consegna_richiesta: '', cliente: '', ordine_effettuato: false,
       data_consegna_confermata: '', ordine_acquisto_id: null, ordine_acquisto_numero: null
     }]);
   };
@@ -83,7 +84,7 @@ export default function OrdiniCartone() {
       fornitore: riga.fornitore || '', cartone: riga.cartone || '',
       grammatura: riga.grammatura || '', formato: riga.formato || '',
       nr_fogli_peso: riga.nr_fogli_peso || '', prezzo: riga.prezzo || '',
-      lavoro: riga.lavoro || '', data_consegna_richiesta: riga.data_consegna_richiesta || '',
+      lavoro: riga.lavoro || '', cliente: riga.cliente || '', data_consegna_richiesta: riga.data_consegna_richiesta || '',
       ordine_effettuato: riga.ordine_effettuato || false,
       data_consegna_confermata: riga.data_consegna_confermata || '',
       ordine_acquisto_id: riga.ordine_acquisto_id || null,
@@ -115,7 +116,7 @@ export default function OrdiniCartone() {
   const convertiInOrdine = async (idx: number) => {
     const riga = righe[idx];
 
-    // 1. Salva prima se Ã¨ dirty
+    // 1. Salva prima se ÃÂ¨ dirty
     if (riga.isDirty || riga.isNew) {
       toast.error('Salva la riga prima di convertirla in ordine');
       return;
@@ -169,7 +170,7 @@ export default function OrdiniCartone() {
         ? parseInt(nrFogliMatch[0].replace('.', '').replace(',', ''))
         : 0;
 
-      // 6. Parse prezzo unitario (â¬/kg -> valore numerico)
+      // 6. Parse prezzo unitario (Ã¢ÂÂ¬/kg -> valore numerico)
       const prezzoRaw = riga.prezzo || '';
       const prezzoMatch = prezzoRaw.replace(',', '.').match(/[\d.]+/);
       const prezzoUnitario = prezzoMatch ? parseFloat(prezzoMatch[0]) : 0;
@@ -192,8 +193,8 @@ export default function OrdiniCartone() {
         grammatura: riga.grammatura || '',
         numero_fogli: nrFogli,
         prezzo_unitario: prezzoUnitario,
-        quantita: nrFogli, // kg da calcolare, usiamo fogli come quantitÃ  base
-        cliente: '',
+        quantita: nrFogli, // kg da calcolare, usiamo fogli come quantitÃÂ  base
+        cliente: riga.cliente || '',
         lavoro: riga.lavoro || '',
         data_consegna_prevista: dataConsegna || null,
         stato: 'in_attesa',
@@ -251,7 +252,7 @@ export default function OrdiniCartone() {
         i === idx ? { ...r, ordine_acquisto_id: newOrdine.id, ordine_acquisto_numero: numeroOrdine, isDirty: false } : r
       ));
 
-      toast.success(`â Ordine d'acquisto ${numeroOrdine} creato! Clicca "Apri" per modificarlo.`);
+      toast.success(`Ã¢ÂÂ Ordine d'acquisto ${numeroOrdine} creato! Clicca "Apri" per modificarlo.`);
     } catch (e: any) {
       toast.error(`Errore: ${e.message}`);
     } finally {
@@ -292,6 +293,7 @@ export default function OrdiniCartone() {
                 <th className="border border-gray-600 px-2 py-2 min-w-[100px]">NR. FOGLI O PESO</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[90px]">PREZZO</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">LAVORO</th>
+                <th className="border border-gray-600 px-2 py-2 min-w-[110px]">CLIENTE</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA RICHIESTA</th>
                 <th className="border border-gray-600 px-2 py-2 w-16">ORDINE EFF.</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA CONFERMATA</th>
@@ -324,7 +326,7 @@ export default function OrdiniCartone() {
                       className="h-6 text-xs p-1 w-12 border-0 bg-transparent"
                     />
                   </td>
-                  {(['fornitore','cartone','grammatura','formato','nr_fogli_peso','prezzo','lavoro','data_consegna_richiesta'] as (keyof OrdineCartone)[]).map(field => (
+                  {(['fornitore','cartone','grammatura','formato','nr_fogli_peso','prezzo','lavoro','cliente','data_consegna_richiesta'] as (keyof OrdineCartone)[]).map(field => (
                     <td key={field} className={colStyle}>
                       <Input
                         value={(riga[field] as string) ?? ''}
@@ -371,7 +373,7 @@ export default function OrdiniCartone() {
                           }
                         </Button>
                       )}
-                      {/* Link all'ordine giÃ  creato */}
+                      {/* Link all'ordine giÃÂ  creato */}
                       {riga.ordine_acquisto_id && (
                         <Button
                           size="sm"
