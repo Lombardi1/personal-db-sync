@@ -1,4 +1,4 @@
-import { LogOut, Users, Settings, Contact, Building2, MessageSquare } from 'lucide-react'; // Importa MessageSquare
+import { LogOut, Users, Settings, Contact, Building2, MessageSquare, UserCheck, Wrench, Bot } from 'lucide-react'; // Importa MessageSquare
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -166,6 +166,19 @@ export function Header({
                     <DropdownMenuItem onClick={() => navigate('/azienda-info')}>
                       <Building2 className="mr-2 h-4 w-4" />
                       Gestione Azienda
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/dipendenti')}>
+                      <UserCheck className="mr-2 h-4 w-4" />
+                      Dipendenti
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/impostazioni-sistema')}>
+                      <Wrench className="mr-2 h-4 w-4" />
+                      Impostazioni Sistema
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/agente-conferme')}>
+                      <Bot className="mr-2 h-4 w-4" />
+                      Agente Conferme Ordini
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
