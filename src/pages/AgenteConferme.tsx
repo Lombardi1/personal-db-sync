@@ -47,8 +47,8 @@ export default function AgenteConferme() {
     setLastResult([]);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const res = await fetch(`${supabaseUrl}/functions/v1/agent-conferme-ordini`, {
+      const SUPABASE_URL = 'https://qhabwagcsvvluyvfztmp.supabase.co';
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/agent-conferme-ordini`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,8 +75,8 @@ export default function AgenteConferme() {
     setTestLog(['Connessione in corso...']);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const res = await fetch(`${supabaseUrl}/functions/v1/test-pop3`, {
+      const SUPABASE_URL = 'https://qhabwagcsvvluyvfztmp.supabase.co';
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/test-pop3`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${session?.access_token || ''}` }
       });
