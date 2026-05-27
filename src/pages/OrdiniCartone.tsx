@@ -227,6 +227,18 @@ export default function OrdiniCartone() {
         return;
       }
 
+      // 2b. Cerca nome esatto cliente in anagrafica
+      let clienteNomeExact: string = riga.cliente || '';
+      if (riga.cliente) {
+        const { data: cData } = await supabase
+          .from('clienti')
+          .select('id, nome')
+          .ilike('nome', `%${riga.cliente}%`)
+          .limit(1)
+          .single();
+        if (cData?.nome) clienteNomeExact = cData.nome;
+      }
+
       // 3. Calcola prossimo numero ordine
       const currentYearShort = new Date().getFullYear().toString().slice(-2);
       const { data: ordiniEsistenti } = await supabase
@@ -280,7 +292,7 @@ export default function OrdiniCartone() {
         numero_fogli: nrFogli,
         prezzo_unitario: prezzoUnitario,
         quantita: nrFogli, // kg da calcolare, usiamo fogli come quantita base
-        cliente: riga.cliente || '',
+        cliente: clienteNomeExact,
         lavoro: riga.lavoro || '',
         data_consegna_prevista: dataConsegna || null,
         stato: 'in_attesa',
