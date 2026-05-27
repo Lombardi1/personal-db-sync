@@ -26,6 +26,8 @@ import GeneraDocumenti from "./pages/GeneraDocumenti";
 import MacchinaView from "./pages/MacchinaView";
 import SelezioneMacchina from "./pages/SelezioneMacchina";
 import OrdiniCartone from "./pages/OrdiniCartone";
+import Dipendenti from "./pages/Dipendenti";
+import ImpostazioniSistema from "./pages/ImpostazioniSistema";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -68,6 +70,8 @@ const App = () => {
             <Route path="/produzione-dashboard" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><ProduzioneDashboard /></ProtectedRoute>} />
             <Route path="/gestione-produzione" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><ProduzioneDashboard /></ProtectedRoute>} />
             <Route path="/ordini-cartone" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa', 'visualizzatore']}><OrdiniCartone /></ProtectedRoute>} />
+            <Route path="/dipendenti" element={<ProtectedRoute allowedRoles={['amministratore']}><Dipendenti /></ProtectedRoute>} />
+            <Route path="/impostazioni-sistema" element={<ProtectedRoute allowedRoles={['amministratore']}><ImpostazioniSistema /></ProtectedRoute>} />
 
             {/* Stampa (KBA) */}
             <Route path="/stampa-dashboard" element={<ProtectedRoute allowedRoles={['stampa']}><StampaDashboard /></ProtectedRoute>} />
