@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { Play, RefreshCw, Home, CheckCircle, XCircle, Clock, Mail } from 'lucide-react';
+import { Play, RefreshCw, Home, CheckCircle, XCircle, Clock, Mail, Wifi } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LogElaborazione {
@@ -26,6 +26,8 @@ export default function AgenteConferme() {
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [lastResult, setLastResult] = useState<string[]>([]);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testLog, setTestLog] = useState<string[]>([]);
 
   const loadLogs = async () => {
     setLoading(true);
@@ -68,6 +70,28 @@ export default function AgenteConferme() {
     }
   };
 
+  const testEmail = async () => {
+    setTestingEmail(true);
+    setTestLog([]);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/test-pop3`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` }
+      });
+      const json = await res.json();
+      setTestLog(json.log || []);
+      if (json.success) toast.success('Test completato!');
+      else toast.error('Test fallito - vedi log');
+    } catch (e) {
+      setTestLog(['Errore: ' + e.message]);
+      toast.error('Errore connessione');
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
   if (authLoading) return <div>Caricamento...</div>;
   if (!user) return <Navigate to="/login" replace />;
 
@@ -93,6 +117,15 @@ export default function AgenteConferme() {
               <Home className="h-Ã'4 w-4 mr-2"/>Dashboard
             </Button>
             <Button
+              onClick={testEmail}
+              disabled={testingEmail}
+              variant="outline"
+              className="gap-2"
+            >
+              {testingEmail ? <RefreshCw className="h-4 w-4 animate-spin"/> : <Wifi className="h-4 w-4"/>}
+              {testingEmail ? 'Test in corso...' : 'Test connessione email'}
+            </Button>
+            <Button
               onClick={eseguiAgente}
               disabled={running}
               className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
@@ -108,6 +141,18 @@ export default function AgenteConferme() {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
             <h3 className="text-sm font-semibold text-green-800 mb-2">Risultato ultima esecuzione:</h3>
             {lastResult.map((r, i) => <div key={i} className="text-xs text-green-700">{r}</div>)}
+          </div>
+        )}
+
+        {/* Log test email */}
+        {testLog.length > 0 && (
+          <div className="bg-gray-900 rounded-lg p-4 mb-4 font-mono text-xs">
+            <div className="text-green-400 font-bold mb-2">Log test connessione email:</div>
+            {testLog.map((line, i) => (
+              <div key={i} className={`${line.includes('ERRORE') || line.includes('fallito') ? 'text-red-400' : line.includes('riuscito') || line.includes('OK') ? 'text-green-400' : 'text-gray-300'} whitespace-pre-wrap`}>
+                {line}
+              </div>
+            ))}
           </div>
         )}
 
