@@ -72,7 +72,7 @@ export default function AgenteConferme() {
 
   const testEmail = async () => {
     setTestingEmail(true);
-    setTestLog([]);
+    setTestLog(['Connessione in corso...']);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -80,12 +80,25 @@ export default function AgenteConferme() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` }
       });
-      const json = await res.json();
+      const text = await res.text();
+      if (!text || text.trim() === '') {
+        setTestLog(['ERRORE: La funzione non ha risposto (timeout o crash).', 'Controlla che le impostazioni POP3 siano salvate correttamente.', `HTTP Status: ${res.status}`]);
+        toast.error('Nessuna risposta dalla funzione');
+        return;
+      }
+      let json: { success: boolean; log: string[] };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        setTestLog(['ERRORE parsing risposta:', text.slice(0, 500)]);
+        toast.error('Risposta non valida');
+        return;
+      }
       setTestLog(json.log || []);
       if (json.success) toast.success('Test completato!');
       else toast.error('Test fallito - vedi log');
     } catch (e) {
-      setTestLog(['Errore: ' + e.message]);
+      setTestLog(['Errore di rete: ' + e.message]);
       toast.error('Errore connessione');
     } finally {
       setTestingEmail(false);
