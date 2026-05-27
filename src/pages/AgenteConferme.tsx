@@ -77,8 +77,8 @@ export default function AgenteConferme() {
       const { data: { session } } = await supabase.auth.getSession();
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const res = await fetch(`${supabaseUrl}/functions/v1/test-pop3`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` }
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${session?.access_token || ''}` }
       });
       const text = await res.text();
       if (!text || text.trim() === '') {
