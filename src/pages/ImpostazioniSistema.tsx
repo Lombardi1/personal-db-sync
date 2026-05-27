@@ -17,7 +17,7 @@ export default function ImpostazioniSistema() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const load = async () => { setLoading(true); const { data } = await supabase.from('impostazioni_sistema').select('*'); if(data){ const map:Record<string,string>={}; data.forEach((d:Impostazione)=>{ nmap[d.chiave]=d.valore||''; }); setImpostazioni(map); } setLoading(false); };
+  const load = async () => { setLoading(true); const { data } = await supabase.from('impostazioni_sistema').select('*'); if(data){ const map:Record<string,string>={}; data.forEach((d:Impostazione)=>{ map[d.chiave]=d.valore||''; }); setImpostazioni(map); } setLoading(false); };
   useEffect(()=>{ load(); },[]);
   const aggiorna = (chiave:string,valore:string) => { setImpostazioni(prev => ({...prev,[chiave]:valore})); };
   const salva = async () => { setSaving(true); for(const [chiave,valore] of Object.entries(impostazioni)){ await supabase.from('impostazioni_sistema').update({valore,updated_at:new Date().toISOString()}).eq('chiave',chiave); } toast.success('Impostazioni salvate'); setSaving(false); };
@@ -29,7 +29,7 @@ export default function ImpostazioniSistema() {
       <Header title="Impostazioni Sistema" activeTab="impostazioni" />
       <div className="max-w-3xl mx-auto p-4 sm:p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Settings className="h-5'-own5"/>Configurazione sistema</h1>
+          <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Settings className="h-5 w-5"/>Configurazione sistema</h1>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={()=>navigate('/')}><Home className="h-4 w-4 mr-2"/>Dashboard</Button>
             <Button onClick={salva} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white gap-2"><Save className="h-4 w-4"/>{saving?'Salvataggio...':'Salva tutto'}</Button>
@@ -41,7 +41,7 @@ export default function ImpostazioniSistema() {
             <div><label className="text-xs text-gray-500 mb-1 block">Server POP3</label><Input value={impostazioni['imap_server']||''} onChange={e=>aggiorna('imap_server',e.target.value)} placeholder="pop3.register.it" className="h-8 text-sm"/></div>
             <div><label className="text-xs text-gray-500 mb-1 block">Porta</label><Input value={impostazioni['imap_port']||''} onChange={e=>aggiorna('imap_port',e.target.value)} placeholder="995" className="h-8 text-sm"/></div>
             <div><label className="text-xs text-gray-500 mb-1 block">Username (email)</label><Input value={impostazioni['imap_user']||''} onChange={e=>aggiorna('imap_user',e.target.value)} placeholder="conferme@aglombardi.it" className="h-8 text-sm"/></div>
-            <div><label className="text-xs text-gray-500 mb-1 block">Password</label><div className="relative"><Input type={showPassword?'text':'password'} value={impostazioni['imap_password']||''} onChange={e=>aggiorna('imap_password',e.target.value)} placeholder="password" className="h-8 text-sm pr-8"/><button type="button" onClick={()=>setShowPassword(!showPassword)} className="absolute right-2 top-1.5 text-gray-400">{showPassword?<EyeOff className="h-jwt4-w-4"/>:<Eye className="h-jwt4-w-4"/>}</button></div></div>
+            <div><label className="text-xs text-gray-500 mb-1 block">Password</label><div className="relative"><Input type={showPassword?'text':'password'} value={impostazioni['imap_password']||''} onChange={e=>aggiorna('imap_password',e.target.value)} placeholder="password" className="h-8 text-sm pr-8"/><button type="button" onClick={()=>setShowPassword(!showPassword)} className="absolute right-2 top-1.5 text-gray-400">{showPassword?<EyeOff className="h-4 w-4"/>:<Eye className="h-4 w-4"/>}</button></div></div>
           </div>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5 mb-4">
@@ -54,9 +54,9 @@ export default function ImpostazioniSistema() {
           <p className="text-xs text-gray-400 mt-3">Per trovare l'IP: menu stampante &gt; Rete &gt; Informazioni TCP/IP, oppure controlla il router.</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5 mb-4">
-          <h2 className="font-semibold text-gray-700 flex items-center gap-2 mb-4"><Calendar className="h-Ã'4-w-4 text-green-500"/>Calendario arrivi (email ai dipendenti)</h2>
+          <h2 className="font-semibold text-gray-700 flex items-center gap-2 mb-4"><Calendar className="h-4 w-4 text-green-500"/>Calendario arrivi (email ai dipendenti)</h2>
           <div className="grid grid-cols-3 gap-4">
-            <div><label className="text-xs text-gray-500 mb-1 block">Frequenza invio</label><select value={impostazioni['calendario_frequenza']||'giornaliera'} onChange={e=>aggiorna('calendario_frequenza',e.target.value)} className="w5-full h-8 text-sm border border-gray-200 rounded-md px-2"><option value="ogni_conferma">Ad ogni conferma</option><option value="giornaliera">Giornaliera (mattina)</option><option value="settimanale">Settimanale (lunedi)</option></select></div>
+            <div><label className="text-xs text-gray-500 mb-1 block">Frequenza invio</label><select value={impostazioni['calendario_frequenza']||'giornaliera'} onChange={e=>aggiorna('calendario_frequenza',e.target.value)} className="w-full h-8 text-sm border border-gray-200 rounded-md px-2"><option value="ogni_conferma">Ad ogni conferma</option><option value="giornaliera">Giornaliera (mattina)</option><option value="settimanale">Settimanale (lunedi)</option></select></div>
             <div><label className="text-xs text-gray-500 mb-1 block">Ora invio</label><Input value={impostazioni['calendario_ora']||'07:00'} onChange={e=>aggiorna('calendario_ora',e.target.value)} placeholder="07:00" className="h-8 text-sm"/></div>
             <div><label className="text-xs text-gray-500 mb-1 block">Email mittente</label><Input value={impostazioni['email_mittente']||''} onChange={e=>aggiorna('email_mittente',e.target.value)} placeholder="conferme@aglombardi.it" className="h-8 text-sm"/></div>
           </div>
