@@ -29,6 +29,7 @@ import OrdiniCartone from "./pages/OrdiniCartone";
 import Dipendenti from "./pages/Dipendenti";
 import ImpostazioniSistema from "./pages/ImpostazioniSistema";
 import AgenteConferme from "./pages/AgenteConferme";
+import LogConferme from "./pages/LogConferme";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -74,6 +75,7 @@ const App = () => {
             <Route path="/dipendenti" element={<ProtectedRoute allowedRoles={['amministratore']}><Dipendenti /></ProtectedRoute>} />
             <Route path="/impostazioni-sistema" element={<ProtectedRoute allowedRoles={['amministratore']}><ImpostazioniSistema /></ProtectedRoute>} />
             <Route path="/agente-conferme" element={<ProtectedRoute allowedRoles={['amministratore']}><AgenteConferme /></ProtectedRoute>} />
+            <Route path="/log-conferme" element={<ProtectedRoute allowedRoles={['amministratore']}><LogConferme /></ProtectedRoute>} />
 
             {/* Stampa (KBA) */}
             <Route path="/stampa-dashboard" element={<ProtectedRoute allowedRoles={['stampa']}><StampaDashboard /></ProtectedRoute>} />
