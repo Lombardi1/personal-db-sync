@@ -54,6 +54,15 @@ export default function ImpostazioniSistema() {
           <p className="text-xs text-gray-400 mt-3">Per trovare l'IP: menu stampante &gt; Rete &gt; Informazioni TCP/IP, oppure controlla il router.</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5 mb-4">
+          <h2 className="font-semibold text-gray-700 flex items-center gap-2 mb-4"><Mail className="h-4 w-4 text-blue-500"/>Email in uscita (SMTP)</h2>
+          <div className="grid grid-cols-3 gap-4">
+            <div><label className="text-xs text-gray-500 mb-1 block">Server SMTP</label><Input value={impostazioni['smtp_host']||''} onChange={e=>aggiorna('smtp_host',e.target.value)} placeholder="mail.register.it" className="h-8 text-sm"/></div>
+            <div><label className="text-xs text-gray-500 mb-1 block">Porta</label><Input value={impostazioni['smtp_porta']||''} onChange={e=>aggiorna('smtp_porta',e.target.value)} placeholder="465" className="h-8 text-sm"/></div>
+            <div><label className="text-xs text-gray-500 mb-1 block">Utente</label><Input value={impostazioni['smtp_user']||''} onChange={e=>aggiorna('smtp_user',e.target.value)} placeholder="conferme@aglombardi.it" className="h-8 text-sm"/></div>
+            <div className="col-span-3"><label className="text-xs text-gray-500 mb-1 block">Password email</label><div className="relative"><Input type={showPassword?'text':'password'} value={impostazioni['smtp_password']||''} onChange={e=>aggiorna('smtp_password',e.target.value)} placeholder="password" className="h-8 text-sm pr-8"/><button type="button" onClick={()=>setShowPassword(!showPassword)} className="absolute right-2 top-1.5 text-gray-400">{showPassword?<EyeOff className="h-4 w-4"/>:<Eye className="h-4 w-4"/>}</button></div></div>
+          </div>
+        </div>
+                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5 mb-4">
           <h2 className="font-semibold text-gray-700 flex items-center gap-2 mb-4"><Calendar className="h-4 w-4 text-green-500"/>Calendario arrivi (email ai dipendenti)</h2>
           <div className="grid grid-cols-3 gap-4">
             <div><label className="text-xs text-gray-500 mb-1 block">Frequenza invio</label><select value={impostazioni['calendario_frequenza']||'giornaliera'} onChange={e=>aggiorna('calendario_frequenza',e.target.value)} className="w-full h-8 text-sm border border-gray-200 rounded-md px-2"><option value="ogni_conferma">Ad ogni conferma</option><option value="giornaliera">Giornaliera (mattina)</option><option value="settimanale">Settimanale (lunedi)</option></select></div>
