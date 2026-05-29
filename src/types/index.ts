@@ -68,6 +68,7 @@ export interface Cartone {
   fsc?: boolean;
   alimentare?: boolean;
   rif_commessa_fsc?: string | null;
+  pdf_url?: string | null;
 }
 
 export interface StoricoMovimento {
