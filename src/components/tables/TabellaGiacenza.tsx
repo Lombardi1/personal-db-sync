@@ -118,6 +118,13 @@ export function TabellaGiacenza({ cartoni, onScarico, onStorico, onRiportaOrdini
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[100px]">{formatData(cartone.data_arrivo || '')}</td>
                 <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap w-[170px]">
                   <div className="flex gap-0.5">
+                    {cartone.pdf_url && (
+                      <a href={cartone.pdf_url} target="_blank" rel="noopener noreferrer"
+                        className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(0,84%,92%)] text-[hsl(0,84%,40%)] hover:bg-[hsl(0,84%,85%)] transition-colors"
+                        title="Apri PDF conferma">
+                        <i className="fas fa-file-pdf text-[10px] sm:text-xs"></i>
+                      </a>
+                    )}
                     {!isVisualizzatore && (
                       <button onClick={() => onScarico(cartone.codice)} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] hover:bg-[hsl(0,100%,90%)] transition-colors" title="Scarica fogli">
                         <i className="fas fa-minus text-[10px] sm:text-xs"></i>
