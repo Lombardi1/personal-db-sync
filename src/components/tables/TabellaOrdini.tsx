@@ -106,6 +106,17 @@ export function TabellaOrdini({ ordini, onConferma, onSpostaInMagazzino, onModif
                         <i className="fas fa-arrow-right text-xs sm:text-sm"></i>
                       </button>
                     )}
+                    {ordine.pdf_url && (
+                      <a
+                        href={ordine.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-md bg-[hsl(0,84%,92%)] text-[hsl(0,84%,40%)] hover:bg-[hsl(0,84%,85%)] transition-colors"
+                        title="Apri PDF conferma"
+                      >
+                        <i className="fas fa-file-pdf text-xs sm:text-sm"></i>
+                      </a>
+                    )}
                     {!isVisualizzatore && (
                       <button
                         onClick={() => onModifica(ordine.codice)}
