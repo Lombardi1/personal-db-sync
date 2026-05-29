@@ -20,11 +20,11 @@ export function useCartoni() {
     try {
       const [giacenzaRes, ordiniRes, esauritiRes, storicoRes] = await Promise.all([
         // Seleziona esplicitamente le colonne per la tabella 'giacenza'
-        supabase.from('giacenza').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc'),
+        supabase.from('giacenza').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc, pdf_url'),
         // Seleziona esplicitamente le colonne per la tabella 'ordini'
-        supabase.from('ordini').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_consegna, data_arrivo, confermato, note, fsc, alimentare, rif_commessa_fsc'),
+        supabase.from('ordini').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_consegna, data_arrivo, confermato, note, fsc, alimentare, rif_commessa_fsc, pdf_url'),
         // Seleziona esplicitamente le colonne per la tabella 'esauriti'
-        supabase.from('esauriti').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc, data_esaurimento'),
+        supabase.from('esauriti').select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino, prezzo, data_arrivo, note, fsc, alimentare, rif_commessa_fsc, data_esaurimento, pdf_url'),
         supabase.from('storico').select(`*, app_users(username), cliente, lavoro`).order('data', { ascending: false })
       ]);
 
