@@ -64,6 +64,13 @@ export function TabellaEsauriti({ cartoni, onStorico, onRiportaGiacenza }: Tabel
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[100px]">{formatData(cartone.data_esaurimento || '')}</td> {/* NUOVA COLONNA */}
               <td className="px-3 py-2 text-[10px] sm:text-sm whitespace-nowrap w-[150px]">
                 <div className="flex gap-1">
+                  {cartone.pdf_url && (
+                    <a href={cartone.pdf_url} target="_blank" rel="noopener noreferrer"
+                      className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-md bg-[hsl(0,84%,92%)] text-[hsl(0,84%,40%)] hover:bg-[hsl(0,84%,85%)] transition-colors"
+                      title="Apri PDF conferma">
+                      <i className="fas fa-file-pdf text-xs sm:text-sm"></i>
+                    </a>
+                  )}
                   <button
                     onClick={() => onStorico(cartone.codice)}
                     className="px-2 py-1 text-[10px] sm:text-xs rounded-md bg-[hsl(199,89%,94%)] text-[hsl(var(--primary-dark))] hover:bg-[hsl(199,89%,88%)] transition-colors font-semibold flex items-center gap-1"
