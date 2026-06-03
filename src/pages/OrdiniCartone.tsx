@@ -275,6 +275,15 @@ export default function OrdiniCartone() {
       const prezzoMatch = prezzoRaw.replace(',', '.').match(/[\d.]+/);
       const prezzoUnitario = prezzoMatch ? parseFloat(prezzoMatch[0]) : 0;
 
+      // 6b. Calcola peso in kg: grammatura(g/m²) × dim1(cm) × dim2(cm) × fogli / 10.000.000
+      const grammaturaNum = parseFloat((riga.grammatura || '0').replace(',', '.').match(/[\d.]+/)?.[0] || '0');
+      const dimsMatch = (riga.formato || '').replace(',', '.').match(/([\d.]+)[^\d.]+([\d.]+)/);
+      const dim1 = dimsMatch ? parseFloat(dimsMatch[1]) : 0;
+      const dim2 = dimsMatch ? parseFloat(dimsMatch[2]) : 0;
+      const pesoKg = dim1 > 0 && dim2 > 0 && grammaturaNum > 0
+        ? Math.round((grammaturaNum * dim1 * dim2 * nrFogli / 10000000) * 100) / 100
+        : nrFogli;
+
       // 7. Parse data consegna
       const dataConsegnaRaw = riga.data_consegna_richiesta || '';
       let dataConsegna: string | undefined = undefined;
@@ -293,7 +302,7 @@ export default function OrdiniCartone() {
         grammatura: riga.grammatura || '',
         numero_fogli: nrFogli,
         prezzo_unitario: prezzoUnitario,
-        quantita: nrFogli, // kg da calcolare, usiamo fogli come quantita base
+        quantita: pesoKg, // peso totale in kg
         cliente: clienteNomeExact,
         lavoro: riga.lavoro || '',
         data_consegna_prevista: dataConsegna || null,
@@ -316,7 +325,7 @@ export default function OrdiniCartone() {
         prezzo_pulitore: null,
       };
 
-      const importoTotale = nrFogli * prezzoUnitario;
+      const importoTotale = Math.round(pesoKg * prezzoUnitario * 100) / 100;
 
       // 9. Inserisci in ordini_acquisto
       const { data: newOrdine, error: insertError } = await supabase
