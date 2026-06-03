@@ -218,6 +218,7 @@ export function useCartoni() {
       ddt: ddt,
       data_arrivo: dataArrivo,
       magazzino: magazzinoFinale,
+      pdf_url: ordine.pdf_url || null,
     };
 
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
@@ -335,6 +336,7 @@ export function useCartoni() {
         ddt: cartone.ddt,
         data_arrivo: cartone.data_arrivo,
         data_esaurimento: new Date().toISOString(),
+        pdf_url: cartone.pdf_url || null,
       };
 
       console.log('[useCartoni - scaricoFogli] Inserting into esauriti:', JSON.stringify(cartoneEsaurito, null, 2));
