@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Save, ChevronLeft, ChevronRight, Home, ShoppingCart, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCodeFromDB } from '@/utils/cartoneUtils';
+import { formatFormato, formatGrammatura } from '@/utils/formatters';
 
 interface OrdineCartone {
   id?: string;
@@ -310,7 +311,7 @@ export default function OrdiniCartone() {
         fsc: false,
         alimentare: false,
         rif_commessa_fsc: '',
-        descrizione: `${riga.cartone || ''} ${riga.grammatura || ''} ${riga.formato || ''}`.trim(),
+        descrizione: '',
         hasPulitore: false,
         incollatura: false,
         nr_tasselli: 0,
@@ -345,6 +346,31 @@ export default function OrdiniCartone() {
       if (insertError) {
         toast.error(`Errore creazione ordine: ${insertError.message}`);
         return;
+      }
+
+      // 9b. Crea la riga negli arrivi cartone (come fa syncArticleInventoryStatus)
+      const { error: arriviError } = await supabase.from('ordini').insert([{
+        codice: codiceCtn,
+        fornitore: riga.fornitore || 'N/A',
+        ordine: numeroOrdine,
+        tipologia: riga.cartone || 'N/A',
+        formato: formatFormato(riga.formato || 'N/A'),
+        grammatura: formatGrammatura(riga.grammatura || 'N/A'),
+        fogli: nrFogli,
+        cliente: clienteNomeExact || 'N/A',
+        lavoro: riga.lavoro || 'N/A',
+        magazzino: '-',
+        prezzo: prezzoUnitario,
+        data_consegna: dataConsegna || '',
+        note: 'Generato da Ordini Cartone - ' + mese + ' ' + anno,
+        fsc: false,
+        alimentare: false,
+        rif_commessa_fsc: null,
+        confermato: false,
+      }]);
+      if (arriviError) {
+        console.error('[convertiInOrdine] Errore inserimento arrivi cartone:', arriviError);
+        toast.error('Ordine creato ma errore inserimento arrivi: ' + arriviError.message);
       }
 
       // 10. Aggiorna la riga ordini_cartone con il riferimento
