@@ -550,44 +550,10 @@ export function useCartoni() {
 
     console.log(`[useCartoni - confermaOrdine] Campo 'confermato' aggiornato in tabella 'ordini' per codice ${codice} a ${confermato}.`);
 
-    if (ordineInArrivo.ordine && codice) {
-      let newArticleStatus: ArticoloOrdineAcquisto['stato'];
-      if (confermato) {
-        newArticleStatus = 'confermato';
-        console.log(`[useCartoni - confermaOrdine] Impostato newArticleStatus a 'confermato' per articolo ${codice}.`);
-      } else {
-        const { data: purchaseOrder, error: fetchOAError } = await supabase
-          .from('ordini_acquisto')
-          .select('stato, articoli')
-          .eq('numero_ordine', ordineInArrivo.ordine)
-          .single();
-
-        if (fetchOAError || !purchaseOrder || !purchaseOrder.articoli) {
-          console.error(`[useCartoni - confermaOrdine] Errore recupero ordine d'acquisto per stato articolo:`, fetchOAError);
-          newArticleStatus = 'inviato';
-        } else {
-          const articles = purchaseOrder.articoli as ArticoloOrdineAcquisto[];
-          const currentArticleInOA = articles.find(art => art.codice_ctn === codice);
-
-          if (currentArticleInOA && currentArticleInOA.stato === 'confermato') {
-            if (purchaseOrder.stato === 'inviato') {
-              newArticleStatus = 'inviato';
-            } else if (purchaseOrder.stato === 'in_attesa') {
-              newArticleStatus = 'in_attesa';
-            } else {
-              newArticleStatus = 'inviato';
-            }
-          } else {
-            newArticleStatus = currentArticleInOA?.stato || 'in_attesa';
-          }
-        }
-
-        console.log(`[useCartoni - confermaOrdine] Impostato newArticleStatus a '${newArticleStatus}' per articolo ${codice} (unconfirm).`);
-      }
-
-      console.log(`[useCartoni - confermaOrdine] Chiamando updateArticleStatusInOrder per ordine: ${ordineInArrivo.ordine}, articolo: ${codice}, nuovo stato: ${newArticleStatus}`);
-      await updateArticleStatusInOrder(ordineInArrivo.ordine, codice, newArticleStatus);
-    }
+    // NOTE: la spunta "conferma in arrivo" aggiorna SOLO il campo 'confermato' sulla riga ordini.
+    // Non chiama piu' updateArticleStatusInOrder: quella (via syncArticleInventoryStatus)
+    // cancellava e ricreava tutte le righe di 'ordini' dell'OA, perdendo pdf_url/data_arrivo/
+    // data_consegna o eliminando del tutto la riga. La sync resta attiva solo per le modifiche all'OA.
 
     const movimento: StoricoMovimento = {
       codice: codice,

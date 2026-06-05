@@ -68,9 +68,12 @@ export function useOrdiniAcquisto() {
 
           // Find if this specific cartone had an existing entry in giacenza before deletion
           const previousGiacenzaState = existingGiacenzaEntries?.find(e => e.codice === codiceCtn);
+          // Preserva i dati gia' presenti sulla riga 'ordini' (conferma email, PDF, arrivo, DDT, ecc.)
+          // che NON provengono dall'ordine d'acquisto e che altrimenti andrebbero persi al re-insert.
+          const previousOrdineState = existingOrdiniEntries?.find(e => e.codice === codiceCtn);
 
           // Costruisci l'oggetto Cartone con i campi specifici per la tabella 'ordini'
-          const cartoneForOrdini: Omit<Cartone, 'ddt' | 'data_arrivo'> = {
+          const cartoneForOrdini: Cartone = {
             codice: codiceCtn,
             fornitore: fornitoreNome,
             ordine: ordineAcquisto.numero_ordine,
@@ -80,14 +83,17 @@ export function useOrdiniAcquisto() {
             fogli: numFogli,
             cliente: articolo.cliente || 'N/A',
             lavoro: articolo.lavoro || 'N/A',
-            magazzino: '-', // Valore di default per la tabella 'ordini'
+            magazzino: previousOrdineState?.magazzino || '-', // Preserva magazzino impostato manualmente
             prezzo: articolo.prezzo_unitario,
-            data_consegna: articolo.data_consegna_prevista,
+            data_consegna: previousOrdineState?.data_consegna || articolo.data_consegna_prevista, // Preserva data consegna confermata via email
             note: ordineAcquisto.note || '-',
             fsc: articolo.fsc,
             alimentare: articolo.alimentare,
             rif_commessa_fsc: articolo.rif_commessa_fsc || null,
-            confermato: articolo.stato === 'confermato', // Imposta confermato in base allo stato dell'articolo
+            confermato: previousOrdineState?.confermato ?? (articolo.stato === 'confermato'), // Preserva lo stato conferma esistente
+            ddt: previousOrdineState?.ddt || null, // Preserva DDT
+            data_arrivo: previousOrdineState?.data_arrivo || null, // Preserva data arrivo
+            pdf_url: previousOrdineState?.pdf_url || null, // Preserva il link al PDF della conferma
           };
 
           if (articolo.stato === 'in_attesa' || articolo.stato === 'inviato' || articolo.stato === 'confermato') {
