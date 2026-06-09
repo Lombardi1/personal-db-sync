@@ -455,21 +455,21 @@ export default function OrdiniCartone() {
         </div>
 
         <div className="overflow-x-auto rounded-lg shadow bg-white">
-          <table className="w-full text-xs border-collapse table-fixed">
+          <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="bg-gray-800 text-white">
-                <th className="border border-gray-600 px-2 py-2 w-[3%] text-center">NR</th>
-                <th className="border border-gray-600 px-2 py-2 w-[9%]">FORNITORE</th>
-                <th className="border border-gray-600 px-2 py-2 w-[9%]">CARTONE</th>
-                <th className="border border-gray-600 px-2 py-2 w-[6%]">GRAMMATURA</th>
-                <th className="border border-gray-600 px-2 py-2 w-[7%]">FORMATO</th>
-                <th className="border border-gray-600 px-2 py-2 w-[7%]">NR. FOGLI O PESO</th>
-                <th className="border border-gray-600 px-2 py-2 w-[5%]">PREZZO</th>
-                <th className="border border-gray-600 px-2 py-2 w-[10%]">LAVORO</th>
-                <th className="border border-gray-600 px-2 py-2 w-[10%]">CLIENTE</th>
-                <th className="border border-gray-600 px-2 py-2 w-[8%]">DATA CONSEGNA RICHIESTA</th>
-                <th className="border border-gray-600 px-2 py-2 w-[4%] text-center">ORDINE EFF.</th>
-                <th className="border border-gray-600 px-2 py-2 w-[22%]">AZIONI</th>
+                <th className="border border-gray-600 px-2 py-2 text-center" style={{width:"3%"}}>NR</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"9%"}}>FORNITORE</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"9%"}}>CARTONE</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"6%"}}>GRAMMATURA</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"7%"}}>FORMATO</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"7%"}}>NR. FOGLI O PESO</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"5%"}}>PREZZO</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"10%"}}>LAVORO</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"10%"}}>CLIENTE</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"8%"}}>DATA CONSEGNA RICHIESTA</th>
+                <th className="border border-gray-600 px-2 py-2 text-center" style={{width:"4%"}}>ORDINE EFF.</th>
+                <th className="border border-gray-600 px-2 py-2" style={{width:"22%"}}>AZIONI</th>
               </tr>
             </thead>
             <tbody>
