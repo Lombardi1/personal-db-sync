@@ -454,21 +454,21 @@ export default function OrdiniCartone() {
         </div>
 
         <div className="overflow-x-auto rounded-lg shadow bg-white">
-          <table className="w-full text-xs border-collapse min-w-[1400px]">
+          <table className="w-full text-xs border-collapse table-fixed">
             <thead>
               <tr className="bg-gray-800 text-white">
-                <th className="border border-gray-600 px-2 py-2 w-10">NR</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[110px]">FORNITORE</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[110px]">CARTONE</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[80px]">GRAMMATURA</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[90px]">FORMATO</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[100px]">NR. FOGLI O PESO</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[90px]">PREZZO</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[180px]">LAVORO</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[180px]">CLIENTE</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA RICHIESTA</th>
-                <th className="border border-gray-600 px-2 py-2 w-16">ORDINE EFF.</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[380px]">AZIONI</th>
+                <th className="border border-gray-600 px-2 py-2 w-[3%] text-center">NR</th>
+                <th className="border border-gray-600 px-2 py-2 w-[9%]">FORNITORE</th>
+                <th className="border border-gray-600 px-2 py-2 w-[9%]">CARTONE</th>
+                <th className="border border-gray-600 px-2 py-2 w-[6%]">GRAMMATURA</th>
+                <th className="border border-gray-600 px-2 py-2 w-[7%]">FORMATO</th>
+                <th className="border border-gray-600 px-2 py-2 w-[7%]">NR. FOGLI O PESO</th>
+                <th className="border border-gray-600 px-2 py-2 w-[5%]">PREZZO</th>
+                <th className="border border-gray-600 px-2 py-2 w-[10%]">LAVORO</th>
+                <th className="border border-gray-600 px-2 py-2 w-[10%]">CLIENTE</th>
+                <th className="border border-gray-600 px-2 py-2 w-[8%]">DATA CONSEGNA RICHIESTA</th>
+                <th className="border border-gray-600 px-2 py-2 w-[4%] text-center">ORDINE EFF.</th>
+                <th className="border border-gray-600 px-2 py-2 w-[22%]">AZIONI</th>
               </tr>
             </thead>
             <tbody>
