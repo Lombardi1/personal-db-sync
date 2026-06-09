@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Save, ChevronLeft, ChevronRight, Home, ShoppingCart, ExternalLink, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, Home, ShoppingCart, ExternalLink, Loader2, Copy, CopyCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateNextCartoneCode, resetCartoneCodeGenerator, fetchMaxCartoneCodeFromDB } from '@/utils/cartoneUtils';
 import { formatFormato, formatGrammatura } from '@/utils/formatters';
@@ -34,7 +34,6 @@ interface OrdineCartone {
 }
 
 const MESI = ['GENNAIO','FEBBRAIO','MARZO','APRILE','MAGGIO','GIUGNO','LUGLIO','AGOSTO','SETTEMBRE','OTTOBRE','NOVEMBRE','DICEMBRE'];
-
 
 interface AnagraficaItem { id: string; nome: string; }
 
@@ -119,6 +118,7 @@ export default function OrdiniCartone() {
   const [righe, setRighe] = useState<OrdineCartone[]>([]);
   const [loading, setLoading] = useState(false);
   const [convertingIdx, setConvertingIdx] = useState<number | null>(null);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const mese = MESI[meseIdx];
 
   const fetchFornitori = async (q: string): Promise<AnagraficaItem[]> => {
@@ -130,7 +130,6 @@ export default function OrdiniCartone() {
     const { data } = await supabase.from('clienti').select('id, nome').ilike('nome', `%${q}%`).limit(8);
     return data || [];
   };
-
 
   const loadRighe = useCallback(async () => {
     setLoading(true);
@@ -159,6 +158,57 @@ export default function OrdiniCartone() {
       data_consegna_richiesta: '', cliente: '', ordine_effettuato: false,
       data_consegna_confermata: '', ordine_acquisto_id: null, ordine_acquisto_numero: null
     }]);
+  };
+
+  const duplicaRiga = (idx: number) => {
+    const riga = righe[idx];
+    const maxNr = righe.reduce((max, r) => Math.max(max, r.nr || 0), 0);
+    const nuovaRiga: OrdineCartone = {
+      mese,
+      anno,
+      nr: maxNr + 1,
+      fornitore: riga.fornitore || '',
+      cartone: riga.cartone || '',
+      grammatura: riga.grammatura || '',
+      formato: riga.formato || '',
+      nr_fogli_peso: riga.nr_fogli_peso || '',
+      prezzo: riga.prezzo || '',
+      lavoro: '',
+      data_consegna_richiesta: riga.data_consegna_richiesta || '',
+      cliente: '',
+      ordine_effettuato: false,
+      data_consegna_confermata: '',
+      ordine_acquisto_id: null,
+      ordine_acquisto_numero: null,
+      consegna_confermata: false,
+      isNew: true,
+      isDirty: true,
+    };
+    setRighe(prev => [...prev, nuovaRiga]);
+    toast.success('Riga duplicata — modifica e salva');
+    // Scroll to bottom
+    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
+  };
+
+  const copiaTestoRiga = async (idx: number) => {
+    const riga = righe[idx];
+    const parti: string[] = [];
+    if (riga.cartone) parti.push(`Tipologia: ${riga.cartone}`);
+    if (riga.grammatura) parti.push(`Grammatura: ${riga.grammatura} g/m²`);
+    if (riga.formato) parti.push(`Formato: ${riga.formato}`);
+    if (riga.nr_fogli_peso) parti.push(`Quantità: ${riga.nr_fogli_peso}`);
+    if (riga.prezzo) parti.push(`Prezzo: ${riga.prezzo}`);
+    if (riga.data_consegna_richiesta) parti.push(`Consegna: ${riga.data_consegna_richiesta}`);
+
+    const testo = parti.join('\n');
+    try {
+      await navigator.clipboard.writeText(testo);
+      setCopiedIdx(idx);
+      toast.success('Testo copiato negli appunti');
+      setTimeout(() => setCopiedIdx(null), 2000);
+    } catch {
+      toast.error('Errore copia negli appunti');
+    }
   };
 
   const aggiornaRiga = (idx: number, field: keyof OrdineCartone, value: string | boolean | number) => {
@@ -205,7 +255,6 @@ export default function OrdiniCartone() {
   const convertiInOrdine = async (idx: number) => {
     const riga = righe[idx];
 
-    // 1. Salva prima se e dirty
     if (riga.isDirty || riga.isNew) {
       toast.error('Salva la riga prima di convertirla in ordine');
       return;
@@ -213,7 +262,6 @@ export default function OrdiniCartone() {
 
     setConvertingIdx(idx);
     try {
-      // 2. Cerca fornitore per nome
       let fornitoreId: string | null = null;
       if (riga.fornitore) {
         const { data: fData } = await supabase
@@ -230,7 +278,6 @@ export default function OrdiniCartone() {
         return;
       }
 
-      // 2b. Cerca nome esatto cliente in anagrafica
       let clienteNomeExact: string = riga.cliente || '';
       if (riga.cliente) {
         const { data: cData } = await supabase
@@ -242,7 +289,6 @@ export default function OrdiniCartone() {
         if (cData?.nome) clienteNomeExact = cData.nome;
       }
 
-      // 3. Calcola prossimo numero ordine
       const currentYearShort = new Date().getFullYear().toString().slice(-2);
       const { data: ordiniEsistenti } = await supabase
         .from('ordini_acquisto')
@@ -259,24 +305,20 @@ export default function OrdiniCartone() {
       });
       const numeroOrdine = `${maxSeq + 1}/${currentYearShort}`;
 
-      // 4. Genera codice CTN
       const maxCTN = await fetchMaxCartoneCodeFromDB();
       resetCartoneCodeGenerator(maxCTN);
       const codiceCtn = generateNextCartoneCode();
 
-      // 5. Parse numero fogli
       const nrFogliRaw = riga.nr_fogli_peso || '';
       const nrFogliMatch = nrFogliRaw.match(/[\d.,]+/);
       const nrFogli = nrFogliMatch
         ? parseInt(nrFogliMatch[0].replace('.', '').replace(',', ''))
         : 0;
 
-      // 6. Parse prezzo unitario (EUR/kg -> valore numerico)
       const prezzoRaw = riga.prezzo || '';
       const prezzoMatch = prezzoRaw.replace(',', '.').match(/[\d.]+/);
       const prezzoUnitario = prezzoMatch ? parseFloat(prezzoMatch[0]) : 0;
 
-      // 6b. Calcola peso in kg: grammatura(g/m²) × dim1(cm) × dim2(cm) × fogli / 10.000.000
       const grammaturaNum = parseFloat((riga.grammatura || '0').replace(',', '.').match(/[\d.]+/)?.[0] || '0');
       const dimsMatch = (riga.formato || '').replace(',', '.').match(/([\d.]+)[^\d.]+([\d.]+)/);
       const dim1 = dimsMatch ? parseFloat(dimsMatch[1]) : 0;
@@ -285,7 +327,6 @@ export default function OrdiniCartone() {
         ? Math.round((grammaturaNum * dim1 * dim2 * nrFogli / 10000000) * 100) / 100
         : nrFogli;
 
-      // 7. Parse data consegna
       const dataConsegnaRaw = riga.data_consegna_richiesta || '';
       let dataConsegna: string | undefined = undefined;
       const dateMatch = dataConsegnaRaw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
@@ -295,7 +336,6 @@ export default function OrdiniCartone() {
         dataConsegna = `${year}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
       }
 
-      // 8. Costruisci articolo
       const articolo = {
         codice_ctn: codiceCtn,
         tipologia_cartone: riga.cartone || '',
@@ -303,7 +343,7 @@ export default function OrdiniCartone() {
         grammatura: riga.grammatura || '',
         numero_fogli: nrFogli,
         prezzo_unitario: prezzoUnitario,
-        quantita: pesoKg, // peso totale in kg
+        quantita: pesoKg,
         cliente: clienteNomeExact,
         lavoro: riga.lavoro || '',
         data_consegna_prevista: dataConsegna || null,
@@ -328,7 +368,6 @@ export default function OrdiniCartone() {
 
       const importoTotale = Math.round(pesoKg * prezzoUnitario * 100) / 100;
 
-      // 9. Inserisci in ordini_acquisto
       const { data: newOrdine, error: insertError } = await supabase
         .from('ordini_acquisto')
         .insert({
@@ -348,7 +387,6 @@ export default function OrdiniCartone() {
         return;
       }
 
-      // 9b. Crea la riga negli arrivi cartone (come fa syncArticleInventoryStatus)
       const { error: arriviError } = await supabase.from('ordini').insert([{
         codice: codiceCtn,
         fornitore: riga.fornitore || 'N/A',
@@ -373,7 +411,6 @@ export default function OrdiniCartone() {
         toast.error('Ordine creato ma errore inserimento arrivi: ' + arriviError.message);
       }
 
-      // 10. Aggiorna la riga ordini_cartone con il riferimento
       await supabase
         .from('ordini_cartone')
         .update({
@@ -387,7 +424,7 @@ export default function OrdiniCartone() {
         i === idx ? { ...r, ordine_acquisto_id: newOrdine.id, ordine_acquisto_numero: numeroOrdine, isDirty: false } : r
       ));
 
-      toast.success(` Ordine d'acquisto ${numeroOrdine} creato! Clicca "Apri" per modificarlo.`);
+      toast.success(`✅ Ordine d'acquisto ${numeroOrdine} creato! Clicca "Apri" per modificarlo.`);
     } catch (e: any) {
       toast.error(`Errore: ${e.message}`);
     } finally {
@@ -432,15 +469,15 @@ export default function OrdiniCartone() {
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA RICHIESTA</th>
                 <th className="border border-gray-600 px-2 py-2 w-16">ORDINE EFF.</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA CONFERMATA</th>
-                <th className="border border-gray-600 px-2 py-2 w-28">AZIONI</th>
+                <th className="border border-gray-600 px-2 py-2 w-36">AZIONI</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={12} className="text-center py-8 text-gray-500">Caricamento...</td></tr>
+                <tr><td colSpan={13} className="text-center py-8 text-gray-500">Caricamento...</td></tr>
               )}
               {!loading && righe.length === 0 && (
-                <tr><td colSpan={12} className="text-center py-8 text-gray-400">Nessun ordine. Clicca + per aggiungere.</td></tr>
+                <tr><td colSpan={13} className="text-center py-8 text-gray-400">Nessun ordine. Clicca + per aggiungere.</td></tr>
               )}
               {righe.map((riga, idx) => (
                 <tr
@@ -463,7 +500,6 @@ export default function OrdiniCartone() {
                       className="h-6 text-xs p-1 w-12 border-0 bg-transparent"
                     />
                   </td>
-                  {/* Fornitore con autocomplete */}
                   <td className={colStyle}>
                     <AutocompleteInput
                       value={(riga.fornitore as string) ?? ''}
@@ -472,7 +508,6 @@ export default function OrdiniCartone() {
                       className="h-6 text-xs p-1 border-0 bg-transparent w-full"
                     />
                   </td>
-                  {/* Campi testo normali */}
                   {(['cartone','grammatura','formato','nr_fogli_peso','prezzo','lavoro'] as (keyof OrdineCartone)[]).map(field => (
                     <td key={field} className={colStyle}>
                       <Input
@@ -482,7 +517,6 @@ export default function OrdiniCartone() {
                       />
                     </td>
                   ))}
-                  {/* Cliente con autocomplete */}
                   <td className={colStyle}>
                     <AutocompleteInput
                       value={(riga.cliente as string) ?? ''}
@@ -491,7 +525,6 @@ export default function OrdiniCartone() {
                       className="h-6 text-xs p-1 border-0 bg-transparent w-full"
                     />
                   </td>
-                  {/* Data consegna */}
                   <td className={colStyle}>
                     <Input
                       value={(riga.data_consegna_richiesta as string) ?? ''}
@@ -520,13 +553,37 @@ export default function OrdiniCartone() {
                     </div>
                   </td>
                   <td className={`${colStyle} text-center`}>
-                    <div className="flex gap-1 justify-center items-center">
+                    <div className="flex gap-1 justify-center items-center flex-wrap">
+                      {/* Salva */}
                       {riga.isDirty && (
                         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600" onClick={() => salvaRiga(idx)} title="Salva">
                           <Save className="h-3 w-3" />
                         </Button>
                       )}
-                      {/* Bottone converti in ordine d'acquisto */}
+                      {/* Duplica riga */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs font-medium text-purple-700 hover:text-purple-900 hover:bg-purple-50 border border-purple-200"
+                        onClick={() => duplicaRiga(idx)}
+                        title="Duplica questa riga"
+                      >
+                        Duplica
+                      </Button>
+                      {/* Copia testo per email */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 px-2 text-xs font-medium border ${copiedIdx === idx ? 'text-green-700 border-green-300 hover:bg-green-50' : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50 border-orange-200'}`}
+                        onClick={() => copiaTestoRiga(idx)}
+                        title="Copia dati per email"
+                      >
+                        {copiedIdx === idx
+                          ? <><CopyCheck className="h-3 w-3 mr-1" />Copiato</>
+                          : <><Copy className="h-3 w-3 mr-1" />Copia</>
+                        }
+                      </Button>
+                      {/* Converti in OA */}
                       {!riga.isNew && !riga.isDirty && !riga.ordine_acquisto_id && (
                         <Button
                           size="sm"
@@ -542,7 +599,7 @@ export default function OrdiniCartone() {
                           }
                         </Button>
                       )}
-                      {/* Link all'ordine gia creato */}
+                      {/* Link OA già creato */}
                       {riga.ordine_acquisto_id && (
                         <Button
                           size="sm"
@@ -555,6 +612,7 @@ export default function OrdiniCartone() {
                           {riga.ordine_acquisto_numero}
                         </Button>
                       )}
+                      {/* Elimina */}
                       <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-500" onClick={() => eliminaRiga(idx)} title="Elimina">
                         <Trash2 className="h-3 w-3" />
                       </Button>
