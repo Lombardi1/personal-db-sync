@@ -186,7 +186,7 @@ export default function OrdiniCartone() {
     };
     setRighe(prev => [...prev, nuovaRiga]);
     toast.success('Riga duplicata — modifica e salva');
-    // Scroll to bottom
+    // Scroll in fondo
     setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
   };
 
