@@ -556,8 +556,8 @@ export default function OrdiniCartone() {
                     <div className="flex gap-1 justify-center items-center flex-wrap">
                       {/* Salva */}
                       {riga.isDirty && (
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600" onClick={() => salvaRiga(idx)} title="Salva">
-                          <Save className="h-3 w-3" />
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs font-medium text-green-700 hover:text-green-900 hover:bg-green-50 border border-green-300" onClick={() => salvaRiga(idx)} title="Salva">
+                          <Save className="h-3 w-3 mr-1" />Salva
                         </Button>
                       )}
                       {/* Duplica riga */}
@@ -604,12 +604,11 @@ export default function OrdiniCartone() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 px-1 text-green-700 hover:text-green-900 text-xs font-medium"
+                          className="h-7 px-2 text-xs font-medium text-blue-700 hover:text-blue-900 hover:bg-blue-50 border border-blue-200"
                           onClick={() => navigate('/ordini-acquisto')}
                           title={`Apri OA ${riga.ordine_acquisto_numero}`}
                         >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          {riga.ordine_acquisto_numero}
+                          <ExternalLink className="h-3 w-3 mr-1" />{riga.ordine_acquisto_numero}
                         </Button>
                       )}
                       {/* Elimina */}
