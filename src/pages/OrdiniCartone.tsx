@@ -468,16 +468,15 @@ export default function OrdiniCartone() {
                 <th className="border border-gray-600 px-2 py-2 min-w-[180px]">CLIENTE</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA RICHIESTA</th>
                 <th className="border border-gray-600 px-2 py-2 w-16">ORDINE EFF.</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA CONFERMATA</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[380px]">AZIONI</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={13} className="text-center py-8 text-gray-500">Caricamento...</td></tr>
+                <tr><td colSpan={12} className="text-center py-8 text-gray-500">Caricamento...</td></tr>
               )}
               {!loading && righe.length === 0 && (
-                <tr><td colSpan={13} className="text-center py-8 text-gray-400">Nessun ordine. Clicca + per aggiungere.</td></tr>
+                <tr><td colSpan={12} className="text-center py-8 text-gray-400">Nessun ordine. Clicca + per aggiungere.</td></tr>
               )}
               {righe.map((riga, idx) => (
                 <tr
@@ -539,18 +538,6 @@ export default function OrdiniCartone() {
                       onChange={e => aggiornaRiga(idx, 'ordine_effettuato', e.target.checked)}
                       className="h-4 w-4 cursor-pointer"
                     />
-                  </td>
-                  <td className={colStyle}>
-                    <div className="flex items-center gap-1">
-                      {riga.consegna_confermata && (
-                        <span title="Confermata automaticamente" className="text-green-600 flex-shrink-0">✓</span>
-                      )}
-                      <Input
-                        value={riga.data_consegna_confermata ?? ''}
-                        onChange={e => aggiornaRiga(idx, 'data_consegna_confermata', e.target.value)}
-                        className={`h-6 text-xs p-1 border-0 bg-transparent w-full ${riga.consegna_confermata ? 'text-green-700 font-semibold' : ''}`}
-                      />
-                    </div>
                   </td>
                   <td className={`${colStyle} text-center`}>
                     <div className="flex gap-1 justify-start items-center flex-nowrap overflow-x-auto">
