@@ -464,8 +464,8 @@ export default function OrdiniCartone() {
                 <th className="border border-gray-600 px-2 py-2 min-w-[90px]">FORMATO</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[100px]">NR. FOGLI O PESO</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[90px]">PREZZO</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[110px]">LAVORO</th>
-                <th className="border border-gray-600 px-2 py-2 min-w-[110px]">CLIENTE</th>
+                <th className="border border-gray-600 px-2 py-2 min-w-[180px]">LAVORO</th>
+                <th className="border border-gray-600 px-2 py-2 min-w-[180px]">CLIENTE</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA RICHIESTA</th>
                 <th className="border border-gray-600 px-2 py-2 w-16">ORDINE EFF.</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA CONFERMATA</th>
