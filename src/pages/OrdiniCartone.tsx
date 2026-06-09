@@ -469,7 +469,7 @@ export default function OrdiniCartone() {
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA RICHIESTA</th>
                 <th className="border border-gray-600 px-2 py-2 w-16">ORDINE EFF.</th>
                 <th className="border border-gray-600 px-2 py-2 min-w-[110px]">DATA CONSEGNA CONFERMATA</th>
-                <th className="border border-gray-600 px-2 py-2 w-36">AZIONI</th>
+                <th className="border border-gray-600 px-2 py-2 min-w-[220px]">AZIONI</th>
               </tr>
             </thead>
             <tbody>
@@ -553,10 +553,10 @@ export default function OrdiniCartone() {
                     </div>
                   </td>
                   <td className={`${colStyle} text-center`}>
-                    <div className="flex gap-1 justify-center items-center flex-wrap">
+                    <div className="flex gap-1 justify-center items-center flex-nowrap">
                       {/* Salva */}
                       {riga.isDirty && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs font-medium text-green-700 hover:text-green-900 hover:bg-green-50 border border-green-300" onClick={() => salvaRiga(idx)} title="Salva">
+                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] font-medium text-green-700 hover:text-green-900 hover:bg-green-50 border border-green-300" onClick={() => salvaRiga(idx)} title="Salva">
                           <Save className="h-3 w-3 mr-1" />Salva
                         </Button>
                       )}
@@ -564,7 +564,7 @@ export default function OrdiniCartone() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 px-2 text-xs font-medium text-purple-700 hover:text-purple-900 hover:bg-purple-50 border border-purple-200"
+                        className="h-6 px-1.5 text-[10px] font-medium text-purple-700 hover:text-purple-900 hover:bg-purple-50 border border-purple-200"
                         onClick={() => duplicaRiga(idx)}
                         title="Duplica questa riga"
                       >
@@ -574,7 +574,7 @@ export default function OrdiniCartone() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className={`h-7 px-2 text-xs font-medium border ${copiedIdx === idx ? 'text-green-700 border-green-300 hover:bg-green-50' : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50 border-orange-200'}`}
+                        className={`h-6 px-1.5 text-[10px] font-medium border ${copiedIdx === idx ? 'text-green-700 border-green-300 hover:bg-green-50' : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50 border-orange-200'}`}
                         onClick={() => copiaTestoRiga(idx)}
                         title="Copia dati per email"
                       >
@@ -604,7 +604,7 @@ export default function OrdiniCartone() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 px-2 text-xs font-medium text-blue-700 hover:text-blue-900 hover:bg-blue-50 border border-blue-200"
+                          className="h-6 px-1.5 text-[10px] font-medium text-blue-700 hover:text-blue-900 hover:bg-blue-50 border border-blue-200"
                           onClick={() => navigate('/ordini-acquisto')}
                           title={`Apri OA ${riga.ordine_acquisto_numero}`}
                         >
