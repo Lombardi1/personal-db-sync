@@ -553,28 +553,25 @@ export default function OrdiniCartone() {
                     </div>
                   </td>
                   <td className={`${colStyle} text-center`}>
-                    <div className="flex gap-1 justify-center items-center flex-wrap">
-                      {/* Salva */}
+                    <div className="flex gap-1 justify-start items-center flex-nowrap overflow-x-auto">
                       {riga.isDirty && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs font-medium text-green-700 hover:text-green-900 hover:bg-green-50 border border-green-300" onClick={() => salvaRiga(idx)} title="Salva">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs font-medium text-green-700 hover:text-green-900 hover:bg-green-50 border border-green-300 whitespace-nowrap" onClick={() => salvaRiga(idx)} title="Salva">
                           <Save className="h-3 w-3 mr-1" />Salva
                         </Button>
                       )}
-                      {/* Duplica riga */}
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 px-2 text-xs font-medium text-purple-700 hover:text-purple-900 hover:bg-purple-50 border border-purple-200"
+                        className="h-7 px-2 text-xs font-medium text-purple-700 hover:text-purple-900 hover:bg-purple-50 border border-purple-200 whitespace-nowrap"
                         onClick={() => duplicaRiga(idx)}
                         title="Duplica questa riga"
                       >
                         Duplica
                       </Button>
-                      {/* Copia testo per email */}
                       <Button
                         size="sm"
                         variant="ghost"
-                        className={`h-7 px-2 text-xs font-medium border ${copiedIdx === idx ? 'text-green-700 border-green-300 hover:bg-green-50' : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50 border-orange-200'}`}
+                        className={`h-7 px-2 text-xs font-medium border whitespace-nowrap ${copiedIdx === idx ? 'text-green-700 border-green-300 hover:bg-green-50' : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50 border-orange-200'}`}
                         onClick={() => copiaTestoRiga(idx)}
                         title="Copia dati per email"
                       >
@@ -583,36 +580,33 @@ export default function OrdiniCartone() {
                           : <><Copy className="h-3 w-3 mr-1" />Copia</>
                         }
                       </Button>
-                      {/* Converti in OA */}
                       {!riga.isNew && !riga.isDirty && !riga.ordine_acquisto_id && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                          className="h-7 px-2 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-blue-200 whitespace-nowrap"
                           onClick={() => convertiInOrdine(idx)}
                           title="Converti in Ordine d'Acquisto"
                           disabled={convertingIdx === idx}
                         >
                           {convertingIdx === idx
                             ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : <ShoppingCart className="h-3 w-3" />
+                            : <><ShoppingCart className="h-3 w-3 mr-1" />Ordine</>
                           }
                         </Button>
                       )}
-                      {/* Link OA già creato */}
                       {riga.ordine_acquisto_id && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 px-2 text-xs font-medium text-blue-700 hover:text-blue-900 hover:bg-blue-50 border border-blue-200"
+                          className="h-7 px-2 text-xs font-medium text-blue-700 hover:text-blue-900 hover:bg-blue-50 border border-blue-200 whitespace-nowrap"
                           onClick={() => navigate('/ordini-acquisto')}
                           title={`Apri OA ${riga.ordine_acquisto_numero}`}
                         >
                           <ExternalLink className="h-3 w-3 mr-1" />{riga.ordine_acquisto_numero}
                         </Button>
                       )}
-                      {/* Elimina */}
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-500" onClick={() => eliminaRiga(idx)} title="Elimina">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500 flex-shrink-0" onClick={() => eliminaRiga(idx)} title="Elimina">
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
