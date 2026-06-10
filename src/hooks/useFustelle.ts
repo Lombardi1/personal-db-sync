@@ -88,6 +88,22 @@ export function useFustelle() {
     };
   }, []);
 
+  
+// Collega i polimeri che hanno lo stesso codice_fornitore ma nr_fustella null
+const collegaPolimeriOrfani = async (codiceFustella: string, codiceFornitore: string | null | undefined) => {
+  if (!codiceFornitore) return;
+  const { error: polErr } = await supabase
+    .from('polimeri')
+    .update({ nr_fustella: codiceFustella, ultima_modifica: new Date().toISOString() })
+    .eq('codice_fornitore', codiceFornitore)
+    .is('nr_fustella', null);
+  if (polErr) {
+    console.error('[collegaPolimeriOrfani] Errore collegamento polimeri:', polErr);
+  } else {
+    console.log('[collegaPolimeriOrfani] Polimeri collegati per codice_fornitore:', codiceFornitore);
+  }
+};
+
   const aggiungiFustella = useCallback(async (fustella: Omit<Fustella, 'data_creazione' | 'ultima_modifica'>) => {
     const fustellaToInsert = {
       ...fustella,
