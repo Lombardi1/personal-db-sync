@@ -321,6 +321,13 @@ export function useCartoni() {
     }
 
     if (nuoviFogli <= 0) {
+      // FIX: rileggi pdf_url dalla giacenza (DB) prima di cancellarla, per non perderlo verso esauriti
+      const { data: freshGiac } = await supabase
+        .from('giacenza')
+        .select('pdf_url')
+        .eq('codice', codice)
+        .maybeSingle();
+      const pdfUrlFinale = freshGiac?.pdf_url || cartone.pdf_url || null;
       const { error: deleteGiacenzaError } = await supabase.from('giacenza').delete().eq('codice', codice);
       if (deleteGiacenzaError) {
         notifications.showError(`Errore eliminazione da giacenza: ${deleteGiacenzaError.message}`);
@@ -346,7 +353,7 @@ export function useCartoni() {
         ddt: cartone.ddt,
         data_arrivo: cartone.data_arrivo,
         data_esaurimento: new Date().toISOString(),
-        pdf_url: cartone.pdf_url || null,
+        pdf_url: pdfUrlFinale,
       };
 
       console.log('[useCartoni - scaricoFogli] Inserting into esauriti:', JSON.stringify(cartoneEsaurito, null, 2));
