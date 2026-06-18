@@ -200,6 +200,16 @@ export function useCartoni() {
     const fogliFinali = fogliEffettivi;
     const magazzinoFinale = magazzino;
 
+    // FIX: rileggi pdf_url dal DB per non perderlo se lo stato React e' stale
+    // (es. conferma arrivata via webhook dopo il caricamento della pagina)
+    let pdfUrlFinale = ordine.pdf_url || null;
+    const { data: freshOrdine } = await supabase
+      .from('ordini')
+      .select('pdf_url')
+      .eq('codice', codice)
+      .maybeSingle();
+    if (freshOrdine?.pdf_url) pdfUrlFinale = freshOrdine.pdf_url;
+
     const cartoneGiacenza: Omit<Cartone, 'confermato' | 'data_consegna' | 'data_esaurimento'> = {
       codice: ordine.codice,
       fornitore: ordine.fornitore,
@@ -218,7 +228,7 @@ export function useCartoni() {
       ddt: ddt,
       data_arrivo: dataArrivo,
       magazzino: magazzinoFinale,
-      pdf_url: ordine.pdf_url || null,
+      pdf_url: pdfUrlFinale,
     };
 
     console.log(`[useCartoni - spostaInGiacenza] Dati finali per inserimento in 'giacenza' (PRIMA DELL'INSERT):`, JSON.stringify(cartoneGiacenza, null, 2));
