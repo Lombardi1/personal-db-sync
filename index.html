@@ -13,5 +13,52 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Auto-update: avvisa quando esce un nuovo deploy -->
+    <script>
+      (function () {
+        var current = null;
+        var s = document.querySelector('script[type=module][src*="/assets/"]');
+        if (s) { try { current = new URL(s.src).pathname; } catch (e) {} }
+        function entryFrom(html) {
+          var key = "/assets/index-";
+          var i = html.indexOf(key);
+          if (i === -1) { key = "/assets/"; i = html.indexOf(key); }
+          if (i === -1) return null;
+          var j = html.indexOf(".js", i);
+          if (j === -1) return null;
+          return html.slice(i, j + 3);
+        }
+        function banner() {
+          if (document.getElementById("__upd")) return;
+          var box = document.createElement("div");
+          box.id = "__upd";
+          box.style.cssText = "position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#111827;color:#fff;padding:12px 16px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.3);font-family:system-ui,sans-serif;font-size:14px;display:flex;gap:12px;align-items:center";
+          var span = document.createElement("span");
+          span.textContent = "\u00C8 disponibile una nuova versione.";
+          var btn = document.createElement("button");
+          btn.textContent = "Aggiorna";
+          btn.style.cssText = "background:#2563eb;color:#fff;border:0;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer";
+          btn.onclick = function () { location.reload(); };
+          box.appendChild(span); box.appendChild(btn);
+          document.body.appendChild(box);
+        }
+        async function check() {
+          try {
+            var r = await fetch("/?_v=" + Date.now(), { cache: "no-store" });
+            if (!r.ok) return;
+            var html = await r.text();
+            var latest = entryFrom(html);
+            if (!latest) return;
+            if (!current) { current = latest; return; }
+            if (latest !== current) banner();
+          } catch (e) {}
+        }
+        setInterval(check, 120000);
+        document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") check(); });
+        window.addEventListener("focus", check);
+        setTimeout(check, 8000);
+      })();
+    </script>
+
   </body>
 </html>
