@@ -383,6 +383,17 @@ export function useCartoni() {
 
     // Create an object for insertion into 'giacenza'
     // The 'giacenza' table does not have 'data_esaurimento' or 'confermato'
+    // FIX: mantieni il pdf_url della conferma anche tornando in giacenza da esauriti
+    let pdfUrlGiac = cartoneEsaurito.pdf_url || null;
+    {
+      const { data: freshEsa } = await supabase
+        .from('esauriti')
+        .select('pdf_url')
+        .eq('codice', codice)
+        .maybeSingle();
+      if (freshEsa?.pdf_url) pdfUrlGiac = freshEsa.pdf_url;
+    }
+
     const cartonePerGiacenza: Omit<Cartone, 'confermato' | 'data_consegna' | 'data_esaurimento'> = {
       codice: cartoneEsaurito.codice,
       fornitore: cartoneEsaurito.fornitore,
@@ -401,6 +412,7 @@ export function useCartoni() {
       fsc: cartoneEsaurito.fsc,
       alimentare: cartoneEsaurito.alimentare,
       rif_commessa_fsc: cartoneEsaurito.rif_commessa_fsc || null,
+      pdf_url: pdfUrlGiac,
     };
 
     console.log('[useCartoni - riportaInGiacenza] Inserting into giacenza:', JSON.stringify(cartonePerGiacenza, null, 2));
@@ -469,6 +481,17 @@ export function useCartoni() {
 
     // Create an object for insertion into 'ordini'
     // IMPORTANT: The 'ordini' table does NOT have 'data_esaurimento' column
+    // FIX: mantieni il pdf_url della conferma anche tornando in arrivo da giacenza
+    let pdfUrlOrd = cartone.pdf_url || null;
+    {
+      const { data: freshGiac2 } = await supabase
+        .from('giacenza')
+        .select('pdf_url')
+        .eq('codice', codice)
+        .maybeSingle();
+      if (freshGiac2?.pdf_url) pdfUrlOrd = freshGiac2.pdf_url;
+    }
+
     const ordinePerOrdini: Omit<Cartone, 'data_esaurimento'> = {
       codice: cartone.codice,
       fornitore: cartone.fornitore,
@@ -489,6 +512,7 @@ export function useCartoni() {
       ddt: cartone.ddt,
       data_arrivo: cartone.data_arrivo,
       magazzino: cartone.magazzino,
+      pdf_url: pdfUrlOrd,
     };
 
     console.log('[useCartoni - riportaInOrdini] Dati per inserimento in ordini (PRIMA DELL\'INSERT):', JSON.stringify(ordinePerOrdini, null, 2));
