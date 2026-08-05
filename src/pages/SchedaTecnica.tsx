@@ -16,7 +16,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase } from '../lib/supabaseClient' // ← adatta il path
+import { supabase } from '@/lib/supabase'
 import jsPDF from 'jspdf'
 import * as pdfjsLib from 'pdfjs-dist'
 
