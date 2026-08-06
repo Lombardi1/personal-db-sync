@@ -1,19 +1,24 @@
 /**
- * SchedaTecnica.tsx — v2 redesign
- * UI completamente ridisegnata: header arancione, ricerca prominente,
- * sezioni a card, tasto torna alla dashboard.
- * Logica identica alla v1: connessione a db_articoli, auto-fill, PDF A4.
+ * SchedaTecnica.tsx — v3
+ * Layout identico alle altre pagine (Header + Dashboard btn).
+ * Ricerca DB Articoli prominente, auto-fill completo.
+ * PDF: rimossa colonna terzista, solo lavorazioni.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useAuth } from '@/hooks/useAuth'
+import { Header } from '@/components/Header'
+import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 import jsPDF from 'jspdf'
 import * as pdfjsLib from 'pdfjs-dist'
-import { ArrowLeft, FileText, Search, Save, Download, Plus, X, ChevronRight, Package, Printer, Settings, Truck, Box } from 'lucide-react'
+import { Home, Search, FileText, Save, Download, Plus, X, ChevronRight } from 'lucide-react'
 
 // @ts-ignore
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -25,13 +30,12 @@ interface ArticoloSearch {
 interface DbArticolo extends ArticoloSearch {
   certificazione: string | null; cartone: string | null; grammatura: string | null
   codice_riciclo: string | null; dimensioni: string | null
-  c: string | null; m: string | null; y: string | null; k: string | null
   pan_nr: string | null; pan_nr_2: string | null; pan_nr_3: string | null
   pan_nr_4: string | null; pan_nr_5: string | null; pan_nr_6: string | null
   polimero: string | null; linear: string | null; finitura: string | null
-  cromalin_nr: string | null; terzista: string | null; lavorazione: string | null
-  terzista_2: string | null; lavorazione_2: string | null
-  pellicola_nr: string | null; cliche_nr: string | null
+  cromalin_nr: string | null
+  lavorazione: string | null; pellicola_nr: string | null; cliche_nr: string | null
+  lavorazione_2: string | null
   fustella_nr: string | null; pulitore_codice: string | null; tassello: string | null
   ha_finestratura: boolean | null; h_finestratura: string | null
   ha_incollatura: boolean | null; tipologia_incollatura: string | null
@@ -47,11 +51,11 @@ interface FormData {
   nr_col: string; finitura: string
   p1: string; p2: string; p3: string; p4: string; p5: string; p6: string
   linear: string; polimero: string; cromalin: string
-  t1_terz: string; t1_lav: string; t1_pell: string; t1_cli: string
+  lav1: string; pell1: string; cli1: string
   fu_nr: string; fu_resa: string; pulitore: string; pinza: string; tassello: string
-  t2_terz: string; t2_lav: string; t2_pell: string; t2_cli: string
+  lav2: string
   finest: string; bob: string
-  incoll: string; tipo_incoll: string; mac: string; terz_incoll: string
+  incoll: string; tipo_incoll: string; mac: string
   scat: string; qty: string; peso: string; bancale: string; alt_ban: string
 }
 
@@ -61,11 +65,11 @@ const EMPTY: FormData = {
   nr_col:'4', finitura:'VERNICE LUCIDA',
   p1:'', p2:'', p3:'', p4:'', p5:'', p6:'',
   linear:'80', polimero:'', cromalin:'',
-  t1_terz:'', t1_lav:'', t1_pell:'', t1_cli:'',
+  lav1:'', pell1:'', cli1:'',
   fu_nr:'', fu_resa:'4', pulitore:'NO', pinza:'NO', tassello:'',
-  t2_terz:'', t2_lav:'', t2_pell:'', t2_cli:'',
+  lav2:'',
   finest:'NO', bob:'',
-  incoll:'NO', tipo_incoll:'', mac:'', terz_incoll:'',
+  incoll:'NO', tipo_incoll:'', mac:'',
   scat:'TERMO', qty:'', peso:'', bancale:'EPAL', alt_ban:'',
 }
 
@@ -81,20 +85,20 @@ const OPTS = {
 }
 
 const SECTIONS = [
-  { id: 0, label: 'Immagine',     icon: '🖼️',  color: 'bg-purple-500' },
-  { id: 1, label: 'Intestazione', icon: '📄',  color: 'bg-blue-500' },
-  { id: 2, label: 'Packaging',    icon: '📦',  color: 'bg-orange-500' },
-  { id: 3, label: 'Stampa',       icon: '🖨️',  color: 'bg-indigo-500' },
-  { id: 4, label: 'Terzista pre', icon: '🏭',  color: 'bg-amber-500' },
-  { id: 5, label: 'Fustella',     icon: '✂️',  color: 'bg-red-500' },
-  { id: 6, label: 'Terzista post',icon: '🔧',  color: 'bg-cyan-500' },
-  { id: 7, label: 'Fin./Incoll.', icon: '🔗',  color: 'bg-teal-500' },
-  { id: 8, label: 'Confezione',   icon: '📫',  color: 'bg-green-500' },
+  { id: 0, label: '🖼️ Immagine' },
+  { id: 1, label: '📄 Intestazione' },
+  { id: 2, label: '📦 Packaging' },
+  { id: 3, label: '🖨️ Stampa' },
+  { id: 4, label: '✂️ Fustella' },
+  { id: 5, label: '🏭 Lav. pre' },
+  { id: 6, label: '🔧 Lav. post' },
+  { id: 7, label: '🔗 Fin./Incoll.' },
+  { id: 8, label: '📫 Confezione' },
 ]
 
 // ─── MAPPING ──────────────────────────────────────────────────────────────────
 
-function articoloToForm(a: DbArticolo, fustResa?: string): FormData {
+function articoloToForm(a: DbArticolo, fustResa?: string, pinza?: string): FormData {
   const pulitore = a.pulitore_codice ? 'SI' : 'NO'
   let cert = '-'
   if (a.certificazione) cert = a.certificazione
@@ -112,192 +116,221 @@ function articoloToForm(a: DbArticolo, fustResa?: string): FormData {
     p4: a.pan_nr_4 || '', p5: a.pan_nr_5 || '', p6: a.pan_nr_6 || '',
     linear: a.linear || '80', polimero: a.polimero || '',
     cromalin: a.cromalin_nr || '',
-    t1_terz: a.terzista || '', t1_lav: a.lavorazione || '',
-    t1_pell: a.pellicola_nr || '', t1_cli: a.cliche_nr || '',
+    lav1: a.lavorazione || '', pell1: a.pellicola_nr || '', cli1: a.cliche_nr || '',
     fu_nr: a.fustella_nr || '', fu_resa: fustResa || '4',
-    pulitore, pinza: 'NO', tassello: a.tassello || '',
-    t2_terz: a.terzista_2 || '', t2_lav: a.lavorazione_2 || '',
-    t2_pell: '', t2_cli: '',
+    pulitore, pinza: pinza || 'NO', tassello: a.tassello || '',
+    lav2: a.lavorazione_2 || '',
     finest: a.ha_finestratura ? 'SI' : 'NO', bob: a.h_finestratura || '',
     incoll: a.ha_incollatura ? 'SI' : 'NO',
     tipo_incoll: a.tipologia_incollatura || '',
-    mac: a.macchina_incollatura || '', terz_incoll: '',
+    mac: a.macchina_incollatura || '',
     scat: a.scatolone || 'TERMO', qty: a.quantita || '',
     peso: a.peso || '', bancale: a.bancale || 'EPAL',
     alt_ban: a.altezza_bancale || '',
   }
 }
 
-function formToUpdate(d: FormData, imgUrl: string | null): Partial<DbArticolo> {
+function formToUpdate(d: FormData, imgUrl: string | null) {
   return {
     linea: d.lavoro || null, tipologia: d.tipo_scatola || null,
     dimensioni: d.dim || null,
     certificazione: d.cert !== '-' ? d.cert : null,
     cartone: d.tipo_cart || null, grammatura: d.gramm || null,
     codice_riciclo: d.riciclo || null, finitura: d.finitura || null,
-    pan_nr: d.p1 || null, pan_nr_2: d.p2 || null, pan_nr_3: d.p3 || null,
-    pan_nr_4: d.p4 || null, pan_nr_5: d.p5 || null, pan_nr_6: d.p6 || null,
-    linear: d.linear || null, polimero: d.polimero || null,
-    cromalin_nr: d.cromalin || null,
-    terzista: d.t1_terz || null, lavorazione: d.t1_lav || null,
-    pellicola_nr: d.t1_pell || null, cliche_nr: d.t1_cli || null,
-    fustella_nr: d.fu_nr || null,
+    pan_nr: d.p1||null, pan_nr_2: d.p2||null, pan_nr_3: d.p3||null,
+    pan_nr_4: d.p4||null, pan_nr_5: d.p5||null, pan_nr_6: d.p6||null,
+    linear: d.linear||null, polimero: d.polimero||null, cromalin_nr: d.cromalin||null,
+    lavorazione: d.lav1||null, pellicola_nr: d.pell1||null, cliche_nr: d.cli1||null,
+    fustella_nr: d.fu_nr||null,
     pulitore_codice: d.pulitore === 'SI' ? (d.fu_nr || 'SI') : null,
-    tassello: d.tassello || null,
-    terzista_2: d.t2_terz || null, lavorazione_2: d.t2_lav || null,
-    ha_finestratura: d.finest === 'SI', h_finestratura: d.bob || null,
+    tassello: d.tassello||null, lavorazione_2: d.lav2||null,
+    ha_finestratura: d.finest === 'SI', h_finestratura: d.bob||null,
     ha_incollatura: d.incoll === 'SI',
-    tipologia_incollatura: d.tipo_incoll || null,
-    macchina_incollatura: d.mac || null,
-    scatolone: d.scat || null, quantita: d.qty || null,
-    peso: d.peso || null, bancale: d.bancale || null,
-    altezza_bancale: d.alt_ban || null,
+    tipologia_incollatura: d.tipo_incoll||null,
+    macchina_incollatura: d.mac||null,
+    scatolone: d.scat||null, quantita: d.qty||null,
+    peso: d.peso||null, bancale: d.bancale||null,
+    altezza_bancale: d.alt_ban||null,
     immagine_scheda_url: imgUrl,
     updated_at: new Date().toISOString(),
   } as any
 }
 
-// ─── PDF GENERATION ───────────────────────────────────────────────────────────
+// ─── PDF ──────────────────────────────────────────────────────────────────────
 
 function buildPDF(d: FormData, imgUrl: string | null) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const ML=10, MT=8, UW=190, HR=6.2
-  const GRAY:[number,number,number]=[238,238,238], BLU:[number,number,number]=[219,234,254]
-  const BLU_D:[number,number,number]=[29,78,216], BORDER:[number,number,number]=[190,190,190]
-  const WH:[number,number,number]=[255,255,255], TEXT:[number,number,number]=[20,20,20]
+  const GRAY:[number,number,number]=[238,238,238]
+  const BLU:[number,number,number]=[219,234,254]
+  const BLU_D:[number,number,number]=[29,78,216]
+  const BORDER:[number,number,number]=[190,190,190]
+  const WH:[number,number,number]=[255,255,255]
+  const TEXT:[number,number,number]=[20,20,20]
   const MUTED:[number,number,number]=[100,100,100]
 
   const sb = () => { doc.setDrawColor(...BORDER); doc.setLineWidth(0.2) }
-  const cell = (x:number,y:number,w:number,h:number,t:string|null,bold:boolean,bg:[number,number,number]|null,tc:[number,number,number]) => {
+  const cell = (x:number,y:number,w:number,h:number,t:string|null,bold:boolean,
+    bg:[number,number,number]|null,tc:[number,number,number]) => {
     sb()
     if (bg) { doc.setFillColor(...bg); doc.rect(x,y,w,h,'F') }
     doc.rect(x,y,w,h,'S')
-    if (t) { doc.setFont('helvetica',bold?'bold':'normal'); doc.setFontSize(8); doc.setTextColor(...tc); doc.text(t,x+2,y+h*0.65) }
+    if (t) {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal')
+      doc.setFontSize(8); doc.setTextColor(...tc)
+      doc.text(t, x+2, y+h*0.65)
+    }
   }
   const lbl = (x:number,y:number,w:number,h:number,t:string) => cell(x,y,w,h,t,false,GRAY,MUTED)
   const val = (x:number,y:number,w:number,h:number,t:string) => cell(x,y,w,h,t||'—',false,WH,TEXT)
-  const secH = (x:number,y:number,w:number,t:string) => { cell(x,y,w,HR,t,true,BLU,BLU_D); return y+HR }
+  const secH = (x:number,y:number,w:number,t:string) => {
+    cell(x,y,w,HR,t,true,BLU,BLU_D); return y+HR
+  }
   const lv = (x:number,y:number,w:number,label:string,value:string,lr=0.42) => {
     lbl(x,y,w*lr,HR,label); val(x+w*lr,y,w*(1-lr),HR,value); return y+HR
   }
 
   let y = MT
+  // Intestazione
   doc.setFillColor(...BLU_D); doc.rect(ML,y,UW,10,'F')
   doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(255,255,255)
   doc.text('SCHEDA TECNICA PRODOTTO', ML+3, y+7)
-  doc.setFontSize(8); doc.text('ARTI GRAFICHE LOMBARDI S.r.l. — PASSIRANO (BS)', ML+UW-2, y+7, {align:'right'})
+  doc.setFontSize(8)
+  doc.text('ARTI GRAFICHE LOMBARDI S.r.l. — PASSIRANO (BS)', ML+UW-2, y+7, {align:'right'})
   y += 10
 
   const cW = UW/3
-  lbl(ML,y,20,HR,'Cliente:');         val(ML+20,y,cW-20,HR,d.cliente)
-  lbl(ML+cW,y,18,HR,'Lavoro:');       val(ML+cW+18,y,cW-18,HR,d.lavoro)
-  lbl(ML+cW*2,y,18,HR,'Codice:');     val(ML+cW*2+18,y,cW-18,HR,d.codice)
+  lbl(ML,y,20,HR,'Cliente:');       val(ML+20,y,cW-20,HR,d.cliente)
+  lbl(ML+cW,y,18,HR,'Lavoro:');     val(ML+cW+18,y,cW-18,HR,d.lavoro)
+  lbl(ML+cW*2,y,18,HR,'Codice:');   val(ML+cW*2+18,y,cW-18,HR,d.codice)
   y += HR
-  lbl(ML,y,50,HR,'Certificazione richiesta'); val(ML+50,y,40,HR,d.cert)
+  lbl(ML,y,50,HR,'Certificazione'); val(ML+50,y,40,HR,d.cert)
   if (d.id_art) { lbl(ML+90,y,28,HR,'ID Articolo'); val(ML+118,y,UW-118,HR,d.id_art) }
   y += HR+2
 
+  // Immagine + Info packaging
   const imgTop=y, imgW=82, infoX=ML+imgW+2, infoW=UW-imgW-2
   sb(); doc.rect(ML,imgTop,imgW,96,'S')
-  if (imgUrl) { try { doc.addImage(imgUrl,'JPEG',ML+1,imgTop+1,imgW-2,94) } catch {} }
-  else { doc.setFontSize(8); doc.setTextColor(180,180,180); doc.text('[IMMAGINE PRODOTTO]',ML+imgW/2,imgTop+48,{align:'center'}) }
+  if (imgUrl) {
+    try { doc.addImage(imgUrl,'JPEG',ML+1,imgTop+1,imgW-2,94) } catch {}
+  } else {
+    doc.setFontSize(8); doc.setTextColor(180,180,180)
+    doc.text('[IMMAGINE PRODOTTO]',ML+imgW/2,imgTop+48,{align:'center'})
+  }
 
   let iy = imgTop
-  iy = secH(infoX,iy,infoW,'INFORMAZIONI PACKAGING')
-  iy = lv(infoX,iy,infoW,'Tipologia di scatole',d.tipo_scatola)
+  iy = secH(infoX,iy,infoW,'PACKAGING')
+  iy = lv(infoX,iy,infoW,'Tipologia di scatola',d.tipo_scatola)
   iy = lv(infoX,iy,infoW,'Dimensioni (mm)',d.dim)
   iy = secH(infoX,iy,infoW,'CARTONE')
-  iy = lv(infoX,iy,infoW,'Tipologia di cartone',d.tipo_cart)
+  iy = lv(infoX,iy,infoW,'Tipologia cartone',d.tipo_cart)
   const hW2=infoW/2
   lbl(infoX,iy,22,HR,'Grammatura'); val(infoX+22,iy,hW2-22,HR,d.gramm)
-  lbl(infoX+hW2,iy,25,HR,'Cod. Riciclo'); val(infoX+hW2+25,iy,hW2-25,HR,d.riciclo); iy+=HR
-  iy = secH(infoX,iy,infoW,'INFORMAZIONI STAMPA')
+  lbl(infoX+hW2,iy,25,HR,'Riciclo'); val(infoX+hW2+25,iy,hW2-25,HR,d.riciclo); iy+=HR
+  iy = secH(infoX,iy,infoW,'STAMPA')
   lbl(infoX,iy,22,HR,'Nr. Colori'); val(infoX+22,iy,12,HR,d.nr_col)
   lbl(infoX+34,iy,16,HR,'Finitura'); val(infoX+50,iy,infoW-50,HR,d.finitura); iy+=HR
   const pans=[d.p1,d.p2,d.p3,d.p4,d.p5,d.p6].filter(Boolean)
-  if (pans.length) { iy = lv(infoX,iy,infoW,'Pantoni',pans.join('  '),0.32) }
+  if (pans.length) { iy = lv(infoX,iy,infoW,'Pantoni',pans.join('  '),0.30) }
   lbl(infoX,iy,26,HR,'Linearizzaz.'); val(infoX+26,iy,15,HR,d.linear)
   lbl(infoX+41,iy,26,HR,'Nr. Polimero'); val(infoX+67,iy,infoW-67,HR,d.polimero); iy+=HR
   if (d.cromalin) { iy = lv(infoX,iy,infoW,'Cromalin Nr.',d.cromalin,0.38) }
 
   y = imgTop+98
+
+  // ── RIGA A 2 COLONNE: Lavorazioni + Fustella ──────────────────────────────
   const pW=(UW-2)/2, rx=ML+pW+2
   let ly=y, ry=y
-  ly = secH(ML,ly,pW,'TERZISTA (PRE-FUSTELLATURA)')
-  ly = lv(ML,ly,pW,'Terzista',d.t1_terz,0.38)
-  ly = lv(ML,ly,pW,'Lavorazioni',d.t1_lav,0.38)
-  ly = lv(ML,ly,pW,'Pellicola Nr.',d.t1_pell,0.38)
-  ly = lv(ML,ly,pW,'Cliché Nr.',d.t1_cli,0.38)
-  ly += 1
-  ly = secH(ML,ly,pW,'TERZISTA (POST-FUSTELLATURA)')
-  ly = lv(ML,ly,pW,'Terzista',d.t2_terz,0.38)
-  ly = lv(ML,ly,pW,'Lavorazioni',d.t2_lav,0.38)
-  ly = lv(ML,ly,pW,'Pellicola Nr.',d.t2_pell,0.38)
-  ly = lv(ML,ly,pW,'Cliché Nr.',d.t2_cli,0.38)
+
+  // Sinistra: LAVORAZIONI (senza terzista)
+  ly = secH(ML,ly,pW,'LAVORAZIONE PRE-FUSTELLATURA')
+  if (d.lav1) { ly = lv(ML,ly,pW,'Tipo lavorazione',d.lav1,0.40) }
+  else { lbl(ML,ly,pW,HR,'Tipo lavorazione'); val(ML+pW*0.40,ly,pW*0.60,HR,'—'); ly+=HR }
+  if (d.pell1) { ly = lv(ML,ly,pW,'Pellicola Nr.',d.pell1,0.38) }
+  if (d.cli1)  { ly = lv(ML,ly,pW,'Cliché Nr.',d.cli1,0.38) }
+  ly += 2
+  ly = secH(ML,ly,pW,'LAVORAZIONE POST-FUSTELLATURA')
+  if (d.lav2) { ly = lv(ML,ly,pW,'Tipo lavorazione',d.lav2,0.40) }
+  else { lbl(ML,ly,pW,HR,'Tipo lavorazione'); val(ML+pW*0.40,ly,pW*0.60,HR,'—'); ly+=HR }
+
+  // Destra: FUSTELLA
   ry = secH(rx,ry,pW,'FUSTELLA')
   ry = lv(rx,ry,pW,'Numero Fustella',d.fu_nr,0.42)
   ry = lv(rx,ry,pW,'Resa Fustella',d.fu_resa,0.42)
   ry = lv(rx,ry,pW,'Pulitore',d.pulitore,0.42)
   ry = lv(rx,ry,pW,'Pinza taglia',d.pinza,0.42)
-  ry = lv(rx,ry,pW,'Tassello Nr.',d.tassello,0.42)
-  ry += 1
+  if (d.tassello) { ry = lv(rx,ry,pW,'Tassello Nr.',d.tassello,0.42) }
+  ry += 2
   ry = secH(rx,ry,pW,'FINESTRATURA')
   ry = lv(rx,ry,pW,'Finestratura',d.finest,0.42)
-  ry = lv(rx,ry,pW,'Altezza bobina',d.bob,0.42)
+  if (d.finest === 'SI') { ry = lv(rx,ry,pW,'Altezza bobina',d.bob,0.42) }
+
   y = Math.max(ly,ry)+2
 
+  // Incollatura
   y = secH(ML,y,UW,'INCOLLATURA')
-  lbl(ML,y,22,HR,'Incollatura');  val(ML+22,y,15,HR,d.incoll)
+  lbl(ML,y,22,HR,'Incollatura'); val(ML+22,y,15,HR,d.incoll)
   lbl(ML+37,y,34,HR,'Tipologia incollatura'); val(ML+71,y,UW/2-71+ML,HR,d.tipo_incoll)
   lbl(ML+UW/2,y,22,HR,'Macchina'); val(ML+UW/2+22,y,UW/2-22,HR,d.mac); y+=HR
-  lbl(ML,y,34,HR,'Eventuale terzista'); val(ML+34,y,UW-34,HR,d.terz_incoll); y+=HR+1
 
+  // Confezione
+  y += 1
   y = secH(ML,y,UW,'CONFEZIONE')
   const q=UW/4
-  lbl(ML,y,22,HR,'Scatolone');    val(ML+22,y,q-22,HR,d.scat)
-  lbl(ML+q,y,22,HR,'Quantità (pz)'); val(ML+q+22,y,q-22,HR,d.qty)
+  lbl(ML,y,22,HR,'Scatolone');  val(ML+22,y,q-22,HR,d.scat)
+  lbl(ML+q,y,22,HR,'Qta (pz)'); val(ML+q+22,y,q-22,HR,d.qty)
   lbl(ML+q*2,y,16,HR,'Peso (kg)'); val(ML+q*2+16,y,q-16,HR,d.peso)
-  lbl(ML+q*3,y,18,HR,'Bancale');  val(ML+q*3+18,y,q-18,HR,d.bancale); y+=HR
-  lbl(ML,y,38,HR,'Altezza max bancale'); val(ML+38,y,50,HR,d.alt_ban); y+=HR+2
+  lbl(ML+q*3,y,18,HR,'Bancale'); val(ML+q*3+18,y,q-18,HR,d.bancale); y+=HR
+  lbl(ML,y,38,HR,'Alt. max bancale'); val(ML+38,y,50,HR,d.alt_ban); y+=HR+2
 
+  // Footer
   sb(); doc.setLineWidth(0.2); doc.line(ML,y,ML+UW,y)
   doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(160,160,160)
-  doc.text(`Generata il ${new Date().toLocaleDateString('it-IT')} — Arti Grafiche Lombardi S.r.l.`, ML, y+4)
+  doc.text(
+    `Generata il ${new Date().toLocaleDateString('it-IT')} — Arti Grafiche Lombardi S.r.l.`,
+    ML, y+4
+  )
 
-  doc.save(`SCHEDA_TECNICA_${(d.codice||'NUOVO').replace(/\s/g,'_')}_${(d.cliente||'').replace(/\s/g,'_')}.pdf`)
+  const fname = `SCHEDA_${(d.codice||'NUOVO').replace(/\s/g,'_')}_${(d.cliente||'').replace(/\s/g,'_')}.pdf`
+  doc.save(fname)
 }
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function SchedaTecnica() {
+  const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
-  const [query, setQuery]             = useState('')
-  const [results, setResults]         = useState<ArticoloSearch[]>([])
-  const [selected, setSelected]       = useState<DbArticolo | null>(null)
-  const [form, setForm]               = useState<FormData>(EMPTY)
-  const [imgUrl, setImgUrl]           = useState<string | null>(null)
-  const [sec, setSec]                 = useState(1)
-  const [saving, setSaving]           = useState(false)
-  const [generating, setGenerating]   = useState(false)
-  const [toast, setToast]             = useState<{msg:string; type:'ok'|'err'} | null>(null)
-  const searchRef                     = useRef<HTMLDivElement>(null)
+  const [query, setQuery]       = useState('')
+  const [results, setResults]   = useState<ArticoloSearch[]>([])
+  const [selected, setSelected] = useState<DbArticolo | null>(null)
+  const [form, setForm]         = useState<FormData>(EMPTY)
+  const [imgUrl, setImgUrl]     = useState<string | null>(null)
+  const [sec, setSec]           = useState(1)
+  const [saving, setSaving]     = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const searchRef               = useRef<HTMLDivElement>(null)
 
-  const showToast = (msg:string, type:'ok'|'err'='ok') => {
-    setToast({msg, type})
-    setTimeout(()=>setToast(null), 2800)
-  }
+  const set = (k: keyof FormData, v: string) => setForm(f => ({...f, [k]: v}))
 
-  const set = (k: keyof FormData, v: string) =>
-    setForm(f => ({...f, [k]: v}))
+  // Chiude dropdown cliccando fuori
+  useEffect(() => {
+    const fn = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setResults([])
+      }
+    }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [])
 
+  // Ricerca su db_articoli
   const search = useCallback(async (q: string) => {
     if (q.length < 2) { setResults([]); return }
     const { data } = await supabase
       .from('db_articoli')
       .select('id, nr, cliente, linea, codice, tipologia')
-      .or(`id.ilike.%${q}%,codice.ilike.%${q}%,cliente.ilike.%${q}%`)
-      .order('cliente')
-      .limit(15)
+      .or(`id.ilike.%${q}%,codice.ilike.%${q}%,cliente.ilike.%${q}%,linea.ilike.%${q}%`)
+      .order('cliente').limit(15)
     setResults((data as ArticoloSearch[]) || [])
   }, [])
 
@@ -306,28 +339,37 @@ export default function SchedaTecnica() {
     return () => clearTimeout(t)
   }, [query, search])
 
+  // Carica tutti i dati articolo e compila la scheda
   const loadArticolo = async (id: string) => {
     const { data: a, error } = await supabase
       .from('db_articoli').select('*').eq('id', id).single()
-    if (error || !a) { showToast('Errore caricamento articolo', 'err'); return }
+    if (error || !a) { toast.error('Errore caricamento articolo'); return }
 
-    let fustResa = '4'
+    let fustResa = '4', pinza = 'NO'
     if (a.fustella_nr) {
       const { data: fu } = await supabase
-        .from('fustelle').select('resa, pinza_tagliata').eq('codice', a.fustella_nr).single()
-      if (fu) { fustResa = fu.resa || '4' }
+        .from('fustelle')
+        .select('resa, pinza_tagliata')
+        .eq('codice', a.fustella_nr)
+        .single()
+      if (fu) {
+        fustResa = fu.resa || '4'
+        pinza = fu.pinza_tagliata ? 'SI' : 'NO'
+      }
     }
 
     setSelected(a as DbArticolo)
-    setForm(articoloToForm(a as DbArticolo, fustResa))
+    setForm(articoloToForm(a as DbArticolo, fustResa, pinza))
     if (a.immagine_scheda_url) setImgUrl(a.immagine_scheda_url)
-    setResults([]); setQuery(''); setSec(1)
-    showToast(`✓ "${a.codice}" caricato — scheda compilata automaticamente`)
+    setResults([])
+    setQuery('')
+    setSec(1)
+    toast.success(`✓ Articolo "${a.codice}" caricato — scheda compilata da DB Articoli`)
   }
 
   const handlePDF = async (file: File) => {
     try {
-      showToast('Estrazione immagine dal PDF…')
+      toast.info('Estrazione immagine dal PDF…')
       const buffer = await file.arrayBuffer()
       const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
       const page = await pdf.getPage(1)
@@ -336,103 +378,116 @@ export default function SchedaTecnica() {
       canvas.width = vp.width; canvas.height = vp.height
       await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise
       setImgUrl(canvas.toDataURL('image/jpeg', 0.92))
-      showToast('Immagine estratta ✓')
-    } catch { showToast('Errore PDF', 'err') }
+      toast.success('Immagine estratta ✓')
+    } catch { toast.error('Errore estrazione immagine') }
   }
 
   const save = async () => {
-    if (!selected) { showToast('Seleziona prima un articolo', 'err'); return }
+    if (!selected) { toast.error('Seleziona prima un articolo'); return }
     setSaving(true)
     try {
-      let storedImgUrl = imgUrl
+      let storedUrl = imgUrl
       if (imgUrl?.startsWith('data:')) {
         const blob = await (await fetch(imgUrl)).blob()
         const path = `${selected.id}/immagine.jpg`
-        const { error: upErr } = await supabase.storage.from('schede-tecniche').upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+        const { error: upErr } = await supabase.storage
+          .from('schede-tecniche')
+          .upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
         if (!upErr) {
-          storedImgUrl = supabase.storage.from('schede-tecniche').getPublicUrl(path).data.publicUrl
-          setImgUrl(storedImgUrl)
+          storedUrl = supabase.storage.from('schede-tecniche').getPublicUrl(path).data.publicUrl
+          setImgUrl(storedUrl)
         }
       }
-      const { error } = await supabase.from('db_articoli').update(formToUpdate(form, storedImgUrl)).eq('id', selected.id)
+      const { error } = await supabase
+        .from('db_articoli')
+        .update(formToUpdate(form, storedUrl))
+        .eq('id', selected.id)
       if (error) throw error
-      showToast('Scheda salvata ✓')
-    } catch (e: any) { showToast('Errore: ' + e.message, 'err') }
+      toast.success('Scheda salvata ✓')
+    } catch (e: any) { toast.error('Errore: ' + e.message) }
     setSaving(false)
   }
 
   const genPDF = async () => {
-    setGenerating(true); await new Promise(r => setTimeout(r, 50))
-    buildPDF(form, imgUrl); setGenerating(false); showToast('PDF scaricato ✓')
+    setGenerating(true)
+    await new Promise(r => setTimeout(r, 50))
+    buildPDF(form, imgUrl)
+    setGenerating(false)
+    toast.success('PDF scaricato ✓')
   }
 
-  // ─── FORM HELPERS ────────────────────────────────────────────────────────────
+  const reset = () => {
+    setSelected(null); setForm(EMPTY); setImgUrl(null)
+    setSec(1); setQuery(''); setResults([])
+  }
 
-  const inp = (k: keyof FormData, type='text') => (
-    <input type={type} value={form[k]} onChange={e => set(k, e.target.value)}
-      className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm
-                 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
-                 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition"
+  // ─── UI HELPERS ──────────────────────────────────────────────────────────────
+
+  const inp = (k: keyof FormData, type = 'text', placeholder = '') => (
+    <input
+      type={type}
+      value={form[k]}
+      onChange={e => set(k, e.target.value)}
+      placeholder={placeholder}
+      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm
+                 bg-white text-gray-900
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     />
   )
 
   const sel = (k: keyof FormData, opts: string[]) => (
-    <select value={form[k]} onChange={e => set(k, e.target.value)}
-      className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm
-                 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
-                 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition"
+    <select
+      value={form[k]}
+      onChange={e => set(k, e.target.value)}
+      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm
+                 bg-white text-gray-900
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     >
       {opts.map(o => <option key={o} value={o}>{o || '—'}</option>)}
     </select>
   )
 
-  const Field = ({ label, children, span=1 }: { label: string; children: React.ReactNode; span?: number }) => (
-    <div className={span > 1 ? `col-span-${span}` : ''}>
-      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
-        {label}
-      </label>
+  const Field = ({ label, children, col = 1 }: { label: string; children: React.ReactNode; col?: number }) => (
+    <div className={col > 1 ? `col-span-${col}` : ''}>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
       {children}
     </div>
   )
 
-  const SectionHeader = ({ icon, title, color }: { icon: string; title: string; color: string }) => (
-    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl ${color} text-white mb-0`}>
-      <span className="text-base">{icon}</span>
-      <span className="text-sm font-semibold tracking-wide">{title}</span>
+  const Card = ({ title, color = 'bg-blue-600', children }: {
+    title: string; color?: string; children: React.ReactNode
+  }) => (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className={`px-4 py-2.5 rounded-t-lg ${color} text-white`}>
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      <div className="p-4 grid grid-cols-2 gap-3">
+        {children}
+      </div>
     </div>
   )
 
-  const Card = ({ children }: { children: React.ReactNode }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-      {children}
-    </div>
-  )
+  // ─── SEZIONI ──────────────────────────────────────────────────────────────────
 
-  const CardBody = ({ children }: { children: React.ReactNode }) => (
-    <div className="p-4 grid grid-cols-2 gap-3">
-      {children}
-    </div>
-  )
-
-  // ─── SECTIONS ────────────────────────────────────────────────────────────────
-
-  const sections: React.ReactNode[] = [
+  const sectionContent = [
 
     // 0 — Immagine
-    <Card key={0}>
-      <SectionHeader icon="🖼️" title="Immagine prodotto" color="bg-purple-500" />
+    <div key={0} className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="px-4 py-2.5 bg-purple-600 text-white rounded-t-lg">
+        <h3 className="text-sm font-semibold">🖼️ Immagine prodotto</h3>
+      </div>
       <div className="p-4 space-y-3">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          Carica il PDF del prodotto. La prima pagina verrà estratta come immagine nella scheda.
+        <p className="text-xs text-gray-500">
+          Carica il PDF del prodotto — la prima pagina viene estratta e inserita nella scheda stampata.
         </p>
-        <label className={`flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-dashed cursor-pointer transition-all
-          ${imgUrl ? 'border-green-400 bg-green-50 dark:bg-green-900/10' : 'border-gray-200 hover:border-orange-400 dark:border-gray-600'}`}>
+        <label className={`flex flex-col items-center gap-3 p-8 rounded-lg border-2 border-dashed cursor-pointer transition
+          ${imgUrl ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'}`}>
           {imgUrl
-            ? <img src={imgUrl} alt="anteprima" className="max-h-48 rounded-lg object-contain shadow" />
+            ? <img src={imgUrl} alt="anteprima" className="max-h-52 rounded object-contain shadow-sm" />
             : <>
-                <span className="text-3xl">📄</span>
+                <FileText className="h-10 w-10 text-gray-300" />
                 <span className="text-sm text-gray-500 font-medium">Clicca per caricare il PDF del prodotto</span>
-                <span className="text-xs text-gray-400">La prima pagina viene estratta come immagine</span>
+                <span className="text-xs text-gray-400">La prima pagina viene usata come immagine nel PDF</span>
               </>
           }
           <input type="file" accept=".pdf" className="hidden"
@@ -440,312 +495,246 @@ export default function SchedaTecnica() {
         </label>
         {imgUrl && (
           <button onClick={() => setImgUrl(null)}
-            className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium">
+            className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium">
             <X className="h-3.5 w-3.5" /> Rimuovi immagine
           </button>
         )}
       </div>
-    </Card>,
+    </div>,
 
     // 1 — Intestazione
-    <Card key={1}>
-      <SectionHeader icon="📄" title="Identificazione articolo" color="bg-blue-500" />
-      <CardBody>
-        <Field label="Cliente">{inp('cliente')}</Field>
-        <Field label="Codice articolo">{inp('codice')}</Field>
-        <Field label="Lavoro / Linea" span={2}>{inp('lavoro')}</Field>
-        <Field label="ID Articolo DB">{inp('id_art')}</Field>
-        <Field label="Certificazione">{sel('cert', OPTS.cert)}</Field>
-      </CardBody>
+    <Card key={1} title="📄 Identificazione articolo" color="bg-blue-600">
+      <Field label="Cliente">{inp('cliente')}</Field>
+      <Field label="Codice articolo">{inp('codice')}</Field>
+      <Field label="Lavoro / Linea" col={2}>{inp('lavoro')}</Field>
+      <Field label="ID Articolo (DB)">{inp('id_art')}</Field>
+      <Field label="Certificazione">{sel('cert', OPTS.cert)}</Field>
     </Card>,
 
     // 2 — Packaging
-    <Card key={2}>
-      <SectionHeader icon="📦" title="Packaging" color="bg-orange-500" />
-      <CardBody>
-        <Field label="Tipologia di scatole" span={2}>{sel('tipo_scatola', OPTS.tipoScatola)}</Field>
-        <Field label="Dimensioni (mm)" span={2}>{inp('dim')}</Field>
-        <div className="col-span-2 border-t border-gray-100 dark:border-gray-700 pt-3 mt-1">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Cartone</p>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Tipologia di cartone" span={2}>{inp('tipo_cart')}</Field>
-            <Field label="Grammatura (gr)">{inp('gramm', 'number')}</Field>
-            <Field label="Codice Riciclo">{inp('riciclo')}</Field>
-          </div>
-        </div>
-      </CardBody>
-    </Card>,
+    <div key={2} className="space-y-3">
+      <Card title="📦 Scatola" color="bg-orange-500">
+        <Field label="Tipologia di scatola" col={2}>{sel('tipo_scatola', OPTS.tipoScatola)}</Field>
+        <Field label="Dimensioni (mm)" col={2}>{inp('dim', 'text', 'es. 200x150x50')}</Field>
+      </Card>
+      <Card title="📋 Cartone" color="bg-amber-600">
+        <Field label="Tipologia di cartone" col={2}>{inp('tipo_cart')}</Field>
+        <Field label="Grammatura (gr)">{inp('gramm', 'number')}</Field>
+        <Field label="Codice Riciclo">{inp('riciclo')}</Field>
+      </Card>
+    </div>,
 
     // 3 — Stampa
-    <Card key={3}>
-      <SectionHeader icon="🖨️" title="Informazioni stampa" color="bg-indigo-500" />
-      <CardBody>
-        <Field label="Nr. Colori">{inp('nr_col', 'number')}</Field>
-        <Field label="Finitura">{sel('finitura', OPTS.finitura)}</Field>
-        <div className="col-span-2">
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Pantoni</label>
-          <div className="grid grid-cols-3 gap-2">
-            {(['p1','p2','p3','p4','p5','p6'] as (keyof FormData)[]).map((p,i) => (
-              <div key={p}>
-                <label className="block text-xs text-gray-400 mb-1">Pantone {i+1}</label>
-                {inp(p)}
-              </div>
-            ))}
-          </div>
+    <Card key={3} title="🖨️ Informazioni di stampa" color="bg-indigo-600">
+      <Field label="Nr. Colori">{inp('nr_col', 'number')}</Field>
+      <Field label="Finitura">{sel('finitura', OPTS.finitura)}</Field>
+      <div className="col-span-2">
+        <label className="block text-xs font-medium text-gray-600 mb-2">Pantoni</label>
+        <div className="grid grid-cols-3 gap-2">
+          {(['p1','p2','p3','p4','p5','p6'] as (keyof FormData)[]).map((p, i) => (
+            <div key={p}>
+              <label className="block text-xs text-gray-400 mb-1">#{i+1}</label>
+              {inp(p)}
+            </div>
+          ))}
         </div>
-        <Field label="Linearizzazione (%)">{inp('linear', 'number')}</Field>
-        <Field label="Nr. Polimero">{inp('polimero')}</Field>
-        <Field label="Cromalin Nr.">{inp('cromalin')}</Field>
-      </CardBody>
+      </div>
+      <Field label="Linearizzazione (%)">{inp('linear', 'number')}</Field>
+      <Field label="Nr. Polimero">{inp('polimero')}</Field>
+      <Field label="Cromalin Nr.">{inp('cromalin')}</Field>
     </Card>,
 
-    // 4 — Terzista pre
-    <Card key={4}>
-      <SectionHeader icon="🏭" title="Terzista (prima della fustellatura)" color="bg-amber-500" />
-      <CardBody>
-        <Field label="Terzista">{inp('t1_terz')}</Field>
-        <Field label="Lavorazioni">{sel('t1_lav', OPTS.lav)}</Field>
-        <Field label="Pellicola Nr.">{inp('t1_pell')}</Field>
-        <Field label="Cliché Nr.">{inp('t1_cli')}</Field>
-      </CardBody>
+    // 4 — Fustella
+    <Card key={4} title="✂️ Fustella" color="bg-red-600">
+      <Field label="Numero Fustella">{inp('fu_nr')}</Field>
+      <Field label="Resa Fustella">{inp('fu_resa', 'number')}</Field>
+      <Field label="Pulitore">{sel('pulitore', OPTS.siNo)}</Field>
+      <Field label="Pinza taglia">{sel('pinza', OPTS.siNo)}</Field>
+      <Field label="Tassello Nr.">{inp('tassello')}</Field>
     </Card>,
 
-    // 5 — Fustella
-    <Card key={5}>
-      <SectionHeader icon="✂️" title="Fustella" color="bg-red-500" />
-      <CardBody>
-        <Field label="Numero Fustella">{inp('fu_nr')}</Field>
-        <Field label="Resa Fustella">{inp('fu_resa', 'number')}</Field>
-        <Field label="Pulitore">{sel('pulitore', OPTS.siNo)}</Field>
-        <Field label="Pinza taglia">{sel('pinza', OPTS.siNo)}</Field>
-        <Field label="Tassello Nr.">{inp('tassello')}</Field>
-      </CardBody>
+    // 5 — Lavorazione pre
+    <Card key={5} title="🏭 Lavorazione (prima della fustellatura)" color="bg-amber-500">
+      <Field label="Tipo lavorazione" col={2}>{sel('lav1', OPTS.lav)}</Field>
+      <Field label="Pellicola Nr.">{inp('pell1')}</Field>
+      <Field label="Cliché Nr.">{inp('cli1')}</Field>
     </Card>,
 
-    // 6 — Terzista post
-    <Card key={6}>
-      <SectionHeader icon="🔧" title="Terzista (dopo la fustellatura)" color="bg-cyan-500" />
-      <CardBody>
-        <Field label="Terzista">{inp('t2_terz')}</Field>
-        <Field label="Lavorazioni">{sel('t2_lav', OPTS.lav)}</Field>
-        <Field label="Pellicola Nr.">{inp('t2_pell')}</Field>
-        <Field label="Cliché Nr.">{inp('t2_cli')}</Field>
-      </CardBody>
+    // 6 — Lavorazione post
+    <Card key={6} title="🔧 Lavorazione (dopo la fustellatura)" color="bg-cyan-600">
+      <Field label="Tipo lavorazione" col={2}>{sel('lav2', OPTS.lav)}</Field>
     </Card>,
 
     // 7 — Finestratura & Incollatura
-    <div key={7} className="space-y-4">
-      <Card>
-        <SectionHeader icon="🔲" title="Finestratura" color="bg-teal-500" />
-        <CardBody>
-          <Field label="Finestratura">{sel('finest', OPTS.siNo)}</Field>
-          <Field label="Altezza bobina">{inp('bob')}</Field>
-        </CardBody>
+    <div key={7} className="space-y-3">
+      <Card title="🔲 Finestratura" color="bg-teal-600">
+        <Field label="Finestratura">{sel('finest', OPTS.siNo)}</Field>
+        <Field label="Altezza bobina">{inp('bob')}</Field>
       </Card>
-      <Card>
-        <SectionHeader icon="🔗" title="Incollatura" color="bg-teal-600" />
-        <CardBody>
-          <Field label="Incollatura">{sel('incoll', OPTS.siNo)}</Field>
-          <Field label="Tipologia">{inp('tipo_incoll')}</Field>
-          <Field label="Macchina">{sel('mac', OPTS.mac)}</Field>
-          <Field label="Eventuale terzista">{inp('terz_incoll')}</Field>
-        </CardBody>
+      <Card title="🔗 Incollatura" color="bg-teal-700">
+        <Field label="Incollatura">{sel('incoll', OPTS.siNo)}</Field>
+        <Field label="Tipologia incollatura">{inp('tipo_incoll')}</Field>
+        <Field label="Macchina" col={2}>{sel('mac', OPTS.mac)}</Field>
       </Card>
     </div>,
 
     // 8 — Confezione
-    <Card key={8}>
-      <SectionHeader icon="📫" title="Confezione" color="bg-green-500" />
-      <CardBody>
-        <Field label="Scatolone usato">{sel('scat', OPTS.scatolone)}</Field>
-        <Field label="Bancale">{sel('bancale', OPTS.bancale)}</Field>
-        <Field label="Quantità (pz)">{inp('qty', 'number')}</Field>
-        <Field label="Peso (kg)">{inp('peso', 'number')}</Field>
-        <Field label="Altezza massima bancale" span={2}>{inp('alt_ban')}</Field>
-      </CardBody>
+    <Card key={8} title="📫 Confezione" color="bg-green-600">
+      <Field label="Tipo scatolone">{sel('scat', OPTS.scatolone)}</Field>
+      <Field label="Bancale">{sel('bancale', OPTS.bancale)}</Field>
+      <Field label="Quantità (pz)">{inp('qty', 'number')}</Field>
+      <Field label="Peso (kg)">{inp('peso', 'number')}</Field>
+      <Field label="Altezza max bancale" col={2}>{inp('alt_ban')}</Field>
     </Card>,
   ]
 
-  // ─── RENDER ──────────────────────────────────────────────────────────────────
+  // ─── LOADING / RENDER ────────────────────────────────────────────────────────
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[hsl(210,40%,96%)] flex items-center justify-center">
+        <div className="text-lg text-[hsl(var(--muted-foreground))]">Caricamento...</div>
+      </div>
+    )
+  }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-[hsl(210,40%,96%)]">
+      <Header title="SCHEDA TECNICA" />
 
-      {/* ── HEADER ── */}
-      <div className="flex-shrink-0 bg-gradient-to-r from-orange-500 to-orange-600 shadow-lg">
+      <div className="max-w-[98%] mx-auto px-2 py-6 pt-20">
 
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-4 py-3 gap-3">
-          {/* Left: back + title */}
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => navigate('/summary')}
-              className="flex items-center gap-1.5 text-orange-100 hover:text-white text-sm font-medium
-                         bg-white/10 hover:bg-white/20 rounded-lg px-3 py-1.5 transition flex-shrink-0"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Dashboard
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-white font-bold text-base leading-tight flex items-center gap-2">
-                <FileText className="h-4 w-4 flex-shrink-0" />
-                Scheda Tecnica
-              </h1>
-              {selected ? (
-                <p className="text-orange-100 text-xs truncate">
-                  {selected.cliente} — {selected.codice} · {selected.tipologia}
-                </p>
-              ) : (
-                <p className="text-orange-200 text-xs">Cerca un articolo per compilare la scheda</p>
-              )}
-            </div>
+        {/* ── INTESTAZIONE PAGINA ── */}
+        <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-[hsl(var(--foreground))] mb-1">
+              📋 Scheda Tecnica
+            </h1>
+            <p className="text-[hsl(var(--muted-foreground))] text-sm">
+              Cerca un articolo — la scheda si compila automaticamente da DB Articoli
+            </p>
+          </div>
+          <Button onClick={() => navigate('/summary')} variant="outline" size="sm">
+            <Home className="h-4 w-4 mr-2" />
+            Dashboard
+          </Button>
+        </div>
+
+        {/* ── RICERCA DB ARTICOLI ── */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Search className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-semibold text-gray-700">Cerca articolo in DB Articoli</span>
+            {selected && (
+              <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                ✓ {selected.codice} — {selected.cliente}
+              </span>
+            )}
           </div>
 
-          {/* Right: actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={() => { setSelected(null); setForm(EMPTY); setImgUrl(null); setSec(1); setQuery('') }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white border border-white/30
-                         hover:bg-white/10 rounded-lg transition"
-            >
-              <Plus className="h-3.5 w-3.5" /> Nuova
-            </button>
+          <div className="flex gap-2">
+            <div className="relative flex-1" ref={searchRef}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Cerca per ID, codice articolo o cliente…"
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {results.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200
+                                rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+                  {results.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => loadArticolo(r.id)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-blue-50
+                                 border-b border-gray-100 last:border-0 transition group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-sm font-semibold text-gray-900">{r.codice}</span>
+                          <span className="ml-2 text-xs text-gray-500">{r.cliente}</span>
+                          {r.linea && <span className="ml-1 text-xs text-gray-400">· {r.linea}</span>}
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-blue-400 opacity-0 group-hover:opacity-100" />
+                      </div>
+                      {r.tipologia && (
+                        <div className="text-xs text-blue-600 mt-0.5">{r.tipologia}</div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {selected && (
+              <button
+                onClick={reset}
+                className="flex items-center gap-1 px-3 py-2 text-sm border border-gray-300
+                           rounded-md hover:bg-gray-50 text-gray-600"
+              >
+                <Plus className="h-3.5 w-3.5" /> Nuova
+              </button>
+            )}
+
             <button
               onClick={save}
               disabled={saving || !selected}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white text-orange-600
-                         hover:bg-orange-50 rounded-lg font-semibold disabled:opacity-40 transition shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-white border border-gray-300
+                         rounded-md hover:bg-gray-50 font-medium disabled:opacity-40 text-gray-700"
             >
               <Save className="h-3.5 w-3.5" />
               {saving ? 'Salvo…' : 'Salva'}
             </button>
+
             <button
               onClick={genPDF}
               disabled={generating}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-orange-700 hover:bg-orange-800
-                         text-white rounded-lg font-semibold disabled:opacity-40 transition shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700
+                         text-white rounded-md font-medium disabled:opacity-40"
             >
               <Download className="h-3.5 w-3.5" />
-              {generating ? 'Generando…' : 'PDF'}
+              {generating ? 'Generando…' : 'Scarica PDF'}
             </button>
           </div>
-        </div>
 
-        {/* Search bar */}
-        <div className="px-4 pb-3">
-          <div className="relative" ref={searchRef}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-300" />
-              <input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Cerca articolo per ID, codice o cliente… La scheda si compila automaticamente"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border-0 text-sm
-                           bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-gray-100
-                           placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50
-                           shadow-inner"
-              />
-              {query && (
-                <button onClick={() => { setQuery(''); setResults([]) }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Dropdown risultati */}
-            {results.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800
-                              border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50
-                              max-h-64 overflow-y-auto">
-                {results.map(r => (
-                  <button
-                    key={r.id}
-                    onClick={() => loadArticolo(r.id)}
-                    className="w-full text-left px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-gray-700
-                               border-b border-gray-100 dark:border-gray-700 last:border-0 transition group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">{r.codice}</span>
-                        <span className="ml-2 text-xs text-gray-500">{r.cliente} · {r.linea}</span>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-orange-400 opacity-0 group-hover:opacity-100 transition" />
-                    </div>
-                    {r.tipologia && <div className="text-xs text-orange-500 mt-0.5">{r.tipologia}</div>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── BODY ── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-
-        {/* Sidebar navigazione */}
-        <nav className="w-40 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-100
-                        dark:border-gray-700 flex flex-col py-2 overflow-y-auto shadow-sm">
-          {SECTIONS.map(s => (
-            <button
-              key={s.id}
-              onClick={() => setSec(s.id)}
-              className={`flex items-center gap-2.5 text-left px-3 py-2 mx-2 my-0.5 rounded-lg
-                          text-xs font-medium transition-all
-                          ${sec === s.id
-                            ? 'bg-orange-500 text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-600'
-                          }`}
-            >
-              <span className="text-sm">{s.icon}</span>
-              <span>{s.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-4">
-
-          {/* Banner articolo selezionato */}
+          {/* Info articolo selezionato */}
           {selected && (
-            <div className="mb-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800
-                            rounded-xl px-4 py-2.5 flex items-center gap-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <Package className="h-4 w-4 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-orange-800 dark:text-orange-200">
-                  Scheda compilata automaticamente da DB Articoli
-                </p>
-                <p className="text-xs text-orange-600 dark:text-orange-400 truncate">
-                  {selected.cliente} · {selected.codice} · ID: {selected.id}
-                </p>
-              </div>
-              <div className="flex-shrink-0 flex gap-1">
-                {[form.cliente, form.codice, form.tipo_scatola, form.finitura].filter(Boolean).map(v => (
-                  <span key={v} className="text-xs px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40
-                                           text-orange-700 dark:text-orange-300 rounded-full">{v}</span>
-                ))}
-              </div>
+            <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-100 text-xs text-blue-700">
+              <span className="font-semibold">Dati caricati automaticamente da DB Articoli:</span>
+              {' '}{selected.cliente} · {selected.codice} · {selected.tipologia} · ID: {selected.id}
             </div>
           )}
-
-          {/* Section content */}
-          {sections[sec]}
-        </main>
-      </div>
-
-      {/* ── TOAST ── */}
-      {toast && (
-        <div className={`fixed bottom-5 right-5 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg z-50
-                         flex items-center gap-2 animate-in slide-in-from-bottom-2
-                         ${toast.type === 'ok'
-                           ? 'bg-gray-900 text-white'
-                           : 'bg-red-600 text-white'}`}>
-          {toast.msg}
         </div>
-      )}
+
+        {/* ── LAYOUT PRINCIPALE: sidebar + form ── */}
+        <div className="flex gap-4">
+
+          {/* Sidebar navigazione sezioni */}
+          <nav className="flex-shrink-0 w-36 space-y-1">
+            {SECTIONS.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setSec(s.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition
+                  ${sec === s.id
+                    ? 'bg-white shadow-sm border border-gray-200 text-blue-700 font-semibold'
+                    : 'text-gray-600 hover:bg-white hover:shadow-sm'
+                  }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Contenuto sezione */}
+          <div className="flex-1 min-w-0">
+            {sectionContent[sec]}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
