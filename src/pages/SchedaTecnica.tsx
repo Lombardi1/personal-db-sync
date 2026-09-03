@@ -297,6 +297,33 @@ function buildPDF(d: FormData, imgUrl: string | null) {
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
+// ─── PRESENTAZIONE COMPONENTI (fuori dal componente per evitare remount) ─────
+
+function Field({ label, children, col = 1 }: { label: string; children: React.ReactNode; col?: number }) {
+  return (
+    <div className={col > 1 ? `col-span-${col}` : ''}>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function Card({ title, color = 'bg-blue-600', children }: {
+  title: string; color?: string; children: React.ReactNode
+}) {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className={`px-4 py-2.5 rounded-t-lg ${color} text-white`}>
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      <div className="p-4 grid grid-cols-2 gap-3">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+
 export default function SchedaTecnica() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
@@ -316,7 +343,7 @@ export default function SchedaTecnica() {
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setResults([])
+        if (results.length > 0) setResults([])
       }
     }
     document.addEventListener('mousedown', fn)
@@ -325,7 +352,7 @@ export default function SchedaTecnica() {
 
   // Ricerca su db_articoli
   const search = useCallback(async (q: string) => {
-    if (q.length < 2) { setResults([]); return }
+    if (q.length < 2) { if (results.length > 0) setResults([]); return }
     const { data } = await supabase
       .from('db_articoli')
       .select('id, nr, cliente, linea, codice, tipologia')
@@ -361,7 +388,7 @@ export default function SchedaTecnica() {
     setSelected(a as DbArticolo)
     setForm(articoloToForm(a as DbArticolo, fustResa, pinza))
     if (a.immagine_scheda_url) setImgUrl(a.immagine_scheda_url)
-    setResults([])
+    if (results.length > 0) setResults([])
     setQuery('')
     setSec(1)
     toast.success(`✓ Articolo "${a.codice}" caricato — scheda compilata da DB Articoli`)
@@ -445,26 +472,6 @@ export default function SchedaTecnica() {
     >
       {opts.map(o => <option key={o} value={o}>{o || '—'}</option>)}
     </select>
-  )
-
-  const Field = ({ label, children, col = 1 }: { label: string; children: React.ReactNode; col?: number }) => (
-    <div className={col > 1 ? `col-span-${col}` : ''}>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      {children}
-    </div>
-  )
-
-  const Card = ({ title, color = 'bg-blue-600', children }: {
-    title: string; color?: string; children: React.ReactNode
-  }) => (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className={`px-4 py-2.5 rounded-t-lg ${color} text-white`}>
-        <h3 className="text-sm font-semibold">{title}</h3>
-      </div>
-      <div className="p-4 grid grid-cols-2 gap-3">
-        {children}
-      </div>
-    </div>
   )
 
   // ─── SEZIONI ──────────────────────────────────────────────────────────────────
