@@ -81,6 +81,7 @@ export default function Summary() {
         { label: 'Gestione Produzione', route: '/produzione-dashboard', icon: <Factory className="h-5 w-5" />, color: 'bg-amber-600 hover:bg-amber-700' },
         { label: 'Genera Scheda / Etichette', route: '/genera-documenti', icon: <Printer className="h-5 w-5" />, color: 'bg-green-600 hover:bg-green-700' },
         { label: 'Scheda Tecnica', route: '/scheda-tecnica', icon: <FileText className="h-5 w-5" />, color: 'bg-blue-500 hover:bg-blue-600' },
+        { label: 'Schede Tecniche Salvate', route: '/schede-tecniche', icon: <Database className="h-5 w-5" />, color: 'bg-sky-600 hover:bg-sky-700' },
       ],
     },
     {
