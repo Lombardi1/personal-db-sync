@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Header } from '@/components/Header'
 import { Button } from '@/components/ui/button'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import jsPDF from 'jspdf'
@@ -156,7 +156,7 @@ function formToUpdate(d: FormData, imgUrl: string | null) {
   } as any
 }
 
-// ─── PDF ──────────────────────────────────────────────────────────────────────
+// ─── PDF ─────────────────────────────────────────────────────────────────────────────────────
 
 function buildPDF(d: FormData, imgUrl: string | null) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
@@ -238,7 +238,7 @@ function buildPDF(d: FormData, imgUrl: string | null) {
 
   y = imgTop+98
 
-  // ── RIGA A 2 COLONNE: Lavorazioni + Fustella ──────────────────────────────
+  // ── RIGA A 2 COLONNE: Lavorazioni + Fustella ──────────────────────────────────
   const pW=(UW-2)/2, rx=ML+pW+2
   let ly=y, ry=y
 
@@ -295,38 +295,12 @@ function buildPDF(d: FormData, imgUrl: string | null) {
   doc.save(fname)
 }
 
-// ─── COMPONENT ────────────────────────────────────────────────────────────────
-
-// ─── PRESENTAZIONE COMPONENTI (fuori dal componente per evitare remount) ─────
-
-function Field({ label, children, col = 1 }: { label: string; children: React.ReactNode; col?: number }) {
-  return (
-    <div className={col > 1 ? `col-span-${col}` : ''}>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-function Card({ title, color = 'bg-blue-600', children }: {
-  title: string; color?: string; children: React.ReactNode
-}) {
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className={`px-4 py-2.5 rounded-t-lg ${color} text-white`}>
-        <h3 className="text-sm font-semibold">{title}</h3>
-      </div>
-      <div className="p-4 grid grid-cols-2 gap-3">
-        {children}
-      </div>
-    </div>
-  )
-}
-
+// ─── COMPONENT ─────────────────────────────────────────────────────────────────────────────
 
 export default function SchedaTecnica() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [query, setQuery]       = useState('')
   const [results, setResults]   = useState<ArticoloSearch[]>([])
   const [selected, setSelected] = useState<DbArticolo | null>(null)
@@ -343,7 +317,7 @@ export default function SchedaTecnica() {
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        if (results.length > 0) setResults([])
+        setResults([])
       }
     }
     document.addEventListener('mousedown', fn)
@@ -352,7 +326,7 @@ export default function SchedaTecnica() {
 
   // Ricerca su db_articoli
   const search = useCallback(async (q: string) => {
-    if (q.length < 2) { if (results.length > 0) setResults([]); return }
+    if (q.length < 2) { setResults([]); return }
     const { data } = await supabase
       .from('db_articoli')
       .select('id, nr, cliente, linea, codice, tipologia')
@@ -388,11 +362,18 @@ export default function SchedaTecnica() {
     setSelected(a as DbArticolo)
     setForm(articoloToForm(a as DbArticolo, fustResa, pinza))
     if (a.immagine_scheda_url) setImgUrl(a.immagine_scheda_url)
-    if (results.length > 0) setResults([])
+    setResults([])
     setQuery('')
     setSec(1)
     toast.success(`✓ Articolo "${a.codice}" caricato — scheda compilata da DB Articoli`)
   }
+
+  // Apertura diretta da /schede-tecniche (?id=...)
+  useEffect(() => {
+    const idParam = searchParams.get('id')
+    if (idParam) loadArticolo(idParam)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const handlePDF = async (file: File) => {
     try {
@@ -448,7 +429,7 @@ export default function SchedaTecnica() {
     setSec(1); setQuery(''); setResults([])
   }
 
-  // ─── UI HELPERS ──────────────────────────────────────────────────────────────
+  // ─── UI HELPERS ───────────────────────────────────────────────────────────────────────────
 
   const inp = (k: keyof FormData, type = 'text', placeholder = '') => (
     <input
@@ -474,7 +455,27 @@ export default function SchedaTecnica() {
     </select>
   )
 
-  // ─── SEZIONI ──────────────────────────────────────────────────────────────────
+  const Field = ({ label, children, col = 1 }: { label: string; children: React.ReactNode; col?: number }) => (
+    <div className={col > 1 ? `col-span-${col}` : ''}>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      {children}
+    </div>
+  )
+
+  const Card = ({ title, color = 'bg-blue-600', children }: {
+    title: string; color?: string; children: React.ReactNode
+  }) => (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className={`px-4 py-2.5 rounded-t-lg ${color} text-white`}>
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      <div className="p-4 grid grid-cols-2 gap-3">
+        {children}
+      </div>
+    </div>
+  )
+
+  // ─── SEZIONI ───────────────────────────────────────────────────────────────────────────────
 
   const sectionContent = [
 
