@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs';
 import { Articolo, LavoroStampa } from '@/types/produzione';
+import { Cartone } from '@/types';
+import { supabase } from '@/lib/supabase';
 
 // ============================================================
 // UTILITIES PER TEMPLATE EXCEL
@@ -39,19 +41,24 @@ async function downloadWorkbook(workbook: ExcelJS.Workbook, fileName: string): P
 
 // ============================================================
 // GENERA SCHEDA PRODUZIONE
-// Apre il template template_scheda.xlsx e compila:
-//   - AQ3: Numero Lotto
-//   - AQ4: Cliente
-//   - BA3: Data
-//   - BE4: Lavoro
-//   - BV6-BV13: ID Articoli
-// Replica fedelmente genera_documenti_integrato.py
+//
+// Il template (template_scheda.xlsx) è la scheda reale usata in
+// produzione. Molte celle contengono formule VLOOKUP verso file Excel
+// esterni (Lista, Clienti, Giacenza_Articoli, DB_Giacenza,
+// Giacenza_Fustelle) che non sono disponibili in questo ambiente.
+// Per questo motivo, invece di affidarci a quelle formule, scriviamo
+// direttamente i valori finali nelle stesse celle, prendendoli dal
+// nostro database (db_articoli, giacenza, fustelle).
+//
+// Sezioni volutamente NON compilate (restano da riempire a mano in
+// produzione): checklist igieniche/firme, quantità fogli stampati
+// giorno per giorno, pesi/colli di trasporto, dati di prestampa
+// (lastre/pinza/squadra) che dipendono dall'operatore.
 // ============================================================
 export const generaSchedaProduzione = async (
   lotto: LavoroStampa,
   articoli: Articolo[],
-  cassetto: string,
-  note: string
+  cartone: Cartone | null
 ): Promise<string> => {
   const wb = await loadTemplate('template_scheda.xlsx');
   const ws = wb.getWorksheet('Scheda');
@@ -60,30 +67,71 @@ export const generaSchedaProduzione = async (
     throw new Error('Foglio "Scheda" non trovato nel template');
   }
 
-  // Scrivi numero lotto (F2 usa formula =AQ3)
+  const primo = articoli[0] as (Articolo & Record<string, any>) | undefined;
+
+  // ── Intestazione lotto ──
   ws.getCell('AQ3').value = lotto.lotto;
-
-  // Scrivi cliente (F3 usa formula =AQ4)
   ws.getCell('AQ4').value = lotto.cliente || '';
-
-  // Scrivi data (P2 usa formula =BA3)
   ws.getCell('BA3').value = lotto.data ? new Date(lotto.data) : new Date();
-
-  // Scrivi lavoro (T3 usa formula =BE4)
   ws.getCell('BE4').value = lotto.lavoro || '';
+  ws.getCell('BI3').value = lotto.ordine_nr || '';
+  if (lotto.data_ordine) ws.getCell('BR3').value = new Date(lotto.data_ordine);
+  ws.getCell('BR4').value = primo?.certificazione ? 'SI' : 'NO';
+  ws.getCell('AB9').value = lotto.cliente || '';
 
-  // Scrivi ID articoli in BV6-BV13 (max 8 articoli)
+  // ── Cartone selezionato dal Magazzino Cartoni ──
+  if (cartone) {
+    ws.getCell('AQ9').value = cartone.codice || '';
+    ws.getCell('AP10').value = cartone.fornitore || '';
+    ws.getCell('AX10').value = cartone.ordine || '';
+    ws.getCell('BE10').value = cartone.ddt || '';
+    ws.getCell('BO10').value = cartone.tipologia || '';
+    ws.getCell('AP11').value = cartone.formato || '';
+    ws.getCell('AY11').value = cartone.grammatura || '';
+  }
+
+  // ── Colori / Pantoni / Polimero / Finitura (dal primo articolo selezionato) ──
+  if (primo) {
+    ws.getCell('AP46').value = primo.c || '';
+    ws.getCell('AQ46').value = primo.m || '';
+    ws.getCell('AR46').value = primo.y || '';
+    ws.getCell('AS46').value = primo.k || '';
+    ws.getCell('AW46').value = primo.pan_nr || '';
+    ws.getCell('AZ46').value = primo.pan_nr_2 || '';
+    ws.getCell('BC46').value = primo.pan_nr_3 || '';
+    ws.getCell('BF46').value = primo.pan_nr_4 || '';
+    ws.getCell('BI46').value = primo.pan_nr_5 || '';
+    ws.getCell('BL46').value = primo.pan_nr_6 || '';
+    ws.getCell('AP47').value = primo.polimero || '';
+    ws.getCell('AW47').value = primo.finitura || '';
+    ws.getCell('AW50').value = primo.linear || '';
+
+    // Finestratura
+    ws.getCell('M112').value = primo.h_finestratura || 0;
+
+    // Fustella (dettagli dalla tabella fustelle collegata all'articolo)
+    if (primo.fustella_nr) {
+      const { data: fu } = await supabase
+        .from('fustelle')
+        .select('fustellatrice, pulitore_codice, pinza_tagliata')
+        .eq('codice', primo.fustella_nr)
+        .maybeSingle();
+
+      ws.getCell('F105').value = primo.fustella_nr;
+      ws.getCell('M105').value = fu?.fustellatrice || '';
+      ws.getCell('T105').value = fu?.pulitore_codice || '';
+      ws.getCell('Z105').value = fu?.pinza_tagliata ? 'SI' : 'NO';
+    }
+    ws.getCell('AI105').value = primo.tassello || '';
+  }
+
+  // ── Elenco articoli selezionati (riferimento) ──
   const startRow = 6;
   articoli.forEach((articolo, index) => {
-    if (index < 8) {
+    if (index < 34) {
       ws.getCell(`BV${startRow + index}`).value = articolo.id;
     }
   });
-
-  // Pulisci righe articoli non usate
-  for (let i = articoli.length; i < 8; i++) {
-    ws.getCell(`BV${startRow + i}`).value = null;
-  }
 
   // Genera nome file e scarica
   const dataOggi = new Date().toISOString().split('T')[0].replace(/-/g, '');
@@ -203,10 +251,10 @@ export const generaEtichette = async (
 export const generaTutto = async (
   lotto: LavoroStampa,
   articoli: Articolo[],
-  cassetto: string,
-  note: string
+  cartone: Cartone | null,
+  cassetto: string
 ): Promise<{ schedaFile: string; etichettaFiles: string[] }> => {
-  const schedaFile = await generaSchedaProduzione(lotto, articoli, cassetto, note);
+  const schedaFile = await generaSchedaProduzione(lotto, articoli, cartone);
   const etichettaFiles = await generaEtichette(lotto, articoli, cassetto);
   return { schedaFile, etichettaFiles };
 };
