@@ -31,7 +31,7 @@ import ImpostazioniSistema from "./pages/ImpostazioniSistema";
 import AgenteConferme from "./pages/AgenteConferme";
 import LogConferme from "./pages/LogConferme";
 import SchedaTecnica from "./pages/SchedaTecnica";
-import SchedaTecnica from "./pages/SchedaTecnica";
+import SchedeTecniche from "./pages/SchedeTecniche";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -68,7 +68,7 @@ const App = () => {
             <Route path="/gestione-utenti" element={<ProtectedRoute allowedRoles={['amministratore']}><GestioneUtenti /></ProtectedRoute>} />
             <Route path="/anagrafica" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><Anagrafica /></ProtectedRoute>} />
                 <Route path="/scheda-tecnica" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><SchedaTecnica /></ProtectedRoute>} />
-                <Route path="/scheda-tecnica" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><SchedaTecnica /></ProtectedRoute>} />
+                <Route path="/schede-tecniche" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><SchedeTecniche /></ProtectedRoute>} />
             <Route path="/ordini-acquisto" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><OrdiniAcquisto /></ProtectedRoute>} />
             <Route path="/azienda-info" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><AziendaInfoPage /></ProtectedRoute>} />
             <Route path="/gestione-fustelle" element={<ProtectedRoute allowedRoles={['amministratore', 'visualizzatore']}><GestioneFustelle /></ProtectedRoute>} />
