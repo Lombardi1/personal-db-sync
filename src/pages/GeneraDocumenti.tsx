@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Search, FileText, Tag, Home } from 'lucide-react';
+import { Search, FileText, Tag, Home, Package } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Articolo, LavoroStampa } from '@/types/produzione';
+import { Cartone } from '@/types';
 import { generaSchedaProduzione as generaSchedaXLSX } from '@/utils/generatoreScheda';
 import {
   Table,
@@ -38,16 +39,20 @@ export default function GeneraDocumenti() {
 
   const [lotti, setLotti] = useState<LavoroStampa[]>([]);
   const [articoli, setArticoli] = useState<Articolo[]>([]);
+  const [cartoni, setCartoni] = useState<Cartone[]>([]);
   const [lottoSelezionato, setLottoSelezionato] = useState<LavoroStampa | null>(null);
   const [articoliSelezionati, setArticoliSelezionati] = useState<Set<string>>(new Set());
+  const [cartoneSelezionato, setCartoneSelezionato] = useState<Cartone | null>(null);
   const [searchLotto, setSearchLotto] = useState('');
   const [searchArticolo, setSearchArticolo] = useState('');
+  const [searchCartone, setSearchCartone] = useState('');
   const [loading, setLoading] = useState(true);
   const [generatingScheda, setGeneratingScheda] = useState(false);
 
   useEffect(() => {
     fetchLotti();
     fetchArticoli();
+    fetchCartoni();
   }, []);
 
   const fetchLotti = async () => {
@@ -84,11 +89,27 @@ export default function GeneraDocumenti() {
     }
   };
 
-  // Selezionando un nuovo lotto, si riparte da zero con la selezione articoli
+  const fetchCartoni = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('giacenza')
+        .select('codice, fornitore, ordine, ddt, tipologia, formato, grammatura, fogli, cliente, lavoro, magazzino');
+
+      if (error) throw error;
+      setCartoni((data as Cartone[]) || []);
+    } catch (error: any) {
+      console.error('Errore caricamento cartoni:', error);
+      toast.error('Errore nel caricamento cartoni');
+    }
+  };
+
+  // Selezionando un nuovo lotto, si riparte da zero con articoli e cartone
   const selezionaLotto = (lotto: LavoroStampa) => {
     setLottoSelezionato(lotto);
     setArticoliSelezionati(new Set());
+    setCartoneSelezionato(null);
     setSearchArticolo('');
+    setSearchCartone('');
   };
 
   // Filtra lotti
@@ -132,6 +153,30 @@ export default function GeneraDocumenti() {
     );
   });
 
+  // Cartoni pertinenti: prima quelli già assegnati allo stesso cliente/lavoro,
+  // poi il resto (filtrabili con la ricerca)
+  const cartoniOrdinati = useMemo(() => {
+    if (!lottoSelezionato) return [];
+    const clienteLotto = lottoSelezionato.cliente.trim().toLowerCase();
+    return [...cartoni].sort((a, b) => {
+      const aMatch = (a.cliente || '').trim().toLowerCase() === clienteLotto ? 0 : 1;
+      const bMatch = (b.cliente || '').trim().toLowerCase() === clienteLotto ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return (a.codice || '').localeCompare(b.codice || '');
+    });
+  }, [cartoni, lottoSelezionato]);
+
+  const cartoniFiltrati = cartoniOrdinati.filter(c => {
+    const search = searchCartone.toLowerCase();
+    if (!search) return true;
+    return (
+      (c.codice || '').toLowerCase().includes(search) ||
+      (c.tipologia || '').toLowerCase().includes(search) ||
+      (c.formato || '').toLowerCase().includes(search) ||
+      (c.fornitore || '').toLowerCase().includes(search)
+    );
+  });
+
   const toggleArticolo = (id: string) => {
     const newSet = new Set(articoliSelezionati);
     if (newSet.has(id)) {
@@ -155,11 +200,15 @@ export default function GeneraDocumenti() {
       toast.error('Seleziona almeno un articolo');
       return;
     }
+    if (!cartoneSelezionato) {
+      toast.error('Seleziona il cartone da utilizzare');
+      return;
+    }
 
     setGeneratingScheda(true);
     try {
       const articoliArray = getArticoliSelezionatiArray();
-      const fileName = await generaSchedaXLSX(lottoSelezionato, articoliArray, '', '');
+      const fileName = await generaSchedaXLSX(lottoSelezionato, articoliArray, cartoneSelezionato);
       toast.success(`Scheda produzione scaricata: ${fileName}`);
     } catch (error: any) {
       console.error('Errore generazione scheda:', error);
@@ -180,7 +229,7 @@ export default function GeneraDocumenti() {
               Genera Scheda Produzione
             </h1>
             <p className="text-[hsl(215.4,16.3%,46.9%)] mt-1">
-              Seleziona il lotto: gli articoli dello stesso cliente compaiono già filtrati
+              Seleziona il lotto: articoli e cartoni dello stesso cliente compaiono già filtrati
             </p>
           </div>
 
@@ -190,7 +239,7 @@ export default function GeneraDocumenti() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* SEZIONE 1: SELEZIONE LOTTO */}
           <Card>
             <CardHeader>
@@ -214,7 +263,7 @@ export default function GeneraDocumenti() {
                   />
                 </div>
 
-                <ScrollArea className="h-[400px] border rounded-lg">
+                <ScrollArea className="h-[360px] border rounded-lg">
                   <div className="p-2 space-y-2">
                     {lottiFiltrati.map((lotto) => (
                       <div
@@ -253,12 +302,6 @@ export default function GeneraDocumenti() {
                       {lottoSelezionato.ordine_nr && (
                         <div><strong>Ordine:</strong> {lottoSelezionato.ordine_nr}</div>
                       )}
-                      {lottoSelezionato.cartone && (
-                        <div><strong>Cartone:</strong> {lottoSelezionato.cartone}</div>
-                      )}
-                      {lottoSelezionato.colori && (
-                        <div><strong>Colori:</strong> {lottoSelezionato.colori}</div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -276,7 +319,7 @@ export default function GeneraDocumenti() {
               <CardDescription>
                 {lottoSelezionato
                   ? `Articoli di ${lottoSelezionato.cliente} (${articoliDelCliente.length}) — ${articoliSelezionati.size} selezionati`
-                  : 'Seleziona prima un lotto per vedere i suoi articoli'}
+                  : 'Seleziona prima un lotto'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -307,32 +350,31 @@ export default function GeneraDocumenti() {
                   </div>
                 )}
 
-                <ScrollArea className="h-[400px] border rounded-lg">
+                <ScrollArea className="h-[300px] border rounded-lg">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12"></TableHead>
+                        <TableHead className="w-10"></TableHead>
                         <TableHead>Codice</TableHead>
-                        <TableHead>Descrizione</TableHead>
                         <TableHead>Linea</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {!lottoSelezionato ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                            Seleziona un lotto per vedere gli articoli del cliente
+                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                            Seleziona un lotto
                           </TableCell>
                         </TableRow>
                       ) : loading ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8">
+                          <TableCell colSpan={3} className="text-center py-8">
                             Caricamento...
                           </TableCell>
                         </TableRow>
                       ) : articoliFiltrati.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8">
+                          <TableCell colSpan={3} className="text-center py-8">
                             Nessun articolo trovato per questo cliente
                           </TableCell>
                         </TableRow>
@@ -352,9 +394,6 @@ export default function GeneraDocumenti() {
                             <TableCell className="font-mono text-sm">
                               {articolo.codice}
                             </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {articolo.descrizione || '-'}
-                            </TableCell>
                             <TableCell>{articolo.linea || '-'}</TableCell>
                           </TableRow>
                         ))
@@ -365,14 +404,74 @@ export default function GeneraDocumenti() {
               </div>
             </CardContent>
           </Card>
+
+          {/* SEZIONE 3: SELEZIONE CARTONE */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                3. Seleziona Cartone
+              </CardTitle>
+              <CardDescription>
+                {cartoneSelezionato
+                  ? `Selezionato: ${cartoneSelezionato.codice}`
+                  : 'Scegli il cartone da Magazzino Cartoni'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Filtra per codice, tipologia, formato..."
+                    value={searchCartone}
+                    onChange={(e) => setSearchCartone(e.target.value)}
+                    className="pl-10"
+                    disabled={!lottoSelezionato}
+                  />
+                </div>
+
+                <ScrollArea className="h-[300px] border rounded-lg">
+                  <div className="p-2 space-y-2">
+                    {!lottoSelezionato ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">
+                        Seleziona un lotto
+                      </div>
+                    ) : cartoniFiltrati.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">
+                        Nessun cartone trovato
+                      </div>
+                    ) : (
+                      cartoniFiltrati.slice(0, 200).map((c) => (
+                        <div
+                          key={c.codice}
+                          onClick={() => setCartoneSelezionato(c)}
+                          className={`
+                            p-3 rounded-lg border cursor-pointer transition-all text-sm
+                            ${cartoneSelezionato?.codice === c.codice
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'hover:bg-accent'}
+                          `}
+                        >
+                          <div className="font-semibold">{c.codice}</div>
+                          <div className="opacity-80">{c.tipologia}</div>
+                          <div className="text-xs opacity-70">{c.formato} · {c.grammatura}g</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* SEZIONE 3: GENERAZIONE */}
+        {/* SEZIONE 4: GENERAZIONE */}
         <Card>
           <CardHeader>
-            <CardTitle>3. Genera Scheda</CardTitle>
+            <CardTitle>4. Genera Scheda</CardTitle>
             <CardDescription>
-              Genera la scheda di produzione Excel per il lotto e gli articoli selezionati
+              Genera la scheda di produzione Excel per il lotto, gli articoli e il cartone selezionati
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -384,11 +483,14 @@ export default function GeneraDocumenti() {
                 <div className={articoliSelezionati.size > 0 ? 'text-green-600' : 'text-muted-foreground'}>
                   {articoliSelezionati.size > 0 ? '✓' : '○'} Articoli: {articoliSelezionati.size}
                 </div>
+                <div className={cartoneSelezionato ? 'text-green-600' : 'text-muted-foreground'}>
+                  {cartoneSelezionato ? '✓' : '○'} Cartone: {cartoneSelezionato ? cartoneSelezionato.codice : 'Non selezionato'}
+                </div>
               </div>
 
               <Button
                 onClick={handleGeneraScheda}
-                disabled={!lottoSelezionato || articoliSelezionati.size === 0 || generatingScheda}
+                disabled={!lottoSelezionato || articoliSelezionati.size === 0 || !cartoneSelezionato || generatingScheda}
                 className="gap-2 bg-green-600 hover:bg-green-700"
                 size="lg"
               >
