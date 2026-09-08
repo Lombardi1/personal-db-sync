@@ -68,6 +68,129 @@ const parseGrammaturaForCalculation = (grammaturaString: string | undefined): nu
   return isNaN(gramm) ? null : gramm;
 };
 
+// ─── Sotto-componente per i campi inchiostro ──────────────────────────────────
+interface InchiostroFieldsProps {
+  index: number;
+  isSubmitting: boolean;
+  isOrderCancelled: boolean;
+  isNewOrder: boolean;
+}
+
+function InchiostroFields({ index, isSubmitting, isOrderCancelled, isNewOrder }: InchiostroFieldsProps) {
+  const { register, setValue, watch } = useFormContext<OrdineAcquisto>();
+
+  const coloreTipo = watch(`articoli.${index}.colore_tipo`);
+  const coloreCodice = watch(`articoli.${index}.colore_codice`);
+  const prezzoAttuale = watch(`articoli.${index}.prezzo_unitario`);
+  const coloreFood = watch(`articoli.${index}.colore_food`);
+
+  const [displayPrezzo, setDisplayPrezzo] = React.useState<string>(() =>
+    prezzoAttuale != null ? String(prezzoAttuale).replace('.', ',') : ''
+  );
+  const [cmykPriceLoaded, setCmykPriceLoaded] = React.useState(false);
+
+  // Lookup prezzo storico CMYK quando il codice cambia e il tipo è CMYK
+  React.useEffect(() => {
+    if (coloreTipo !== 'CMYK' || !coloreCodice || !isNewOrder) return;
+    // Non sovrascrivere se l'utente ha già inserito un prezzo manualmente
+    if (cmykPriceLoaded) return;
+
+    const fetchLastCmykPrice = async () => {
+      const { data } = await supabase
+        .from('colori_in_arrivo')
+        .select('prezzo_unitario')
+        .eq('codice', coloreCodice)
+        .eq('tipo', 'CMYK')
+        .not('prezzo_unitario', 'is', null)
+        .order('data_creazione', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.prezzo_unitario != null && !prezzoAttuale) {
+        const prezzo = data.prezzo_unitario as number;
+        setValue(`articoli.${index}.prezzo_unitario`, prezzo, { shouldValidate: true });
+        setDisplayPrezzo(prezzo.toFixed(3).replace('.', ','));
+        setCmykPriceLoaded(true);
+      }
+    };
+
+    fetchLastCmykPrice();
+  }, [coloreCodice, coloreTipo, isNewOrder]);
+
+  // Reset flag se l'utente cambia il tipo
+  React.useEffect(() => {
+    setCmykPriceLoaded(false);
+  }, [coloreTipo]);
+
+  return (
+    <>
+      <div>
+        <Label htmlFor={`articoli.${index}.colore_nome`} className="text-xs">Nome Colore *</Label>
+        <Input
+          id={`articoli.${index}.colore_nome`}
+          {...register(`articoli.${index}.colore_nome`)}
+          placeholder="Es. Pantone 485 C"
+          disabled={isSubmitting || isOrderCancelled}
+          className="text-sm"
+        />
+      </div>
+      <div>
+        <Label htmlFor={`articoli.${index}.colore_codice`} className="text-xs">Codice Colore *</Label>
+        <Input
+          id={`articoli.${index}.colore_codice`}
+          {...register(`articoli.${index}.colore_codice`)}
+          placeholder="Es. P485C"
+          disabled={isSubmitting || isOrderCancelled}
+          className="text-sm"
+        />
+      </div>
+      <div>
+        <Label className="text-xs">Tipo *</Label>
+        <Select
+          onValueChange={(v) => setValue(`articoli.${index}.colore_tipo`, v, { shouldValidate: true })}
+          value={coloreTipo || ''}
+          disabled={isSubmitting || isOrderCancelled}
+        >
+          <SelectTrigger className="w-full text-sm"><SelectValue placeholder="Seleziona tipo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="CMYK">CMYK</SelectItem>
+            <SelectItem value="Pantone">Pantone</SelectItem>
+            <SelectItem value="Custom">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+        {coloreTipo === 'CMYK' && cmykPriceLoaded && (
+          <p className="text-xs text-blue-500 mt-1">Prezzo caricato dall'ultimo ordine CMYK</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor={`articoli.${index}.colore_marca`} className="text-xs">Marca</Label>
+        <Input
+          id={`articoli.${index}.colore_marca`}
+          {...register(`articoli.${index}.colore_marca`)}
+          placeholder="Es. Sun Chemical"
+          disabled={isSubmitting || isOrderCancelled}
+          className="text-sm"
+        />
+      </div>
+      {/* Checkbox Food */}
+      <div className="flex items-center gap-2 pt-1 col-span-2">
+        <input
+          type="checkbox"
+          id={`articoli.${index}.colore_food`}
+          checked={!!coloreFood}
+          onChange={(e) => setValue(`articoli.${index}.colore_food`, e.target.checked, { shouldValidate: true })}
+          disabled={isSubmitting || isOrderCancelled}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <Label htmlFor={`articoli.${index}.colore_food`} className="text-xs font-medium cursor-pointer select-none">
+          Colore food (contatto alimentare)
+        </Label>
+      </div>
+    </>
+  );
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 export function OrdineAcquistoArticoloFormRow({
   index,
   isSubmitting,
@@ -934,7 +1057,7 @@ export function OrdineAcquistoArticoloFormRow({
                     <div>
                       <Label htmlFor={`articoli.${index}.incollatrice`} className="text-xs">Incollatrice *</Label>
                       <Input
-                        id={`articoli.${index}.incollatrice`}
+                        id={`articoli.${index}.incollatrice"}
                         {...register(`articoli.${index}.incollatrice`)}
                         placeholder="Es. Bobst Masterfold"
                         disabled={isSubmitting || isOrderCancelled}
@@ -1112,31 +1235,12 @@ export function OrdineAcquistoArticoloFormRow({
               <h5 className="text-sm font-semibold mb-2 text-gray-700">{isInchiostroFornitore ? 'Dettagli Colore' : 'Dettagli Articolo'}</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {isInchiostroFornitore ? (
-                  <>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.colore_nome`} className="text-xs">Nome Colore *</Label>
-                      <Input id={`articoli.${index}.colore_nome`} {...register(`articoli.${index}.colore_nome`)} placeholder="Es. Pantone 485 C" disabled={isSubmitting || isOrderCancelled} className="text-sm" />
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.colore_codice`} className="text-xs">Codice Colore *</Label>
-                      <Input id={`articoli.${index}.colore_codice`} {...register(`articoli.${index}.colore_codice`)} placeholder="Es. P485C" disabled={isSubmitting || isOrderCancelled} className="text-sm" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Tipo *</Label>
-                      <Select onValueChange={(v) => setValue(`articoli.${index}.colore_tipo`, v, { shouldValidate: true })} value={watch(`articoli.${index}.colore_tipo`) || ''} disabled={isSubmitting || isOrderCancelled}>
-                        <SelectTrigger className="w-full text-sm"><SelectValue placeholder="Seleziona tipo" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CMYK">CMYK</SelectItem>
-                          <SelectItem value="Pantone">Pantone</SelectItem>
-                          <SelectItem value="Custom">Custom</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor={`articoli.${index}.colore_marca`} className="text-xs">Marca</Label>
-                      <Input id={`articoli.${index}.colore_marca`} {...register(`articoli.${index}.colore_marca`)} placeholder="Es. Sun Chemical" disabled={isSubmitting || isOrderCancelled} className="text-sm" />
-                    </div>
-                  </>
+                  <InchiostroFields
+                    index={index}
+                    isSubmitting={isSubmitting}
+                    isOrderCancelled={isOrderCancelled}
+                    isNewOrder={isNewOrder}
+                  />
                 ) : (
                 <div>
                   <Label htmlFor={`articoli.${index}.descrizione`} className="text-xs">Descrizione *</Label>
