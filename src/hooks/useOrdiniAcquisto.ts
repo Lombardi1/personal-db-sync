@@ -39,9 +39,10 @@ export function useOrdiniAcquisto() {
     const { data: existingOrdiniEntries } = await supabase.from('ordini').select('*').eq('ordine', ordineAcquisto.numero_ordine);
     const { data: existingFustelleEntries } = await supabase.from('fustelle').select('*').eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
 
-    // Step 2: Delete all articles of this order from 'ordini', 'giacenza', and 'fustelle'
+    // Step 2: Delete all articles of this order from 'ordini', 'giacenza', and 'colori_in_arrivo'
     await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
     await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine);
+    await supabase.from('colori_in_arrivo').delete().eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
     // Le fustelle NON vengono cancellate: il codice resta come buco disponibile
 
     // Step 3: Re-insert/update based on the current state of ordineAcquisto.articoli
@@ -116,7 +117,7 @@ export function useOrdiniAcquisto() {
               grammatura: formatGrammatura(articolo.grammatura || 'N/A'), // Standardizza qui
               fogli: previousGiacenzaState?.fogli || numFogli, // Preserve manual fogli if exists, else use OA
               cliente: articolo.cliente || 'N/A',
-              lavoro: articolo.lavoro || 'N/A',
+              lavoro articolo.lavoro || 'N/A',
               prezzo: articolo.prezzo_unitario,
               note: ordineAcquisto.note || '-',
               fsc: articolo.fsc,
@@ -225,11 +226,69 @@ export function useOrdiniAcquisto() {
             ordine_acquisto_numero: ordineAcquisto.numero_ordine,
             data_consegna_prevista: articolo.data_consegna_prevista || null,
             stato: articolo.stato || 'in_attesa',
+            food: articolo.colore_food || false,
           };
           const { error: insertError } = await supabase.from('colori_in_arrivo').insert([coloreInArrivo]);
           if (insertError) {
             console.error(`[syncArticleInventoryStatus] Errore inserimento colore in arrivo:`, insertError);
             toast.error(`Errore colore in arrivo: ${insertError.message}`);
+          }
+
+          // Quando ricevuto: aggiorna il magazzino colori
+          if (articolo.stato === 'ricevuto') {
+            const quantitaRicevuta = articolo.quantita || 0;
+            const { data: existingColore, error: fetchColoreError } = await supabase
+              .from('colori')
+              .select('*')
+              .eq('codice', coloreCodice)
+              .maybeSingle();
+
+            if (fetchColoreError) {
+              console.error(`[syncArticleInventoryStatus] Errore recupero colore '${coloreCodice}':`, fetchColoreError);
+              toast.error(`Errore recupero colore ${coloreCodice}: ${fetchColoreError.message}`);
+            } else if (existingColore) {
+              // Colore già nel magazzino: aggiunge la quantità
+              const { error: updateError } = await supabase
+                .from('colori')
+                .update({
+                  quantita_disponibile: existingColore.quantita_disponibile + quantitaRicevuta,
+                  food: articolo.colore_food ?? existingColore.food ?? false,
+                  fornitore: fornitoreNome,
+                  ultima_modifica: new Date().toISOString(),
+                })
+                .eq('codice', coloreCodice);
+              if (updateError) {
+                console.error(`[syncArticleInventoryStatus] Errore aggiornamento magazzino colore '${coloreCodice}':`, updateError);
+                toast.error(`Errore aggiornamento magazzino colore ${coloreCodice}: ${updateError.message}`);
+              } else {
+                console.log(`[syncArticleInventoryStatus] Magazzino colore '${coloreCodice}' aggiornato: +${quantitaRicevuta} kg.`);
+                toast.success(`Magazzino colori: +${quantitaRicevuta} kg aggiunti per ${coloreCodice}`);
+              }
+            } else {
+              // Colore non esistente: crea voce nel magazzino
+              const { error: insertColoreError } = await supabase
+                .from('colori')
+                .insert([{
+                  codice: coloreCodice,
+                  nome: coloreNome,
+                  tipo: articolo.colore_tipo || 'Custom',
+                  marca: articolo.colore_marca || null,
+                  quantita_disponibile: quantitaRicevuta,
+                  unita_misura: articolo.colore_unita_misura || 'kg',
+                  fornitore: fornitoreNome,
+                  disponibile: true,
+                  food: articolo.colore_food || false,
+                  data_creazione: new Date().toISOString(),
+                  ultima_modifica: new Date().toISOString(),
+                }]);
+              if (insertColoreError) {
+                console.error(`[syncArticleInventoryStatus] Errore creazione colore '${coloreCodice}' nel magazzino:`, insertColoreError);
+                toast.error(`Errore creazione colore ${coloreCodice}: ${insertColoreError.message}`);
+              } else {
+                console.log(`[syncArticleInventoryStatus] Colore '${coloreCodice}' creato nel magazzino con ${quantitaRicevuta} kg.`);
+                toast.success(`Colore ${coloreCodice} aggiunto al magazzino colori`);
+              }
+            }
           }
         }
       } catch (e: any) {
