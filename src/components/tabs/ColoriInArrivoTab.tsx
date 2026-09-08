@@ -74,6 +74,7 @@ export function ColoriInArrivoTab({ onCaricato }: ColoriInArrivoTabProps) {
                 <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Marca</th>
                 <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">Quantità</th>
                 <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">€/u</th>
+                <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[55px]">Food</th>
                 <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[120px]">Fornitore</th>
                 <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[80px]">OA</th>
                 <th className="px-2 py-2 text-left text-[10px] sm:text-xs font-semibold w-[100px]">Consegna</th>
@@ -89,6 +90,12 @@ export function ColoriInArrivoTab({ onCaricato }: ColoriInArrivoTabProps) {
                   <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{c.marca || '-'}</td>
                   <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap font-semibold">{c.quantita} {c.unita_misura}</td>
                   <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{c.prezzo_unitario != null ? `${Number(c.prezzo_unitario).toFixed(2)} €` : '-'}</td>
+                  <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">
+                    {c.food
+                      ? <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">🌿 Sì</span>
+                      : <span className="text-gray-300">—</span>
+                    }
+                  </td>
                   <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{c.fornitore || '-'}</td>
                   <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{c.ordine_acquisto_numero || '-'}</td>
                   <td className="px-2 py-1.5 text-[10px] sm:text-xs whitespace-nowrap">{formatData(c.data_consegna_prevista)}</td>
