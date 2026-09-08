@@ -130,6 +130,7 @@ export interface ArticoloOrdineAcquisto {
   colore_tipo?: string | null;
   colore_marca?: string | null;
   colore_unita_misura?: string | null;
+  colore_food?: boolean;
   quantita?: number | null;
   prezzo_unitario?: number | null;
   cliente?: string | null;
@@ -222,6 +223,7 @@ export interface Colore {
   fornitore?: string | null;
   note?: string | null;
   disponibile: boolean;
+  food?: boolean;
   data_creazione: string;
   ultima_modifica: string;
 }
@@ -240,6 +242,7 @@ export interface ColoreInArrivo {
   data_consegna_prevista?: string | null;
   note?: string | null;
   stato: string;
+  food?: boolean;
   data_creazione?: string;
   ultima_modifica?: string;
 }
