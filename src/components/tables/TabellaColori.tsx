@@ -91,6 +91,11 @@ export function TabellaColori({
                       <span className="font-medium text-gray-800">{colore.nome}</span>
                     )}
                     <p className="text-xs text-gray-400 font-mono mt-0.5">{colore.codice}</p>
+                    {colore.food && (
+                      <span className="inline-flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
+                        🌿 Food
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>{getBadgeTipo(colore.tipo)}</TableCell>
