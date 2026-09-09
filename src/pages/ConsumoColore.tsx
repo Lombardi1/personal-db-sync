@@ -8,6 +8,7 @@ import { ScaricoColoreTab } from '@/components/tabs/ScaricoColoreTab';
 import { StoricoColoriTab } from '@/components/tabs/StoricoColoriTab';
 import { CalcoloConsumoColoreTab } from '@/components/tabs/CalcoloConsumoColoreTab';
 import { ColoriInArrivoTab } from '@/components/tabs/ColoriInArrivoTab';
+import { ColoriDaSistemareTab } from '@/components/tabs/ColoriDaSistemareTab';
 import { Toaster } from '@/components/ui/sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -109,7 +110,10 @@ const ConsumoColore = () => {
             <CalcoloConsumoColoreTab />
           )}
           {activeTab === 'colori-arrivo' && (
-            <ColoriInArrivoTab />
+            <ColoriInArrivoTab onArrivoRegistrato={() => setActiveTab('colori-da-sistemare')} />
+          )}
+          {activeTab === 'colori-da-sistemare' && (
+            <ColoriDaSistemareTab onArchiviato={() => coloriData.loadColori()} />
           )}
         </div>
       </div>
