@@ -224,6 +224,7 @@ export interface Colore {
   note?: string | null;
   disponibile: boolean;
   food?: boolean;
+  posizione?: string | null;
   data_creazione: string;
   ultima_modifica: string;
 }
@@ -243,9 +244,27 @@ export interface ColoreInArrivo {
   note?: string | null;
   stato: string;
   food?: boolean;
+  posizione?: string | null;
+  numero_ddt?: string | null;
+  data_ddt?: string | null;
   data_creazione?: string;
   ultima_modifica?: string;
 }
+
+export const POSIZIONI_MAGAZZINO = [
+  'Magazzino 1',
+  'Magazzino 2',
+  'Armadio 1',
+  'Armadio 2',
+  'Armadio 3',
+  'Armadio 4',
+  'Armadio 5',
+  'Armadio 6',
+  'Armadio 7',
+  'Armadio 8',
+  'Armadio 9',
+  'Armadio 10',
+] as const;
 
 export interface StoricoMovimentoColore {
   id?: string;
