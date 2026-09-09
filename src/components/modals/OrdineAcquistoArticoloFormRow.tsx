@@ -1057,7 +1057,7 @@ export function OrdineAcquistoArticoloFormRow({
                     <div>
                       <Label htmlFor={`articoli.${index}.incollatrice`} className="text-xs">Incollatrice *</Label>
                       <Input
-                        id={`articoli.${index}.incollatrice"}
+                        id={`articoli.${index}.incollatrice`}
                         {...register(`articoli.${index}.incollatrice`)}
                         placeholder="Es. Bobst Masterfold"
                         disabled={isSubmitting || isOrderCancelled}
