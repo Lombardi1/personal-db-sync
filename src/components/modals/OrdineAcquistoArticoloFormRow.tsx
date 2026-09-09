@@ -122,6 +122,15 @@ function InchiostroFields({ index, isSubmitting, isOrderCancelled, isNewOrder }:
     setCmykPriceLoaded(false);
   }, [coloreTipo]);
 
+  // Sincronizza 'descrizione' con colore_nome+codice per passare la validazione Zod
+  // (il superRefine richiede descrizione per i fornitori non-Cartone/Fustelle)
+  const coloreNomeVal = watch(`articoli.${index}.colore_nome`);
+  const coloreCodiceVal = watch(`articoli.${index}.colore_codice`);
+  React.useEffect(() => {
+    const desc = [coloreNomeVal, coloreCodiceVal].filter(Boolean).join(' - ');
+    setValue(`articoli.${index}.descrizione`, desc || ' ', { shouldValidate: false });
+  }, [coloreNomeVal, coloreCodiceVal]);
+
   return (
     <>
       <div>
