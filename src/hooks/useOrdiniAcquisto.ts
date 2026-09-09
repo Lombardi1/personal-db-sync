@@ -117,7 +117,7 @@ export function useOrdiniAcquisto() {
               grammatura: formatGrammatura(articolo.grammatura || 'N/A'), // Standardizza qui
               fogli: previousGiacenzaState?.fogli || numFogli, // Preserve manual fogli if exists, else use OA
               cliente: articolo.cliente || 'N/A',
-              lavoro articolo.lavoro || 'N/A',
+              lavoro: articolo.lavoro || 'N/A',
               prezzo: articolo.prezzo_unitario,
               note: ordineAcquisto.note || '-',
               fsc: articolo.fsc,
