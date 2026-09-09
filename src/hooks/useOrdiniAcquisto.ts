@@ -39,10 +39,14 @@ export function useOrdiniAcquisto() {
     const { data: existingOrdiniEntries } = await supabase.from('ordini').select('*').eq('ordine', ordineAcquisto.numero_ordine);
     const { data: existingFustelleEntries } = await supabase.from('fustelle').select('*').eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
 
-    // Step 2: Delete all articles of this order from 'ordini', 'giacenza', and 'colori_in_arrivo'
+    // Step 2: Delete all articles of this order from 'ordini' and 'giacenza'.
+    // Per colori_in_arrivo: cancella solo i record NON ancora ricevuti (ricevuto = già registrato arrivo dall'operatore)
     await supabase.from('ordini').delete().eq('ordine', ordineAcquisto.numero_ordine);
     await supabase.from('giacenza').delete().eq('ordine', ordineAcquisto.numero_ordine);
-    await supabase.from('colori_in_arrivo').delete().eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine);
+    await supabase.from('colori_in_arrivo')
+      .delete()
+      .eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine)
+      .neq('stato', 'ricevuto');
     // Le fustelle NON vengono cancellate: il codice resta come buco disponibile
 
     // Step 3: Re-insert/update based on the current state of ordineAcquisto.articoli
@@ -228,68 +232,23 @@ export function useOrdiniAcquisto() {
             stato: articolo.stato || 'in_attesa',
             food: articolo.colore_food || false,
           };
-          const { error: insertError } = await supabase.from('colori_in_arrivo').insert([coloreInArrivo]);
-          if (insertError) {
-            console.error(`[syncArticleInventoryStatus] Errore inserimento colore in arrivo:`, insertError);
-            toast.error(`Errore colore in arrivo: ${insertError.message}`);
-          }
+          // Inserisce solo se il record non è già presente come 'ricevuto'
+          // (evita duplicati se il record è stato già ricevuto tramite il tab Da Sistemare)
+          const { data: existingArrivo } = await supabase
+            .from('colori_in_arrivo')
+            .select('id, stato')
+            .eq('ordine_acquisto_numero', ordineAcquisto.numero_ordine)
+            .eq('codice', coloreCodice)
+            .maybeSingle();
 
-          // Quando ricevuto: aggiorna il magazzino colori
-          if (articolo.stato === 'ricevuto') {
-            const quantitaRicevuta = articolo.quantita || 0;
-            const { data: existingColore, error: fetchColoreError } = await supabase
-              .from('colori')
-              .select('*')
-              .eq('codice', coloreCodice)
-              .maybeSingle();
-
-            if (fetchColoreError) {
-              console.error(`[syncArticleInventoryStatus] Errore recupero colore '${coloreCodice}':`, fetchColoreError);
-              toast.error(`Errore recupero colore ${coloreCodice}: ${fetchColoreError.message}`);
-            } else if (existingColore) {
-              // Colore già nel magazzino: aggiunge la quantità
-              const { error: updateError } = await supabase
-                .from('colori')
-                .update({
-                  quantita_disponibile: existingColore.quantita_disponibile + quantitaRicevuta,
-                  food: articolo.colore_food ?? existingColore.food ?? false,
-                  fornitore: fornitoreNome,
-                  ultima_modifica: new Date().toISOString(),
-                })
-                .eq('codice', coloreCodice);
-              if (updateError) {
-                console.error(`[syncArticleInventoryStatus] Errore aggiornamento magazzino colore '${coloreCodice}':`, updateError);
-                toast.error(`Errore aggiornamento magazzino colore ${coloreCodice}: ${updateError.message}`);
-              } else {
-                console.log(`[syncArticleInventoryStatus] Magazzino colore '${coloreCodice}' aggiornato: +${quantitaRicevuta} kg.`);
-                toast.success(`Magazzino colori: +${quantitaRicevuta} kg aggiunti per ${coloreCodice}`);
-              }
-            } else {
-              // Colore non esistente: crea voce nel magazzino
-              const { error: insertColoreError } = await supabase
-                .from('colori')
-                .insert([{
-                  codice: coloreCodice,
-                  nome: coloreNome,
-                  tipo: articolo.colore_tipo || 'Custom',
-                  marca: articolo.colore_marca || null,
-                  quantita_disponibile: quantitaRicevuta,
-                  unita_misura: articolo.colore_unita_misura || 'kg',
-                  fornitore: fornitoreNome,
-                  disponibile: true,
-                  food: articolo.colore_food || false,
-                  data_creazione: new Date().toISOString(),
-                  ultima_modifica: new Date().toISOString(),
-                }]);
-              if (insertColoreError) {
-                console.error(`[syncArticleInventoryStatus] Errore creazione colore '${coloreCodice}' nel magazzino:`, insertColoreError);
-                toast.error(`Errore creazione colore ${coloreCodice}: ${insertColoreError.message}`);
-              } else {
-                console.log(`[syncArticleInventoryStatus] Colore '${coloreCodice}' creato nel magazzino con ${quantitaRicevuta} kg.`);
-                toast.success(`Colore ${coloreCodice} aggiunto al magazzino colori`);
-              }
+          if (!existingArrivo) {
+            const { error: insertError } = await supabase.from('colori_in_arrivo').insert([coloreInArrivo]);
+            if (insertError) {
+              console.error(`[syncArticleInventoryStatus] Errore inserimento colore in arrivo:`, insertError);
+              toast.error(`Errore colore in arrivo: ${insertError.message}`);
             }
           }
+          // Nota: il push a colori avviene tramite il tab "Da Sistemare" quando l'operatore assegna la posizione
         }
       } catch (e: any) {
         console.error(`[syncArticleInventoryStatus] Errore durante la sincronizzazione dell'articolo (catch interno per articolo: ${JSON.stringify(articolo)}):`, e);
@@ -676,15 +635,11 @@ export function useOrdiniAcquisto() {
       if (isFustelleFornitore && orderToDelete.articoli) {
         for (const article of orderToDelete.articoli as ArticoloOrdineAcquisto[]) {
           if (article.pulitore_codice_fustella && !article.fustella_codice && article.codice_fornitore_fustella) {
-            console.log(`[deleteOrdineAcquistoPermanently] Clearing pulitore_codice for fustella with codice_fornitore: ${article.codice_fornitore_fustella}`);
             const { error: updateFustellaError } = await supabase
               .from('fustelle')
               .update({ pulitore_codice: null, ultima_modifica: new Date().toISOString() })
               .eq('codice_fornitore', article.codice_fornitore_fustella);
-
-            if (updateFustellaError) {
-              console.error(`Error clearing pulitore_codice for fustella (codice_fornitore: ${article.codice_fornitore_fustella}):`, updateFustellaError);
-            }
+            if (updateFustellaError) console.error(`Error clearing pulitore_codice:`, updateFustellaError);
           }
         }
       }
@@ -692,7 +647,6 @@ export function useOrdiniAcquisto() {
       await supabase.from('ordini').delete().eq('ordine', numeroOrdine);
       await supabase.from('giacenza').delete().eq('ordine', numeroOrdine);
       await supabase.from('colori_in_arrivo').delete().eq('ordine_acquisto_numero', numeroOrdine);
-      // Le fustelle non vengono cancellate: azzera i dati ma preserva il codice
       await supabase.from('fustelle').update({
         fornitore: null, codice_fornitore: null, cliente: null, lavoro: null,
         fustellatrice: null, resa: null, pulitore_codice: null,
@@ -701,15 +655,8 @@ export function useOrdiniAcquisto() {
         disponibile: false, ordine_acquisto_numero: null, ultima_modifica: new Date().toISOString()
       }).eq('ordine_acquisto_numero', numeroOrdine);
 
-      const { error } = await supabase
-        .from('ordini_acquisto')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        setOrdiniAcquisto(previousOrdiniAcquisto);
-        throw error;
-      }
+      const { error } = await supabase.from('ordini_acquisto').delete().eq('id', id);
+      if (error) { setOrdiniAcquisto(previousOrdiniAcquisto); throw error; }
 
       toast.success(`🗑️ Ordine d'acquisto '${numeroOrdine}' eliminato definitivamente!`);
       await loadOrdiniAcquisto();
@@ -722,17 +669,11 @@ export function useOrdiniAcquisto() {
 
   useEffect(() => {
     loadOrdiniAcquisto();
-
     const ordiniAcquistoChannel = supabase
       .channel('ordini_acquisto_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini_acquisto' }, () => {
-        loadOrdiniAcquisto();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini_acquisto' }, () => { loadOrdiniAcquisto(); })
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(ordiniAcquistoChannel);
-    };
+    return () => { supabase.removeChannel(ordiniAcquistoChannel); };
   }, [loadOrdiniAcquisto]);
 
   return {
