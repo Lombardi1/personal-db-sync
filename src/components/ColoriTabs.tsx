@@ -1,6 +1,3 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
-
 interface ColoriTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -8,6 +5,7 @@ interface ColoriTabsProps {
     giacenza: number;
     storico: number;
     inArrivo: number;
+    daSistemare?: number;
   };
   isAmministratore: boolean;
 }
@@ -15,6 +13,7 @@ interface ColoriTabsProps {
 export function ColoriTabs({ activeTab, setActiveTab, counts, isAmministratore }: ColoriTabsProps) {
   const allTabs = [
     { id: 'colori-arrivo', label: 'In Arrivo', count: counts.inArrivo, icon: 'fa-truck' },
+    { id: 'colori-da-sistemare', label: 'Da Sistemare', count: counts.daSistemare, icon: 'fa-box-open' },
     { id: 'colori-giacenza', label: 'Giacenza Colori', count: counts.giacenza, icon: 'fa-palette' },
     { id: 'colori-carico', label: 'Carico Colore', icon: 'fa-plus-square' },
     { id: 'colori-scarico', label: 'Scarico / Consumo', icon: 'fa-minus-square' },
@@ -29,10 +28,10 @@ export function ColoriTabs({ activeTab, setActiveTab, counts, isAmministratore }
       {tabs.map(tab => (
         <button
           key={tab.id}
-          className={cn(
+          className={[
             'tab-btn text-sm sm:text-base py-3 px-3 sm:py-4 sm:px-5',
             activeTab === tab.id ? 'active' : ''
-          )}
+          ].join(' ')}
           data-tab={tab.id}
           onClick={() => setActiveTab(tab.id)}
         >
