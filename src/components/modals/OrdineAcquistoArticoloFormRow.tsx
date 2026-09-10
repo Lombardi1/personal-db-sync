@@ -275,7 +275,12 @@ export function OrdineAcquistoArticoloFormRow({
       ? currentArticle.prezzo_pulitore.toFixed(3).replace('.', ',')
       : ''
   );
-  // Rimosso: const [displayQuantita, setDisplayQuantita] = React.useState<string>(...); // Rimosso per Fustelle/Pulitore
+  // State per la Quantità degli articoli Generic/Inchiostro (evita loop toFixed nel controlled input)
+  const [displayQuantita, setDisplayQuantita] = React.useState<string>(() =>
+    currentArticle?.quantita !== undefined && currentArticle.quantita !== null
+      ? String(currentArticle.quantita).replace('.', ',')
+      : ''
+  );
 
   // State for Fustella lookup for standalone pulitore
   const [nrFustellaLookup, setNrFustellaLookup] = React.useState('');
@@ -1262,9 +1267,10 @@ export function OrdineAcquistoArticoloFormRow({
                   <Input
                     id={`articoli.${index}.quantita`}
                     type="text"
-                    value={currentArticle?.quantita !== undefined && currentArticle.quantita !== null ? currentArticle.quantita.toFixed(3).replace('.', ',') : ''}
+                    value={displayQuantita}
                     onChange={(e) => {
                       const rawValue = e.target.value;
+                      setDisplayQuantita(rawValue);
                       const numericValue = parseFloat(rawValue.replace(',', '.'));
                       if (!isNaN(numericValue)) {
                         setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
@@ -1275,12 +1281,14 @@ export function OrdineAcquistoArticoloFormRow({
                     onBlur={(e) => {
                       const numericValue = parseFloat(e.target.value.replace(',', '.'));
                       if (!isNaN(numericValue)) {
+                        setDisplayQuantita(numericValue.toFixed(3).replace('.', ','));
                         setValue(`articoli.${index}.quantita`, numericValue, { shouldValidate: true });
                       } else {
+                        setDisplayQuantita('');
                         setValue(`articoli.${index}.quantita`, undefined, { shouldValidate: true });
                       }
                     }}
-                    placeholder="Es. 0,870"
+                    placeholder="Es. 10"
                     min="0"
                     disabled={isSubmitting || isOrderCancelled}
                     className="text-sm"
