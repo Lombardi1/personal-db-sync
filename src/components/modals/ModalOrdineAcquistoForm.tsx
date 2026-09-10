@@ -75,6 +75,14 @@ const articoloSchema = z.object({
 
   // Campi per non-Cartone/non-Fustelle
   descrizione: z.string().max(255, 'Descrizione troppo lunga').optional().or(z.literal('')),
+
+  // Campi per Inchiostro (colori)
+  colore_codice: z.string().max(100).optional().nullable(),
+  colore_nome: z.string().max(255).optional().nullable(),
+  colore_tipo: z.string().max(50).optional().nullable(),
+  colore_marca: z.string().max(255).optional().nullable(),
+  colore_unita_misura: z.string().max(20).optional().nullable(),
+  colore_food: z.boolean().optional(),
   
   // Campi per Fustelle
   fustella_codice: z.string().max(255, 'Codice Fustella troppo lungo').optional().or(z.literal('')),
