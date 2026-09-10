@@ -128,7 +128,6 @@ export interface ArticoloOrdineAcquisto {
   colore_codice?: string | null;
   colore_nome?: string | null;
   colore_tipo?: string | null;
-  colore_marca?: string | null;
   colore_unita_misura?: string | null;
   colore_food?: boolean;
   quantita?: number | null;
@@ -216,7 +215,6 @@ export interface Colore {
   codice: string;
   nome: string;
   tipo: 'CMYK' | 'Pantone' | 'Custom';
-  marca?: string | null;
   quantita_disponibile: number;
   unita_misura: 'g' | 'kg' | 'l' | 'ml';
   soglia_minima?: number | null;
@@ -234,7 +232,6 @@ export interface ColoreInArrivo {
   codice: string;
   nome: string;
   tipo: string;
-  marca?: string | null;
   quantita: number;
   unita_misura: string;
   prezzo_unitario?: number | null;
