@@ -76,7 +76,6 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
             codice: colore.codice,
             nome: colore.nome,
             tipo: (['CMYK','Pantone','Custom'].includes(colore.tipo) ? colore.tipo : 'Custom'),
-            marca: colore.marca || null,
             quantita_disponibile: qtaArrivo,
             unita_misura: (['g','kg','l','ml'].includes(colore.unita_misura) ? colore.unita_misura : 'kg'),
             fornitore: colore.fornitore || null,
