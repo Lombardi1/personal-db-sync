@@ -16,7 +16,12 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
 
   const loadData = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('colori_in_arrivo').select('*').eq('stato', 'ricevuto').is('posizione', null).order('data_creazione', { ascending: false });
+    const { data, error } = await supabase
+      .from('colori_in_arrivo')
+      .select('*')
+      .eq('stato', 'ricevuto')
+      .is('posizione', null)
+      .order('data_creazione', { ascending: false });
     if (!error && data) setColori(data as ColoreInArrivo[]);
     setLoading(false);
   };
@@ -28,20 +33,68 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
   const archivia = async (colore: ColoreInArrivo) => {
     const posizione = posizioni[colore.id!];
     if (!posizione) { toast.error('Seleziona una posizione prima di archiviare'); return; }
+
     setArchiviazioneInCorso(p => ({ ...p, [colore.id!]: true }));
     try {
-      await supabase.from('colori_in_arrivo').update({ posizione, ultima_modifica: new Date().toISOString() }).eq('id', colore.id);
-      const { data: existing } = await supabase.from('colori').select('*').eq('codice', colore.codice).maybeSingle();
+      // 1. Aggiorna posizione su colori_in_arrivo
+      const { error: err1 } = await supabase
+        .from('colori_in_arrivo')
+        .update({ posizione, ultima_modifica: new Date().toISOString() })
+        .eq('id', colore.id);
+      if (err1) throw new Error(`Aggiornamento colori_in_arrivo: ${err1.message}`);
+
+      // 2. Cerca se il colore esiste già in magazzino
+      const { data: existing, error: err2 } = await supabase
+        .from('colori')
+        .select('*')
+        .eq('codice', colore.codice)
+        .maybeSingle();
+      if (err2) throw new Error(`Ricerca colore: ${err2.message}`);
+
+      // Quantità come numero (il DB la restituisce come stringa)
+      const qtaArrivo = parseFloat(String(colore.quantita)) || 0;
+
       if (existing) {
-        await supabase.from('colori').update({ quantita_disponibile: existing.quantita_disponibile + colore.quantita, posizione, food: colore.food ?? existing.food ?? false, fornitore: colore.fornitore || existing.fornitore, ultima_modifica: new Date().toISOString() }).eq('codice', colore.codice);
+        // Colore già presente: aggiunge la quantità
+        const qtaEsistente = parseFloat(String(existing.quantita_disponibile)) || 0;
+        const { error: err3 } = await supabase
+          .from('colori')
+          .update({
+            quantita_disponibile: qtaEsistente + qtaArrivo,
+            posizione,
+            food: colore.food ?? existing.food ?? false,
+            fornitore: colore.fornitore || existing.fornitore,
+            ultima_modifica: new Date().toISOString(),
+          })
+          .eq('codice', colore.codice);
+        if (err3) throw new Error(`Aggiornamento magazzino: ${err3.message}`);
       } else {
-        await supabase.from('colori').insert([{ codice: colore.codice, nome: colore.nome, tipo: colore.tipo || 'Custom', marca: colore.marca || null, quantita_disponibile: colore.quantita, unita_misura: colore.unita_misura || 'kg', fornitore: colore.fornitore || null, disponibile: true, food: colore.food || false, posizione, data_creazione: new Date().toISOString(), ultima_modifica: new Date().toISOString() }]);
+        // Colore nuovo: inserisce
+        const { error: err4 } = await supabase
+          .from('colori')
+          .insert([{
+            codice: colore.codice,
+            nome: colore.nome,
+            tipo: (['CMYK','Pantone','Custom'].includes(colore.tipo) ? colore.tipo : 'Custom'),
+            marca: colore.marca || null,
+            quantita_disponibile: qtaArrivo,
+            unita_misura: (['g','kg','l','ml'].includes(colore.unita_misura) ? colore.unita_misura : 'kg'),
+            fornitore: colore.fornitore || null,
+            disponibile: true,
+            food: colore.food || false,
+            posizione,
+          }]);
+        if (err4) throw new Error(`Inserimento magazzino: ${err4.message}`);
       }
+
       toast.success(`${colore.nome} (${colore.codice}) → ${posizione} ✅`);
       onArchiviato?.();
       loadData();
-    } catch (e: any) { toast.error(`Errore: ${e.message}`); }
-    finally { setArchiviazioneInCorso(p => ({ ...p, [colore.id!]: false })); }
+    } catch (e: any) {
+      toast.error(`Errore archiviazione: ${e.message}`);
+    } finally {
+      setArchiviazioneInCorso(p => ({ ...p, [colore.id!]: false }));
+    }
   };
 
   if (loading) return <div className="py-8 text-center text-sm text-muted-foreground">Caricamento...</div>;
@@ -55,43 +108,45 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
 
   return (
     <div>
-      <h2 className="text-xl sm:text-2xl font-bold text-[hsl(var(--primary))] mb-4">📦 Da Sistemare <span className="text-sm font-normal text-muted-foreground">({colori.length})</span></h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-[hsl(var(--primary))] mb-4">
+        📦 Da Sistemare <span className="text-sm font-normal text-muted-foreground">({colori.length})</span>
+      </h2>
       <ScrollArea className="w-full rounded-md">
         <div className="w-full min-w-max">
           <table className="w-full border-collapse text-xs table-auto">
             <thead>
               <tr className="bg-[hsl(210,40%,98%)] border-b-2 border-[hsl(var(--border))]">
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Codice</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Nome</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Tipo</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Quantità</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Food</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Fornitore</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Bolla</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Data Bolla</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold w-[160px]">Posizione</th>
-                <th className="px-2 py-2 text-left text-[10px] font-semibold">Azione</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Codice</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Nome</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Tipo</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Quantità</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Food</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Fornitore</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Bolla</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Data Bolla</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold w-[160px]">Posizione</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Azione</th>
               </tr>
             </thead>
             <tbody>
               {colori.map((c) => (
                 <tr key={c.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(210,40%,98%)]">
-                  <td className="px-2 py-2 text-[10px] whitespace-nowrap font-mono">{c.codice}</td>
-                  <td className="px-2 py-2 text-[10px] whitespace-nowrap font-medium">{c.nome}</td>
-                  <td className="px-2 py-2 text-[10px] whitespace-nowrap">{c.tipo}</td>
-                  <td className="px-2 py-2 text-[10px] whitespace-nowrap font-semibold">{c.quantita} {c.unita_misura}</td>
-                  <td className="px-2 py-2 text-[10px] whitespace-nowrap">{c.food ? <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700">🌿</span> : <span className="text-gray-300">—</span>}</td>
-                  <td className="px-2 py-2 text-[10px] whitespace-nowrap">{c.fornitore || '-'}</td>
-                  <td className="px-2 py-2 text-[10px] whitespace-nowrap font-mono font-semibold">{c.numero_ddt || <span className="text-gray-400 italic">—</span>}</td>
-                  <td className="px-2 py-2 text-[10px] whitespace-nowrap">{formatData(c.data_ddt)}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap font-mono">{c.codice}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap font-medium">{c.nome}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap">{c.tipo}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap font-semibold">{c.quantita} {c.unita_misura}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap">{c.food ? <span className="px-1.5 py-0.5 rounded font-semibold bg-green-100 text-green-700">🌿</span> : <span className="text-gray-300">—</span>}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap">{c.fornitore || '-'}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap font-mono font-semibold">{c.numero_ddt || <span className="text-gray-400 italic">—</span>}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap">{formatData(c.data_ddt)}</td>
                   <td className="px-2 py-2 whitespace-nowrap">
                     <Select value={posizioni[c.id!] || ''} onValueChange={(v) => setPosizioni(p => ({ ...p, [c.id!]: v }))}>
-                      <SelectTrigger className="h-7 text-[11px] w-[150px]"><SelectValue placeholder="Scegli posizione…" /></SelectTrigger>
+                      <SelectTrigger className="h-7 text-xs w-[150px]"><SelectValue placeholder="Scegli posizione…" /></SelectTrigger>
                       <SelectContent>{POSIZIONI_MAGAZZINO.map(pos => <SelectItem key={pos} value={pos} className="text-xs">{pos}</SelectItem>)}</SelectContent>
                     </Select>
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap">
-                    <Button size="sm" className="h-7 text-[11px] px-3 bg-green-600 hover:bg-green-700 text-white" onClick={() => archivia(c)} disabled={!posizioni[c.id!] || archiviazioneInCorso[c.id!]}>
+                    <Button size="sm" className="h-7 text-xs px-3 bg-green-600 hover:bg-green-700 text-white" onClick={() => archivia(c)} disabled={!posizioni[c.id!] || archiviazioneInCorso[c.id!]}>
                       {archiviazioneInCorso[c.id!] ? '...' : '→ Archivia'}
                     </Button>
                   </td>
