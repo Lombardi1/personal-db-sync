@@ -171,16 +171,6 @@ function InchiostroFields({ index, isSubmitting, isOrderCancelled, isNewOrder }:
           <p className="text-xs text-blue-500 mt-1">Prezzo caricato dall'ultimo ordine CMYK</p>
         )}
       </div>
-      <div>
-        <Label htmlFor={`articoli.${index}.colore_marca`} className="text-xs">Marca</Label>
-        <Input
-          id={`articoli.${index}.colore_marca`}
-          {...register(`articoli.${index}.colore_marca`)}
-          placeholder="Es. Sun Chemical"
-          disabled={isSubmitting || isOrderCancelled}
-          className="text-sm"
-        />
-      </div>
       {/* Checkbox Food */}
       <div className="flex items-center gap-2 pt-1 col-span-2">
         <input
