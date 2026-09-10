@@ -80,7 +80,6 @@ const articoloSchema = z.object({
   colore_codice: z.string().max(100).optional().nullable(),
   colore_nome: z.string().max(255).optional().nullable(),
   colore_tipo: z.string().max(50).optional().nullable(),
-  colore_marca: z.string().max(255).optional().nullable(),
   colore_unita_misura: z.string().max(20).optional().nullable(),
   colore_food: z.boolean().optional(),
   
