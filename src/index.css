@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =====================================================
+   FONT SIZE OVERRIDES — leggibilità migliorata
+   Questi override vengono dopo @tailwind utilities
+   e quindi vincono per ordine di cascata CSS.
+   ===================================================== */
+
+/* text-[10px] → 12px */
+.text-\[10px\] { font-size: 0.75rem; line-height: 1.2rem; }
+
+/* text-xs (12px) → 13.5px */
+.text-xs { font-size: 0.84375rem; line-height: 1.3rem; }
+
+/* text-sm (14px) → 15.5px */
+.text-sm { font-size: 0.96875rem; line-height: 1.5rem; }
+
+/* text-base (16px) → 17px */
+.text-base { font-size: 1.0625rem; line-height: 1.625rem; }
+
+/* Responsive variants sm: */
+@media (min-width: 640px) {
+  .sm\:text-\[10px\] { font-size: 0.75rem; line-height: 1.2rem; }
+  .sm\:text-xs { font-size: 0.84375rem; line-height: 1.3rem; }
+  .sm\:text-sm { font-size: 0.96875rem; line-height: 1.5rem; }
+  .sm\:text-base { font-size: 1.0625rem; line-height: 1.625rem; }
+}
+
+/* Input, form, bottoni più leggibili */
+input, select, textarea, button { font-size: 0.96875rem; }
+
+/* Tabelle: celle e header più leggibili */
+th, td { font-size: 0.84375rem; }
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
