@@ -51,7 +51,6 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
           <TableRow>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Colore</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Tipo</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Marca</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Quantità</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Fornitore</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Posizione</TableHead>
@@ -79,7 +78,6 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
                   </div>
                 </TableCell>
                 <TableCell>{getBadgeTipo(colore.tipo)}</TableCell>
-                <TableCell className="text-sm text-gray-600">{colore.marca || '—'}</TableCell>
                 <TableCell>
                   <span className={getQuantitaStyle(colore)}>{colore.quantita_disponibile} {colore.unita_misura}</span>
                   {colore.soglia_minima && colore.quantita_disponibile <= colore.soglia_minima && (
