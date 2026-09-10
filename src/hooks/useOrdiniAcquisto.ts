@@ -222,7 +222,6 @@ export function useOrdiniAcquisto() {
             codice: coloreCodice,
             nome: coloreNome,
             tipo: articolo.colore_tipo || 'Custom',
-            marca: articolo.colore_marca || null,
             quantita: articolo.quantita || 0,
             unita_misura: articolo.colore_unita_misura || 'kg',
             prezzo_unitario: articolo.prezzo_unitario || null,
