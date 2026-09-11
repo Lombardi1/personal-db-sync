@@ -137,25 +137,6 @@ export function ModalCaricoScaricoColore({
             </>
           )}
 
-          {/* Campi specifici SCARICO: macchina + lavoro */}
-          {!isCarico && (
-            <>
-              <div>
-                <Label>Macchina (opzionale)</Label>
-                <Input {...register('macchina')} placeholder="Es. Heidelberg 1" />
-              </div>
-              <div>
-                <Label>Lavoro / Commessa (opzionale)</Label>
-                <Input {...register('lavoro')} placeholder="Es. Lavoro 12345" />
-              </div>
-            </>
-          )}
-
-          {/* NOTE (sempre) */}
-          <div>
-            <Label>Note (opzionali)</Label>
-            <Input {...register('note')} placeholder="Note aggiuntive..." />
-          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
