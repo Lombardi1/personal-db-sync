@@ -101,13 +101,13 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 border-green-200 p-1 h-7 w-7" onClick={() => onCarico(colore)} title="Carico"><PlusCircle className="h-3.5 w-3.5" /></Button>
-                    <Button size="sm" variant="outline" className="text-orange-600 hover:bg-orange-50 border-orange-200 p-1 h-7 w-7" onClick={() => onScarico(colore)} title="Scarico"><MinusCircle className="h-3.5 w-3.5" /></Button>
+                    <Button size="sm" variant="outline" className="text-green-700 hover:bg-green-50 border-green-300 px-3 h-9 text-sm font-medium gap-1.5" onClick={() => onCarico(colore)}><PlusCircle className="h-4 w-4" /> Carico</Button>
+                    <Button size="sm" variant="outline" className="text-orange-700 hover:bg-orange-50 border-orange-300 px-3 h-9 text-sm font-medium gap-1.5" onClick={() => onScarico(colore)}><MinusCircle className="h-4 w-4" /> Scarico</Button>
                     {(isAmministratore || isStampa) && (
-                      <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50 border-blue-200 p-1 h-7 w-7" onClick={() => onEdit(colore)} title="Modifica"><Pencil className="h-3.5 w-3.5" /></Button>
+                      <Button size="sm" variant="outline" className="text-blue-700 hover:bg-blue-50 border-blue-300 px-3 h-9 text-sm font-medium gap-1.5" onClick={() => onEdit(colore)}><Pencil className="h-4 w-4" /> Modifica</Button>
                     )}
                     {isAmministratore && (
-                      <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 border-red-200 p-1 h-7 w-7" onClick={() => onDelete(colore.codice)} title="Elimina"><Trash2 className="h-3.5 w-3.5" /></Button>
+                      <Button size="sm" variant="outline" className="text-red-700 hover:bg-red-50 border-red-300 px-3 h-9 text-sm font-medium gap-1.5" onClick={() => onDelete(colore.codice)}><Trash2 className="h-4 w-4" /> Elimina</Button>
                     )}
                   </div>
                 </TableCell>
