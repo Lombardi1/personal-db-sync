@@ -216,7 +216,7 @@ export interface Colore {
   nome: string;
   tipo: 'CMYK' | 'Pantone' | 'Custom';
   quantita_disponibile: number;
-  unita_misura: 'g' | 'kg' | 'l' | 'ml';
+  unita_misura: 'g' | 'kg' | 'l' | 'ml' | 'pz';
   soglia_minima?: number | null;
   fornitore?: string | null;
   note?: string | null;
