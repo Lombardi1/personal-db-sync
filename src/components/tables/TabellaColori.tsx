@@ -54,7 +54,6 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Quantità</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Fornitore</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Posizione</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Stato</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600 text-right">Azioni</TableHead>
           </TableRow>
         </TableHeader>
@@ -90,14 +89,6 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
                     ? <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">📍 {colore.posizione}</span>
                     : <span className="text-gray-300 text-xs">—</span>
                   }
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    className={colore.disponibile ? 'bg-green-100 text-green-800 border-green-200 cursor-pointer hover:bg-green-200' : 'bg-red-100 text-red-800 border-red-200 cursor-pointer hover:bg-red-200'}
-                    onClick={() => onChangeDisponibilita(colore.codice, !colore.disponibile)}
-                  >
-                    {colore.disponibile ? 'Disponibile' : 'Non Disponibile'}
-                  </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
