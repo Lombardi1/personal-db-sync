@@ -43,7 +43,7 @@ function getNomeBadgeStyle(nome: string) {
 }
 
 export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita, onScarico, onCarico }: TabellaColoriProps) {
-  const { isAmministratore } = useAuth();
+  const { isAmministratore, isStampa } = useAuth();
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -103,11 +103,11 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
                   <div className="flex items-center justify-end gap-1">
                     <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 border-green-200 p-1 h-7 w-7" onClick={() => onCarico(colore)} title="Carico"><PlusCircle className="h-3.5 w-3.5" /></Button>
                     <Button size="sm" variant="outline" className="text-orange-600 hover:bg-orange-50 border-orange-200 p-1 h-7 w-7" onClick={() => onScarico(colore)} title="Scarico"><MinusCircle className="h-3.5 w-3.5" /></Button>
+                    {(isAmministratore || isStampa) && (
+                      <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50 border-blue-200 p-1 h-7 w-7" onClick={() => onEdit(colore)} title="Modifica"><Pencil className="h-3.5 w-3.5" /></Button>
+                    )}
                     {isAmministratore && (
-                      <>
-                        <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50 border-blue-200 p-1 h-7 w-7" onClick={() => onEdit(colore)} title="Modifica"><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 border-red-200 p-1 h-7 w-7" onClick={() => onDelete(colore.codice)} title="Elimina"><Trash2 className="h-3.5 w-3.5" /></Button>
-                      </>
+                      <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 border-red-200 p-1 h-7 w-7" onClick={() => onDelete(colore.codice)} title="Elimina"><Trash2 className="h-3.5 w-3.5" /></Button>
                     )}
                   </div>
                 </TableCell>
