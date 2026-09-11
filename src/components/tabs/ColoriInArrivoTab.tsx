@@ -27,7 +27,8 @@ export function ColoriInArrivoTab({ onArrivoRegistrato }: ColoriInArrivoTabProps
     const { data, error } = await supabase
       .from('colori_in_arrivo')
       .select('*')
-      .not('stato', 'in', '("ricevuto","annullato")')
+      .neq('stato', 'ricevuto')
+      .neq('stato', 'annullato')
       .order('data_creazione', { ascending: false });
     if (!error && data) setColori(data as ColoreInArrivo[]);
     setLoading(false);
