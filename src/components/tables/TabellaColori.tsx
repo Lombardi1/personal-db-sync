@@ -49,12 +49,12 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Colore</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Tipo</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Quantità</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Fornitore</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600">Posizione</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600 text-right">Azioni</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[200px]">Colore</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[90px]">Tipo</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[110px]">Quantità</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[150px]">Fornitore</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[140px]">Posizione</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600">Azioni</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -90,8 +90,8 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
                     : <span className="text-gray-300 text-xs">—</span>
                   }
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
+                <TableCell>
+                  <div className="flex items-center flex-wrap gap-2 py-1">
                     <Button size="sm" variant="outline" className="text-green-700 hover:bg-green-50 border-green-300 px-3 h-9 text-sm font-medium gap-1.5" onClick={() => onCarico(colore)}><PlusCircle className="h-4 w-4" /> Carico</Button>
                     <Button size="sm" variant="outline" className="text-orange-700 hover:bg-orange-50 border-orange-300 px-3 h-9 text-sm font-medium gap-1.5" onClick={() => onScarico(colore)}><MinusCircle className="h-4 w-4" /> Scarico</Button>
                     {(isAmministratore || isStampa) && (
