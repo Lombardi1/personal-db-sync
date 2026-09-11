@@ -171,6 +171,23 @@ function InchiostroFields({ index, isSubmitting, isOrderCancelled, isNewOrder }:
           <p className="text-xs text-blue-500 mt-1">Prezzo caricato dall'ultimo ordine CMYK</p>
         )}
       </div>
+      {/* Unità di misura */}
+      <div>
+        <Label className="text-xs">Unità di misura *</Label>
+        <Select
+          onValueChange={(v) => setValue(`articoli.${index}.colore_unita_misura`, v, { shouldValidate: true })}
+          value={watch(`articoli.${index}.colore_unita_misura`) || 'kg'}
+          disabled={isSubmitting || isOrderCancelled}
+        >
+          <SelectTrigger className="w-full text-sm"><SelectValue placeholder="Seleziona unità" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="kg">kg (chilogrammi)</SelectItem>
+            <SelectItem value="pz">pz (pezzi)</SelectItem>
+            <SelectItem value="l">l (litri)</SelectItem>
+            <SelectItem value="g">g (grammi)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       {/* Checkbox Food */}
       <div className="flex items-center gap-2 pt-1 col-span-2">
         <input
@@ -182,7 +199,7 @@ function InchiostroFields({ index, isSubmitting, isOrderCancelled, isNewOrder }:
           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
         <Label htmlFor={`articoli.${index}.colore_food`} className="text-xs font-medium cursor-pointer select-none">
-          Colore food (contatto alimentare)
+          🌿 Colore food (contatto alimentare)
         </Label>
       </div>
     </>
