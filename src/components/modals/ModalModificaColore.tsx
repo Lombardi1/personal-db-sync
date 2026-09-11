@@ -25,7 +25,7 @@ const schema = z.object({
   nome: z.string().min(1, 'Nome obbligatorio'),
   tipo: z.enum(['CMYK', 'Pantone', 'Custom']),
   quantita_disponibile: z.coerce.number().min(0, 'Quantità non può essere negativa'),
-  unita_misura: z.enum(['g', 'kg', 'l', 'ml']),
+  unita_misura: z.enum(['g', 'kg', 'l', 'ml', 'pz']),
   soglia_minima: z.coerce.number().optional().nullable(),
   fornitore: z.string().optional(),
   posizione: z.string().optional().nullable(),
@@ -107,14 +107,14 @@ export function ModalModificaColore({ colore, onClose, onModifica }: ModalModifi
             <div className="col-span-2">
               <Label>Posizione magazzino</Label>
               <Select
-                defaultValue={colore.posizione || ''}
-                onValueChange={v => setValue('posizione', v || null)}
+                defaultValue={colore.posizione || '__none__'}
+                onValueChange={v => setValue('posizione', v === '__none__' ? null : v)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleziona posizione..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">— Nessuna —</SelectItem>
+                  <SelectItem value="__none__">— Nessuna —</SelectItem>
                   {POSIZIONI_MAGAZZINO.map(pos => (
                     <SelectItem key={pos} value={pos}>{pos}</SelectItem>
                   ))}
