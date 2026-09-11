@@ -531,12 +531,19 @@ export function TabellaOrdiniAcquisto({ ordini, onEdit, onCancel, onPermanentDel
                             </>
                           ) : (
                             <>
-                              <div className="font-bold text-[9px] sm:text-[10px]">{row.descrizione || 'N/A'}</div>
+                              <div className="font-bold text-[9px] sm:text-xs whitespace-nowrap">{row.descrizione || 'N/A'}
+                                {(row as any).colore_food && (
+                                  <span className="ml-1 inline-flex items-center px-1 py-0.5 rounded text-[9px] font-semibold bg-green-100 text-green-700 border border-green-200">🌿 Food</span>
+                                )}
+                              </div>
+                              {(row as any).colore_tipo && (
+                                <div className="text-[9px] text-muted-foreground">{(row as any).colore_tipo}{(row as any).colore_codice ? ` · ${(row as any).colore_codice}` : ''}</div>
+                              )}
                             </>
                           )}
                         </td>
                         <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap font-bold min-w-[40px]">
-                          {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ''}
+                          {row.quantita.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {row.isCartoneFornitore ? 'Kg' : ((row as any).colore_unita_misura || '')}
                         </td>
                         <td className="px-2 py-1.5 text-right text-[10px] sm:text-xs whitespace-nowrap min-w-[60px]">
                           {row.isFustelleFornitore ? row.prezzo_unitario.toFixed(2) : row.prezzo_unitario.toFixed(3)} {row.isCartoneFornitore ? '€/kg' : '€'}
