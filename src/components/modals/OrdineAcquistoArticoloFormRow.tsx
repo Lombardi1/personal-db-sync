@@ -122,6 +122,13 @@ function InchiostroFields({ index, isSubmitting, isOrderCancelled, isNewOrder }:
     setCmykPriceLoaded(false);
   }, [coloreTipo]);
 
+  // Inizializza colore_unita_misura a 'kg' se non impostato (evita null nel DB)
+  React.useEffect(() => {
+    if (!watch(`articoli.${index}.colore_unita_misura`)) {
+      setValue(`articoli.${index}.colore_unita_misura`, 'kg', { shouldValidate: false });
+    }
+  }, []);
+
   // Sincronizza 'descrizione' con colore_nome+codice per passare la validazione Zod
   // (il superRefine richiede descrizione per i fornitori non-Cartone/Fustelle)
   const coloreNomeVal = watch(`articoli.${index}.colore_nome`);
