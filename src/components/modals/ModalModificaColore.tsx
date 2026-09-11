@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Colore } from '@/types';
+import { Colore, POSIZIONI_MAGAZZINO } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -24,11 +24,11 @@ import {
 const schema = z.object({
   nome: z.string().min(1, 'Nome obbligatorio'),
   tipo: z.enum(['CMYK', 'Pantone', 'Custom']),
-  marca: z.string().optional(),
   quantita_disponibile: z.coerce.number().min(0, 'Quantità non può essere negativa'),
   unita_misura: z.enum(['g', 'kg', 'l', 'ml']),
   soglia_minima: z.coerce.number().optional().nullable(),
   fornitore: z.string().optional(),
+  posizione: z.string().optional().nullable(),
   note: z.string().optional(),
 });
 
@@ -51,11 +51,11 @@ export function ModalModificaColore({ colore, onClose, onModifica }: ModalModifi
     defaultValues: {
       nome: colore.nome,
       tipo: colore.tipo,
-      marca: colore.marca || '',
       quantita_disponibile: colore.quantita_disponibile,
       unita_misura: colore.unita_misura,
       soglia_minima: colore.soglia_minima ?? undefined,
       fornitore: colore.fornitore || '',
+      posizione: colore.posizione || '',
       note: colore.note || '',
     },
   });
@@ -63,9 +63,9 @@ export function ModalModificaColore({ colore, onClose, onModifica }: ModalModifi
   const onSubmit = async (data: FormData) => {
     await onModifica(colore.codice, {
       ...data,
-      marca: data.marca || null,
       soglia_minima: data.soglia_minima ?? null,
       fornitore: data.fornitore || null,
+      posizione: data.posizione || null,
       note: data.note || null,
     });
     onClose();
@@ -101,12 +101,25 @@ export function ModalModificaColore({ colore, onClose, onModifica }: ModalModifi
               </Select>
             </div>
             <div>
-              <Label>Marca</Label>
-              <Input {...register('marca')} placeholder="Es. Sun Chemical" />
-            </div>
-            <div>
               <Label>Fornitore</Label>
               <Input {...register('fornitore')} placeholder="Nome fornitore" />
+            </div>
+            <div className="col-span-2">
+              <Label>Posizione magazzino</Label>
+              <Select
+                defaultValue={colore.posizione || ''}
+                onValueChange={v => setValue('posizione', v || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona posizione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— Nessuna —</SelectItem>
+                  {POSIZIONI_MAGAZZINO.map(pos => (
+                    <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Quantità disponibile *</Label>
