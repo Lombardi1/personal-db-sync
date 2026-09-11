@@ -49,11 +49,11 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[200px]">Colore</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[90px]">Tipo</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[110px]">Quantità</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[150px]">Fornitore</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[140px]">Posizione</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600">Colore</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600">Tipo</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600">Quantità</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600">Fornitore</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600">Posizione</TableHead>
             <TableHead className="text-xs font-semibold uppercase text-gray-600">Azioni</TableHead>
           </TableRow>
         </TableHeader>
