@@ -213,9 +213,10 @@ export function useOrdiniAcquisto() {
           }
         } else if (isInchiostroFornitore) {
           const coloreNome = articolo.colore_nome || articolo.descrizione;
-          const coloreCodice = articolo.colore_codice;
-          if (!coloreNome || !coloreCodice) {
-            console.warn(`[syncArticleInventoryStatus] Articolo Inchiostro senza nome o codice. Saltato.`);
+          // Usa il nome come codice se il codice non è stato inserito
+          const coloreCodice = articolo.colore_codice || coloreNome;
+          if (!coloreNome) {
+            console.warn(`[syncArticleInventoryStatus] Articolo Inchiostro senza nome. Saltato.`);
             continue;
           }
           const coloreInArrivo: ColoreInArrivo = {
