@@ -139,6 +139,7 @@ export function ModalModificaColore({ colore, onClose, onModifica }: ModalModifi
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="kg">kg (chilogrammi)</SelectItem>
+                  <SelectItem value="pz">pz (pezzi)</SelectItem>
                   <SelectItem value="g">g (grammi)</SelectItem>
                   <SelectItem value="l">l (litri)</SelectItem>
                   <SelectItem value="ml">ml (millilitri)</SelectItem>
