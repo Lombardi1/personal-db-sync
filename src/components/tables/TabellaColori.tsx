@@ -46,15 +46,15 @@ export function TabellaColori({ colori, onEdit, onDelete, onChangeDisponibilita,
   const { isAmministratore, isStampa } = useAuth();
   return (
     <div className="overflow-x-auto w-full">
-      <Table className="min-w-[1240px] w-full">
+      <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600" min-w-[220px]">Colore</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600" min-w-[110px]">Tipo</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600" min-w-[130px]">Quantità</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600" min-w-[180px]">Fornitore</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600" min-w-[160px]">Posizione</TableHead>
-            <TableHead className="text-xs font-semibold uppercase text-gray-600" min-w-[440px]">Azioni</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 min-w-[220px]">Colore</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 min-w-[110px]">Tipo</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 min-w-[130px]">Quantità</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 min-w-[180px]">Fornitore</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 min-w-[160px]">Posizione</TableHead>
+            <TableHead className="text-xs font-semibold uppercase text-gray-600 min-w-[440px]">Azioni</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
