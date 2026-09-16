@@ -10,331 +10,335 @@ import { useNavigate } from 'react-router-dom';
 import { Home, Settings, Printer, Plus, History, Package, Layers } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
-// ── GS1 Check Digit ──────────────────────────────────────────────────────────
-function calcolaCheckDigit(digits: string): number {
-  let sum = 0;
-  for (let i = 0; i < digits.length; i++)
-    sum += parseInt(digits[digits.length - 1 - i]) * (i % 2 === 0 ? 3 : 1);
-  return (10 - (sum % 10)) % 10;
+// ── GS1 ───────────────────────────────────────────────────────────────────────
+function calcolaCheckDigit(d: string): number {
+  let s = 0;
+  for (let i = 0; i < d.length; i++) s += parseInt(d[d.length-1-i]) * (i%2===0?3:1);
+  return (10-(s%10))%10;
 }
-function generaSSCC(estensione: string, prefisso: string, progressivo: number): string {
-  const serialLen = 17 - estensione.length - prefisso.length;
-  if (serialLen < 1) return 'CONFIG_INVALIDA';
-  const base = estensione + prefisso + String(progressivo).padStart(serialLen, '0');
-  if (base.length !== 17) return 'LUNGHEZZA_INVALIDA';
-  return base + calcolaCheckDigit(base);
+function generaSSCC(est: string, pfx: string, n: number): string {
+  const sl = 17 - est.length - pfx.length;
+  if (sl<1) return 'CONFIG_INVALIDA';
+  const base = est + pfx + String(n).padStart(sl,'0');
+  return base.length!==17 ? 'LEN_INVALIDA' : base+calcolaCheckDigit(base);
 }
-function formattaSSCC(sscc: string) { return sscc.length === 18 ? `(00) ${sscc}` : sscc; }
+const fmtSSCC = (s: string) => s.length===18 ? `(00) ${s}` : s;
+
+// ── Calcolo produzione ────────────────────────────────────────────────────────
+interface Calcolo {
+  pezziTotali: number;
+  scatoloniTotali: number;
+  scatoloniCompleti: number;
+  pezziRimanenti: number;
+  bancaliTotali: number;
+  bancali: { n:number; scatoloni:number; pezziTotBancale:number; haIncompl:boolean; pezziIncompl:number }[];
+}
+function calcola(fogli:number, resa:number, pzScat:number, scatBanc:number): Calcolo | null {
+  if (!fogli||!resa||!pzScat||!scatBanc) return null;
+  const pezziTotali = fogli * resa;
+  const scatoloniCompleti = Math.floor(pezziTotali / pzScat);
+  const pezziRimanenti = pezziTotali % pzScat;
+  const scatoloniTotali = scatoloniCompleti + (pezziRimanenti>0?1:0);
+  const bancaliTotali = Math.ceil(scatoloniTotali / scatBanc);
+  const bancali = [];
+  for (let b=1; b<=bancaliTotali; b++) {
+    const startScat = (b-1)*scatBanc + 1;
+    const endScat = Math.min(b*scatBanc, scatoloniTotali);
+    const scatoloni = endScat - startScat + 1;
+    const isUltimoScat = endScat === scatoloniTotali && pezziRimanenti>0;
+    const scatoloniComplBancale = isUltimoScat ? scatoloni-1 : scatoloni;
+    const pezziTotBancale = scatoloniComplBancale*pzScat + (isUltimoScat?pezziRimanenti:0);
+    bancali.push({ n:b, scatoloni, pezziTotBancale, haIncompl:isUltimoScat, pezziIncompl:pezziRimanenti });
+  }
+  return { pezziTotali, scatoloniTotali, scatoloniCompleti, pezziRimanenti, bancaliTotali, bancali };
+}
 
 // ── Barcode ───────────────────────────────────────────────────────────────────
-function Barcode({ value, height = 60 }: { value: string; height?: number }) {
+function Barcode({ value, h=55 }: { value:string; h?:number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    if (!ref.current || !value) return;
+    if (!ref.current||!value) return;
     const render = () => (window as any).JsBarcode(ref.current, value, {
-      format: 'CODE128', displayValue: false, width: 2, height, margin: 4,
-      background: '#ffffff', lineColor: '#000000',
+      format:'CODE128', displayValue:false, width:2, height:h, margin:3, background:'#fff', lineColor:'#000'
     });
     if ((window as any).JsBarcode) { render(); return; }
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js';
-    s.onload = render;
-    document.head.appendChild(s);
-  }, [value, height]);
-  return <canvas ref={ref} style={{ maxWidth: '100%' }} />;
+    s.onload = render; document.head.appendChild(s);
+  }, [value, h]);
+  return <canvas ref={ref} style={{ maxWidth:'100%' }} />;
 }
 
-// ── Etichetta Scatolone (150×100mm, stesso layout screenshot) ─────────────────
-interface ScatoloneData {
-  cliente: string; fornitore: string; codice: string;
-  descrizione: string; ordineNr: string; data: string;
-  lotto: string; quantita: number;
-  numeroScatolone: number; totaleScatoloni: number;
-  ssccPallet: string;
-}
-
-function EtichettaScatolone({ d }: { d: ScatoloneData }) {
-  const isIncompleto = d.numeroScatolone === d.totaleScatoloni && d.quantita !== Math.round(d.quantita);
+// ── Etichetta Scatolone ───────────────────────────────────────────────────────
+interface ScatData { cliente:string;fornitore:string;codice:string;descrizione:string;ordineNr:string;data:string;lotto:string;quantita:number;numScat:number;totScat:number;ssccPallet:string; }
+function EtScat({ d }: { d:ScatData }) {
+  const inc = d.numScat===d.totScat && d.quantita < d.quantita; // sempre false così — lo calcola il parent
   return (
-    <div
-      className="bg-white font-sans"
-      style={{ width:'150mm', height:'100mm', border:'2.5px solid #1a56db', boxSizing:'border-box',
-               display:'grid', gridTemplateColumns:'55% 45%', pageBreakAfter:'always', flexShrink:0 }}
-    >
-      {/* Colonna sinistra: dati */}
-      <div style={{ borderRight:'1.5px solid #1a56db', display:'flex', flexDirection:'column' }}>
-        {[
-          { label:'Cliente:', value: d.cliente, bold: true, large: true },
-          { label:'Fornitore:', value: d.fornitore },
-          { label:'Cod:', value: d.codice },
-          { label:'Descrizione:', value: d.descrizione, small: true },
-          { label:'Ordine nr:', value: d.ordineNr },
-          { label:'Data:', value: d.data },
-          { label:'Lotto:', value: d.lotto },
-          { label:'Quantità:', value: String(d.quantita) + ' pz', bold: true },
-        ].map((row, i) => (
-          <div key={i} style={{ display:'flex', borderBottom:'1px solid #ccc', flex:1, alignItems:'center' }}>
-            <span style={{ fontStyle:'italic', fontSize:'8pt', minWidth:'28mm', paddingLeft:'2mm', color:'#333' }}>{row.label}</span>
-            <span style={{ fontSize: row.large ? '11pt' : row.small ? '7pt' : '9pt', fontWeight: row.bold ? 'bold' : 'normal', paddingLeft:'1mm', lineHeight:1.2 }}>{row.value}</span>
+    <div style={{ width:'150mm',height:'100mm',border:'2.5px solid #1a56db',boxSizing:'border-box',display:'grid',gridTemplateColumns:'55% 45%',background:'#fff',fontFamily:'Arial,sans-serif',pageBreakAfter:'always',flexShrink:0 }}>
+      <div style={{ borderRight:'1.5px solid #1a56db',display:'flex',flexDirection:'column' }}>
+        {[['Cliente:',d.cliente,true,true],['Fornitore:',d.fornitore,false,false],['Cod:',d.codice,false,false],['Descrizione:',d.descrizione,false,true],['Ordine nr:',d.ordineNr,false,false],['Data:',d.data,false,false],['Lotto:',d.lotto,false,false],['Quantità:',d.quantita+' pz',true,false]].map(([lbl,val,bold,large],i)=>(
+          <div key={i} style={{ display:'flex',borderBottom:'1px solid #ddd',flex:1,alignItems:'center',minHeight:0 }}>
+            <span style={{ fontStyle:'italic',fontSize:'7.5pt',minWidth:'27mm',paddingLeft:'2mm',color:'#444',whiteSpace:'nowrap' }}>{lbl}</span>
+            <span style={{ fontSize:large?'10pt':'8.5pt',fontWeight:bold?'bold':'normal',paddingLeft:'1mm',lineHeight:1.2,overflow:'hidden' }}>{val}</span>
           </div>
         ))}
       </div>
-      {/* Colonna destra: scatolone + barcode */}
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'space-between', padding:'2mm' }}>
-        {/* Numero scatolone */}
-        <div style={{ textAlign:'center', lineHeight:1.1 }}>
-          <div style={{ fontSize:'7pt', color:'#555' }}>Scatolone</div>
-          <div style={{ fontSize:'18pt', fontWeight:'bold', color: isIncompleto ? '#c0392b' : '#1a56db' }}>
-            {d.numeroScatolone}<span style={{ fontSize:'10pt', color:'#666' }}>/{d.totaleScatoloni}</span>
+      <div style={{ display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'space-between',padding:'2mm' }}>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ fontSize:'6.5pt',color:'#666' }}>Scatolone</div>
+          <div style={{ fontSize:'20pt',fontWeight:'bold',lineHeight:1,color:'#1a56db' }}>
+            {d.numScat}<span style={{ fontSize:'9pt',color:'#999' }}>/{d.totScat}</span>
           </div>
-          {isIncompleto && <div style={{ fontSize:'6pt', color:'#c0392b', fontWeight:'bold' }}>INCOMPLETO</div>}
         </div>
-        {/* EAN + barcode */}
-        <div style={{ textAlign:'center', width:'100%' }}>
-          <div style={{ fontSize:'7pt', marginBottom:'1mm', fontStyle:'italic' }}>EAN:</div>
-          <Barcode value={d.codice || 'NOCODE'} height={45} />
-          <div style={{ fontSize:'7pt', fontWeight:'bold', letterSpacing:'0.5px' }}>{d.codice}</div>
+        <div style={{ textAlign:'center',width:'100%' }}>
+          <div style={{ fontSize:'6.5pt',fontStyle:'italic',marginBottom:'1mm' }}>EAN:</div>
+          <Barcode value={d.codice||'CODICE'} h={48} />
+          <div style={{ fontSize:'7pt',fontWeight:'bold',letterSpacing:'0.5px',fontFamily:'monospace' }}>{d.codice}</div>
         </div>
-        {/* SSCC pallet */}
-        {d.ssccPallet && (
-          <div style={{ fontSize:'5.5pt', color:'#888', textAlign:'center', borderTop:'1px solid #eee', paddingTop:'1mm', width:'100%' }}>
-            Pallet: {d.ssccPallet}
-          </div>
-        )}
+        {d.ssccPallet && <div style={{ fontSize:'5pt',color:'#aaa',textAlign:'center',borderTop:'1px solid #eee',paddingTop:'1mm',width:'100%',fontFamily:'monospace' }}>Pallet:{d.ssccPallet}</div>}
       </div>
     </div>
   );
 }
 
-// ── Etichetta SSCC Pallet ─────────────────────────────────────────────────────
-interface PalletData { sscc:string; numeroBancale:number; cliente:string; descrizione:string; ordineNr:string; data:string; lotto:string; pezziTotali:number; numScatoloni:number; }
-function EtichettaPallet({ d }: { d: PalletData }) {
+// ── Etichetta Pallet ──────────────────────────────────────────────────────────
+interface PalData { sscc:string;num:number;cliente:string;descrizione:string;ordineNr:string;data:string;lotto:string;pezziTot:number;numScat:number; }
+function EtPallet({ d }: { d:PalData }) {
   return (
-    <div className="bg-white font-sans" style={{ width:'150mm', height:'100mm', border:'2.5px solid #1a56db', boxSizing:'border-box', display:'flex', flexDirection:'column', padding:'3mm', pageBreakAfter:'always', flexShrink:0 }}>
-      <div style={{ display:'flex', justifyContent:'space-between', borderBottom:'2px solid #1a56db', paddingBottom:'1.5mm', marginBottom:'1.5mm' }}>
-        <span style={{ fontSize:'9pt', fontWeight:'bold' }}>ETICHETTA PALLET GS1</span>
-        <span style={{ fontSize:'9pt', fontWeight:'bold', color:'#1a56db' }}>BANCALE #{d.numeroBancale}</span>
+    <div style={{ width:'150mm',height:'100mm',border:'2.5px solid #1a56db',boxSizing:'border-box',display:'flex',flexDirection:'column',padding:'3mm',background:'#fff',fontFamily:'Arial,sans-serif',pageBreakAfter:'always',flexShrink:0 }}>
+      <div style={{ display:'flex',justifyContent:'space-between',borderBottom:'2px solid #1a56db',paddingBottom:'1.5mm',marginBottom:'1.5mm' }}>
+        <span style={{ fontSize:'9pt',fontWeight:'bold' }}>ETICHETTA PALLET GS1</span>
+        <span style={{ fontSize:'9pt',fontWeight:'bold',color:'#1a56db' }}>BANCALE #{d.num}</span>
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1mm', fontSize:'8pt', flex:1 }}>
-        <div><b>Cliente:</b> {d.cliente}</div>
-        <div><b>Ordine:</b> {d.ordineNr}</div>
-        <div style={{ gridColumn:'1/-1' }}><b>Descrizione:</b> {d.descrizione}</div>
-        <div><b>Data:</b> {d.data}</div>
-        <div><b>Lotto:</b> {d.lotto}</div>
-        <div><b>Pezzi totali:</b> {d.pezziTotali.toLocaleString('it-IT')}</div>
-        <div><b>Scatoloni:</b> {d.numScatoloni}</div>
+      <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1mm',fontSize:'8pt',flex:1 }}>
+        <div><b>Cliente:</b> {d.cliente}</div><div><b>Ordine:</b> {d.ordineNr}</div>
+        <div style={{ gridColumn:'1/-1' }}><b>Descr.:</b> {d.descrizione}</div>
+        <div><b>Data:</b> {d.data}</div><div><b>Lotto:</b> {d.lotto}</div>
+        <div><b>Pezzi:</b> {d.pezziTot.toLocaleString('it-IT')}</div><div><b>Scatoloni:</b> {d.numScat}</div>
       </div>
-      <div style={{ borderTop:'1.5px solid #1a56db', paddingTop:'1.5mm', textAlign:'center' }}>
-        <Barcode value={d.sscc} height={35} />
-        <div style={{ fontSize:'7.5pt', fontWeight:'bold', letterSpacing:'1px', fontFamily:'monospace' }}>{formattaSSCC(d.sscc)}</div>
+      <div style={{ borderTop:'1.5px solid #1a56db',paddingTop:'1.5mm',textAlign:'center' }}>
+        <Barcode value={d.sscc} h={32} />
+        <div style={{ fontSize:'7pt',fontWeight:'bold',letterSpacing:'1px',fontFamily:'monospace' }}>{fmtSSCC(d.sscc)}</div>
       </div>
     </div>
   );
 }
 
 // ── Tipi ──────────────────────────────────────────────────────────────────────
-interface SSCCConfig { id:string; prefisso_gs1:string; digit_estensione:string; contatore:number; }
-interface SSCCRecord { id:string; sscc:string; numero_bancale:number; gtin?:string; lotto?:string; quantita?:number; data_produzione?:string; peso_lordo_kg?:number; descrizione?:string; cliente?:string; created_at:string; }
+interface Cfg { id:string;prefisso_gs1:string;digit_estensione:string;contatore:number; }
+interface Rec { id:string;sscc:string;numero_bancale:number;cliente?:string;lotto?:string;descrizione?:string;created_at:string; }
 
-// ── Pagina principale ─────────────────────────────────────────────────────────
+// ── Pagina ────────────────────────────────────────────────────────────────────
 const SSCCLabels = () => {
   const navigate = useNavigate();
   const { isAmministratore } = useAuth();
-  const [tab, setTab] = useState<'sscc'|'lavoro'>('lavoro');
-  const [config, setConfig] = useState<SSCCConfig | null>(null);
-  const [editConfig, setEditConfig] = useState(false);
-  const [tempConfig, setTempConfig] = useState({ prefisso_gs1:'', digit_estensione:'3' });
-  const [storico, setStorico] = useState<SSCCRecord[]>([]);
+  const [tab, setTab] = useState<'lavoro'|'sscc'>('lavoro');
+  const [cfg, setCfg] = useState<Cfg|null>(null);
+  const [editCfg, setEditCfg] = useState(false);
+  const [tmpCfg, setTmpCfg] = useState({ prefisso_gs1:'', digit_estensione:'3' });
+  const [storico, setStorico] = useState<Rec[]>([]);
   const [loading, setLoading] = useState(true);
   const [generando, setGenerando] = useState(false);
-  const [numeroBancali, setNumeroBancali] = useState(1);
   const [printQueue, setPrintQueue] = useState<React.ReactNode[]>([]);
+  const [numBancali, setNumBancali] = useState(1);
 
-  // Form SSCC semplice
-  const [formSSCC, setFormSSCC] = useState({ gtin:'', lotto:'', quantita:'', dataProduzione:new Date().toISOString().split('T')[0], pesoLordo:'', descrizione:'', cliente:'', note:'' });
-
-  // Form Lavoro Completo
-  const [lavoro, setLavoro] = useState({
+  const [lav, setLav] = useState({
     cliente:'', fornitore:'Arti Grafiche Lombardi', codice:'', descrizione:'',
     ordineNr:'', data:new Date().toLocaleDateString('it-IT'), lotto:'',
-    pezziTotali:'', pezziPerScatolone:'',
+    fogli:'', resa:'', pzScat:'', scatBanc:'',
   });
 
-  // Calcolo scatoloni
-  const pezziTot = parseInt(lavoro.pezziTotali) || 0;
-  const pezziPerScat = parseInt(lavoro.pezziPerScatolone) || 0;
-  const numScatoloniCompleti = pezziPerScat > 0 ? Math.floor(pezziTot / pezziPerScat) : 0;
-  const pezziRimanenti = pezziPerScat > 0 ? pezziTot % pezziPerScat : 0;
-  const numScatoloniTotali = pezziRimanenti > 0 ? numScatoloniCompleti + 1 : numScatoloniCompleti;
+  const f = parseInt(lav.fogli)||0, r = parseInt(lav.resa)||0;
+  const ps = parseInt(lav.pzScat)||0, sb = parseInt(lav.scatBanc)||0;
+  const calc = calcola(f, r, ps, sb);
 
-  useEffect(() => { loadData(); }, []);
-
+  useEffect(()=>{ loadData(); },[]);
   const loadData = async () => {
     setLoading(true);
-    const [cfgRes, storRes] = await Promise.all([
+    const [a,b] = await Promise.all([
       supabase.from('sscc_config').select('*').limit(1).single(),
-      supabase.from('sscc_generati').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('sscc_generati').select('id,sscc,numero_bancale,cliente,lotto,descrizione,created_at').order('created_at',{ascending:false}).limit(50),
     ]);
-    if (cfgRes.data) setConfig(cfgRes.data);
-    if (storRes.data) setStorico(storRes.data);
+    if (a.data) setCfg(a.data);
+    if (b.data) setStorico(b.data);
     setLoading(false);
   };
-
-  const salvaConfig = async () => {
-    if (!config) return;
-    await supabase.from('sscc_config').update({ prefisso_gs1: tempConfig.prefisso_gs1, digit_estensione: tempConfig.digit_estensione, updated_at: new Date().toISOString() }).eq('id', config.id);
-    toast.success('Configurazione salvata'); setEditConfig(false); loadData();
+  const salvaCfg = async () => {
+    if (!cfg) return;
+    await supabase.from('sscc_config').update({ prefisso_gs1:tmpCfg.prefisso_gs1, digit_estensione:tmpCfg.digit_estensione, updated_at:new Date().toISOString() }).eq('id',cfg.id);
+    toast.success('Configurazione salvata'); setEditCfg(false); loadData();
   };
 
-  // Genera N bancali SSCC
-  const generaBancali = async (quanti: number) => {
-    if (!config?.prefisso_gs1) { toast.error('Configura il prefisso GS1'); return; }
+  // Genera lavoro completo
+  const generaLavoro = async () => {
+    if (!cfg?.prefisso_gs1) { toast.error('Configura il prefisso GS1'); return; }
+    if (!lav.cliente||!lav.codice||!calc) { toast.error('Compila tutti i campi'); return; }
     setGenerando(true);
     const labels: React.ReactNode[] = [];
     const records = [];
-    for (let i = 0; i < quanti; i++) {
-      const num = config.contatore + i;
-      const sscc = generaSSCC(config.digit_estensione, config.prefisso_gs1, num);
-      labels.push(<EtichettaPallet key={`p${i}`} d={{ sscc, numeroBancale: num, cliente: formSSCC.cliente, descrizione: formSSCC.descrizione, ordineNr: formSSCC.gtin, data: formSSCC.dataProduzione, lotto: formSSCC.lotto, pezziTotali: parseInt(formSSCC.quantita)||0, numScatoloni: 0 }} />);
-      records.push({ sscc, numero_bancale: num, gtin: formSSCC.gtin||null, lotto: formSSCC.lotto||null, quantita: formSSCC.quantita ? parseInt(formSSCC.quantita) : null, data_produzione: formSSCC.dataProduzione||null, peso_lordo_kg: formSSCC.pesoLordo ? parseFloat(formSSCC.pesoLordo) : null, descrizione: formSSCC.descrizione||null, cliente: formSSCC.cliente||null, note: formSSCC.note||null });
+    let contatore = cfg.contatore;
+
+    for (const banc of calc.bancali) {
+      const sscc = generaSSCC(cfg.digit_estensione, cfg.prefisso_gs1, contatore);
+      // Etichetta pallet
+      labels.push(<EtPallet key={`p${banc.n}`} d={{ sscc, num:contatore, cliente:lav.cliente, descrizione:lav.descrizione, ordineNr:lav.ordineNr, data:lav.data, lotto:lav.lotto, pezziTot:banc.pezziTotBancale, numScat:banc.scatoloni }} />);
+      records.push({ sscc, numero_bancale:contatore, cliente:lav.cliente||null, lotto:lav.lotto||null, quantita:banc.pezziTotBancale, descrizione:lav.descrizione||null });
+
+      // Etichette scatoloni di questo bancale
+      const startGlobal = (banc.n-1)*sb;
+      for (let i=0; i<banc.scatoloni; i++) {
+        const scatGlobal = startGlobal + i + 1;
+        const isIncompleto = scatGlobal === calc.scatoloniTotali && calc.pezziRimanenti>0;
+        const qty = isIncompleto ? calc.pezziRimanenti : ps;
+        labels.push(<EtScat key={`s${banc.n}-${i}`} d={{ cliente:lav.cliente, fornitore:lav.fornitore, codice:lav.codice, descrizione:lav.descrizione, ordineNr:lav.ordineNr, data:lav.data, lotto:lav.lotto, quantita:qty, numScat:scatGlobal, totScat:calc.scatoloniTotali, ssccPallet:sscc }} />);
+      }
+      contatore++;
+    }
+
+    await supabase.from('sscc_generati').insert(records);
+    await supabase.from('sscc_config').update({ contatore }).eq('id',cfg.id);
+    toast.success(`✅ ${calc.bancaliTotali} pallet + ${calc.scatoloniTotali} scatoloni`);
+    setPrintQueue(labels); setGenerando(false); loadData();
+    setTimeout(()=>window.print(), 400);
+  };
+
+  // Genera solo bancali SSCC
+  const generaBancali = async (n:number) => {
+    if (!cfg?.prefisso_gs1) { toast.error('Configura il prefisso GS1'); return; }
+    setGenerando(true);
+    const labels:React.ReactNode[] = [], records = [];
+    for (let i=0;i<n;i++) {
+      const num = cfg.contatore+i;
+      const sscc = generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,num);
+      labels.push(<EtPallet key={i} d={{ sscc,num,cliente:'',descrizione:'',ordineNr:'',data:new Date().toLocaleDateString('it-IT'),lotto:'',pezziTot:0,numScat:0 }} />);
+      records.push({ sscc, numero_bancale:num });
     }
     await supabase.from('sscc_generati').insert(records);
-    await supabase.from('sscc_config').update({ contatore: config.contatore + quanti }).eq('id', config.id);
-    toast.success(`✅ ${quanti} etichett${quanti===1?'a':'e'} pallet generat${quanti===1?'a':'e'}`);
+    await supabase.from('sscc_config').update({ contatore:cfg.contatore+n }).eq('id',cfg.id);
+    toast.success(`✅ ${n} bancal${n===1?'e':'i'} generati`);
     setPrintQueue(labels); setGenerando(false); loadData();
-    setTimeout(() => window.print(), 400);
+    setTimeout(()=>window.print(),400);
   };
 
-  // Genera lavoro completo: 1 etichetta pallet + N scatoloni
-  const generaLavoroCompleto = async () => {
-    if (!config?.prefisso_gs1) { toast.error('Configura il prefisso GS1'); return; }
-    if (!lavoro.cliente || !lavoro.codice || !lavoro.pezziTotali || !lavoro.pezziPerScatolone) {
-      toast.error('Compila almeno: Cliente, Codice, Pezzi totali, Pezzi/scatolone'); return;
-    }
-    if (numScatoloniTotali < 1) { toast.error('Dati non validi'); return; }
-    setGenerando(true);
-
-    // Genera SSCC pallet
-    const sscc = generaSSCC(config.digit_estensione, config.prefisso_gs1, config.contatore);
-
-    // Salva nel DB
-    await supabase.from('sscc_generati').insert([{
-      sscc, numero_bancale: config.contatore,
-      lotto: lavoro.lotto||null, quantita: pezziTot,
-      descrizione: lavoro.descrizione||null, cliente: lavoro.cliente||null,
-    }]);
-    await supabase.from('sscc_config').update({ contatore: config.contatore + 1 }).eq('id', config.id);
-
-    // Costruisce la coda di stampa
-    const labels: React.ReactNode[] = [];
-
-    // 1. Etichetta pallet
-    labels.push(<EtichettaPallet key="pallet" d={{ sscc, numeroBancale: config.contatore, cliente: lavoro.cliente, descrizione: lavoro.descrizione, ordineNr: lavoro.ordineNr, data: lavoro.data, lotto: lavoro.lotto, pezziTotali: pezziTot, numScatoloni: numScatoloniTotali }} />);
-
-    // 2. Etichette scatoloni
-    for (let i = 1; i <= numScatoloniTotali; i++) {
-      const isUltimo = i === numScatoloniTotali && pezziRimanenti > 0;
-      const qty = isUltimo ? pezziRimanenti : pezziPerScat;
-      labels.push(<EtichettaScatolone key={`s${i}`} d={{ cliente: lavoro.cliente, fornitore: lavoro.fornitore, codice: lavoro.codice, descrizione: lavoro.descrizione, ordineNr: lavoro.ordineNr, data: lavoro.data, lotto: lavoro.lotto, quantita: qty, numeroScatolone: i, totaleScatoloni: numScatoloniTotali, ssccPallet: sscc }} />);
-    }
-
-    toast.success(`✅ Bancale #${config.contatore} — 1 pallet + ${numScatoloniTotali} scatoloni`);
-    setPrintQueue(labels); setGenerando(false); loadData();
-    setTimeout(() => window.print(), 400);
-  };
-
-  const ssccPreview = config ? generaSSCC(config.digit_estensione, config.prefisso_gs1, config.contatore) : '';
-
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Caricamento...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Caricamento...</div>;
 
   return (
     <div className="min-h-screen bg-[hsl(210,40%,96%)] print:bg-white">
       <div className="print:hidden">
         <Header title="Etichette SSCC GS1" activeTab="" showUsersButton={false} />
         <div className="mx-auto p-3 sm:p-5 md:px-8">
-          <Button variant="outline" size="sm" className="mb-5" onClick={() => navigate(isAmministratore ? '/summary' : '/stampa-dashboard')}>
-            <Home className="mr-2 h-4 w-4" /> Dashboard
+          <Button variant="outline" size="sm" className="mb-5" onClick={()=>navigate(isAmministratore?'/summary':'/stampa-dashboard')}>
+            <Home className="mr-2 h-4 w-4"/>Dashboard
           </Button>
 
-          {/* Tab selector */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
-            <button onClick={()=>setTab('lavoro')} className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab==='lavoro'?'border-blue-600 text-blue-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              <Package className="inline h-4 w-4 mr-1.5"/>Lavoro Completo
-            </button>
-            <button onClick={()=>setTab('sscc')} className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab==='sscc'?'border-blue-600 text-blue-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
-              <Layers className="inline h-4 w-4 mr-1.5"/>Solo Bancali SSCC
-            </button>
+          {/* Tabs */}
+          <div className="flex gap-0 mb-6 border-b border-gray-200">
+            {[['lavoro','📦 Lavoro Completo'],['sscc','🏷️ Solo Bancali SSCC']].map(([id,label])=>(
+              <button key={id} onClick={()=>setTab(id as any)} className={`px-6 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab===id?'border-blue-600 text-blue-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>{label}</button>
+            ))}
           </div>
 
-          {/* ── TAB: Lavoro Completo ── */}
+          {/* ── Lavoro Completo ── */}
           {tab==='lavoro' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="space-y-4">
-                {/* Config */}
+                {/* Config GS1 */}
                 <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold flex items-center gap-2"><Settings className="h-4 w-4"/>Config GS1</h3>
-                    {!editConfig && <Button variant="outline" size="sm" onClick={()=>{ setTempConfig({ prefisso_gs1:config?.prefisso_gs1||'', digit_estensione:config?.digit_estensione||'3' }); setEditConfig(true); }}>Modifica</Button>}
-                  </div>
-                  {editConfig ? (
-                    <div className="space-y-2">
-                      <div><Label className="text-xs">Prefisso GS1</Label><Input value={tempConfig.prefisso_gs1} onChange={e=>setTempConfig(p=>({...p,prefisso_gs1:e.target.value.replace(/\D/g,'')}))} className="font-mono mt-1"/></div>
-                      <div><Label className="text-xs">Digit estensione</Label><Input value={tempConfig.digit_estensione} onChange={e=>setTempConfig(p=>({...p,digit_estensione:e.target.value.replace(/\D/g,'').slice(0,1)}))} className="font-mono mt-1 w-20"/></div>
-                      <div className="flex gap-2"><Button size="sm" onClick={salvaConfig}>Salva</Button><Button size="sm" variant="outline" onClick={()=>setEditConfig(false)}>Annulla</Button></div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-4 text-sm items-center">
+                      <Settings className="h-4 w-4 text-gray-500"/>
+                      <span className="text-muted-foreground">Prefisso GS1:</span>
+                      <span className="font-mono font-bold">{cfg?.prefisso_gs1||<span className="text-orange-500">Da configurare</span>}</span>
+                      <span className="text-muted-foreground">Prossimo bancale:</span>
+                      <span className="font-mono font-bold text-blue-600">#{cfg?.contatore}</span>
                     </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <div><span className="text-muted-foreground">Prefisso: </span><span className="font-mono font-bold">{config?.prefisso_gs1||<span className="text-orange-500">Da configurare</span>}</span></div>
-                      <div><span className="text-muted-foreground">Prossimo bancale: </span><span className="font-mono font-bold text-blue-600">#{config?.contatore}</span></div>
+                    <Button variant="outline" size="sm" onClick={()=>{ setTmpCfg({ prefisso_gs1:cfg?.prefisso_gs1||'', digit_estensione:cfg?.digit_estensione||'3' }); setEditCfg(!editCfg); }}>
+                      {editCfg?'Chiudi':'Configura GS1'}
+                    </Button>
+                  </div>
+                  {editCfg && (
+                    <div className="flex gap-3 mt-3">
+                      <div><Label className="text-xs">Prefisso GS1</Label><Input value={tmpCfg.prefisso_gs1} onChange={e=>setTmpCfg(p=>({...p,prefisso_gs1:e.target.value.replace(/\D/g,'')}))} className="font-mono mt-1 w-36"/></div>
+                      <div><Label className="text-xs">Digit est.</Label><Input value={tmpCfg.digit_estensione} onChange={e=>setTmpCfg(p=>({...p,digit_estensione:e.target.value.replace(/\D/g,'').slice(0,1)}))} className="font-mono mt-1 w-16"/></div>
+                      <div className="flex items-end"><Button size="sm" onClick={salvaCfg}>Salva</Button></div>
                     </div>
                   )}
                 </div>
 
                 {/* Dati lavoro */}
                 <div className="bg-white rounded-xl border shadow-sm p-5">
-                  <h2 className="font-bold text-base mb-4 flex items-center gap-2"><Package className="h-4 w-4"/>Dati Lavoro</h2>
+                  <h2 className="font-bold text-base mb-4">Dati Lavoro</h2>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Cliente *</Label><Input value={lavoro.cliente} onChange={e=>setLavoro(p=>({...p,cliente:e.target.value}))} placeholder="Es. O.erre" className="mt-1"/></div>
-                    <div><Label className="text-xs">Fornitore</Label><Input value={lavoro.fornitore} onChange={e=>setLavoro(p=>({...p,fornitore:e.target.value}))} className="mt-1"/></div>
-                    <div><Label className="text-xs">Codice prodotto *</Label><Input value={lavoro.codice} onChange={e=>setLavoro(p=>({...p,codice:e.target.value}))} placeholder="Es. P01108001" className="mt-1 font-mono"/></div>
-                    <div><Label className="text-xs">Ordine nr</Label><Input value={lavoro.ordineNr} onChange={e=>setLavoro(p=>({...p,ordineNr:e.target.value}))} placeholder="Es. ODA26-1351" className="mt-1 font-mono"/></div>
-                    <div className="col-span-2"><Label className="text-xs">Descrizione</Label><Input value={lavoro.descrizione} onChange={e=>setLavoro(p=>({...p,descrizione:e.target.value}))} placeholder="Es. SCATOLA IMBALLO UNICO 12/5..." className="mt-1"/></div>
-                    <div><Label className="text-xs">Data</Label><Input value={lavoro.data} onChange={e=>setLavoro(p=>({...p,data:e.target.value}))} placeholder="Es. 28/5/26" className="mt-1"/></div>
-                    <div><Label className="text-xs">Lotto</Label><Input value={lavoro.lotto} onChange={e=>setLavoro(p=>({...p,lotto:e.target.value}))} placeholder="Es. 202612142" className="mt-1 font-mono"/></div>
+                    <div><Label className="text-xs">Cliente *</Label><Input value={lav.cliente} onChange={e=>setLav(p=>({...p,cliente:e.target.value}))} placeholder="Es. O.erre" className="mt-1"/></div>
+                    <div><Label className="text-xs">Fornitore</Label><Input value={lav.fornitore} onChange={e=>setLav(p=>({...p,fornitore:e.target.value}))} className="mt-1"/></div>
+                    <div><Label className="text-xs">Codice prodotto *</Label><Input value={lav.codice} onChange={e=>setLav(p=>({...p,codice:e.target.value}))} placeholder="Es. P01108001" className="mt-1 font-mono"/></div>
+                    <div><Label className="text-xs">Ordine nr</Label><Input value={lav.ordineNr} onChange={e=>setLav(p=>({...p,ordineNr:e.target.value}))} placeholder="Es. ODA26-1351" className="mt-1 font-mono"/></div>
+                    <div className="col-span-2"><Label className="text-xs">Descrizione</Label><Input value={lav.descrizione} onChange={e=>setLav(p=>({...p,descrizione:e.target.value}))} placeholder="Es. SCATOLA IMBALLO UNICO 12/5 GRAFICA BRICOMAN" className="mt-1"/></div>
+                    <div><Label className="text-xs">Data</Label><Input value={lav.data} onChange={e=>setLav(p=>({...p,data:e.target.value}))} placeholder="Es. 28/5/26" className="mt-1"/></div>
+                    <div><Label className="text-xs">Lotto</Label><Input value={lav.lotto} onChange={e=>setLav(p=>({...p,lotto:e.target.value}))} placeholder="Es. 202612142" className="mt-1 font-mono"/></div>
                   </div>
                 </div>
 
-                {/* Config scatoloni */}
+                {/* Calcolo bancale */}
                 <div className="bg-white rounded-xl border shadow-sm p-5">
-                  <h2 className="font-bold text-base mb-4">📦 Configurazione Bancale</h2>
-                  <div className="grid grid-cols-2 gap-3">
+                  <h2 className="font-bold text-base mb-4">📐 Calcolo Produzione</h2>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs">Pezzi totali nel bancale *</Label>
-                      <Input type="number" value={lavoro.pezziTotali} onChange={e=>setLavoro(p=>({...p,pezziTotali:e.target.value}))} placeholder="Es. 13.050" className="mt-1 font-mono text-lg font-bold"/>
+                      <Label className="text-xs font-semibold">Fogli fustellati</Label>
+                      <Input type="number" value={lav.fogli} onChange={e=>setLav(p=>({...p,fogli:e.target.value}))} placeholder="Es. 2.000" className="mt-1 font-mono text-base font-bold"/>
                     </div>
                     <div>
-                      <Label className="text-xs">Pezzi per scatolone *</Label>
-                      <Input type="number" value={lavoro.pezziPerScatolone} onChange={e=>setLavoro(p=>({...p,pezziPerScatolone:e.target.value}))} placeholder="Es. 435" className="mt-1 font-mono text-lg font-bold"/>
+                      <Label className="text-xs font-semibold">Resa (pz/foglio)</Label>
+                      <Input type="number" value={lav.resa} onChange={e=>setLav(p=>({...p,resa:e.target.value}))} placeholder="Es. 13" className="mt-1 font-mono text-base font-bold"/>
+                    </div>
+                    {f>0&&r>0 && <div className="col-span-2 bg-gray-50 rounded-lg px-4 py-2 text-sm"><span className="text-muted-foreground">Pezzi totali = </span><span className="font-bold text-lg">{(f*r).toLocaleString('it-IT')}</span></div>}
+                    <div>
+                      <Label className="text-xs font-semibold">Pezzi per scatolone</Label>
+                      <Input type="number" value={lav.pzScat} onChange={e=>setLav(p=>({...p,pzScat:e.target.value}))} placeholder="Es. 435" className="mt-1 font-mono text-base font-bold"/>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold">Scatoloni per bancale</Label>
+                      <Input type="number" value={lav.scatBanc} onChange={e=>setLav(p=>({...p,scatBanc:e.target.value}))} placeholder="Es. 30" className="mt-1 font-mono text-base font-bold"/>
                     </div>
                   </div>
 
-                  {/* Riepilogo calcolo */}
-                  {pezziTot > 0 && pezziPerScat > 0 && (
-                    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm font-semibold text-blue-800 mb-1">📋 Riepilogo bancale:</p>
-                      <div className="text-sm text-blue-700 space-y-0.5">
-                        <p>→ <b>{numScatoloniCompleti}</b> scatoloni da <b>{pezziPerScat.toLocaleString('it-IT')}</b> pz</p>
-                        {pezziRimanenti > 0 && <p>→ <b>1</b> scatolone incompleto da <b>{pezziRimanenti.toLocaleString('it-IT')}</b> pz</p>}
-                        <p className="font-bold text-blue-900 pt-1 border-t border-blue-200 mt-1">
-                          Totale: {numScatoloniTotali} scatoloni — {pezziTot.toLocaleString('it-IT')} pz
-                        </p>
+                  {/* Riepilogo per bancale */}
+                  {calc && (
+                    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <p className="text-sm font-bold text-blue-900 mb-2">📋 Riepilogo completo lavoro</p>
+                      <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                        <div className="bg-white rounded-lg p-2 border border-blue-200">
+                          <div className="text-2xl font-bold text-blue-700">{calc.pezziTotali.toLocaleString('it-IT')}</div>
+                          <div className="text-xs text-muted-foreground">pezzi totali</div>
+                        </div>
+                        <div className="bg-white rounded-lg p-2 border border-blue-200">
+                          <div className="text-2xl font-bold text-blue-700">{calc.scatoloniTotali}</div>
+                          <div className="text-xs text-muted-foreground">scatoloni</div>
+                        </div>
+                        <div className="bg-white rounded-lg p-2 border border-blue-200">
+                          <div className="text-2xl font-bold text-blue-700">{calc.bancaliTotali}</div>
+                          <div className="text-xs text-muted-foreground">bancali</div>
+                        </div>
                       </div>
+                      <div className="space-y-1.5">
+                        {calc.bancali.map(b=>(
+                          <div key={b.n} className={`flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border ${b.n===calc.bancaliTotali&&calc.pezziRimanenti>0?'bg-orange-50 border-orange-300 text-orange-800':'bg-white border-blue-200 text-blue-800'}`}>
+                            <span className="font-bold">Bancale #{cfg?.contatore ? cfg.contatore+b.n-1 : b.n}</span>
+                            <span>{b.scatoloni} scatoloni</span>
+                            <span className="font-semibold">{b.pezziTotBancale.toLocaleString('it-IT')} pz</span>
+                            {b.haIncompl && <span className="font-bold text-orange-600">ultimo scatolone: {b.pezziIncompl.toLocaleString('it-IT')} pz</span>}
+                          </div>
+                        ))}
+                      </div>
+                      {calc.pezziRimanenti>0 && (
+                        <p className="text-xs text-orange-700 mt-2">⚠️ Ultimo scatolone incompleto: {calc.pezziRimanenti.toLocaleString('it-IT')} pz anziché {ps.toLocaleString('it-IT')}</p>
+                      )}
                     </div>
                   )}
 
-                  <Button className="w-full mt-4 h-12 text-base font-semibold" onClick={generaLavoroCompleto} disabled={!config?.prefisso_gs1||generando||!lavoro.cliente||!lavoro.codice||!lavoro.pezziTotali||!lavoro.pezziPerScatolone}>
+                  <Button className="w-full mt-4 h-12 text-base font-semibold" onClick={generaLavoro} disabled={!cfg?.prefisso_gs1||generando||!calc||!lav.cliente||!lav.codice}>
                     <Printer className="mr-2 h-5 w-5"/>
-                    {generando ? 'Generazione...' : `Genera e Stampa — 1 pallet + ${numScatoloniTotali} scatoloni`}
+                    {generando?'Generazione...' : calc ? `Genera e Stampa — ${calc.bancaliTotali} pallet + ${calc.scatoloniTotali} scatoloni` : 'Compila i dati per generare'}
                   </Button>
                 </div>
               </div>
@@ -342,92 +346,61 @@ const SSCCLabels = () => {
               {/* Anteprima + storico */}
               <div className="space-y-4">
                 <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <h3 className="font-semibold mb-3">📋 Anteprima scatolone</h3>
-                  <div style={{ transform:'scale(0.65)', transformOrigin:'top left', width:'154%' }}>
-                    <EtichettaScatolone d={{ cliente:lavoro.cliente||'Cliente', fornitore:lavoro.fornitore, codice:lavoro.codice||'CODICE', descrizione:lavoro.descrizione||'Descrizione prodotto', ordineNr:lavoro.ordineNr||'ODA26-0000', data:lavoro.data, lotto:lavoro.lotto||'LOTTO', quantita:pezziPerScat||435, numeroScatolone:1, totaleScatoloni:numScatoloniTotali||30, ssccPallet:ssccPreview }} />
+                  <h3 className="font-semibold mb-3 text-sm">📋 Anteprima scatolone</h3>
+                  <div style={{ transform:'scale(0.63)', transformOrigin:'top left', width:'160%' }}>
+                    <EtScat d={{ cliente:lav.cliente||'O.erre', fornitore:lav.fornitore, codice:lav.codice||'P01108001', descrizione:lav.descrizione||'SCATOLA IMBALLO UNICO 12/5 GRAFICA BRICOMAN', ordineNr:lav.ordineNr||'ODA26-1351', data:lav.data, lotto:lav.lotto||'202612142', quantita:ps||435, numScat:1, totScat:calc?.scatoloniTotali||30, ssccPallet:cfg?.prefisso_gs1?generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore):'' }} />
                   </div>
                 </div>
                 <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <h3 className="font-semibold mb-3 flex items-center gap-2"><History className="h-4 w-4"/>Storico bancali ({storico.length})</h3>
-                  <table className="w-full text-xs">
-                    <thead><tr className="bg-gray-50 border-b"><th className="px-2 py-1.5 text-left">#</th><th className="px-2 py-1.5 text-left">SSCC</th><th className="px-2 py-1.5 text-left">Cliente</th><th className="px-2 py-1.5 text-left">Data</th></tr></thead>
-                    <tbody>
-                      {storico.length===0 && <tr><td colSpan={4} className="text-center py-4 text-gray-400">Nessun bancale</td></tr>}
-                      {storico.map(s=>(<tr key={s.id} className="border-b hover:bg-gray-50"><td className="px-2 py-1 font-bold text-blue-600">#{s.numero_bancale}</td><td className="px-2 py-1 font-mono text-[10px]">{s.sscc}</td><td className="px-2 py-1">{s.cliente||'—'}</td><td className="px-2 py-1">{new Date(s.created_at).toLocaleDateString('it-IT')}</td></tr>))}
-                    </tbody>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm"><History className="h-4 w-4"/>Storico bancali</h3>
+                  <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b"><th className="px-2 py-1.5 text-left">#</th><th className="px-2 py-1.5 text-left">SSCC</th><th className="px-2 py-1.5 text-left">Cliente</th><th className="px-2 py-1.5 text-left">Data</th></tr></thead>
+                    <tbody>{storico.length===0&&<tr><td colSpan={4} className="text-center py-4 text-gray-400">Nessun bancale</td></tr>}{storico.map(s=>(<tr key={s.id} className="border-b hover:bg-gray-50"><td className="px-2 py-1 font-bold text-blue-600">#{s.numero_bancale}</td><td className="px-2 py-1 font-mono text-[10px]">{s.sscc}</td><td className="px-2 py-1">{s.cliente||'—'}</td><td className="px-2 py-1">{new Date(s.created_at).toLocaleDateString('it-IT')}</td></tr>))}</tbody>
                   </table>
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── TAB: Solo Bancali SSCC ── */}
+          {/* ── Solo Bancali ── */}
           {tab==='sscc' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="bg-white rounded-xl border shadow-sm p-5">
-                  <h2 className="font-bold text-base mb-4 flex items-center gap-2"><Settings className="h-4 w-4"/>Configurazione GS1</h2>
-                  {editConfig ? (
-                    <div className="space-y-3">
-                      <div><Label className="text-xs">Prefisso GS1</Label><Input value={tempConfig.prefisso_gs1} onChange={e=>setTempConfig(p=>({...p,prefisso_gs1:e.target.value.replace(/\D/g,'')}))} className="font-mono mt-1"/></div>
-                      <div><Label className="text-xs">Digit estensione</Label><Input value={tempConfig.digit_estensione} onChange={e=>setTempConfig(p=>({...p,digit_estensione:e.target.value.replace(/\D/g,'').slice(0,1)}))} className="font-mono mt-1 w-20"/></div>
-                      <div className="flex gap-2"><Button size="sm" onClick={salvaConfig}>Salva</Button><Button size="sm" variant="outline" onClick={()=>setEditConfig(false)}>Annulla</Button></div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Prefisso GS1:</span><span className="font-mono font-bold">{config?.prefisso_gs1||<span className="text-orange-500">Da configurare</span>}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Digit estensione:</span><span className="font-mono">{config?.digit_estensione}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Prossimo bancale:</span><span className="font-mono font-bold text-blue-600">#{config?.contatore}</span></div>
-                      {config?.prefisso_gs1 && ssccPreview.length===18 && <div className="flex justify-between border-t pt-1"><span className="text-muted-foreground">Prossimo SSCC:</span><span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{formattaSSCC(ssccPreview)}</span></div>}
-                      <Button variant="outline" size="sm" className="mt-2" onClick={()=>{ setTempConfig({ prefisso_gs1:config?.prefisso_gs1||'', digit_estensione:config?.digit_estensione||'3' }); setEditConfig(true); }}>Modifica</Button>
-                    </div>
-                  )}
-                </div>
-                <div className="bg-white rounded-xl border shadow-sm p-5">
-                  <h2 className="font-bold text-base mb-4 flex items-center gap-2"><Plus className="h-4 w-4"/>Dati (opzionali)</h2>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2"><Label className="text-xs">Cliente</Label><Input value={formSSCC.cliente} onChange={e=>setFormSSCC(p=>({...p,cliente:e.target.value}))} className="mt-1"/></div>
-                    <div className="col-span-2"><Label className="text-xs">Descrizione</Label><Input value={formSSCC.descrizione} onChange={e=>setFormSSCC(p=>({...p,descrizione:e.target.value}))} className="mt-1"/></div>
-                    <div><Label className="text-xs">Lotto</Label><Input value={formSSCC.lotto} onChange={e=>setFormSSCC(p=>({...p,lotto:e.target.value}))} className="mt-1 font-mono"/></div>
-                    <div><Label className="text-xs">Data produzione</Label><Input type="date" value={formSSCC.dataProduzione} onChange={e=>setFormSSCC(p=>({...p,dataProduzione:e.target.value}))} className="mt-1"/></div>
+            <div className="max-w-md space-y-4">
+              <div className="bg-white rounded-xl border shadow-sm p-5">
+                <h2 className="font-bold mb-4 flex items-center gap-2"><Settings className="h-4 w-4"/>Config GS1</h2>
+                {editCfg?(
+                  <div className="space-y-3">
+                    <div><Label className="text-xs">Prefisso GS1</Label><Input value={tmpCfg.prefisso_gs1} onChange={e=>setTmpCfg(p=>({...p,prefisso_gs1:e.target.value.replace(/\D/g,'')}))} className="font-mono mt-1"/></div>
+                    <div><Label className="text-xs">Digit estensione</Label><Input value={tmpCfg.digit_estensione} onChange={e=>setTmpCfg(p=>({...p,digit_estensione:e.target.value.replace(/\D/g,'').slice(0,1)}))} className="font-mono mt-1 w-20"/></div>
+                    <div className="flex gap-2"><Button size="sm" onClick={salvaCfg}>Salva</Button><Button size="sm" variant="outline" onClick={()=>setEditCfg(false)}>Annulla</Button></div>
                   </div>
-                  <div className="mt-5 space-y-3">
-                    <Button className="w-full h-12 text-base font-semibold" onClick={()=>generaBancali(1)} disabled={!config?.prefisso_gs1||generando}>
-                      <Printer className="mr-2 h-5 w-5"/>{generando?'Generazione...':`Genera e Stampa — Bancale #${config?.contatore}`}
-                    </Button>
-                    <div className="flex items-center gap-3"><div className="flex-1 h-px bg-gray-200"/><span className="text-xs text-muted-foreground">oppure più bancali</span><div className="flex-1 h-px bg-gray-200"/></div>
-                    <div className="flex gap-2 items-end">
-                      <div className="flex-1"><Label className="text-xs">Numero bancali</Label><Input type="number" min={2} max={500} value={numeroBancali} onChange={e=>setNumeroBancali(Math.max(2,Math.min(500,parseInt(e.target.value)||2)))} className="mt-1 font-mono text-center text-lg font-bold"/></div>
-                      <Button className="h-10 px-5 bg-amber-600 hover:bg-amber-700 text-white font-semibold" onClick={()=>generaBancali(numeroBancali)} disabled={!config?.prefisso_gs1||generando}>
-                        <Printer className="mr-2 h-4 w-4"/>{generando?'...': `Genera ${numeroBancali} bancali`}
-                      </Button>
-                    </div>
-                    {config?.contatore && numeroBancali > 1 && <p className="text-xs text-muted-foreground text-center">Bancali #{config.contatore} → #{config.contatore + numeroBancali - 1}</p>}
+                ):(
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Prefisso:</span><span className="font-mono font-bold">{cfg?.prefisso_gs1||<span className="text-orange-500">Da configurare</span>}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Prossimo bancale:</span><span className="font-mono font-bold text-blue-600">#{cfg?.contatore}</span></div>
+                    <Button variant="outline" size="sm" onClick={()=>{ setTmpCfg({ prefisso_gs1:cfg?.prefisso_gs1||'', digit_estensione:cfg?.digit_estensione||'3' }); setEditCfg(true); }}>Modifica</Button>
                   </div>
-                </div>
+                )}
               </div>
-              <div className="bg-white rounded-xl border shadow-sm p-4">
-                <h3 className="font-semibold mb-3 flex items-center gap-2"><History className="h-4 w-4"/>Storico ({storico.length})</h3>
-                <table className="w-full text-xs">
-                  <thead><tr className="bg-gray-50 border-b"><th className="px-2 py-1.5 text-left">#</th><th className="px-2 py-1.5 text-left">SSCC</th><th className="px-2 py-1.5 text-left">Cliente</th><th className="px-2 py-1.5 text-left">Data</th></tr></thead>
-                  <tbody>
-                    {storico.map(s=>(<tr key={s.id} className="border-b hover:bg-gray-50"><td className="px-2 py-1 font-bold text-blue-600">#{s.numero_bancale}</td><td className="px-2 py-1 font-mono text-[10px]">{s.sscc}</td><td className="px-2 py-1">{s.cliente||'—'}</td><td className="px-2 py-1">{new Date(s.created_at).toLocaleDateString('it-IT')}</td></tr>))}
-                  </tbody>
-                </table>
+              <div className="bg-white rounded-xl border shadow-sm p-5 space-y-3">
+                <Button className="w-full h-12 text-base font-semibold" onClick={()=>generaBancali(1)} disabled={!cfg?.prefisso_gs1||generando}>
+                  <Printer className="mr-2 h-5 w-5"/>{generando?'...':`Genera Bancale #${cfg?.contatore}`}
+                </Button>
+                <div className="flex items-center gap-3"><div className="flex-1 h-px bg-gray-200"/><span className="text-xs text-muted-foreground">oppure</span><div className="flex-1 h-px bg-gray-200"/></div>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1"><Label className="text-xs">Numero bancali</Label><Input type="number" min={2} max={500} value={numBancali} onChange={e=>setNumBancali(Math.max(2,parseInt(e.target.value)||2))} className="mt-1 font-mono text-center text-xl font-bold"/></div>
+                  <Button className="h-10 px-4 bg-amber-600 hover:bg-amber-700 text-white" onClick={()=>generaBancali(numBancali)} disabled={!cfg?.prefisso_gs1||generando}>
+                    <Printer className="mr-2 h-4 w-4"/>Genera {numBancali}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Area di stampa ── */}
-      <div className="hidden print:flex print:flex-col print:gap-0">
-        {printQueue}
-      </div>
-
+      {/* Stampa */}
+      <div className="hidden print:flex print:flex-col">{printQueue}</div>
       <Toaster />
     </div>
   );
 };
-
 export default SSCCLabels;
