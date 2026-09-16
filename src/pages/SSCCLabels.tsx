@@ -335,41 +335,50 @@ const SSCCLabels = () => {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        {calc.bancali.map(b=>(
-                          <div key={b.n} className={`flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border ${b.n===calc.bancaliTotali&&calc.pezziRimanenti>0?'bg-orange-50 border-orange-300 text-orange-800':'bg-white border-blue-200 text-blue-800'}`}>
-                            <span className="font-bold">Bancale #{cfg?.contatore ? cfg.contatore+b.n-1 : b.n}</span>
-                            <span>{b.scatoloni} scatoloni</span>
-                            <span className="font-semibold">{b.pezziTotBancale.toLocaleString('it-IT')} pz</span>
-                            {b.haIncompl && <span className="font-bold text-orange-600">ultimo scatolone: {b.pezziIncompl.toLocaleString('it-IT')} pz</span>}
-                          </div>
-                        ))}
+                        {calc.bancali.map((b,idx)=> {
+                          const isUltimo = idx===calc.bancali.length-1;
+                          return (
+                            <div key={b.n} className={`text-xs px-3 py-2 rounded-lg border ${isUltimo&&calc.pezziRimanenti>0?'bg-orange-50 border-orange-300':'bg-white border-blue-200'}`}>
+                              {/* Riga principale */}
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-blue-800">Bancale #{cfg?.contatore ? cfg.contatore+b.n-1 : b.n}</span>
+                                {isUltimo ? (
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      value={overrideScatUltimoBanc}
+                                      onChange={e=>setOverrideScatUltimoBanc(e.target.value)}
+                                      placeholder={String(b.scatoloni)}
+                                      title="Modifica scatoloni ultimo bancale"
+                                      className="w-16 border border-blue-400 rounded px-1.5 py-0.5 text-sm font-mono font-bold text-center bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    />
+                                    <span className="text-blue-700">scatoloni</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-blue-700">{b.scatoloni} scatoloni</span>
+                                )}
+                                <span className="font-semibold text-blue-800">{b.pezziTotBancale.toLocaleString('it-IT')} pz</span>
+                              </div>
+                              {/* Ultima riga: ultimo scatolone editabile */}
+                              {isUltimo && (
+                                <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-orange-200">
+                                  <span className="text-orange-700 font-medium">Ultimo scatolone:</span>
+                                  <input
+                                    type="number"
+                                    value={overridePzUltimoScat}
+                                    onChange={e=>setOverridePzUltimoScat(e.target.value)}
+                                    placeholder={String(calc.pezziRimanenti>0?calc.pezziRimanenti:ps)}
+                                    title="Modifica pezzi ultimo scatolone"
+                                    className="w-24 border border-orange-400 rounded px-1.5 py-0.5 text-sm font-mono font-bold text-center bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                  />
+                                  <span className="text-orange-700">pz</span>
+                                  {(overridePzUltimoScat||overrideScatUltimoBanc) && <span className="text-amber-600 text-[10px] font-semibold">✏️ modificato</span>}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      {/* Override manuale */}
-                      <div className="mt-3 pt-3 border-t border-blue-200 space-y-2">
-                        <p className="text-xs font-semibold text-blue-800">✏️ Correzioni manuali (opzionale)</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[11px] text-blue-700 font-medium">Pezzi ultimo scatolone</label>
-                            <input type="number" value={overridePzUltimoScat} onChange={e=>setOverridePzUltimoScat(e.target.value)}
-                              placeholder={`Auto: ${calc.pezziRimanenti>0?calc.pezziRimanenti:ps}`}
-                              className="mt-0.5 w-full border border-blue-300 rounded px-2 py-1.5 text-sm font-mono font-bold bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-blue-700 font-medium">Scatoloni ultimo bancale</label>
-                            <input type="number" value={overrideScatUltimoBanc} onChange={e=>setOverrideScatUltimoBanc(e.target.value)}
-                              placeholder={`Auto: ${calc.bancali[calc.bancali.length-1]?.scatoloni}`}
-                              className="mt-0.5 w-full border border-blue-300 rounded px-2 py-1.5 text-sm font-mono font-bold bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                          </div>
-                        </div>
-                        {(overridePzUltimoScat||overrideScatUltimoBanc) && (
-                          <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-                            ⚡ Override attivo — sostituisce il calcolo automatico
-                          </p>
-                        )}
-                      </div>
-                      {calc.pezziRimanenti>0 && !overridePzUltimoScat && (
-                        <p className="text-xs text-orange-700 mt-1">⚠️ Ultimo scatolone: {calc.pezziRimanenti.toLocaleString('it-IT')} pz</p>
-                      )}
                     </div>
                   )}
 
