@@ -30,6 +30,7 @@ import Dipendenti from "./pages/Dipendenti";
 import ImpostazioniSistema from "./pages/ImpostazioniSistema";
 import AgenteConferme from "./pages/AgenteConferme";
 import LogConferme from "./pages/LogConferme";
+import SSCCLabels from "./pages/SSCCLabels";
 import SchedaTecnica from "./pages/SchedaTecnica";
 import SchedeTecniche from "./pages/SchedeTecniche";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,6 +86,7 @@ const App = () => {
             <Route path="/stampa-dashboard" element={<ProtectedRoute allowedRoles={['stampa']}><StampaDashboard /></ProtectedRoute>} />
             <Route path="/scarico-magazzino-stampa" element={<ProtectedRoute allowedRoles={['stampa']}><Produzione /></ProtectedRoute>} />
             <Route path="/storico-stampa" element={<ProtectedRoute allowedRoles={['stampa']}><StoricoStampa /></ProtectedRoute>} />
+            <Route path="/sscc-labels" element={<ProtectedRoute allowedRoles={['amministratore', 'stampa']}><SSCCLabels /></ProtectedRoute>} />
             <Route path="/consumo-colore" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore', 'visualizzatore']}><ConsumoColore /></ProtectedRoute>} />
             <Route path="/lavori-stampa" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore', 'visualizzatore']}><LavoriStampa /></ProtectedRoute>} />
             <Route path="/db-articoli-produzione" element={<ProtectedRoute allowedRoles={['stampa', 'amministratore', 'visualizzatore']}><DBArticoliProduzione /></ProtectedRoute>} />
