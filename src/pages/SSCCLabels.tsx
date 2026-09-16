@@ -148,6 +148,9 @@ const SSCCLabels = () => {
     fogli:'', resa:'', pzScat:'', scatBanc:'',
   });
 
+  const [overridePzUltimoScat, setOverridePzUltimoScat] = useState('');
+  const [overrideScatUltimoBanc, setOverrideScatUltimoBanc] = useState('');
+
   const f = parseInt(lav.fogli)||0, r = parseInt(lav.resa)||0;
   const ps = parseInt(lav.pzScat)||0, sb = parseInt(lav.scatBanc)||0;
   const calc = calcola(f, r, ps, sb);
@@ -178,7 +181,16 @@ const SSCCLabels = () => {
     const records = [];
     let contatore = cfg.contatore;
 
-    for (const banc of calc.bancali) {
+    const bancaliEffettivi = calc.bancali.map((b, idx) => {
+      if (idx === calc.bancali.length - 1 && overrideScatUltimoBanc) {
+        const n = parseInt(overrideScatUltimoBanc);
+        const pzRim = overridePzUltimoScat ? parseInt(overridePzUltimoScat) : calc.pezziRimanenti;
+        const pezziTot = (n - (calc.pezziRimanenti>0?1:0))*ps + (calc.pezziRimanenti>0?pzRim:0);
+        return { ...b, scatoloni: n, pezziTotBancale: pezziTot };
+      }
+      return b;
+    });
+    for (const banc of bancaliEffettivi) {
       const sscc = generaSSCC(cfg.digit_estensione, cfg.prefisso_gs1, contatore);
       // Etichetta pallet
       labels.push(<EtPallet key={`p${banc.n}`} d={{ sscc, num:contatore, cliente:lav.cliente, descrizione:lav.descrizione, ordineNr:lav.ordineNr, data:lav.data, lotto:lav.lotto, pezziTot:banc.pezziTotBancale, numScat:banc.scatoloni }} />);
@@ -188,8 +200,10 @@ const SSCCLabels = () => {
       const startGlobal = (banc.n-1)*sb;
       for (let i=0; i<banc.scatoloni; i++) {
         const scatGlobal = startGlobal + i + 1;
-        const isIncompleto = scatGlobal === calc.scatoloniTotali && calc.pezziRimanenti>0;
-        const qty = isIncompleto ? calc.pezziRimanenti : ps;
+        const isUltimoScatolone = scatGlobal === calc.scatoloniTotali;
+        const isIncompleto = isUltimoScatolone && calc.pezziRimanenti>0;
+        const qtyBase = isIncompleto ? calc.pezziRimanenti : ps;
+        const qty = isUltimoScatolone && overridePzUltimoScat ? parseInt(overridePzUltimoScat) : qtyBase;
         labels.push(<EtScat key={`s${banc.n}-${i}`} d={{ cliente:lav.cliente, fornitore:lav.fornitore, codice:lav.codice, descrizione:lav.descrizione, ordineNr:lav.ordineNr, data:lav.data, lotto:lav.lotto, quantita:qty, numScat:scatGlobal, totScat:calc.scatoloniTotali, ssccPallet:sscc }} />);
       }
       contatore++;
@@ -330,8 +344,31 @@ const SSCCLabels = () => {
                           </div>
                         ))}
                       </div>
-                      {calc.pezziRimanenti>0 && (
-                        <p className="text-xs text-orange-700 mt-2">⚠️ Ultimo scatolone incompleto: {calc.pezziRimanenti.toLocaleString('it-IT')} pz anziché {ps.toLocaleString('it-IT')}</p>
+                      {/* Override manuale */}
+                      <div className="mt-3 pt-3 border-t border-blue-200 space-y-2">
+                        <p className="text-xs font-semibold text-blue-800">✏️ Correzioni manuali (opzionale)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] text-blue-700 font-medium">Pezzi ultimo scatolone</label>
+                            <input type="number" value={overridePzUltimoScat} onChange={e=>setOverridePzUltimoScat(e.target.value)}
+                              placeholder={`Auto: ${calc.pezziRimanenti>0?calc.pezziRimanenti:ps}`}
+                              className="mt-0.5 w-full border border-blue-300 rounded px-2 py-1.5 text-sm font-mono font-bold bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-blue-700 font-medium">Scatoloni ultimo bancale</label>
+                            <input type="number" value={overrideScatUltimoBanc} onChange={e=>setOverrideScatUltimoBanc(e.target.value)}
+                              placeholder={`Auto: ${calc.bancali[calc.bancali.length-1]?.scatoloni}`}
+                              className="mt-0.5 w-full border border-blue-300 rounded px-2 py-1.5 text-sm font-mono font-bold bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          </div>
+                        </div>
+                        {(overridePzUltimoScat||overrideScatUltimoBanc) && (
+                          <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                            ⚡ Override attivo — sostituisce il calcolo automatico
+                          </p>
+                        )}
+                      </div>
+                      {calc.pezziRimanenti>0 && !overridePzUltimoScat && (
+                        <p className="text-xs text-orange-700 mt-1">⚠️ Ultimo scatolone: {calc.pezziRimanenti.toLocaleString('it-IT')} pz</p>
                       )}
                     </div>
                   )}
