@@ -4,7 +4,7 @@ import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, Warehouse, Shapes, Layers, Factory, Palette,
-  Calculator, FileText, Database, Printer, PackageOpen, ChevronRight
+  Calculator, FileText, Database, Printer, PackageOpen, ChevronRight, Tag
 } from 'lucide-react';
 import { useCartoni } from '@/hooks/useCartoni';
 import { useChat } from '@/hooks/useChat';
@@ -67,6 +67,7 @@ export default function Summary() {
         { label: 'Magazzino Fustelle', route: '/gestione-fustelle', icon: <Shapes className="h-5 w-5" />, color: 'bg-indigo-500 hover:bg-indigo-600' },
         { label: 'Magazzino Polimeri', route: '/gestione-polimeri', icon: <Layers className="h-5 w-5" />, color: 'bg-violet-500 hover:bg-violet-600' },
         { label: 'Magazzino Colore', route: '/consumo-colore', icon: <Palette className="h-5 w-5" />, color: 'bg-pink-500 hover:bg-pink-600' },
+        { label: 'Etichette SSCC GS1', route: '/sscc-labels', icon: <Tag className="h-5 w-5" />, color: 'bg-amber-500 hover:bg-amber-600' },
       ],
     },
     {
