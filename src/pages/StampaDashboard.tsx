@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SummaryHeader } from '@/components/SummaryHeader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MinusCircle, History, Palette, Calculator, FileText, Database, Printer, Factory } from 'lucide-react';
+import { MinusCircle, History, Palette, Calculator, FileText, Database, Printer, Factory , Tag } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 
 export default function StampaDashboard() {
@@ -85,6 +85,11 @@ export default function StampaDashboard() {
             className="bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12">
             <Printer className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
             <span className="leading-none text-sm sm:text-base whitespace-nowrap">Genera Scheda / Etichette</span>
+          </Button>
+          <Button onClick={() => navigate('/sscc-labels')} size="lg"
+            className="bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 h-20 sm:h-24 px-8 sm:px-12">
+            <Tag className="h-6 w-6 sm:h-8 sm:w-8 text-white flex-shrink-0" />
+            <span className="leading-none text-sm sm:text-base whitespace-nowrap">Etichette SSCC GS1</span>
           </Button>
         </div>
       </div>
