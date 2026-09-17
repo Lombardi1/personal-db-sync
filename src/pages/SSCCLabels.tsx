@@ -140,6 +140,9 @@ const SSCCLabels = () => {
   const [loading, setLoading] = useState(true);
   const [generando, setGenerando] = useState(false);
   const [printQueue, setPrintQueue] = useState<React.ReactNode[]>([]);
+  const [singlePrint, setSinglePrint] = useState<React.ReactNode[]>([]);
+  // Struttura: { num, sscc, pallet: ReactNode, scatoloni: ReactNode[] }[]
+  const [bancaleGroups, setBancaleGroups] = useState<{num:number;sscc:string;pallet:React.ReactNode;scatoloni:React.ReactNode[]}[]>([]);
   const [numBancali, setNumBancali] = useState(1);
 
   const [lav, setLav] = useState({
@@ -223,7 +226,20 @@ const SSCCLabels = () => {
     await supabase.from('sscc_generati').insert(records);
     await supabase.from('sscc_config').update({ contatore }).eq('id',cfg.id);
     toast.success(`✅ ${calc.bancaliTotali} pallet + ${calc.scatoloniTotali} scatoloni`);
-    setPrintQueue(labels); setGenerando(false); loadData();
+    // Costruisco i gruppi per stampa separata
+    const groups: {num:number;sscc:string;pallet:React.ReactNode;scatoloni:React.ReactNode[]}[] = [];
+    let gLabelIdx = 0;
+    for (const banc of calc.bancali) {
+      groups.push({
+        num: contatore - calc.bancaliTotali + banc.n - 1,
+        sscc: records[banc.n-1]?.sscc || '',
+        pallet: labels[gLabelIdx],
+        scatoloni: labels.slice(gLabelIdx+1, gLabelIdx+1+banc.scatoloni),
+      });
+      gLabelIdx += 1 + banc.scatoloni;
+    }
+    setBancaleGroups(groups);
+    setPrintQueue(labels); setSinglePrint([]); setGenerando(false); loadData();
     setTimeout(()=>window.print(), 400);
   };
 
@@ -393,6 +409,41 @@ const SSCCLabels = () => {
                     </div>
                   )}
 
+                  {/* Risultati precedente generazione */}
+                  {bancaleGroups.length > 0 && (
+                    <div className="mt-4 border rounded-xl overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-2 flex items-center justify-between border-b">
+                        <span className="text-sm font-semibold text-gray-700">📋 Ultimo lavoro generato</span>
+                        <Button size="sm" variant="outline" className="text-xs h-7"
+                          onClick={()=>{ setSinglePrint(printQueue); setTimeout(()=>window.print(),200); }}>
+                          🖨️ Stampa tutto
+                        </Button>
+                      </div>
+                      <div className="divide-y">
+                        {bancaleGroups.map(g=>(
+                          <div key={g.num} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
+                            <div>
+                              <span className="font-bold text-sm text-blue-700">Bancale #{g.num}</span>
+                              <span className="text-xs text-muted-foreground ml-2 font-mono">{g.sscc}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline"
+                                className="text-xs h-7 border-blue-300 text-blue-700 hover:bg-blue-50"
+                                onClick={()=>{ setSinglePrint([g.pallet]); setTimeout(()=>window.print(),200); }}>
+                                🏷️ Pallet
+                              </Button>
+                              <Button size="sm" variant="outline"
+                                className="text-xs h-7 border-green-300 text-green-700 hover:bg-green-50"
+                                onClick={()=>{ setSinglePrint(g.scatoloni); setTimeout(()=>window.print(),200); }}>
+                                📦 {g.scatoloni.length} Scatoloni
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <Button className="w-full mt-4 h-12 text-base font-semibold" onClick={generaLavoro} disabled={!cfg?.prefisso_gs1||generando||!calc||!lav.cliente||!lav.codice}>
                     <Printer className="mr-2 h-5 w-5"/>
                     {generando?'Generazione...' : calc ? `Genera e Stampa — ${calc.bancaliTotali} pallet + ${calc.scatoloniTotali} scatoloni` : 'Compila i dati per generare'}
@@ -490,7 +541,7 @@ const SSCCLabels = () => {
       </div>
 
       {/* Stampa */}
-      <div className="hidden print:flex print:flex-col">{printQueue}</div>
+      <div className="hidden print:flex print:flex-col">{singlePrint.length > 0 ? singlePrint : printQueue}</div>
       <Toaster />
     </div>
   );
