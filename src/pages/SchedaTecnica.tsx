@@ -317,7 +317,9 @@ export default function SchedaTecnica() {
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setResults([])
+        // Update funzionale: se results è già [], non crea un nuovo array
+        // ed evita re-render inutili che rompevano gli input
+        setResults(prev => prev.length > 0 ? [] : prev)
       }
     }
     document.addEventListener('mousedown', fn)
