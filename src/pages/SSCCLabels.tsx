@@ -69,34 +69,75 @@ function Barcode({ value, h=55 }: { value:string; h?:number }) {
   return <canvas ref={ref} style={{ maxWidth:'100%' }} />;
 }
 
-// ── Etichetta Scatolone ───────────────────────────────────────────────────────
+// ── Etichetta Scatolone (fedele allo screenshot) ────────────────────────────
 interface ScatData { cliente:string;fornitore:string;codice:string;descrizione:string;ordineNr:string;data:string;lotto:string;quantita:number;numScat:number;totScat:number;ssccPallet:string; }
 function EtScat({ d }: { d:ScatData }) {
-  const inc = d.numScat===d.totScat && d.quantita < d.quantita; // sempre false così — lo calcola il parent
+  const BLUE = '#1a3c8c';
+  const cell = (label: string, value: React.ReactNode, opts?: { bold?:boolean; large?:boolean; small?:boolean; greenBottom?:boolean }) => (
+    <tr style={{ borderBottom: opts?.greenBottom ? '2.5px solid #2e7d32' : `1px solid ${BLUE}33` }}>
+      <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', paddingRight:'1mm', color:'#000', width:'32%', verticalAlign:'middle', height:'11mm', fontFamily:'Calibri,Arial,sans-serif', borderRight:`1px solid ${BLUE}55` }}>
+        {label}
+      </td>
+      <td style={{ fontSize: opts?.large ? '12pt' : opts?.small ? '7pt' : '9pt', fontWeight: opts?.bold ? 'bold' : 'normal', paddingLeft:'2mm', fontStyle: opts?.large ? 'italic' : 'normal', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle' }}>
+        {value}
+      </td>
+    </tr>
+  );
+
   return (
-    <div style={{ width:'150mm',height:'100mm',border:'2.5px solid #1a56db',boxSizing:'border-box',display:'grid',gridTemplateColumns:'55% 45%',background:'#fff',fontFamily:'Arial,sans-serif',pageBreakAfter:'always',flexShrink:0 }}>
-      <div style={{ borderRight:'1.5px solid #1a56db',display:'flex',flexDirection:'column' }}>
-        {[['Cliente:',d.cliente,true,true],['Fornitore:',d.fornitore,false,false],['Cod:',d.codice,false,false],['Descrizione:',d.descrizione,false,true],['Ordine nr:',d.ordineNr,false,false],['Data:',d.data,false,false],['Lotto:',d.lotto,false,false],['Quantità:',d.quantita+' pz',true,false]].map(([lbl,val,bold,large],i)=>(
-          <div key={i} style={{ display:'flex',borderBottom:'1px solid #ddd',flex:1,alignItems:'center',minHeight:0 }}>
-            <span style={{ fontStyle:'italic',fontSize:'7.5pt',minWidth:'27mm',paddingLeft:'2mm',color:'#444',whiteSpace:'nowrap' }}>{lbl}</span>
-            <span style={{ fontSize:large?'10pt':'8.5pt',fontWeight:bold?'bold':'normal',paddingLeft:'1mm',lineHeight:1.2,overflow:'hidden' }}>{val}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'space-between',padding:'2mm' }}>
-        <div style={{ textAlign:'center' }}>
-          <div style={{ fontSize:'6.5pt',color:'#666' }}>Scatolone</div>
-          <div style={{ fontSize:'20pt',fontWeight:'bold',lineHeight:1,color:'#1a56db' }}>
-            {d.numScat}<span style={{ fontSize:'9pt',color:'#999' }}>/{d.totScat}</span>
-          </div>
-        </div>
-        <div style={{ textAlign:'center',width:'100%' }}>
-          <div style={{ fontSize:'6.5pt',fontStyle:'italic',marginBottom:'1mm' }}>EAN:</div>
-          <Barcode value={d.codice||'CODICE'} h={48} />
-          <div style={{ fontSize:'7pt',fontWeight:'bold',letterSpacing:'0.5px',fontFamily:'monospace' }}>{d.codice}</div>
-        </div>
-        {d.ssccPallet && <div style={{ fontSize:'5pt',color:'#aaa',textAlign:'center',borderTop:'1px solid #eee',paddingTop:'1mm',width:'100%',fontFamily:'monospace' }}>Pallet:{d.ssccPallet}</div>}
-      </div>
+    <div style={{ width:'150mm', height:'100mm', border:`2.5px solid ${BLUE}`, boxSizing:'border-box', background:'#fff', fontFamily:'Calibri,Arial,sans-serif', pageBreakAfter:'always', flexShrink:0, display:'flex', flexDirection:'column' }}>
+      <table style={{ width:'100%', borderCollapse:'collapse', flex:1, tableLayout:'fixed' }}>
+        <colgroup>
+          <col style={{ width:'32%' }}/>
+          <col style={{ width:'38%' }}/>
+          <col style={{ width:'30%' }}/>
+        </colgroup>
+        <tbody>
+          {/* Righe senza barcode */}
+          <tr style={{ borderBottom:`1px solid ${BLUE}33` }}>
+            <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', color:'#000', borderRight:`1px solid ${BLUE}55`, verticalAlign:'middle', height:'13mm', fontFamily:'Calibri,Arial,sans-serif' }}>Cliente:</td>
+            <td colSpan={2} style={{ fontSize:'13pt', fontWeight:'bold', fontStyle:'italic', paddingLeft:'2mm', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle' }}>{d.cliente}</td>
+          </tr>
+          <tr style={{ borderBottom:`1px solid ${BLUE}33` }}>
+            <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', color:'#000', borderRight:`1px solid ${BLUE}55`, verticalAlign:'middle', height:'11mm', fontFamily:'Calibri,Arial,sans-serif' }}>Fornitore:</td>
+            <td colSpan={2} style={{ fontSize:'9pt', paddingLeft:'2mm', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle', fontStyle:'italic' }}>{d.fornitore}</td>
+          </tr>
+          <tr style={{ borderBottom:`1px solid ${BLUE}33` }}>
+            <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', color:'#000', borderRight:`1px solid ${BLUE}55`, verticalAlign:'middle', height:'11mm', fontFamily:'Calibri,Arial,sans-serif' }}>Cod:</td>
+            <td colSpan={2} style={{ fontSize:'9pt', paddingLeft:'2mm', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle', fontStyle:'italic' }}>{d.codice}</td>
+          </tr>
+          <tr style={{ borderBottom:`1px solid ${BLUE}33` }}>
+            <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', color:'#000', borderRight:`1px solid ${BLUE}55`, verticalAlign:'middle', height:'11mm', fontFamily:'Calibri,Arial,sans-serif' }}>Descrizione:</td>
+            <td colSpan={2} style={{ fontSize:'7.5pt', paddingLeft:'2mm', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle', fontStyle:'italic' }}>{d.descrizione}</td>
+          </tr>
+          {/* Riga Ordine nr — da qui parte la colonna EAN a destra */}
+          <tr style={{ borderBottom:`1px solid ${BLUE}33` }}>
+            <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', color:'#000', borderRight:`1px solid ${BLUE}55`, verticalAlign:'middle', height:'11mm', fontFamily:'Calibri,Arial,sans-serif' }}>Ordine nr:</td>
+            <td style={{ fontSize:'9pt', paddingLeft:'2mm', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle', fontStyle:'italic', borderRight:`1px solid ${BLUE}` }}>{d.ordineNr}</td>
+            <td rowSpan={4} style={{ verticalAlign:'top', padding:'1mm' }}>
+              <div style={{ fontSize:'7pt', fontStyle:'italic', marginBottom:'1mm', fontFamily:'Calibri,Arial,sans-serif' }}>EAN:</div>
+              <Barcode value={d.codice||'CODICE'} h={42} />
+              <div style={{ fontSize:'6.5pt', fontFamily:'monospace', textAlign:'center', marginTop:'0.5mm' }}>{d.codice}</div>
+              <div style={{ fontSize:'5pt', color:'#999', fontFamily:'monospace', textAlign:'center', lineHeight:1.1 }}>
+                {d.numScat}/{d.totScat}
+                {d.ssccPallet && <><br/>{d.ssccPallet}</>}
+              </div>
+            </td>
+          </tr>
+          <tr style={{ borderBottom:`1px solid ${BLUE}33` }}>
+            <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', color:'#000', borderRight:`1px solid ${BLUE}55`, verticalAlign:'middle', height:'11mm', fontFamily:'Calibri,Arial,sans-serif' }}>Data:</td>
+            <td style={{ fontSize:'9pt', paddingLeft:'2mm', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle', fontStyle:'italic', borderRight:`1px solid ${BLUE}` }}>{d.data}</td>
+          </tr>
+          <tr style={{ borderBottom:`1px solid ${BLUE}33` }}>
+            <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', color:'#000', borderRight:`1px solid ${BLUE}55`, verticalAlign:'middle', height:'11mm', fontFamily:'Calibri,Arial,sans-serif' }}>Lotto:</td>
+            <td style={{ fontSize:'9pt', paddingLeft:'2mm', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle', fontStyle:'italic', borderRight:`1px solid ${BLUE}` }}>{d.lotto}</td>
+          </tr>
+          <tr style={{ borderBottom:'2.5px solid #2e7d32' }}>
+            <td style={{ fontStyle:'italic', fontSize:'8.5pt', paddingLeft:'3mm', color:'#000', borderRight:`1px solid ${BLUE}55`, verticalAlign:'middle', height:'11mm', fontFamily:'Calibri,Arial,sans-serif' }}>Quantità:</td>
+            <td style={{ fontSize:'16pt', fontWeight:'bold', paddingLeft:'2mm', fontFamily:'Calibri,Arial,sans-serif', verticalAlign:'middle', borderRight:`1px solid ${BLUE}` }}>{d.quantita}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
