@@ -67,7 +67,6 @@ export default function Summary() {
         { label: 'Magazzino Fustelle', route: '/gestione-fustelle', icon: <Shapes className="h-5 w-5" />, color: 'bg-indigo-500 hover:bg-indigo-600' },
         { label: 'Magazzino Polimeri', route: '/gestione-polimeri', icon: <Layers className="h-5 w-5" />, color: 'bg-violet-500 hover:bg-violet-600' },
         { label: 'Magazzino Colore', route: '/consumo-colore', icon: <Palette className="h-5 w-5" />, color: 'bg-pink-500 hover:bg-pink-600' },
-        { label: 'Etichette SSCC GS1', route: '/sscc-labels', icon: <Tag className="h-5 w-5" />, color: 'bg-amber-500 hover:bg-amber-600' },
       ],
     },
     {
@@ -80,6 +79,7 @@ export default function Summary() {
         { label: 'Lavori Stampa', route: '/lavori-stampa', icon: <FileText className="h-5 w-5" />, color: 'bg-purple-500 hover:bg-purple-600' },
         { label: 'DB Articoli Produzione', route: '/db-articoli-produzione', icon: <Database className="h-5 w-5" />, color: 'bg-orange-500 hover:bg-orange-600' },
         { label: 'Gestione Produzione', route: '/produzione-dashboard', icon: <Factory className="h-5 w-5" />, color: 'bg-amber-600 hover:bg-amber-700' },
+        { label: 'Etichette SSCC GS1', route: '/sscc-labels', icon: <Tag className="h-5 w-5" />, color: 'bg-amber-500 hover:bg-amber-600' },
         { label: 'Genera Scheda / Etichette', route: '/genera-documenti', icon: <Printer className="h-5 w-5" />, color: 'bg-green-600 hover:bg-green-700' },
         { label: 'Scheda Tecnica', route: '/scheda-tecnica', icon: <FileText className="h-5 w-5" />, color: 'bg-blue-500 hover:bg-blue-600' },
         { label: 'Schede Tecniche Salvate', route: '/schede-tecniche', icon: <Database className="h-5 w-5" />, color: 'bg-sky-600 hover:bg-sky-700' },
