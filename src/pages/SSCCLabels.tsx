@@ -402,25 +402,45 @@ const SSCCLabels = () => {
 
               {/* Anteprima + storico */}
               <div className="space-y-4">
-                <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-sm">📋 Anteprima scatolone</h3>
-                    <span className="text-xs text-muted-foreground">{(overridePzUltimoScat||overrideScatUltimoBanc)?'✏️ con override':'scatolone tipo'}</span>
+<div className="space-y-4">
+                  {/* Anteprima scatolone */}
+                  <div className="bg-white rounded-xl border shadow-sm p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-sm">📦 Anteprima Scatolone</h3>
+                      <span className="text-xs text-muted-foreground">{(overridePzUltimoScat||overrideScatUltimoBanc)?'✏️ con override':'scatolone tipo'}</span>
+                    </div>
+                    <div style={{ transform:'scale(0.63)', transformOrigin:'top left', width:'160%' }}>
+                      <EtScat d={{
+                        cliente:lav.cliente||'O.erre',
+                        fornitore:lav.fornitore,
+                        codice:lav.codice||'P01108001',
+                        descrizione:lav.descrizione||'SCATOLA IMBALLO UNICO 12/5 GRAFICA BRICOMAN',
+                        ordineNr:lav.ordineNr||'ODA26-1351',
+                        data:lav.data,
+                        lotto:lav.lotto||'202612142',
+                        quantita: (overridePzUltimoScat||overrideScatUltimoBanc) ? pzUltimoScatEff : (ps||435),
+                        numScat: (overridePzUltimoScat||overrideScatUltimoBanc) ? (calc?.scatoloniTotali||30) : 1,
+                        totScat: calc?.scatoloniTotali||30,
+                        ssccPallet:cfg?.prefisso_gs1?generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore):''
+                      }} />
+                    </div>
                   </div>
-                  <div style={{ transform:'scale(0.63)', transformOrigin:'top left', width:'160%' }}>
-                    <EtScat d={{
-                      cliente:lav.cliente||'O.erre',
-                      fornitore:lav.fornitore,
-                      codice:lav.codice||'P01108001',
-                      descrizione:lav.descrizione||'SCATOLA IMBALLO UNICO 12/5 GRAFICA BRICOMAN',
-                      ordineNr:lav.ordineNr||'ODA26-1351',
-                      data:lav.data,
-                      lotto:lav.lotto||'202612142',
-                      quantita: (overridePzUltimoScat||overrideScatUltimoBanc) ? pzUltimoScatEff : (ps||435),
-                      numScat: (overridePzUltimoScat||overrideScatUltimoBanc) ? (calc?.scatoloniTotali||30) : 1,
-                      totScat: calc?.scatoloniTotali||30,
-                      ssccPallet:cfg?.prefisso_gs1?generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore):''
-                    }} />
+                  {/* Anteprima pallet */}
+                  <div className="bg-white rounded-xl border shadow-sm p-4">
+                    <h3 className="font-semibold text-sm mb-3">🏷️ Anteprima Bancale (SSCC)</h3>
+                    <div style={{ transform:'scale(0.63)', transformOrigin:'top left', width:'160%' }}>
+                      <EtPallet d={{
+                        sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '000000000000000000',
+                        num: cfg?.contatore||1,
+                        cliente: lav.cliente||'O.erre',
+                        descrizione: lav.descrizione||'SCATOLA IMBALLO UNICO 12/5 GRAFICA BRICOMAN',
+                        ordineNr: lav.ordineNr||'ODA26-1351',
+                        data: lav.data,
+                        lotto: lav.lotto||'202612142',
+                        pezziTot: calc ? (overrideScatUltimoBanc ? pezziUltimoBancEff : calc.bancali[calc.bancali.length-1]?.pezziTotBancale) || 0 : 0,
+                        numScat: overrideScatUltimoBanc ? scatUltimoBancEff : (calc?.bancali[calc.bancali.length-1]?.scatoloni||0),
+                      }} />
+                    </div>
                   </div>
                 </div>
                 <div className="bg-white rounded-xl border shadow-sm p-4">
