@@ -297,6 +297,32 @@ function buildPDF(d: FormData, imgUrl: string | null) {
 
 // ─── COMPONENT ─────────────────────────────────────────────────────────────────────────────
 
+// ── Componenti UI statici — DEVONO stare fuori dal componente ──────────────────
+// Se definiti dentro, React li ricrea ad ogni render e gli input perdono il focus
+function Field({ label, children, col = 1 }: { label: string; children: React.ReactNode; col?: number }) {
+  return (
+    <div className={col > 1 ? `col-span-${col}` : ''}>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function Card({ title, color = 'bg-blue-600', children }: {
+  title: string; color?: string; children: React.ReactNode
+}) {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className={`px-4 py-2.5 rounded-t-lg ${color} text-white`}>
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+      <div className="p-4 grid grid-cols-2 gap-3">
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function SchedaTecnica() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
@@ -455,26 +481,6 @@ export default function SchedaTecnica() {
     >
       {opts.map(o => <option key={o} value={o}>{o || '—'}</option>)}
     </select>
-  )
-
-  const Field = ({ label, children, col = 1 }: { label: string; children: React.ReactNode; col?: number }) => (
-    <div className={col > 1 ? `col-span-${col}` : ''}>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      {children}
-    </div>
-  )
-
-  const Card = ({ title, color = 'bg-blue-600', children }: {
-    title: string; color?: string; children: React.ReactNode
-  }) => (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className={`px-4 py-2.5 rounded-t-lg ${color} text-white`}>
-        <h3 className="text-sm font-semibold">{title}</h3>
-      </div>
-      <div className="p-4 grid grid-cols-2 gap-3">
-        {children}
-      </div>
-    </div>
   )
 
   // ─── SEZIONI ───────────────────────────────────────────────────────────────────────────────
