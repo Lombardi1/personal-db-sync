@@ -142,24 +142,109 @@ function EtScat({ d }: { d:ScatData }) {
   );
 }
 
-// ── Etichetta Pallet ──────────────────────────────────────────────────────────
-interface PalData { sscc:string;num:number;cliente:string;descrizione:string;ordineNr:string;data:string;lotto:string;pezziTot:number;numScat:number; }
+// ── Etichetta Pallet (fedele allo screenshot) ───────────────────────────────
+interface PalData {
+  sscc:string; num:number;
+  cliente:string; fornitore:string; codice:string;
+  descrizione:string; ordineNr:string; data:string; lotto:string;
+  pezziTot:number; numScat:number; pzScat:number;
+  dataConsegna?:string; destinazione?:string;
+}
 function EtPallet({ d }: { d:PalData }) {
+  const BLUE = '#1a3c8c';
+  const DASH = `2px dashed ${BLUE}`;
+  const lbl = (txt: string) => (
+    <div style={{ fontSize:'6pt', color:'#666', fontFamily:'Arial,sans-serif', textTransform:'uppercase', letterSpacing:'0.3px', marginBottom:'0.5mm' }}>{txt}</div>
+  );
   return (
-    <div style={{ width:'150mm',height:'100mm',border:'2.5px solid #1a56db',boxSizing:'border-box',display:'flex',flexDirection:'column',padding:'3mm',background:'#fff',fontFamily:'Arial,sans-serif',pageBreakAfter:'always',flexShrink:0 }}>
-      <div style={{ display:'flex',justifyContent:'space-between',borderBottom:'2px solid #1a56db',paddingBottom:'1.5mm',marginBottom:'1.5mm' }}>
-        <span style={{ fontSize:'9pt',fontWeight:'bold' }}>ETICHETTA PALLET GS1</span>
-        <span style={{ fontSize:'9pt',fontWeight:'bold',color:'#1a56db' }}>BANCALE #{d.num}</span>
+    <div style={{ width:'150mm', height:'100mm', border:`3px solid ${BLUE}`, boxSizing:'border-box', background:'#fff', pageBreakAfter:'always', flexShrink:0, display:'flex', flexDirection:'column', fontFamily:'Arial,sans-serif', overflow:'hidden' }}>
+
+      {/* Riga 1: Cliente — grande, centrato */}
+      <div style={{ borderBottom:`1.5px solid ${BLUE}55`, padding:'1mm 3mm', textAlign:'center', lineHeight:1.1 }}>
+        <div style={{ fontSize:'20pt', fontWeight:'bold', letterSpacing:'-0.5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{d.cliente}</div>
       </div>
-      <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1mm',fontSize:'8pt',flex:1 }}>
-        <div><b>Cliente:</b> {d.cliente}</div><div><b>Ordine:</b> {d.ordineNr}</div>
-        <div style={{ gridColumn:'1/-1' }}><b>Descr.:</b> {d.descrizione}</div>
-        <div><b>Data:</b> {d.data}</div><div><b>Lotto:</b> {d.lotto}</div>
-        <div><b>Pezzi:</b> {d.pezziTot.toLocaleString('it-IT')}</div><div><b>Scatoloni:</b> {d.numScat}</div>
+
+      {/* Corpo principale a due colonne */}
+      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+
+        {/* Colonna sinistra (85%) */}
+        <div style={{ flex:'0 0 85%', display:'flex', flexDirection:'column', borderRight:DASH }}>
+
+          {/* Fornitore */}
+          <div style={{ borderBottom:`1px solid ${BLUE}33`, padding:'0.8mm 3mm 0.5mm' }}>
+            {lbl('Fornitore')}
+            <div style={{ fontSize:'9pt' }}>{d.fornitore}</div>
+          </div>
+
+          {/* Codice articolo */}
+          <div style={{ borderBottom:`1px solid ${BLUE}33`, padding:'0.5mm 3mm' }}>
+            {lbl('Cod. Articolo')}
+            <div style={{ fontSize:'15pt', fontWeight:'bold', lineHeight:1.1 }}>{d.codice}</div>
+          </div>
+
+          {/* Ordine | Data | Lotto */}
+          <div style={{ borderBottom:`1px solid ${BLUE}33`, display:'flex' }}>
+            <div style={{ flex:'0 0 28%', padding:'0.5mm 3mm', borderRight:`1px solid ${BLUE}33` }}>
+              {lbl('Ordine nr.')}
+              <div style={{ fontSize:'10pt' }}>{d.ordineNr}</div>
+            </div>
+            <div style={{ flex:'0 0 28%', padding:'0.5mm 3mm', borderRight:`1px solid ${BLUE}33` }}>
+              {lbl('Data ord.')}
+              <div style={{ fontSize:'10pt' }}>{d.data}</div>
+            </div>
+            <div style={{ flex:1, padding:'0.5mm 3mm' }}>
+              {lbl('Lotto')}
+              <div style={{ fontSize:'10pt' }}>{d.lotto}</div>
+            </div>
+          </div>
+
+          {/* Descrizione */}
+          <div style={{ borderBottom:`1px solid ${BLUE}33`, padding:'0.5mm 3mm' }}>
+            {lbl('Descrizione')}
+            <div style={{ fontSize:'12pt', fontWeight:'bold' }}>{d.descrizione}</div>
+          </div>
+
+          {/* Q.ta pacco | Pacchi | Tot.Pezzi | Data Consegna */}
+          <div style={{ display:'flex', flex:1 }}>
+            <div style={{ flex:'0 0 22%', padding:'0.5mm 3mm', borderRight:`1px solid ${BLUE}33` }}>
+              {lbl('Q.ta pacco')}
+              <div style={{ fontSize:'12pt', fontStyle:'italic' }}>{d.pzScat}</div>
+            </div>
+            <div style={{ flex:'0 0 22%', padding:'0.5mm 3mm', borderRight:`1px solid ${BLUE}33` }}>
+              {lbl('Pacchi')}
+              <div style={{ fontSize:'12pt', fontStyle:'italic' }}>{d.numScat}</div>
+            </div>
+            <div style={{ flex:'0 0 28%', padding:'0.5mm 3mm', borderRight:`1px solid ${BLUE}33` }}>
+              {lbl('Tot. pezzi')}
+              <div style={{ fontSize:'12pt', fontStyle:'italic' }}>{d.pezziTot.toLocaleString('it-IT')}</div>
+            </div>
+            <div style={{ flex:1, padding:'0.5mm 3mm' }}>
+              {lbl('Data consegna')}
+              <div style={{ fontSize:'12pt', fontWeight:'bold', fontStyle:'italic' }}>{d.dataConsegna||''}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Colonna destra (15%) — Nr. Bancale */}
+        <div style={{ flex:'0 0 15%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end', padding:'1mm' }}>
+          <div style={{ fontSize:'5.5pt', color:'#666', textTransform:'uppercase', marginBottom:'1mm', textAlign:'center' }}>Nr. Bancale</div>
+          <div style={{ fontSize:'34pt', fontWeight:'bold', lineHeight:1, color:BLUE }}>{d.num}</div>
+        </div>
       </div>
-      <div style={{ borderTop:'1.5px solid #1a56db',paddingTop:'1.5mm',textAlign:'center' }}>
-        <Barcode value={d.sscc} h={32} />
-        <div style={{ fontSize:'7pt',fontWeight:'bold',letterSpacing:'1px',fontFamily:'monospace' }}>{fmtSSCC(d.sscc)}</div>
+
+      {/* Riga inferiore: Destinazione | Barcode SSCC | (spazio bancale già sopra) */}
+      <div style={{ borderTop:DASH, display:'flex', height:'18mm' }}>
+        <div style={{ flex:'0 0 28%', padding:'1mm 2mm', borderRight:DASH }}>
+          {lbl('Destinazione merce')}
+          <div style={{ fontSize:'7.5pt' }}>{d.destinazione||d.cliente}</div>
+        </div>
+        <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'0.5mm', borderRight:DASH }}>
+          {lbl('Barcode SSCC')}
+          <Barcode value={d.sscc} h={26} />
+          <div style={{ fontSize:'5.5pt', fontFamily:'monospace', textAlign:'center', letterSpacing:'0.5px', marginTop:'0.3mm' }}>{fmtSSCC(d.sscc)}</div>
+        </div>
+        <div style={{ flex:'0 0 15%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        </div>
       </div>
     </div>
   );
@@ -189,7 +274,7 @@ const SSCCLabels = () => {
   const [lav, setLav] = useState({
     cliente:'', fornitore:'Arti Grafiche Lombardi', codice:'', descrizione:'',
     ordineNr:'', data:new Date().toLocaleDateString('it-IT'), lotto:'',
-    fogli:'', resa:'', pzScat:'', scatBanc:'',
+    fogli:'', resa:'', pzScat:'', scatBanc:'', dataConsegna:'', destinazione:'',
   });
 
   const [overridePzUltimoScat, setOverridePzUltimoScat] = useState('');
@@ -248,7 +333,7 @@ const SSCCLabels = () => {
     for (const banc of bancaliEffettivi) {
       const sscc = generaSSCC(cfg.digit_estensione, cfg.prefisso_gs1, contatore);
       // Etichetta pallet
-      labels.push(<EtPallet key={`p${banc.n}`} d={{ sscc, num:contatore, cliente:lav.cliente, descrizione:lav.descrizione, ordineNr:lav.ordineNr, data:lav.data, lotto:lav.lotto, pezziTot:banc.pezziTotBancale, numScat:banc.scatoloni }} />);
+      labels.push(<EtPallet key={`p${banc.n}`} d={{ sscc, num:contatore, cliente:lav.cliente, fornitore:lav.fornitore, codice:lav.codice, descrizione:lav.descrizione, ordineNr:lav.ordineNr, data:lav.data, lotto:lav.lotto, pezziTot:banc.pezziTotBancale, numScat:banc.scatoloni, pzScat:ps, dataConsegna:lav.dataConsegna, destinazione:lav.destinazione }} />);
       records.push({ sscc, numero_bancale:contatore, cliente:lav.cliente||null, lotto:lav.lotto||null, quantita:banc.pezziTotBancale, descrizione:lav.descrizione||null });
 
       // Etichette scatoloni di questo bancale
@@ -358,6 +443,8 @@ const SSCCLabels = () => {
                     <div className="col-span-2"><Label className="text-xs">Descrizione</Label><Input value={lav.descrizione} onChange={e=>setLav(p=>({...p,descrizione:e.target.value}))} placeholder="Es. SCATOLA IMBALLO UNICO 12/5 GRAFICA BRICOMAN" className="mt-1"/></div>
                     <div><Label className="text-xs">Data</Label><Input value={lav.data} onChange={e=>setLav(p=>({...p,data:e.target.value}))} placeholder="Es. 28/5/26" className="mt-1"/></div>
                     <div><Label className="text-xs">Lotto</Label><Input value={lav.lotto} onChange={e=>setLav(p=>({...p,lotto:e.target.value}))} placeholder="Es. 202612142" className="mt-1 font-mono"/></div>
+                    <div><Label className="text-xs">Data consegna</Label><Input value={lav.dataConsegna} onChange={e=>setLav(p=>({...p,dataConsegna:e.target.value}))} placeholder="Es. 15/7" className="mt-1"/></div>
+                    <div><Label className="text-xs">Destinazione merce</Label><Input value={lav.destinazione} onChange={e=>setLav(p=>({...p,destinazione:e.target.value}))} placeholder="Es. Magazzino A" className="mt-1"/></div>
                   </div>
                 </div>
 
@@ -524,13 +611,18 @@ const SSCCLabels = () => {
                       <EtPallet d={{
                         sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '000000000000000000',
                         num: cfg?.contatore||1,
-                        cliente: lav.cliente||'O.erre',
-                        descrizione: lav.descrizione||'SCATOLA IMBALLO UNICO 12/5 GRAFICA BRICOMAN',
-                        ordineNr: lav.ordineNr||'ODA26-1351',
+                        cliente: lav.cliente||'Alvaro Bernardoni',
+                        fornitore: lav.fornitore||'Arti Grafiche Lombardi',
+                        codice: lav.codice||'TAPE 10 40 MT',
+                        descrizione: lav.descrizione||'ASTUCCI PER NASTRI',
+                        ordineNr: lav.ordineNr||'114',
                         data: lav.data,
-                        lotto: lav.lotto||'202612142',
+                        lotto: lav.lotto||'202612147',
                         pezziTot: calc ? (overrideScatUltimoBanc ? pezziUltimoBancEff : calc.bancali[calc.bancali.length-1]?.pezziTotBancale) || 0 : 0,
                         numScat: overrideScatUltimoBanc ? scatUltimoBancEff : (calc?.bancali[calc.bancali.length-1]?.scatoloni||0),
+                        pzScat: ps||450,
+                        dataConsegna: lav.dataConsegna,
+                        destinazione: lav.destinazione,
                       }} />
                     </div>
                   </div>
