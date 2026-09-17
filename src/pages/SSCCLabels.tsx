@@ -583,12 +583,13 @@ const SSCCLabels = () => {
               <div className="space-y-4">
 <div className="flex gap-3 items-start">
                   {/* Anteprima scatolone */}
-                  <div className="bg-white rounded-xl border shadow-sm p-3 flex-1 overflow-hidden">
+                  <div className="bg-white rounded-xl border shadow-sm p-3 flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-semibold text-xs">📦 Scatolone</h3>
                       <span className="text-[10px] text-muted-foreground">{(overridePzUltimoScat||overrideScatUltimoBanc)?'✏️ override':''}</span>
                     </div>
-                    <div style={{ transform:'scale(0.50)', transformOrigin:'top left', width:'200%' }}>
+                    <div style={{ position:'relative', width:'75mm', height:'50mm', overflow:'hidden', flexShrink:0 }}>
+                    <div style={{ transform:'scale(0.50)', transformOrigin:'top left', position:'absolute', top:0, left:0 }}>
                       <EtScat d={{
                         cliente:lav.cliente||'O.erre',
                         fornitore:lav.fornitore,
@@ -602,12 +603,13 @@ const SSCCLabels = () => {
                         totScat: calc?.scatoloniTotali||30,
                         ssccPallet:cfg?.prefisso_gs1?generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore):''
                       }} />
-                    </div>
+                    </div></div>
                   </div>
                   {/* Anteprima pallet */}
-                  <div className="bg-white rounded-xl border shadow-sm p-3 flex-1 overflow-hidden">
+                  <div className="bg-white rounded-xl border shadow-sm p-3 flex-1">
                     <h3 className="font-semibold text-xs mb-2">🏷️ Bancale SSCC</h3>
-                    <div style={{ transform:'scale(0.50)', transformOrigin:'top left', width:'200%' }}>
+                    <div style={{ position:'relative', width:'75mm', height:'50mm', overflow:'hidden', flexShrink:0 }}>
+                    <div style={{ transform:'scale(0.50)', transformOrigin:'top left', position:'absolute', top:0, left:0 }}>
                       <EtPallet d={{
                         sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '000000000000000000',
                         num: cfg?.contatore||1,
@@ -624,7 +626,7 @@ const SSCCLabels = () => {
                         dataConsegna: lav.dataConsegna,
                         destinazione: lav.destinazione,
                       }} />
-                    </div>
+                    </div></div>
                   </div>
                 </div>
                 <div className="bg-white rounded-xl border shadow-sm p-4">
