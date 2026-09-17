@@ -44,10 +44,12 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
       if (err1) throw new Error(`Aggiornamento colori_in_arrivo: ${err1.message}`);
 
       // 2. Cerca se il colore esiste già in magazzino
+      // Per CMYK normalizza in maiuscolo per matchare CYAN/MAGENTA/YELLOW/BLACK
+      const codiceArchivia = colore.tipo === 'CMYK' ? colore.codice.toUpperCase() : colore.codice;
       const { data: existing, error: err2 } = await supabase
         .from('colori')
         .select('*')
-        .eq('codice', colore.codice)
+        .eq('codice', codiceArchivia)
         .maybeSingle();
       if (err2) throw new Error(`Ricerca colore: ${err2.message}`);
 
@@ -66,14 +68,14 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
             fornitore: colore.fornitore || existing.fornitore,
             ultima_modifica: new Date().toISOString(),
           })
-          .eq('codice', colore.codice);
+          .eq('codice', codiceArchivia);
         if (err3) throw new Error(`Aggiornamento magazzino: ${err3.message}`);
       } else {
         // Colore nuovo: inserisce
         const { error: err4 } = await supabase
           .from('colori')
           .insert([{
-            codice: colore.codice,
+            codice: codiceArchivia,
             nome: colore.nome,
             tipo: (['CMYK','Pantone','Custom'].includes(colore.tipo) ? colore.tipo : 'Custom'),
             quantita_disponibile: qtaArrivo,
