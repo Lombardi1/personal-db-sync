@@ -453,14 +453,14 @@ const SSCCLabels = () => {
 
               {/* Anteprima + storico */}
               <div className="space-y-4">
-<div className="space-y-4">
+<div className="flex gap-3 items-start">
                   {/* Anteprima scatolone */}
-                  <div className="bg-white rounded-xl border shadow-sm p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-sm">📦 Anteprima Scatolone</h3>
-                      <span className="text-xs text-muted-foreground">{(overridePzUltimoScat||overrideScatUltimoBanc)?'✏️ con override':'scatolone tipo'}</span>
+                  <div className="bg-white rounded-xl border shadow-sm p-3 flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-xs">📦 Scatolone</h3>
+                      <span className="text-[10px] text-muted-foreground">{(overridePzUltimoScat||overrideScatUltimoBanc)?'✏️ override':''}</span>
                     </div>
-                    <div style={{ transform:'scale(0.63)', transformOrigin:'top left', width:'160%' }}>
+                    <div style={{ transform:'scale(0.50)', transformOrigin:'top left', width:'200%' }}>
                       <EtScat d={{
                         cliente:lav.cliente||'O.erre',
                         fornitore:lav.fornitore,
@@ -477,9 +477,9 @@ const SSCCLabels = () => {
                     </div>
                   </div>
                   {/* Anteprima pallet */}
-                  <div className="bg-white rounded-xl border shadow-sm p-4">
-                    <h3 className="font-semibold text-sm mb-3">🏷️ Anteprima Bancale (SSCC)</h3>
-                    <div style={{ transform:'scale(0.63)', transformOrigin:'top left', width:'160%' }}>
+                  <div className="bg-white rounded-xl border shadow-sm p-3 flex-1 overflow-hidden">
+                    <h3 className="font-semibold text-xs mb-2">🏷️ Bancale SSCC</h3>
+                    <div style={{ transform:'scale(0.50)', transformOrigin:'top left', width:'200%' }}>
                       <EtPallet d={{
                         sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '000000000000000000',
                         num: cfg?.contatore||1,
