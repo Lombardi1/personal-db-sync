@@ -213,8 +213,11 @@ export function useOrdiniAcquisto() {
           }
         } else if (isInchiostroFornitore) {
           const coloreNome = articolo.colore_nome || articolo.descrizione;
+          const coloreTipo = articolo.colore_tipo || 'Custom';
           // Usa il nome come codice se il codice non è stato inserito
-          const coloreCodice = articolo.colore_codice || coloreNome;
+          // Per CMYK normalizza in maiuscolo per matchare i 4 fissi (CYAN/MAGENTA/YELLOW/BLACK)
+          const coloreCodiceRaw = articolo.colore_codice || coloreNome;
+          const coloreCodice = coloreTipo === 'CMYK' ? coloreCodiceRaw.toUpperCase() : coloreCodiceRaw;
           if (!coloreNome) {
             console.warn(`[syncArticleInventoryStatus] Articolo Inchiostro senza nome. Saltato.`);
             continue;
