@@ -6,6 +6,54 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
+// ── Matching intelligente colori ──────────────────────────────────────────────
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m+1 }, (_, i) =>
+    Array.from({ length: n+1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function trovaMigliorMatch(
+  colori: { codice: string; nome: string }[],
+  nomeInput: string,
+  tipoInput: string
+): { codice: string; nome: string } | null {
+  const inp = nomeInput.toLowerCase().trim();
+
+  // 1. Exact case-insensitive su codice o nome
+  const exact = colori.find(c =>
+    c.codice.toLowerCase() === inp || c.nome.toLowerCase() === inp
+  );
+  if (exact) return exact;
+
+  // 2. Prefisso: il nome DB è contenuto all'inizio del nome inserito
+  //    Es. "CYAN REFLEX" → trova "CYAN"
+  const prefix = colori.find(c =>
+    c.nome.length <= 12 && inp.startsWith(c.nome.toLowerCase())
+  );
+  if (prefix) return prefix;
+
+  // 3. Fuzzy: distanza di Levenshtein
+  //    ≤1 per tutti, ≤2 solo per CMYK (nomi brevi e ben distinti)
+  const maxDist = tipoInput === 'CMYK' ? 2 : 1;
+  let bestMatch: { codice: string; nome: string } | null = null;
+  let bestDist = maxDist + 1;
+  for (const c of colori) {
+    const dist = levenshtein(inp, c.nome.toLowerCase());
+    if (dist < bestDist) { bestDist = dist; bestMatch = c; }
+  }
+  if (bestMatch) return bestMatch;
+
+  return null;
+}
+
 interface ColoriDaSistemareTabProps { onArchiviato?: () => void; }
 
 export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps) {
@@ -43,9 +91,17 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
         .eq('id', colore.id);
       if (err1) throw new Error(`Aggiornamento colori_in_arrivo: ${err1.message}`);
 
-      // 2. Cerca se il colore esiste già in magazzino
-      // Per CMYK normalizza in maiuscolo per matchare CYAN/MAGENTA/YELLOW/BLACK
-      const codiceArchivia = colore.tipo === 'CMYK' ? colore.codice.toUpperCase() : colore.codice;
+      // 2. Matching intelligente: esatto → prefisso → fuzzy
+      const { data: tuttiColori } = await supabase.from('colori').select('codice, nome');
+      const matchTrovato = trovaMigliorMatch(tuttiColori || [], colore.nome, colore.tipo);
+      const codiceArchivia = matchTrovato
+        ? matchTrovato.codice
+        : (colore.tipo === 'CMYK' ? colore.codice.toUpperCase() : colore.codice);
+
+      if (matchTrovato && matchTrovato.codice !== colore.codice) {
+        toast.info(`Abbinato a "${matchTrovato.nome}" (${matchTrovato.codice})`);
+      }
+
       const { data: existing, error: err2 } = await supabase
         .from('colori')
         .select('*')
