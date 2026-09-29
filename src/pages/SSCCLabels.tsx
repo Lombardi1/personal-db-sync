@@ -513,7 +513,7 @@ const SSCCLabels = () => {
 
           {/* Tabs */}
           <div className="flex gap-0 mb-6 border-b border-gray-200">
-            {[['lavoro','📦 Lavoro Completo'],['sscc','🏷️ Solo Bancali SS'],['ladoria','🥫 La Doria (GS1-128)CC']].map(([id,label])=>(
+            {[['lavoro','📦 Lavoro Completo'],['sscc','🏷️ Solo Bancali SSCC'],['ladoria','🥫 La Doria (GS1-128)']].map(([id,label])=>(
               <button key={id} onClick={()=>setTab(id as any)} className={`px-6 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab===id?'border-blue-600 text-blue-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>{label}</button>
             ))}
           </div>
@@ -752,7 +752,7 @@ const SSCCLabels = () => {
             </div>
           )}
 
-       La Doria ── */}
+          {/* ── La Doria ── */}
           {tab==='ladoria' && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl border shadow-sm p-5 space-y-3">
@@ -785,7 +785,7 @@ const SSCCLabels = () => {
             </div>
           )}
 
-          {/* ──    {/* ── Solo Bancali ── */}
+          {/* ── Solo Bancali ── */}
           {tab==='sscc' && (
             <div className="max-w-md space-y-4">
               <div className="bg-white rounded-xl border shadow-sm p-5">
@@ -821,8 +821,8 @@ const SSCCLabels = () => {
         </div>
       </div>
 
-      {/* Stampa {printLaDoria && singlePrint.length===0 && <style>{`@page { size: 105mm 148mm; margin: 0; }`}</style>}
-      */}
+      {/* Stampa */}
+      {printLaDoria && singlePrint.length===0 && <style>{`@page { size: 105mm 148mm; margin: 0; }`}</style>}
       <div className="hidden print:flex print:flex-col">{singlePrint.length > 0 ? singlePrint : printQueue}</div>
       <Toaster />
     </div>
