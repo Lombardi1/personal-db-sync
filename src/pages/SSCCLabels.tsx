@@ -250,6 +250,92 @@ function EtPallet({ d }: { d:PalData }) {
   );
 }
 
+
+// ── GS1-128 (con FNC1) ────────────────────────────────────────────────────────
+const FNC1 = '\xCF';
+// ai con lunghezza variabile → serve FNC1 di separazione se non è l'ultimo
+const buildGS1 = (ais: { ai:string; val:string; variable:boolean }[]) =>
+  FNC1 + ais.map((a,i)=> a.ai + a.val + (a.variable && i<ais.length-1 ? FNC1 : '')).join('');
+const hriGS1 = (ais: { ai:string; val:string }[]) => ais.map(a=>`(${a.ai})${a.val}`).join('');
+const loadJsBarcode = () => new Promise<void>((res) => {
+  if ((window as any).JsBarcode) { res(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js';
+  s.onload = () => res(); document.head.appendChild(s);
+});
+// Barcode vettoriale (SVG) che si adatta alla larghezza del contenitore
+function GS1Barcode({ value, heightMm=24 }: { value:string; heightMm?:number }) {
+  const ref = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    let alive = true;
+    loadJsBarcode().then(() => {
+      const el = ref.current; if (!alive || !el || !value) return;
+      (window as any).JsBarcode(el, value, { format:'CODE128', displayValue:false, width:2, height:100, margin:0, background:'#fff', lineColor:'#000' });
+      const w = el.getAttribute('width'), h = el.getAttribute('height');
+      if (w && h) { el.setAttribute('viewBox', `0 0 ${parseFloat(w)} ${parseFloat(h)}`); }
+      el.removeAttribute('width'); el.removeAttribute('height');
+      el.setAttribute('preserveAspectRatio','none');
+    });
+    return () => { alive = false; };
+  }, [value]);
+  return <svg ref={ref} style={{ width:'100%', height:`${heightMm}mm`, display:'block' }} />;
+}
+
+// ── Etichetta La Doria (pallet, 2 barcode GS1-128) ───────────────────────────
+interface LaDoriaData {
+  sender:string; cliente:string[]; sscc:string; paese:string;
+  lotto:string; scadenza:string; produzione:string; quantita:string;
+  materiale:string; descrizione:string; includiAI11:boolean;
+}
+const toYYMMDD = (dmy:string) => {
+  const m = dmy.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (!m) return '';
+  const yy = m[3].length===4 ? m[3].slice(2) : m[3];
+  return yy + m[2].padStart(2,'0') + m[1].padStart(2,'0');
+};
+const qta6 = (q:string) => String(Math.max(0, parseInt(q)||0)).padStart(6,'0').slice(-6);
+function EtLaDoria({ d }: { d:LaDoriaData }) {
+  const ais1 = [
+    { ai:'10', val:d.lotto, variable:true },
+    ...(d.includiAI11 ? [{ ai:'11', val:toYYMMDD(d.produzione), variable:false }] : []),
+    { ai:'15', val:toYYMMDD(d.scadenza), variable:false },
+    { ai:'37', val:qta6(d.quantita), variable:true },
+    { ai:'91', val:d.materiale, variable:true },
+  ];
+  const ais2 = [{ ai:'00', val:d.sscc, variable:false }];
+  const k: React.CSSProperties = { fontSize:'8pt' };
+  const v: React.CSSProperties = { fontSize:'10.5pt', fontWeight:'bold' };
+  return (
+    <div style={{ width:'105mm', height:'148mm', boxSizing:'border-box', border:'0.3mm solid #444', background:'#fff', padding:'3mm 3.5mm', display:'flex', flexDirection:'column', color:'#000', fontFamily:'Arial,Helvetica,sans-serif', pageBreakAfter:'always', flexShrink:0, overflow:'hidden' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', borderBottom:'0.2mm solid #888', paddingBottom:'1.5mm', marginBottom:'1.5mm', minHeight:'17mm' }}>
+        <div><div style={k}>Sender:</div><div style={{ fontSize:'8.5pt', fontWeight:'bold' }}>{d.sender}</div></div>
+        <div><div style={k}>Customer:</div><div style={v}>{d.cliente.map((r,i)=><div key={i}>{r}</div>)}</div></div>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1.15fr 1fr', gap:'1.2mm 3mm' }}>
+        <div><div style={k}>SSCC (00):</div><div style={{ ...v, fontSize:'12pt' }}>{d.sscc}</div></div>
+        <div><div style={k}>Country:</div><div style={{ ...v, fontSize:'12pt' }}>{d.paese}</div></div>
+        <div><div style={k}>Batch code (10):</div><div style={v}>{d.lotto}</div></div>
+        <div><div style={k}>Best before (15):</div><div style={v}>{d.scadenza}</div></div>
+        <div><div style={k}>Date of Production (11):</div><div style={v}>{d.produzione}</div></div>
+        <div><div style={k}>Quantity (37):</div><div style={v}>{qta6(d.quantita)}</div></div>
+        <div style={{ gridColumn:'1 / 3' }}><div style={k}>Customer material number (91):</div><div style={v}>{d.materiale}</div></div>
+      </div>
+      <div style={{ borderBottom:'0.2mm solid #888', margin:'1.5mm 0 2mm', paddingBottom:'1.5mm' }}>
+        <div style={k}>Product description:</div>
+        <div style={{ fontSize:'8.5pt', fontWeight:'bold' }}>{d.descrizione}</div>
+      </div>
+      <div style={{ textAlign:'center' }}>
+        <GS1Barcode value={buildGS1(ais1)} heightMm={24} />
+        <div style={{ fontSize:'7.5pt', marginTop:'0.8mm' }}>{hriGS1(ais1)}</div>
+      </div>
+      <div style={{ textAlign:'center', marginTop:'3mm' }}>
+        <GS1Barcode value={buildGS1(ais2)} heightMm={24} />
+        <div style={{ fontSize:'9pt', marginTop:'0.8mm' }}>{hriGS1(ais2)}</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Tipi ──────────────────────────────────────────────────────────────────────
 interface Cfg { id:string;prefisso_gs1:string;digit_estensione:string;contatore:number; }
 interface Rec { id:string;sscc:string;numero_bancale:number;cliente?:string;lotto?:string;descrizione?:string;created_at:string; }
@@ -258,7 +344,7 @@ interface Rec { id:string;sscc:string;numero_bancale:number;cliente?:string;lott
 const SSCCLabels = () => {
   const navigate = useNavigate();
   const { isAmministratore } = useAuth();
-  const [tab, setTab] = useState<'lavoro'|'sscc'>('lavoro');
+  const [tab, setTab] = useState<'lavoro'|'sscc'|'ladoria'>('lavoro');
   const [cfg, setCfg] = useState<Cfg|null>(null);
   const [editCfg, setEditCfg] = useState(false);
   const [tmpCfg, setTmpCfg] = useState({ prefisso_gs1:'', digit_estensione:'3' });
@@ -270,6 +356,13 @@ const SSCCLabels = () => {
   // Struttura: { num, sscc, pallet: ReactNode, scatoloni: ReactNode[] }[]
   const [bancaleGroups, setBancaleGroups] = useState<{num:number;sscc:string;pallet:React.ReactNode;scatoloni:React.ReactNode[]}[]>([]);
   const [numBancali, setNumBancali] = useState(1);
+  const [printLaDoria, setPrintLaDoria] = useState(false);
+  const [ld, setLd] = useState({
+    sender:'Arti Grafiche Lombardi S.r.l.', cliente:'La Doria S.p.A.\nVia Nazionale\n84012 Angri', paese:'Germany',
+    lotto:'', scadenza:'', produzione:'', quantita:'', materiale:'', descrizione:'', includiAI11:false, nBancali:'1',
+  });
+  const ldValido = /^\d{1,2}\/\d{1,2}\/(\d{2}|\d{4})$/.test(ld.scadenza) && !!ld.lotto && !!ld.materiale && parseInt(ld.quantita)>0
+    && (!ld.includiAI11 || !!toYYMMDD(ld.produzione));
 
   const [lav, setLav] = useState({
     cliente:'', fornitore:'Arti Grafiche Lombardi', codice:'', descrizione:'',
@@ -365,8 +458,28 @@ const SSCCLabels = () => {
       gLabelIdx += 1 + banc.scatoloni;
     }
     setBancaleGroups(groups);
-    setPrintQueue(labels); setSinglePrint([]); setGenerando(false); loadData();
+    setPrintLaDoria(false); setPrintQueue(labels); setSinglePrint([]); setGenerando(false); loadData();
     setTimeout(()=>window.print(), 400);
+  };
+
+  // Genera etichette La Doria (1 SSCC per bancale)
+  const generaLaDoria = async () => {
+    if (!cfg?.prefisso_gs1) { toast.error('Configura il prefisso GS1'); return; }
+    if (!ldValido) { toast.error('Compila lotto, scadenza (gg/mm/aaaa), quantità e codice materiale'); return; }
+    const n = Math.max(1, Math.min(200, parseInt(ld.nBancali)||1));
+    setGenerando(true);
+    const labels: React.ReactNode[] = [], records = [];
+    for (let i=0;i<n;i++) {
+      const num = cfg.contatore + i;
+      const sscc = generaSSCC(cfg.digit_estensione, cfg.prefisso_gs1, num);
+      labels.push(<EtLaDoria key={`ld${num}`} d={{ ...ld, cliente: ld.cliente.split('\n'), sscc }} />);
+      records.push({ sscc, numero_bancale:num, cliente:ld.cliente.split('\n')[0]||null, lotto:ld.lotto||null, quantita:parseInt(ld.quantita)||null, descrizione:ld.descrizione||null });
+    }
+    await supabase.from('sscc_generati').insert(records);
+    await supabase.from('sscc_config').update({ contatore: cfg.contatore + n }).eq('id', cfg.id);
+    toast.success(`✅ ${n} etichett${n===1?'a':'e'} La Doria generat${n===1?'a':'e'}`);
+    setSinglePrint([]); setPrintQueue(labels); setPrintLaDoria(true); setGenerando(false); loadData();
+    setTimeout(()=>window.print(), 700);
   };
 
   // Genera solo bancali SSCC
@@ -383,7 +496,7 @@ const SSCCLabels = () => {
     await supabase.from('sscc_generati').insert(records);
     await supabase.from('sscc_config').update({ contatore:cfg.contatore+n }).eq('id',cfg.id);
     toast.success(`✅ ${n} bancal${n===1?'e':'i'} generati`);
-    setPrintQueue(labels); setGenerando(false); loadData();
+    setPrintLaDoria(false); setSinglePrint([]); setPrintQueue(labels); setGenerando(false); loadData();
     setTimeout(()=>window.print(),400);
   };
 
@@ -400,7 +513,7 @@ const SSCCLabels = () => {
 
           {/* Tabs */}
           <div className="flex gap-0 mb-6 border-b border-gray-200">
-            {[['lavoro','📦 Lavoro Completo'],['sscc','🏷️ Solo Bancali SSCC']].map(([id,label])=>(
+            {[['lavoro','📦 Lavoro Completo'],['sscc','🏷️ Solo Bancali SS'],['ladoria','🥫 La Doria (GS1-128)CC']].map(([id,label])=>(
               <button key={id} onClick={()=>setTab(id as any)} className={`px-6 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab===id?'border-blue-600 text-blue-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>{label}</button>
             ))}
           </div>
@@ -639,7 +752,40 @@ const SSCCLabels = () => {
             </div>
           )}
 
-          {/* ── Solo Bancali ── */}
+       La Doria ── */}
+          {tab==='ladoria' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl border shadow-sm p-5 space-y-3">
+                <h2 className="font-bold text-base">Etichetta La Doria — 2 barcode GS1-128</h2>
+                <div className="text-xs text-muted-foreground">Barcode 1: (10) lotto, (15) scadenza, (37) quantità a 6 cifre, (91) codice cliente. Barcode 2: (00) SSCC progressivo del bancale.</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">Sender</Label><Input value={ld.sender} onChange={e=>setLd(p=>({...p,sender:e.target.value}))} className="mt-1"/></div>
+                  <div><Label className="text-xs">Country</Label><Input value={ld.paese} onChange={e=>setLd(p=>({...p,paese:e.target.value}))} className="mt-1"/></div>
+                  <div className="col-span-2"><Label className="text-xs">Customer (una riga per riga)</Label><textarea value={ld.cliente} onChange={e=>setLd(p=>({...p,cliente:e.target.value}))} rows={3} className="mt-1 w-full border rounded-md px-3 py-2 text-sm"/></div>
+                  <div><Label className="text-xs">Batch code (10) *</Label><Input value={ld.lotto} onChange={e=>setLd(p=>({...p,lotto:e.target.value.toUpperCase()}))} placeholder="Es. 010001" className="mt-1 font-mono"/></div>
+                  <div><Label className="text-xs">Best before (15) * gg/mm/aaaa</Label><Input value={ld.scadenza} onChange={e=>setLd(p=>({...p,scadenza:e.target.value}))} placeholder="Es. 12/03/2017" className="mt-1 font-mono"/></div>
+                  <div><Label className="text-xs">Date of Production (11) gg/mm/aaaa</Label><Input value={ld.produzione} onChange={e=>setLd(p=>({...p,produzione:e.target.value}))} placeholder="Es. 12/03/2014" className="mt-1 font-mono"/></div>
+                  <div><Label className="text-xs">Quantity (37) * — pezzi</Label><Input type="number" value={ld.quantita} onChange={e=>setLd(p=>({...p,quantita:e.target.value}))} placeholder="Es. 2000" className="mt-1 font-mono"/></div>
+                  <div><Label className="text-xs">Customer material number (91) *</Label><Input value={ld.materiale} onChange={e=>setLd(p=>({...p,materiale:e.target.value.toUpperCase()}))} placeholder="Codice SAP La Doria" className="mt-1 font-mono"/></div>
+                  <div><Label className="text-xs">Numero bancali (1 SSCC ciascuno)</Label><Input type="number" min={1} max={200} value={ld.nBancali} onChange={e=>setLd(p=>({...p,nBancali:e.target.value}))} className="mt-1 font-mono"/></div>
+                  <div className="col-span-2"><Label className="text-xs">Product description</Label><Input value={ld.descrizione} onChange={e=>setLd(p=>({...p,descrizione:e.target.value}))} placeholder="Es. SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN" className="mt-1"/></div>
+                  <label className="col-span-2 flex items-center gap-2 text-xs"><input type="checkbox" checked={ld.includiAI11} onChange={e=>setLd(p=>({...p,includiAI11:e.target.checked}))}/> Includi anche (11) data di produzione nel primo barcode</label>
+                </div>
+                <div className="text-xs text-muted-foreground">Prossimo SSCC: <span className="font-mono font-bold">{cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : 'prefisso GS1 non configurato'}</span></div>
+                <Button className="w-full h-12 text-base font-semibold" onClick={generaLaDoria} disabled={!cfg?.prefisso_gs1||generando||!ldValido}>
+                  <Printer className="mr-2 h-5 w-5"/>{generando?'Generazione...':`Genera e Stampa — ${Math.max(1,parseInt(ld.nBancali)||1)} etichett${(parseInt(ld.nBancali)||1)===1?'a':'e'}`}
+                </Button>
+              </div>
+              <div className="bg-white rounded-xl border shadow-sm p-4">
+                <h3 className="font-semibold text-xs mb-2">Anteprima (A6 105×148 mm)</h3>
+                <div style={{ transform:'scale(0.85)', transformOrigin:'top left', width:'105mm', height:'126mm' }}>
+                  <EtLaDoria d={{ ...ld, cliente: ld.cliente.split('\n'), lotto: ld.lotto||'010001', scadenza: ld.scadenza||'12/03/2017', produzione: ld.produzione||'12/03/2014', quantita: ld.quantita||'2000', materiale: ld.materiale||'1900NW91', descrizione: ld.descrizione||'SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN', sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '080029201100000007' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ──    {/* ── Solo Bancali ── */}
           {tab==='sscc' && (
             <div className="max-w-md space-y-4">
               <div className="bg-white rounded-xl border shadow-sm p-5">
@@ -675,7 +821,8 @@ const SSCCLabels = () => {
         </div>
       </div>
 
-      {/* Stampa */}
+      {/* Stampa {printLaDoria && singlePrint.length===0 && <style>{`@page { size: 105mm 148mm; margin: 0; }`}</style>}
+      */}
       <div className="hidden print:flex print:flex-col">{singlePrint.length > 0 ? singlePrint : printQueue}</div>
       <Toaster />
     </div>
