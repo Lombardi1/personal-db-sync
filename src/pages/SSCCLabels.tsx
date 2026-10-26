@@ -799,8 +799,10 @@ const SSCCLabels = () => {
               </div>
               <div className="bg-white rounded-xl border shadow-sm p-4">
                 <h3 className="font-semibold text-xs mb-2">Anteprima (stampa su foglio A4 verticale)</h3>
-                <div style={{ transform:'scale(0.85)', transformOrigin:'top left', width:'105mm', height:'126mm' }}>
-                  <EtLaDoria d={{ ...ld, cliente: ld.cliente.split('\n'), num: cfg?.contatore, produzione: ld.produzione||'12/03/2014', quantita: ld.quantita||'2000', materiale: ld.materiale||'1900NW91', descrizione: ld.descrizione||'SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN', sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '080029201100000007' }} />
+                <div style={{ width:'126mm', height:'178mm', border:'1px solid #d1d5db', background:'#fff', boxShadow:'0 1px 4px rgba(0,0,0,.15)', overflow:'hidden', position:'relative' }}>
+                  <div style={{ width:'210mm', height:'297mm', transform:'scale(0.6)', transformOrigin:'top left', position:'absolute', top:0, left:0 }}>
+                  <EtLaDoria a4 d={{ ...ld, cliente: ld.cliente.split('\n'), num: cfg?.contatore, produzione: ld.produzione||'12/03/2014', quantita: ld.quantita||'2000', materiale: ld.materiale||'1900NW91', descrizione: ld.descrizione||'SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN', sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '080029201100000007' }} />
+                  </div>
                 </div>
               </div>
             </div>
