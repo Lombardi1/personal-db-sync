@@ -283,9 +283,9 @@ function GS1Barcode({ value, heightMm=24 }: { value:string; heightMm?:number }) 
 
 // ── Etichetta La Doria (pallet, 2 barcode GS1-128) ───────────────────────────
 interface LaDoriaData {
-  sender:string; cliente:string[]; sscc:string; paese:string;
-  lotto:string; scadenza:string; produzione:string; quantita:string;
-  materiale:string; descrizione:string; includiAI11:boolean;
+  sender:string; cliente:string[]; sscc:string; num?:number; paese:string;
+  lotto:string; produzione:string; quantita:string;
+  materiale:string; descrizione:string;
 }
 const toYYMMDD = (dmy:string) => {
   const m = dmy.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
@@ -293,12 +293,27 @@ const toYYMMDD = (dmy:string) => {
   const yy = m[3].length===4 ? m[3].slice(2) : m[3];
   return yy + m[2].padStart(2,'0') + m[1].padStart(2,'0');
 };
+const parseDMY = (dmy:string) => {
+  const m = dmy.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (!m) return null;
+  const y = m[3].length===2 ? 2000+parseInt(m[3]) : parseInt(m[3]);
+  return { d:parseInt(m[1]), m:parseInt(m[2]), y };
+};
+// Best before = data di produzione + esattamente 3 anni (29/02 -> 28/02 se l'anno di arrivo non è bisestile)
+const addYears3 = (dmy:string) => {
+  const p = parseDMY(dmy); if (!p) return '';
+  const t = new Date(Date.UTC(p.y+3, p.m-1, p.d));
+  const dd = t.getUTCMonth() !== p.m-1 ? new Date(Date.UTC(p.y+3, p.m, 0)) : t;
+  return String(dd.getUTCDate()).padStart(2,'0') + '/' + String(dd.getUTCMonth()+1).padStart(2,'0') + '/' + dd.getUTCFullYear();
+};
+const oggiDMY = () => { const t = new Date(); return String(t.getDate()).padStart(2,'0') + '/' + String(t.getMonth()+1).padStart(2,'0') + '/' + t.getFullYear(); };
 const qta6 = (q:string) => String(Math.max(0, parseInt(q)||0)).padStart(6,'0').slice(-6);
 function EtLaDoria({ d }: { d:LaDoriaData }) {
+  const scadenza = addYears3(d.produzione);
+  // Barcode 1: (11) produzione, (15) best before = produzione + 3 anni, (37) quantità a 6 cifre, (91) codice cliente
   const ais1 = [
-    { ai:'10', val:d.lotto, variable:true },
-    ...(d.includiAI11 ? [{ ai:'11', val:toYYMMDD(d.produzione), variable:false }] : []),
-    { ai:'15', val:toYYMMDD(d.scadenza), variable:false },
+    { ai:'11', val:toYYMMDD(d.produzione), variable:false },
+    { ai:'15', val:toYYMMDD(scadenza), variable:false },
     { ai:'37', val:qta6(d.quantita), variable:true },
     { ai:'91', val:d.materiale, variable:true },
   ];
@@ -312,10 +327,10 @@ function EtLaDoria({ d }: { d:LaDoriaData }) {
         <div><div style={k}>Customer:</div><div style={v}>{d.cliente.map((r,i)=><div key={i}>{r}</div>)}</div></div>
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1.15fr 1fr', gap:'1.2mm 3mm' }}>
-        <div><div style={k}>SSCC (00):</div><div style={{ ...v, fontSize:'12pt' }}>{d.sscc}</div></div>
+        <div><div style={k}>SSCC (00):</div><div style={{ ...v, fontSize:'12pt' }}>{d.sscc}</div>{d.num!==undefined && <div style={{ fontSize:'7pt' }}>Bancale n. {d.num}</div>}</div>
         <div><div style={k}>Country:</div><div style={{ ...v, fontSize:'12pt' }}>{d.paese}</div></div>
-        <div><div style={k}>Batch code (10):</div><div style={v}>{d.lotto}</div></div>
-        <div><div style={k}>Best before (15):</div><div style={v}>{d.scadenza}</div></div>
+        <div><div style={k}>Batch code:</div><div style={v}>{d.lotto}</div></div>
+        <div><div style={k}>Best before (15):</div><div style={v}>{scadenza}</div></div>
         <div><div style={k}>Date of Production (11):</div><div style={v}>{d.produzione}</div></div>
         <div><div style={k}>Quantity (37):</div><div style={v}>{qta6(d.quantita)}</div></div>
         <div style={{ gridColumn:'1 / 3' }}><div style={k}>Customer material number (91):</div><div style={v}>{d.materiale}</div></div>
@@ -359,10 +374,9 @@ const SSCCLabels = () => {
   const [printLaDoria, setPrintLaDoria] = useState(false);
   const [ld, setLd] = useState({
     sender:'Arti Grafiche Lombardi S.r.l.', cliente:'La Doria S.p.A.\nVia Nazionale\n84012 Angri', paese:'Germany',
-    lotto:'', scadenza:'', produzione:'', quantita:'', materiale:'', descrizione:'', includiAI11:false, nBancali:'1',
+    lotto:'', produzione:oggiDMY(), quantita:'', materiale:'', descrizione:'', nBancali:'1',
   });
-  const ldValido = /^\d{1,2}\/\d{1,2}\/(\d{2}|\d{4})$/.test(ld.scadenza) && !!ld.lotto && !!ld.materiale && parseInt(ld.quantita)>0
-    && (!ld.includiAI11 || !!toYYMMDD(ld.produzione));
+  const ldValido = !!parseDMY(ld.produzione) && !!ld.materiale && parseInt(ld.quantita)>0;
 
   const [lav, setLav] = useState({
     cliente:'', fornitore:'Arti Grafiche Lombardi', codice:'', descrizione:'',
@@ -465,14 +479,14 @@ const SSCCLabels = () => {
   // Genera etichette La Doria (1 SSCC per bancale)
   const generaLaDoria = async () => {
     if (!cfg?.prefisso_gs1) { toast.error('Configura il prefisso GS1'); return; }
-    if (!ldValido) { toast.error('Compila lotto, scadenza (gg/mm/aaaa), quantità e codice materiale'); return; }
+    if (!ldValido) { toast.error('Compila data di produzione (gg/mm/aaaa), quantità e codice cliente'); return; }
     const n = Math.max(1, Math.min(200, parseInt(ld.nBancali)||1));
     setGenerando(true);
     const labels: React.ReactNode[] = [], records = [];
     for (let i=0;i<n;i++) {
       const num = cfg.contatore + i;
       const sscc = generaSSCC(cfg.digit_estensione, cfg.prefisso_gs1, num);
-      labels.push(<EtLaDoria key={`ld${num}`} d={{ ...ld, cliente: ld.cliente.split('\n'), sscc }} />);
+      labels.push(<EtLaDoria key={`ld${num}`} d={{ ...ld, cliente: ld.cliente.split('\n'), sscc, num }} />);
       records.push({ sscc, numero_bancale:num, cliente:ld.cliente.split('\n')[0]||null, lotto:ld.lotto||null, quantita:parseInt(ld.quantita)||null, descrizione:ld.descrizione||null });
     }
     await supabase.from('sscc_generati').insert(records);
@@ -757,19 +771,18 @@ const SSCCLabels = () => {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl border shadow-sm p-5 space-y-3">
                 <h2 className="font-bold text-base">Etichetta La Doria — 2 barcode GS1-128</h2>
-                <div className="text-xs text-muted-foreground">Barcode 1: (10) lotto, (15) scadenza, (37) quantità a 6 cifre, (91) codice cliente. Barcode 2: (00) SSCC progressivo del bancale.</div>
+                <div className="text-xs text-muted-foreground">Barcode 1: (11) produzione, (15) best before (produzione + 3 anni), (37) quantità a 6 cifre, (91) codice cliente. Barcode 2: (00) SSCC. Il progressivo bancale aumenta di 1; l'ultima cifra dell'SSCC è il check digit GS1 (obbligatoria), per questo il numero intero non cambia di 1.</div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label className="text-xs">Sender</Label><Input value={ld.sender} onChange={e=>setLd(p=>({...p,sender:e.target.value}))} className="mt-1"/></div>
                   <div><Label className="text-xs">Country</Label><Input value={ld.paese} onChange={e=>setLd(p=>({...p,paese:e.target.value}))} className="mt-1"/></div>
                   <div className="col-span-2"><Label className="text-xs">Customer (una riga per riga)</Label><textarea value={ld.cliente} onChange={e=>setLd(p=>({...p,cliente:e.target.value}))} rows={3} className="mt-1 w-full border rounded-md px-3 py-2 text-sm"/></div>
-                  <div><Label className="text-xs">Batch code (10) *</Label><Input value={ld.lotto} onChange={e=>setLd(p=>({...p,lotto:e.target.value.toUpperCase()}))} placeholder="Es. 010001" className="mt-1 font-mono"/></div>
-                  <div><Label className="text-xs">Best before (15) * gg/mm/aaaa</Label><Input value={ld.scadenza} onChange={e=>setLd(p=>({...p,scadenza:e.target.value}))} placeholder="Es. 12/03/2017" className="mt-1 font-mono"/></div>
-                  <div><Label className="text-xs">Date of Production (11) gg/mm/aaaa</Label><Input value={ld.produzione} onChange={e=>setLd(p=>({...p,produzione:e.target.value}))} placeholder="Es. 12/03/2014" className="mt-1 font-mono"/></div>
+                  <div><Label className="text-xs">Date of Production (11) * gg/mm/aaaa</Label><Input value={ld.produzione} onChange={e=>setLd(p=>({...p,produzione:e.target.value}))} placeholder="Es. 12/03/2014" className="mt-1 font-mono"/></div>
+                  <div><Label className="text-xs">Best before (15) — automatico, produzione + 3 anni</Label><Input value={addYears3(ld.produzione)} readOnly className="mt-1 font-mono bg-gray-50"/></div>
+                  <div><Label className="text-xs">Batch code (solo testo, non nel barcode)</Label><Input value={ld.lotto} onChange={e=>setLd(p=>({...p,lotto:e.target.value.toUpperCase()}))} placeholder="Facoltativo" className="mt-1 font-mono"/></div>
                   <div><Label className="text-xs">Quantity (37) * — pezzi</Label><Input type="number" value={ld.quantita} onChange={e=>setLd(p=>({...p,quantita:e.target.value}))} placeholder="Es. 2000" className="mt-1 font-mono"/></div>
-                  <div><Label className="text-xs">Customer material number (91) *</Label><Input value={ld.materiale} onChange={e=>setLd(p=>({...p,materiale:e.target.value.toUpperCase()}))} placeholder="Codice SAP La Doria" className="mt-1 font-mono"/></div>
+                  <div><Label className="text-xs">Customer material number (91) * — codice cliente</Label><Input value={ld.materiale} onChange={e=>setLd(p=>({...p,materiale:e.target.value.toUpperCase()}))} placeholder="Codice SAP La Doria" className="mt-1 font-mono"/></div>
                   <div><Label className="text-xs">Numero bancali (1 SSCC ciascuno)</Label><Input type="number" min={1} max={200} value={ld.nBancali} onChange={e=>setLd(p=>({...p,nBancali:e.target.value}))} className="mt-1 font-mono"/></div>
                   <div className="col-span-2"><Label className="text-xs">Product description</Label><Input value={ld.descrizione} onChange={e=>setLd(p=>({...p,descrizione:e.target.value}))} placeholder="Es. SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN" className="mt-1"/></div>
-                  <label className="col-span-2 flex items-center gap-2 text-xs"><input type="checkbox" checked={ld.includiAI11} onChange={e=>setLd(p=>({...p,includiAI11:e.target.checked}))}/> Includi anche (11) data di produzione nel primo barcode</label>
                 </div>
                 <div className="text-xs text-muted-foreground">Prossimo SSCC: <span className="font-mono font-bold">{cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : 'prefisso GS1 non configurato'}</span></div>
                 <Button className="w-full h-12 text-base font-semibold" onClick={generaLaDoria} disabled={!cfg?.prefisso_gs1||generando||!ldValido}>
@@ -779,7 +792,7 @@ const SSCCLabels = () => {
               <div className="bg-white rounded-xl border shadow-sm p-4">
                 <h3 className="font-semibold text-xs mb-2">Anteprima (A6 105×148 mm)</h3>
                 <div style={{ transform:'scale(0.85)', transformOrigin:'top left', width:'105mm', height:'126mm' }}>
-                  <EtLaDoria d={{ ...ld, cliente: ld.cliente.split('\n'), lotto: ld.lotto||'010001', scadenza: ld.scadenza||'12/03/2017', produzione: ld.produzione||'12/03/2014', quantita: ld.quantita||'2000', materiale: ld.materiale||'1900NW91', descrizione: ld.descrizione||'SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN', sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '080029201100000007' }} />
+                  <EtLaDoria d={{ ...ld, cliente: ld.cliente.split('\n'), num: cfg?.contatore, produzione: ld.produzione||'12/03/2014', quantita: ld.quantita||'2000', materiale: ld.materiale||'1900NW91', descrizione: ld.descrizione||'SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN', sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '080029201100000007' }} />
                 </div>
               </div>
             </div>
