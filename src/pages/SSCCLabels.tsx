@@ -351,7 +351,7 @@ function EtLaDoria({ d, a4 }: { d:LaDoriaData; a4?:boolean }) {
   );
   // A4 verticale: etichetta ingrandita (x1.81) in alto, come da esempio La Doria
   if (a4) return (
-    <div style={{ width:'190mm', height:'275mm', margin:'8mm 10mm 0', pageBreakAfter:'always', breakAfter:'page', flexShrink:0, position:'relative' }}>
+    <div className="ld-page" style={{ width:'190mm', height:'270mm', margin:'6mm 10mm 0', pageBreakAfter:'always', breakAfter:'page', flexShrink:0, position:'relative', overflow:'hidden' }}>
       <div style={{ width:'105mm', transform:'scale(1.8095)', transformOrigin:'top left', position:'absolute', top:0, left:0 }}>{label}</div>
     </div>
   );
@@ -845,7 +845,7 @@ const SSCCLabels = () => {
       </div>
 
       {/* Stampa */}
-      {printLaDoria && singlePrint.length===0 && <style>{`@page { size: A4 portrait; margin: 0; }`}</style>}
+      {printLaDoria && singlePrint.length===0 && <style>{`@page { size: A4 portrait; margin: 0; } @media print { html, body, #root { height:auto !important; min-height:0 !important; margin:0 !important; } .min-h-screen { min-height:0 !important; } [data-sonner-toaster], [data-sonner-toast], section[aria-label] { display:none !important; } .ld-page:last-child { page-break-after:auto !important; break-after:auto !important; } }`}</style>}
       <div className="hidden print:flex print:flex-col">{singlePrint.length > 0 ? singlePrint : printQueue}</div>
       <Toaster />
     </div>
