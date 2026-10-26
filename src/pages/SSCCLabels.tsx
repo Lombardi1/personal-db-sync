@@ -308,7 +308,7 @@ const addYears3 = (dmy:string) => {
 };
 const oggiDMY = () => { const t = new Date(); return String(t.getDate()).padStart(2,'0') + '/' + String(t.getMonth()+1).padStart(2,'0') + '/' + t.getFullYear(); };
 const qta6 = (q:string) => String(Math.max(0, parseInt(q)||0)).padStart(6,'0').slice(-6);
-function EtLaDoria({ d }: { d:LaDoriaData }) {
+function EtLaDoria({ d, a4 }: { d:LaDoriaData; a4?:boolean }) {
   const scadenza = addYears3(d.produzione);
   // Barcode 1: (11) produzione, (15) best before = produzione + 3 anni, (37) quantità a 6 cifre, (91) codice cliente
   const ais1 = [
@@ -320,8 +320,8 @@ function EtLaDoria({ d }: { d:LaDoriaData }) {
   const ais2 = [{ ai:'00', val:d.sscc, variable:false }];
   const k: React.CSSProperties = { fontSize:'8pt' };
   const v: React.CSSProperties = { fontSize:'10.5pt', fontWeight:'bold' };
-  return (
-    <div style={{ width:'105mm', height:'148mm', boxSizing:'border-box', border:'0.3mm solid #444', background:'#fff', padding:'3mm 3.5mm', display:'flex', flexDirection:'column', color:'#000', fontFamily:'Arial,Helvetica,sans-serif', pageBreakAfter:'always', flexShrink:0, overflow:'hidden' }}>
+  const label = (
+    <div style={{ width:'105mm', ...(a4 ? { minHeight:'148mm' } : { height:'148mm', overflow:'hidden' }), boxSizing:'border-box', border:'0.3mm solid #444', background:'#fff', padding:'3mm 3.5mm', display:'flex', flexDirection:'column', color:'#000', fontFamily:'Arial,Helvetica,sans-serif', flexShrink:0 }}>
       <div style={{ display:'flex', justifyContent:'space-between', borderBottom:'0.2mm solid #888', paddingBottom:'1.5mm', marginBottom:'1.5mm', minHeight:'17mm' }}>
         <div><div style={k}>Sender:</div><div style={{ fontSize:'8.5pt', fontWeight:'bold' }}>{d.sender}</div></div>
         <div><div style={k}>Customer:</div><div style={v}>{d.cliente.map((r,i)=><div key={i}>{r}</div>)}</div></div>
@@ -349,6 +349,13 @@ function EtLaDoria({ d }: { d:LaDoriaData }) {
       </div>
     </div>
   );
+  // A4 verticale: etichetta ingrandita (x1.81) in alto, come da esempio La Doria
+  if (a4) return (
+    <div style={{ width:'190mm', height:'275mm', margin:'8mm 10mm 0', pageBreakAfter:'always', breakAfter:'page', flexShrink:0, position:'relative' }}>
+      <div style={{ width:'105mm', transform:'scale(1.8095)', transformOrigin:'top left', position:'absolute', top:0, left:0 }}>{label}</div>
+    </div>
+  );
+  return <div style={{ pageBreakAfter:'always', flexShrink:0 }}>{label}</div>;
 }
 
 // ── Tipi ──────────────────────────────────────────────────────────────────────
@@ -373,7 +380,7 @@ const SSCCLabels = () => {
   const [numBancali, setNumBancali] = useState(1);
   const [printLaDoria, setPrintLaDoria] = useState(false);
   const [ld, setLd] = useState({
-    sender:'Arti Grafiche Lombardi S.r.l.', cliente:'La Doria S.p.A.\nVia Nazionale\n84012 Angri', paese:'Germany',
+    sender:'Arti Grafiche Lombardi S.r.l.', cliente:'Pasta Lensi Srl\nVia Don Luigi Sturzo 21/23\nVerolanuova (BS)\n25028 Italy', paese:'Italy',
     lotto:'', produzione:oggiDMY(), quantita:'', materiale:'', descrizione:'', nBancali:'1',
   });
   const ldValido = !!parseDMY(ld.produzione) && !!ld.materiale && parseInt(ld.quantita)>0;
@@ -486,7 +493,7 @@ const SSCCLabels = () => {
     for (let i=0;i<n;i++) {
       const num = cfg.contatore + i;
       const sscc = generaSSCC(cfg.digit_estensione, cfg.prefisso_gs1, num);
-      labels.push(<EtLaDoria key={`ld${num}`} d={{ ...ld, cliente: ld.cliente.split('\n'), sscc, num }} />);
+      labels.push(<EtLaDoria key={`ld${num}`} a4 d={{ ...ld, cliente: ld.cliente.split('\n'), sscc, num }} />);
       records.push({ sscc, numero_bancale:num, cliente:ld.cliente.split('\n')[0]||null, lotto:ld.lotto||null, quantita:parseInt(ld.quantita)||null, descrizione:ld.descrizione||null });
     }
     await supabase.from('sscc_generati').insert(records);
@@ -791,7 +798,7 @@ const SSCCLabels = () => {
                 </Button>
               </div>
               <div className="bg-white rounded-xl border shadow-sm p-4">
-                <h3 className="font-semibold text-xs mb-2">Anteprima (A6 105×148 mm)</h3>
+                <h3 className="font-semibold text-xs mb-2">Anteprima (stampa su foglio A4 verticale)</h3>
                 <div style={{ transform:'scale(0.85)', transformOrigin:'top left', width:'105mm', height:'126mm' }}>
                   <EtLaDoria d={{ ...ld, cliente: ld.cliente.split('\n'), num: cfg?.contatore, produzione: ld.produzione||'12/03/2014', quantita: ld.quantita||'2000', materiale: ld.materiale||'1900NW91', descrizione: ld.descrizione||'SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN', sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '080029201100000007' }} />
                 </div>
@@ -836,7 +843,7 @@ const SSCCLabels = () => {
       </div>
 
       {/* Stampa */}
-      {printLaDoria && singlePrint.length===0 && <style>{`@page { size: 105mm 148mm; margin: 0; }`}</style>}
+      {printLaDoria && singlePrint.length===0 && <style>{`@page { size: A4 portrait; margin: 0; }`}</style>}
       <div className="hidden print:flex print:flex-col">{singlePrint.length > 0 ? singlePrint : printQueue}</div>
       <Toaster />
     </div>
