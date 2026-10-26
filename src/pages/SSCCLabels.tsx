@@ -327,7 +327,7 @@ function EtLaDoria({ d }: { d:LaDoriaData }) {
         <div><div style={k}>Customer:</div><div style={v}>{d.cliente.map((r,i)=><div key={i}>{r}</div>)}</div></div>
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1.15fr 1fr', gap:'1.2mm 3mm' }}>
-        <div><div style={k}>SSCC (00):</div><div style={{ ...v, fontSize:'12pt' }}>{d.sscc}</div>{d.num!==undefined && <div style={{ fontSize:'7pt' }}>Bancale n. {d.num}</div>}</div>
+        <div><div style={k}>SSCC (00):</div><div style={{ ...v, fontSize:'12pt' }}>{d.sscc}</div>{d.num!==undefined && <div style={{ fontSize:'15pt', fontWeight:'bold', marginTop:'0.8mm' }}>Bancale n. {d.num}</div>}</div>
         <div><div style={k}>Country:</div><div style={{ ...v, fontSize:'12pt' }}>{d.paese}</div></div>
         <div><div style={k}>Batch code:</div><div style={v}>{d.lotto}</div></div>
         <div><div style={k}>Best before (15):</div><div style={v}>{scadenza}</div></div>
@@ -785,6 +785,7 @@ const SSCCLabels = () => {
                   <div className="col-span-2"><Label className="text-xs">Product description</Label><Input value={ld.descrizione} onChange={e=>setLd(p=>({...p,descrizione:e.target.value}))} placeholder="Es. SUCCO CONCENTRATO ANANAS STANDARD 60 BX FROZEN" className="mt-1"/></div>
                 </div>
                 <div className="text-xs text-muted-foreground">Prossimo SSCC: <span className="font-mono font-bold">{cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : 'prefisso GS1 non configurato'}</span></div>
+                <div className="text-sm font-semibold text-blue-700">Prossimo bancale n. {cfg?.contatore}{(parseInt(ld.nBancali)||1)>1 && cfg ? ` → ${cfg.contatore + (parseInt(ld.nBancali)||1) - 1}` : ''}</div>
                 <Button className="w-full h-12 text-base font-semibold" onClick={generaLaDoria} disabled={!cfg?.prefisso_gs1||generando||!ldValido}>
                   <Printer className="mr-2 h-5 w-5"/>{generando?'Generazione...':`Genera e Stampa — ${Math.max(1,parseInt(ld.nBancali)||1)} etichett${(parseInt(ld.nBancali)||1)===1?'a':'e'}`}
                 </Button>
