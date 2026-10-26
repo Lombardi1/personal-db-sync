@@ -321,7 +321,7 @@ function EtLaDoria({ d, a4 }: { d:LaDoriaData; a4?:boolean }) {
   const k: React.CSSProperties = { fontSize:'8pt' };
   const v: React.CSSProperties = { fontSize:'10.5pt', fontWeight:'bold' };
   const label = (
-    <div style={{ width:'105mm', ...(a4 ? { minHeight:'148mm' } : { height:'148mm', overflow:'hidden' }), boxSizing:'border-box', border:'0.3mm solid #444', background:'#fff', padding:'3mm 3.5mm', display:'flex', flexDirection:'column', color:'#000', fontFamily:'Arial,Helvetica,sans-serif', flexShrink:0 }}>
+    <div style={{ width:'105mm', ...(a4 ? {} : { height:'148mm', overflow:'hidden' }), boxSizing:'border-box', border:'0.3mm solid #444', background:'#fff', padding:'3mm 3.5mm', display:'flex', flexDirection:'column', color:'#000', fontFamily:'Arial,Helvetica,sans-serif', flexShrink:0 }}>
       <div style={{ display:'flex', justifyContent:'space-between', borderBottom:'0.2mm solid #888', paddingBottom:'1.5mm', marginBottom:'1.5mm', minHeight:'17mm' }}>
         <div><div style={k}>Sender:</div><div style={{ fontSize:'8.5pt', fontWeight:'bold' }}>{d.sender}</div></div>
         <div><div style={k}>Customer:</div><div style={v}>{d.cliente.map((r,i)=><div key={i}>{r}</div>)}</div></div>
@@ -351,8 +351,8 @@ function EtLaDoria({ d, a4 }: { d:LaDoriaData; a4?:boolean }) {
   );
   // A4 verticale: etichetta ingrandita (x1.81) in alto, come da esempio La Doria
   if (a4) return (
-    <div className="ld-page" style={{ width:'190mm', height:'270mm', margin:'6mm 10mm 0', pageBreakAfter:'always', breakAfter:'page', flexShrink:0, position:'relative', overflow:'hidden' }}>
-      <div style={{ width:'105mm', transform:'scale(1.8095)', transformOrigin:'top left', position:'absolute', top:0, left:0 }}>{label}</div>
+    <div className="ld-page" style={{ width:'210mm', display:'flex', justifyContent:'center', paddingTop:'6mm', pageBreakAfter:'always', breakAfter:'page', flexShrink:0 }}>
+      <div style={{ zoom:1.75 }}>{label}</div>
     </div>
   );
   return <div style={{ pageBreakAfter:'always', flexShrink:0 }}>{label}</div>;
