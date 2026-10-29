@@ -666,6 +666,10 @@ export function useCartoni() {
       ddt: dati.ddt,
       data_arrivo: dati.data_arrivo,
     };
+    // pdf_url viene aggiornato solo se esplicitamente passato (rimozione = null, sostituzione = nuovo URL)
+    if (dati.pdf_url !== undefined) {
+      datiPerAggiornamento.pdf_url = dati.pdf_url;
+    }
 
     console.log('[useCartoni - modificaOrdine] Updating ordini with:', JSON.stringify(datiPerAggiornamento, null, 2));
 
