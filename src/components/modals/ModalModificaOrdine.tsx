@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Cartone } from '@/types';
 import * as notifications from '@/utils/notifications'; // Aggiornato a percorso relativo
 import { formatFormato, formatGrammatura } from '@/utils/formatters'; // Importa formatFormato e formatGrammatura
+import { supabase } from '@/lib/supabase';
 
 interface ModalModificaOrdineProps {
   ordine: Cartone;
@@ -27,6 +28,21 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
     data_arrivo: ordine.data_arrivo || '', // NUOVO CAMPO
   });
 
+  // Gestione PDF conferma: rimozione e sostituzione
+  const [pdfUrl, setPdfUrl] = useState<string | null>(ordine.pdf_url || null);
+  const [nuovoPdf, setNuovoPdf] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleSelezionaPdf = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file && file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      notifications.showError('Seleziona un file PDF.');
+      e.target.value = '';
+      return;
+    }
+    setNuovoPdf(file);
+  };
+
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -44,6 +60,26 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+
+    // Determina il valore finale di pdf_url (nuovo file > rimosso > invariato)
+    let pdfUrlFinale: string | null = pdfUrl;
+    if (nuovoPdf) {
+      const nomeSicuro = nuovoPdf.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+      const path = `${ts.slice(0, 8)}_${ts.slice(8)}_${nomeSicuro}`;
+      const { error: upErr } = await supabase.storage
+        .from('conferme-pdf')
+        .upload(path, nuovoPdf, { contentType: 'application/pdf', upsert: false });
+      if (upErr) {
+        console.error('[ModalModificaOrdine] Errore upload PDF:', upErr);
+        notifications.showError(`Errore caricamento PDF: ${upErr.message}`);
+        setSaving(false);
+        return;
+      }
+      pdfUrlFinale = supabase.storage.from('conferme-pdf').getPublicUrl(path).data.publicUrl;
+    }
 
     const datiAggiornati: Partial<Cartone> = {
       fornitore: formData.fornitore.trim(),
@@ -62,8 +98,14 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
       data_arrivo: formData.data_arrivo.trim() || null, // NUOVO: Invia null se vuoto
     };
 
+    // Invia pdf_url solo se è cambiato (rimosso o sostituito)
+    if (pdfUrlFinale !== (ordine.pdf_url || null)) {
+      datiAggiornati.pdf_url = pdfUrlFinale;
+    }
+
     await onModifica(ordine.codice, datiAggiornati);
     notifications.showSuccess(`✅ Ordine ${ordine.codice} modificato`);
+    setSaving(false);
     onClose();
   };
 
@@ -255,6 +297,46 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
 
             <div className="md:col-span-2">
               <label className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
+                <i className="fas fa-file-pdf mr-1"></i> PDF conferma
+              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 border border-[hsl(var(--border))] rounded-md">
+                {pdfUrl ? (
+                  <>
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs sm:text-sm text-[hsl(0,84%,40%)] hover:underline flex items-center gap-1 break-all"
+                    >
+                      <i className="fas fa-file-pdf"></i> PDF attuale (apri)
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => { setPdfUrl(null); setNuovoPdf(null); }}
+                      className="px-3 py-1 bg-[hsl(0,100%,95%)] text-[hsl(var(--danger))] rounded-md text-xs sm:text-sm font-semibold hover:bg-[hsl(0,100%,90%)] transition-colors"
+                    >
+                      <i className="fas fa-trash mr-1"></i> Rimuovi PDF
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))]">
+                    {ordine.pdf_url ? 'PDF rimosso (si applica al salvataggio)' : 'Nessun PDF allegato'}
+                  </span>
+                )}
+                <label className="sm:ml-auto px-3 py-1 bg-[hsl(199,89%,94%)] text-[hsl(var(--primary-dark))] rounded-md text-xs sm:text-sm font-semibold hover:bg-[hsl(199,89%,88%)] transition-colors cursor-pointer text-center">
+                  <i className="fas fa-upload mr-1"></i> {pdfUrl || nuovoPdf ? 'Sostituisci PDF' : 'Aggiungi PDF'}
+                  <input type="file" accept="application/pdf,.pdf" className="hidden" onChange={handleSelezionaPdf} />
+                </label>
+              </div>
+              {nuovoPdf && (
+                <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                  Nuovo PDF selezionato: <strong>{nuovoPdf.name}</strong> (sostituirà quello attuale al salvataggio)
+                </p>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block font-medium mb-1 sm:mb-2 text-xs sm:text-sm">
                 <i className="fas fa-sticky-note mr-1"></i> Note
               </label>
               <textarea
@@ -270,6 +352,7 @@ export function ModalModificaOrdine({ ordine, onClose, onModifica }: ModalModifi
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6">
             <button
               type="submit"
+              disabled={saving}
               className="flex-1 px-4 py-2 bg-[hsl(var(--primary))] text-white rounded-md font-semibold hover:bg-[hsl(var(--primary-dark))] transition-colors text-sm sm:text-base"
             >
               <i className="fas fa-save mr-1 sm:mr-2"></i>
