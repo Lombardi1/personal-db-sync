@@ -18,6 +18,7 @@ export function ColoriTabs({ activeTab, setActiveTab, counts, isAmministratore }
     { id: 'colori-carico', label: 'Carico Colore', icon: 'fa-plus-square' },
     { id: 'colori-scarico', label: 'Scarico / Consumo', icon: 'fa-minus-square' },
     { id: 'colori-storico', label: 'Storico Movimenti', count: counts.storico, icon: 'fa-history', adminOnly: true },
+    { id: 'colori-lotti', label: 'Lotti Alimentari', icon: 'fa-barcode' },
     { id: 'colori-calcolo', label: 'Calcolo Consumo', icon: 'fa-calculator' },
   ];
 
