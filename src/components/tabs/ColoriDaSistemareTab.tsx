@@ -181,6 +181,7 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
                 <th className="px-2 py-2 text-left text-xs font-semibold">Fornitore</th>
                 <th className="px-2 py-2 text-left text-xs font-semibold">Bolla</th>
                 <th className="px-2 py-2 text-left text-xs font-semibold">Data Bolla</th>
+                <th className="px-2 py-2 text-left text-xs font-semibold">Lotto Alim.</th>
                 <th className="px-2 py-2 text-left text-xs font-semibold w-[160px]">Posizione</th>
                 <th className="px-2 py-2 text-left text-xs font-semibold">Azione</th>
               </tr>
@@ -196,6 +197,7 @@ export function ColoriDaSistemareTab({ onArchiviato }: ColoriDaSistemareTabProps
                   <td className="px-2 py-2 text-xs whitespace-nowrap">{c.fornitore || '-'}</td>
                   <td className="px-2 py-2 text-xs whitespace-nowrap font-mono font-semibold">{c.numero_ddt || <span className="text-gray-400 italic">—</span>}</td>
                   <td className="px-2 py-2 text-xs whitespace-nowrap">{formatData(c.data_ddt)}</td>
+                  <td className="px-2 py-2 text-xs whitespace-nowrap font-mono">{c.lotto_alimentare || <span className="text-gray-400 italic">—</span>}</td>
                   <td className="px-2 py-2 whitespace-nowrap">
                     <Select value={posizioni[c.id!] || ''} onValueChange={(v) => setPosizioni(p => ({ ...p, [c.id!]: v }))}>
                       <SelectTrigger className="h-7 text-xs w-[150px]"><SelectValue placeholder="Scegli posizione…" /></SelectTrigger>
