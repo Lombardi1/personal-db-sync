@@ -14,6 +14,7 @@ interface DialogArrivo {
   colore: ColoreInArrivo;
   numeroDdt: string;
   dataDdt: string;
+  lottoAlimentare: string;
   loading: boolean;
 }
 
@@ -46,6 +47,7 @@ export function ColoriInArrivoTab({ onArrivoRegistrato }: ColoriInArrivoTabProps
       colore: c,
       numeroDdt: '',
       dataDdt: new Date().toISOString().split('T')[0],
+      lottoAlimentare: '',
       loading: false,
     });
   };
@@ -64,6 +66,7 @@ export function ColoriInArrivoTab({ onArrivoRegistrato }: ColoriInArrivoTabProps
         stato: 'ricevuto',
         numero_ddt: dialog.numeroDdt.trim(),
         data_ddt: dialog.dataDdt || null,
+        lotto_alimentare: dialog.lottoAlimentare.trim() || null,
         ultima_modifica: new Date().toISOString(),
       })
       .eq('id', dialog.colore.id);
@@ -117,6 +120,16 @@ export function ColoriInArrivoTab({ onArrivoRegistrato }: ColoriInArrivoTabProps
                   value={dialog.dataDdt}
                   onChange={e => setDialog(d => d ? { ...d, dataDdt: e.target.value } : null)}
                   className="text-sm mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">LOTTO ALIMENTARE</Label>
+                <Input
+                  value={dialog.lottoAlimentare}
+                  onChange={e => setDialog(d => d ? { ...d, lottoAlimentare: e.target.value } : null)}
+                  placeholder="Es. L240512"
+                  className="text-sm mt-1 font-mono"
+                  onKeyDown={e => e.key === 'Enter' && registraArrivo()}
                 />
               </div>
             </div>
