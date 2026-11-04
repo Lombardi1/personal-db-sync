@@ -244,6 +244,7 @@ export interface ColoreInArrivo {
   posizione?: string | null;
   numero_ddt?: string | null;
   data_ddt?: string | null;
+  lotto_alimentare?: string | null;
   data_creazione?: string;
   ultima_modifica?: string;
 }
