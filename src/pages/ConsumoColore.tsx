@@ -9,6 +9,7 @@ import { StoricoColoriTab } from '@/components/tabs/StoricoColoriTab';
 import { CalcoloConsumoColoreTab } from '@/components/tabs/CalcoloConsumoColoreTab';
 import { ColoriInArrivoTab } from '@/components/tabs/ColoriInArrivoTab';
 import { ColoriDaSistemareTab } from '@/components/tabs/ColoriDaSistemareTab';
+import { LottiAlimentariTab } from '@/components/tabs/LottiAlimentariTab';
 import { Toaster } from '@/components/ui/sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -106,6 +107,7 @@ const ConsumoColore = () => {
           {activeTab === 'colori-storico' && (
             <StoricoColoriTab storico={coloriData.storicoColori} />
           )}
+          {activeTab === 'colori-lotti' && <LottiAlimentariTab />}
           {activeTab === 'colori-calcolo' && (
             <CalcoloConsumoColoreTab />
           )}
