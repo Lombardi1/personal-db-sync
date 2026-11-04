@@ -389,6 +389,7 @@ const SSCCLabels = () => {
     cliente:'', fornitore:'Arti Grafiche Lombardi', codice:'', descrizione:'',
     ordineNr:'', data:new Date().toLocaleDateString('it-IT'), lotto:'',
     fogli:'', resa:'', pzScat:'', scatBanc:'', dataConsegna:'', destinazione:'',
+    produzione:oggiDMY(), paese:'Italy',
   });
 
   const [overridePzUltimoScat, setOverridePzUltimoScat] = useState('');
@@ -397,6 +398,7 @@ const SSCCLabels = () => {
   const f = parseInt(lav.fogli)||0, r = parseInt(lav.resa)||0;
   const ps = parseInt(lav.pzScat)||0, sb = parseInt(lav.scatBanc)||0;
   const calc = calcola(f, r, ps, sb);
+  const produzioneValida = !!parseDMY(lav.produzione);
 
   // Valori effettivi applicando gli override
   const pzUltimoScatEff = overridePzUltimoScat
@@ -426,10 +428,22 @@ const SSCCLabels = () => {
     toast.success('Configurazione salvata'); setEditCfg(false); loadData();
   };
 
+  // Stampa un blocco di etichette: A4 per i bancali La Doria, formato etichetta per gli scatoloni
+  const stampaNodi = (nodes: React.ReactNode[], a4: boolean) => new Promise<void>(res => {
+    setPrintLaDoria(a4); setSinglePrint(nodes);
+    setTimeout(() => { window.print(); res(); }, 500);
+  });
+  const stampaGruppi = async (groups: { pallet: React.ReactNode; scatoloni: React.ReactNode[] }[]) => {
+    await stampaNodi(groups.map(g => g.pallet), true);
+    const scat = groups.flatMap(g => g.scatoloni);
+    if (scat.length) await stampaNodi(scat, false);
+  };
+
   // Genera lavoro completo
   const generaLavoro = async () => {
     if (!cfg?.prefisso_gs1) { toast.error('Configura il prefisso GS1'); return; }
     if (!lav.cliente||!lav.codice||!calc) { toast.error('Compila tutti i campi'); return; }
+    if (!parseDMY(lav.produzione)) { toast.error('Data di produzione non valida (gg/mm/aaaa)'); return; }
     setGenerando(true);
     const labels: React.ReactNode[] = [];
     const records = [];
@@ -447,7 +461,7 @@ const SSCCLabels = () => {
     for (const banc of bancaliEffettivi) {
       const sscc = generaSSCC(cfg.digit_estensione, cfg.prefisso_gs1, contatore);
       // Etichetta pallet
-      labels.push(<EtPallet key={`p${banc.n}`} d={{ sscc, num:contatore, cliente:lav.cliente, fornitore:lav.fornitore, codice:lav.codice, descrizione:lav.descrizione, ordineNr:lav.ordineNr, data:lav.data, lotto:lav.lotto, pezziTot:banc.pezziTotBancale, numScat:banc.scatoloni, pzScat:ps, dataConsegna:lav.dataConsegna, destinazione:lav.destinazione }} />);
+      labels.push(<EtLaDoria key={`p${banc.n}`} a4 d={{ sender:lav.fornitore, cliente:[lav.cliente, lav.destinazione].filter(Boolean), sscc, num:contatore, paese:lav.paese, lotto:lav.lotto, produzione:lav.produzione, quantita:String(banc.pezziTotBancale), materiale:lav.codice.trim().toUpperCase(), descrizione:lav.descrizione }} />);
       records.push({ sscc, numero_bancale:contatore, cliente:lav.cliente||null, lotto:lav.lotto||null, quantita:banc.pezziTotBancale, descrizione:lav.descrizione||null });
 
       // Etichette scatoloni di questo bancale
@@ -479,8 +493,8 @@ const SSCCLabels = () => {
       gLabelIdx += 1 + banc.scatoloni;
     }
     setBancaleGroups(groups);
-    setPrintLaDoria(false); setPrintQueue(labels); setSinglePrint([]); setGenerando(false); loadData();
-    setTimeout(()=>window.print(), 400);
+    setPrintQueue(labels); setGenerando(false); loadData();
+    stampaGruppi(groups);
   };
 
   // Genera etichette La Doria (1 SSCC per bancale)
@@ -579,6 +593,8 @@ const SSCCLabels = () => {
                     <div><Label className="text-xs">Lotto</Label><Input value={lav.lotto} onChange={e=>setLav(p=>({...p,lotto:e.target.value}))} placeholder="Es. 202612142" className="mt-1 font-mono"/></div>
                     <div><Label className="text-xs">Data consegna</Label><Input value={lav.dataConsegna} onChange={e=>setLav(p=>({...p,dataConsegna:e.target.value}))} placeholder="Es. 15/7" className="mt-1"/></div>
                     <div><Label className="text-xs">Destinazione merce</Label><Input value={lav.destinazione} onChange={e=>setLav(p=>({...p,destinazione:e.target.value}))} placeholder="Es. Magazzino A" className="mt-1"/></div>
+                    <div><Label className="text-xs">Data produzione * (gg/mm/aaaa)</Label><Input value={lav.produzione} onChange={e=>setLav(p=>({...p,produzione:e.target.value}))} placeholder="Es. 04/11/2026" className="mt-1"/></div>
+                    <div><Label className="text-xs">Paese (Country)</Label><Input value={lav.paese} onChange={e=>setLav(p=>({...p,paese:e.target.value}))} placeholder="Es. Italy" className="mt-1"/></div>
                   </div>
                 </div>
 
@@ -677,7 +693,7 @@ const SSCCLabels = () => {
                       <div className="bg-gray-50 px-4 py-2 flex items-center justify-between border-b">
                         <span className="text-sm font-semibold text-gray-700">📋 Ultimo lavoro generato</span>
                         <Button size="sm" variant="outline" className="text-xs h-7"
-                          onClick={()=>{ setSinglePrint(printQueue); setTimeout(()=>window.print(),200); }}>
+                          onClick={()=>stampaGruppi(bancaleGroups)}>
                           🖨️ Stampa tutto
                         </Button>
                       </div>
@@ -691,12 +707,12 @@ const SSCCLabels = () => {
                             <div className="flex gap-2">
                               <Button size="sm" variant="outline"
                                 className="text-xs h-7 border-blue-300 text-blue-700 hover:bg-blue-50"
-                                onClick={()=>{ setSinglePrint([g.pallet]); setTimeout(()=>window.print(),200); }}>
+                                onClick={()=>stampaNodi([g.pallet], true)}>
                                 🏷️ Pallet
                               </Button>
                               <Button size="sm" variant="outline"
                                 className="text-xs h-7 border-green-300 text-green-700 hover:bg-green-50"
-                                onClick={()=>{ setSinglePrint(g.scatoloni); setTimeout(()=>window.print(),200); }}>
+                                onClick={()=>stampaNodi(g.scatoloni, false)}>
                                 📦 {g.scatoloni.length} Scatoloni
                               </Button>
                             </div>
@@ -706,7 +722,7 @@ const SSCCLabels = () => {
                     </div>
                   )}
 
-                  <Button className="w-full mt-4 h-12 text-base font-semibold" onClick={generaLavoro} disabled={!cfg?.prefisso_gs1||generando||!calc||!lav.cliente||!lav.codice}>
+                  <Button className="w-full mt-4 h-12 text-base font-semibold" onClick={generaLavoro} disabled={!cfg?.prefisso_gs1||generando||!calc||!lav.cliente||!lav.codice||!produzioneValida}>
                     <Printer className="mr-2 h-5 w-5"/>
                     {generando?'Generazione...' : calc ? `Genera e Stampa — ${calc.bancaliTotali} pallet + ${calc.scatoloniTotali} scatoloni` : 'Compila i dati per generare'}
                   </Button>
@@ -741,24 +757,20 @@ const SSCCLabels = () => {
                   </div>
                   {/* Anteprima pallet */}
                   <div className="bg-white rounded-xl border shadow-sm p-3 flex-1">
-                    <h3 className="font-semibold text-xs mb-2">🏷️ Bancale SSCC</h3>
-                    <div style={{ position:'relative', width:'75mm', height:'50mm', overflow:'hidden', flexShrink:0 }}>
-                    <div style={{ transform:'scale(0.50)', transformOrigin:'top left', position:'absolute', top:0, left:0 }}>
-                      <EtPallet d={{
+                    <h3 className="font-semibold text-xs mb-2">🏷️ Bancale (La Doria GS1)</h3>
+                    <div style={{ position:'relative', width:'55mm', height:'76mm', overflow:'hidden', flexShrink:0 }}>
+                    <div style={{ transform:'scale(0.52)', transformOrigin:'top left', position:'absolute', top:0, left:0 }}>
+                      <EtLaDoria d={{
+                        sender: lav.fornitore||'Arti Grafiche Lombardi',
+                        cliente: [lav.cliente||'Cliente', lav.destinazione].filter(Boolean),
                         sscc: cfg?.prefisso_gs1 ? generaSSCC(cfg.digit_estensione,cfg.prefisso_gs1,cfg.contatore) : '000000000000000000',
                         num: cfg?.contatore||1,
-                        cliente: lav.cliente||'Alvaro Bernardoni',
-                        fornitore: lav.fornitore||'Arti Grafiche Lombardi',
-                        codice: lav.codice||'TAPE 10 40 MT',
-                        descrizione: lav.descrizione||'ASTUCCI PER NASTRI',
-                        ordineNr: lav.ordineNr||'114',
-                        data: lav.data,
-                        lotto: lav.lotto||'202612147',
-                        pezziTot: calc ? (overrideScatUltimoBanc ? pezziUltimoBancEff : calc.bancali[calc.bancali.length-1]?.pezziTotBancale) || 0 : 0,
-                        numScat: overrideScatUltimoBanc ? scatUltimoBancEff : (calc?.bancali[calc.bancali.length-1]?.scatoloni||0),
-                        pzScat: ps||450,
-                        dataConsegna: lav.dataConsegna,
-                        destinazione: lav.destinazione,
+                        paese: lav.paese||'Italy',
+                        lotto: lav.lotto,
+                        produzione: lav.produzione,
+                        quantita: String(calc ? (overrideScatUltimoBanc ? pezziUltimoBancEff : calc.bancali[calc.bancali.length-1]?.pezziTotBancale) || 0 : 0),
+                        materiale: (lav.codice||'').trim().toUpperCase(),
+                        descrizione: lav.descrizione,
                       }} />
                     </div></div>
                   </div>
@@ -845,7 +857,7 @@ const SSCCLabels = () => {
       </div>
 
       {/* Stampa */}
-      {printLaDoria && singlePrint.length===0 && <style>{`@page { size: A4 portrait; margin: 0; } @media print { html, body, #root { height:auto !important; min-height:0 !important; margin:0 !important; } .min-h-screen { min-height:0 !important; } [data-sonner-toaster], [data-sonner-toast], section[aria-label] { display:none !important; } .ld-page:last-child { page-break-after:auto !important; break-after:auto !important; } }`}</style>}
+      {printLaDoria && <style>{`@page { size: A4 portrait; margin: 0; } @media print { html, body, #root { height:auto !important; min-height:0 !important; margin:0 !important; } .min-h-screen { min-height:0 !important; } [data-sonner-toaster], [data-sonner-toast], section[aria-label] { display:none !important; } .ld-page:last-child { page-break-after:auto !important; break-after:auto !important; } }`}</style>}
       <div className="hidden print:flex print:flex-col">{singlePrint.length > 0 ? singlePrint : printQueue}</div>
       <Toaster />
     </div>
