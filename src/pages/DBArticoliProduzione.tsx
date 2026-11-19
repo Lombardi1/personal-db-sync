@@ -10,6 +10,7 @@ import { Search, Plus, Home, Pencil, Trash2, Save, X, ChevronDown, Eye } from 'l
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Articolo } from '@/types/produzione';
+import { ImportaExcelDialog } from '@/components/ImportaExcelDialog';
 import {
   Table,
   TableBody,
@@ -532,6 +533,7 @@ export default function DBArticoliProduzione() {
             <p className="text-muted-foreground mt-1">{articoli.length} articoli totali</p>
           </div>
           <div className="flex gap-2">
+            <ImportaExcelDialog tabella="articoli" />
             <Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Nuovo Articolo</Button>
             <Button variant="outline" onClick={() => navigate('/summary')} className="gap-2"><Home className="h-4 w-4" /> Dashboard</Button>
           </div>
