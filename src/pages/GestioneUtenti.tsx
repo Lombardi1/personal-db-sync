@@ -171,35 +171,32 @@ export default function GestioneUtenti() {
     }
   };
 
+  // Le operazioni sugli utenti passano dalla funzione protetta "admin-users" (solo amministratori)
+  const chiamaAdmin = async (body: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke('admin-users', { body });
+    if (error) {
+      let msg = error.message;
+      try { const j = await (error as any).context?.json?.(); if (j?.error) msg = j.error; } catch { /* ignora */ }
+      throw new Error(msg);
+    }
+    if (data?.error) throw new Error(data.error);
+    return data;
+  };
+
   const creaUtente = async () => {
     try {
-      const bcrypt = await import('bcryptjs');
-      const passwordHash = await bcrypt.hash(formData.password, 10);
-
-      const { data: newUser, error: userError } = await supabase
-        .from('app_users')
-        .insert({ username: formData.username, password_hash: passwordHash, macchina_id: formData.macchina_id || null })
-        .select()
-        .single();
-
-      if (userError) {
-        if (userError.code === '23505') {
-          notifications.showError('Username già esistente');
-          throw new Error('Username già esistente');
-        }
-        throw userError;
-      }
-
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: newUser.id, role: formData.role });
-
-      if (roleError) throw roleError;
-
+      await chiamaAdmin({
+        action: 'create',
+        username: formData.username.trim(),
+        password: formData.password,
+        role: formData.role,
+        macchina_id: formData.macchina_id || null,
+      });
       notifications.showSuccess('Utente creato con successo');
       chiudiModal();
       caricaUtenti();
-    } catch (error) {
+    } catch (error: any) {
+      if (/già esistente/i.test(error.message)) notifications.showError('Username già esistente');
       throw error;
     }
   };
@@ -207,43 +204,17 @@ export default function GestioneUtenti() {
   const modificaUtente = async () => {
     if (!editingUser) return;
     try {
-      if (formData.username !== editingUser.username) {
-        const { error: updateError } = await supabase
-          .from('app_users')
-          .update({ username: formData.username, macchina_id: formData.macchina_id || null })
-          .eq('id', editingUser.id);
-
-        if (updateError) {
-          if (updateError.code === '23505') {
-            notifications.showError('Username già esistente');
-            throw new Error('Username già esistente');
-          }
-          throw updateError;
-        }
-      }
-
-      if (formData.password) {
-        const bcrypt = await import('bcryptjs');
-        const passwordHash = await bcrypt.hash(formData.password, 10);
-        const { error: passwordError } = await supabase
-          .from('app_users')
-          .update({ password_hash: passwordHash })
-          .eq('id', editingUser.id);
-        if (passwordError) throw passwordError;
-      }
-
-      if (formData.role !== editingUser.role) {
-        await supabase.from('user_roles').delete().eq('user_id', editingUser.id);
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({ user_id: editingUser.id, role: formData.role });
-        if (roleError) throw roleError;
-      }
-
+      const body: Record<string, unknown> = { action: 'update', id: editingUser.id };
+      if (formData.username.trim() !== editingUser.username) body.username = formData.username.trim();
+      if (formData.password) body.password = formData.password;
+      if (formData.role !== editingUser.role) body.role = formData.role;
+      if (formData.macchina_id) body.macchina_id = formData.macchina_id;
+      await chiamaAdmin(body);
       notifications.showSuccess('Utente modificato con successo');
       chiudiModal();
       caricaUtenti();
-    } catch (error) {
+    } catch (error: any) {
+      if (/già esistente/i.test(error.message)) notifications.showError('Username già esistente');
       throw error;
     }
   };
@@ -260,8 +231,7 @@ export default function GestioneUtenti() {
         notifications.showError('Non puoi eliminare il tuo account mentre sei loggato');
         return;
       }
-      const { error } = await supabase.from('app_users').delete().eq('id', userToDelete.id);
-      if (error) throw error;
+      await chiamaAdmin({ action: 'delete', id: userToDelete.id });
       notifications.showSuccess('Utente eliminato con successo');
       setDeleteModalOpen(false);
       setUserToDelete(null);

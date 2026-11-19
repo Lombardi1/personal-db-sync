@@ -1,15 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
-    // È buona pratica usare variabili d'ambiente per queste chiavi in produzione.
-    // Per ora, usiamo i valori hardcoded forniti.
-    const supabaseUrl = 'https://qhabwagcsvvluyvfztmp.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoYWJ3YWdjc3Z2bHV5dmZ6dG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NDk3NDksImV4cCI6MjA3ODUyNTc0OX0.1PrBPmu1x0uE6xkiM5lIf_IgkGFRYBJy4X-t5MWIjgM';
+// Chiave pubblicabile (sicura da esporre nel browser): i dati sono protetti da RLS e dal login Supabase Auth.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qhabwagcsvvluyvfztmp.supabase.co';
+const supabasePublishableKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_8rHmIvEUP5jexo5N797vNQ_jPLaZKF0';
 
-    export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          'apikey': supabaseAnonKey, // Aggiunge esplicitamente l'apikey come header
-        },
-      },
-    });
-    console.log('Supabase client initialized:', supabaseUrl ? 'URL present' : 'URL missing');
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+});
+
+// Nome tecnico usato per il login: hex(username UTF-8) + dominio fittizio.
+// (distingue maiuscole/minuscole, es. "Giovanni" e "giovanni")
+export const usernameToEmail = (username: string) =>
+  Array.from(new TextEncoder().encode(username.trim()))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('') + '@login.gestionale.local';
