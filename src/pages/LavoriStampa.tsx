@@ -1,3 +1,4 @@
+import { ImportaExcelDialog } from '@/components/ImportaExcelDialog';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Header } from '@/components/Header';
@@ -303,14 +304,17 @@ export default function LavoriStampa() {
               Gestione completa dei lavori di stampa - Totale: {filteredLavori.length} lavori
             </p>
           </div>
-          <Button
-            onClick={() => navigate('/summary')}
-            variant="outline"
-            size="sm"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Dashboard
-          </Button>
+          <div className="flex gap-2">
+            <ImportaExcelDialog tabella="lavori" />
+            <Button
+              onClick={() => navigate('/summary')}
+              variant="outline"
+              size="sm"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Dashboard
+            </Button>
+          </div>
         </div>
 
         {/* Barra Azioni */}
